@@ -80,18 +80,24 @@ namespace SaveFW.Server.Data
                 }
 
                 // Check/Ingest Address Ranges
-                // Ideally this would be a separate check, but for now we piggyback on the state loop
-                // We use a simple check for any range in this state to avoid re-ingesting
-                using var cmdRanges = conn.CreateCommand();
-                cmdRanges.CommandText = "SELECT 1 FROM tiger_address_ranges WHERE substring(zip, 1, 3) IN (SELECT substring(zip, 1, 3) FROM tiger_address_ranges LIMIT 1) LIMIT 1"; 
-                // The check above is weak. Let's just rely on the 'ON CONFLICT DO NOTHING' in the service for now 
-                // or add a better check. Since this is "Seeding", we assume if we have BGs, we might want Ranges.
-                
-                // Let's check for at least ONE range in this state. 
-                // Note: ZIP codes cross states, so exact state check is hard without spatial join.
-                // We'll trust the ingestion service to be idempotent-ish.
-                _logger.LogInformation($"TigerSeeder: Ensuring address ranges for state {fips}...");
-                await _ingestionService.IngestAddressRanges(fips); 
+                // Since tiger_address_ranges doesn't have a state column, we use a simple "HasData" check 
+                // to prevent re-ingesting 9GB of data on every startup.
+                // To force a re-seed, the user must TRUNCATE/DROP the tiger_address_ranges table.
+            }
+            
+            // Check if Address Ranges exist globally (once, outside the loop)
+            if (!await HasData(conn, "tiger_address_ranges"))
+            {
+                _logger.LogInformation("TigerSeeder: No address ranges found. Ingesting for all defined states...");
+                foreach (var fips in BlockGroupStateFips)
+                {
+                     _logger.LogInformation($"TigerSeeder: Ingesting address ranges for state {fips}...");
+                     await _ingestionService.IngestAddressRanges(fips);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("TigerSeeder: Address ranges already seeded (table not empty). Skipping ingestion.");
             }
             _logger.LogInformation("TigerSeeder: Block Group & Address Range seeding check complete.");
 
