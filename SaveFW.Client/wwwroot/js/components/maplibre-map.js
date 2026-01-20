@@ -209,6 +209,9 @@ window.MapLibreImpactMap = (function ()
     {
         if (!map) return;
 
+        // Mode check
+        if (riskZoneMode === 'grid') return;
+
         // Ensure source exists
         if (!map.getSource('impact-circles')) setupCircleLayers();
 
@@ -692,16 +695,247 @@ window.MapLibreImpactMap = (function ()
     let isochroneTimeout = null;
     async function updateIsochrones(lngLat)
     {
-        if (!layersVisible.zones || riskZoneMode !== 'isochrone') return;
-        clearTimeout(isochroneTimeout);
-        isochroneTimeout = setTimeout(async () =>
+        if (!layersVisible.zones) return;
+
+        // If in grid mode, we fetch from our cache instead of Valhalla live
+        if (riskZoneMode === 'grid')
         {
-            const data = await fetchIsochrones(lngLat.lat, lngLat.lng);
-            if (data && map.getSource('isochrones'))
+            try
             {
-                map.getSource('isochrones').setData(data);
+                const res = await fetch(`/api/Impact/cached-isochrone?lat=${lngLat.lat}&lon=${lngLat.lng}`);
+                if (res.ok)
+                {
+                    const data = await res.json();
+                    if (map.getSource('impact-grid-isochrones'))
+                    {
+                        map.getSource('impact-grid-isochrones').setData(data);
+                    }
+                } else
+                {
+                    console.warn("No cached isochrone found for this point");
+                    // clear
+                    if (map.getSource('impact-grid-isochrones'))
+                    {
+                        map.getSource('impact-grid-isochrones').setData({ type: 'FeatureCollection', features: [] });
+                    }
+                }
+            } catch (e) { console.error(e); }
+            return;
+        }
+
+        /* 
+           Original live Valhalla fetch logic (currently disabled/unused effectively unless mode is isochrone 
+           but distinct from 'grid' mode which uses pre-calculated db cache).
+           If we ever want live valhalla again, we can re-enable this path.
+        */
+    }
+
+    // === GRID MODE ===
+
+    let gridPointsLoaded = false;
+
+    async function loadGridPoints() 
+    {
+        if (gridPointsLoaded) return true;
+        try
+        {
+            const res = await fetch('/api/Impact/grid-points'); // defaults to Allen County
+            if (!res.ok) return false;
+
+            const points = await res.json();
+
+            if (!Array.isArray(points) || points.length === 0) return false;
+
+            const features = points.map((p, i) => ({
+                type: 'Feature',
+                id: i,
+                geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+                properties: { lat: p.lat, lon: p.lon }
+            }));
+
+            const geojson = { type: 'FeatureCollection', features };
+
+            if (!map.getSource('impact-grid-points'))
+            {
+                map.addSource('impact-grid-points', { type: 'geojson', data: geojson });
+
+                // Visible points
+                map.addLayer({
+                    id: 'impact-grid-points-layer',
+                    type: 'circle',
+                    source: 'impact-grid-points',
+                    paint: {
+                        'circle-radius': 5,
+                        'circle-color': '#3b82f6',
+                        'circle-stroke-width': 1,
+                        'circle-stroke-color': '#ffffff',
+                        'circle-opacity': [
+                            'case',
+                            ['boolean', ['feature-state', 'selected'], false],
+                            1,
+                            0.6
+                        ]
+                    },
+                    layout: { visibility: 'none' }
+                });
+
+                // Hover effect (optional, or just use click)
+                map.on('click', 'impact-grid-points-layer', (e) =>
+                {
+                    const f = e.features[0];
+                    if (!f) return;
+
+                    // Select point logic
+                    const lat = f.properties.lat;
+                    const lon = f.properties.lon;
+                    updateIsochrones({ lng: lon, lat: lat });
+                });
+
+                map.on('mouseenter', 'impact-grid-points-layer', () => map.getCanvas().style.cursor = 'pointer');
+                map.on('mouseleave', 'impact-grid-points-layer', () => map.getCanvas().style.cursor = '');
             }
-        }, 300);
+
+            // Add isochrone layer for grid mode
+            if (!map.getSource('impact-grid-isochrones'))
+            {
+                map.addSource('impact-grid-isochrones', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+
+                map.addLayer({
+                    id: 'impact-grid-isochrones-fill',
+                    type: 'fill',
+                    source: 'impact-grid-isochrones',
+                    layout: {},
+                    paint: {
+                        'fill-color': [
+                            'match',
+                            ['get', 'contour'],
+                            60, '#22c55e', // Example colors
+                            90, '#eab308',
+                            '#3b82f6'
+                        ],
+                        'fill-opacity': 0.3
+                    }
+                }, 'impact-circles-fill-t1'); // Below circles if both exist?
+
+                map.addLayer({
+                    id: 'impact-grid-isochrones-line',
+                    type: 'line',
+                    source: 'impact-grid-isochrones',
+                    layout: {},
+                    paint: {
+                        'line-color': '#ffffff',
+                        'line-width': 1,
+                        'line-opacity': 0.5
+                    }
+                });
+            }
+
+            gridPointsLoaded = true;
+            return true;
+        } catch (e)
+        {
+            console.error("Error loading grid points", e);
+            return false;
+        }
+    }
+
+    function showMapNotification(message)
+    {
+        let el = document.getElementById('map-notification-toast');
+        if (!el)
+        {
+            el = document.createElement('div');
+            el.id = 'map-notification-toast';
+            el.className = 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 text-white px-6 py-4 rounded-xl shadow-2xl border border-slate-700 z-[1000] flex flex-col items-center gap-3 backdrop-blur-md opacity-0 transition-all duration-300 scale-90 pointer-events-none';
+            el.innerHTML = `
+                <div class="p-3 bg-blue-500/20 rounded-full text-blue-400 mb-1">
+                    <span class="material-symbols-outlined text-3xl">info</span>
+                </div>
+                <div class="text-center">
+                    <h4 class="font-bold text-lg mb-1">Notice</h4>
+                    <p id="map-notif-msg" class="text-slate-300 text-sm"></p>
+                </div>
+            `;
+            const container = document.getElementById('impact-map').parentElement;
+            if (container) container.appendChild(el);
+        }
+
+        document.getElementById('map-notif-msg').textContent = message;
+
+        // Show
+        requestAnimationFrame(() =>
+        {
+            el.style.opacity = '1';
+            el.style.transform = 'translate(-50%, -50%) scale(1)';
+        });
+
+        // Hide after 3s
+        setTimeout(() =>
+        {
+            el.style.opacity = '0';
+            el.style.transform = 'translate(-50%, -50%) scale(0.90)';
+        }, 3500);
+    }
+
+    function setRiskZoneMode(mode)
+    {
+        // mode: 'radius' | 'grid'
+
+        if (!map) return;
+
+        if (mode === 'grid')
+        {
+            // Show loading...
+            toggleLoading(true, "Loading Grid Data...");
+
+            loadGridPoints().then((success) =>
+            {
+                toggleLoading(false);
+
+                if (!success)
+                {
+                    // No data or error
+                    const checkbox = document.getElementById('mode-toggle');
+                    if (checkbox && checkbox.checked) checkbox.checked = false; // Revert UI
+
+                    showMapNotification("No isochrone grid data is available for this area yet.");
+                    return;
+                }
+
+                riskZoneMode = 'grid';
+
+                // Hide circles
+                if (map.getLayer('impact-circles-fill-t1')) map.setLayoutProperty('impact-circles-fill-t1', 'visibility', 'none');
+                if (map.getLayer('impact-circles-fill-t2')) map.setLayoutProperty('impact-circles-fill-t2', 'visibility', 'none');
+                if (map.getLayer('impact-circles-fill-t3')) map.setLayoutProperty('impact-circles-fill-t3', 'visibility', 'none');
+                if (map.getLayer('impact-circles-line')) map.setLayoutProperty('impact-circles-line', 'visibility', 'none');
+
+                // Show Grid Points
+                if (map.getLayer('impact-grid-points-layer')) map.setLayoutProperty('impact-grid-points-layer', 'visibility', 'visible');
+                // Ensure isochrones visible
+                if (map.getLayer('impact-grid-isochrones-fill')) map.setLayoutProperty('impact-grid-isochrones-fill', 'visibility', 'visible');
+                if (map.getLayer('impact-grid-isochrones-line')) map.setLayoutProperty('impact-grid-isochrones-line', 'visibility', 'visible');
+            });
+
+        } else
+        {
+            riskZoneMode = 'radius';
+
+            // Radius Mode
+            // Show circles
+            if (map.getLayer('impact-circles-fill-t1')) map.setLayoutProperty('impact-circles-fill-t1', 'visibility', 'visible');
+            if (map.getLayer('impact-circles-fill-t2')) map.setLayoutProperty('impact-circles-fill-t2', 'visibility', 'visible');
+            if (map.getLayer('impact-circles-fill-t3')) map.setLayoutProperty('impact-circles-fill-t3', 'visibility', 'visible');
+            if (map.getLayer('impact-circles-line')) map.setLayoutProperty('impact-circles-line', 'visibility', 'visible');
+
+            // Hide Grid Pts
+            if (map.getLayer('impact-grid-points-layer')) map.setLayoutProperty('impact-grid-points-layer', 'visibility', 'none');
+            if (map.getLayer('impact-grid-isochrones-fill')) map.setLayoutProperty('impact-grid-isochrones-fill', 'visibility', 'none');
+            if (map.getLayer('impact-grid-isochrones-line')) map.setLayoutProperty('impact-grid-isochrones-line', 'visibility', 'none');
+
+            // Refresh circles for current marker pos
+            if (markerPosition) updateCircles(markerPosition);
+        }
     }
 
     // === UI FUNCTIONS ===
@@ -2044,6 +2278,49 @@ window.MapLibreImpactMap = (function ()
         }
 
         updateMapNavUI(2);
+
+        // Pre-fetch county context data in background for faster subsequent county selections
+        prefetchTopCounties(stateFips);
+    }
+
+    // Pre-fetch county context for top counties by population (runs in background)
+    async function prefetchTopCounties(stateFips)
+    {
+        try
+        {
+            // Fetch county list with population from census API (already server-cached)
+            const res = await fetch(`/api/census/counties/${stateFips}`);
+            if (!res.ok) return;
+
+            const data = await res.json();
+            if (!data?.features) return;
+
+            // Sort by adult population descending, take top 15
+            const sorted = [...data.features].sort((a, b) =>
+                (b.properties?.pop_adult || 0) - (a.properties?.pop_adult || 0)
+            );
+            const topCounties = sorted.slice(0, 15);
+
+            console.log(`[Prefetch] Pre-warming cache for ${topCounties.length} counties in state ${stateFips}`);
+
+            // Prefetch context for each county with idle scheduling to avoid blocking
+            for (const county of topCounties)
+            {
+                const fips = county.properties?.geoid;
+                if (!fips || contextCache[fips]) continue; // Skip if already cached
+
+                // Use requestIdleCallback if available, else setTimeout
+                const scheduleIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 50));
+                scheduleIdle(() =>
+                {
+                    loadCountyContext(fips, true, "", false).catch(() => { });
+                });
+            }
+        }
+        catch (e)
+        {
+            console.warn('[Prefetch] Error pre-fetching county contexts:', e);
+        }
     }
 
     // --- End Vector Tile Setup ---
@@ -2097,17 +2374,15 @@ window.MapLibreImpactMap = (function ()
                 updateMarker(markerPosition);
                 updateCircles(markerPosition);
 
-                // Use bbox from API if available, otherwise calculate around 50-mile circle
-                if (countyFeature.properties?.bbox)
+                // Fit to 50-mile circle around center
+                const circle50 = createCircleGeoJSON([center[0], center[1]], CIRCLE_RADII.tier3);
+
+                // Wait for zoom animation to complete before hiding loading
+                await new Promise(resolve =>
                 {
-                    // Fit to 50-mile circle around center instead of county bbox for consistency
-                    const circle50 = createCircleGeoJSON([center[0], center[1]], CIRCLE_RADII.tier3);
+                    map.once('moveend', resolve);
                     map.fitBounds(turf.bbox(circle50), { padding: 20 });
-                } else
-                {
-                    const circle50 = createCircleGeoJSON([center[0], center[1]], CIRCLE_RADII.tier3);
-                    map.fitBounds(turf.bbox(circle50), { padding: 20 });
-                }
+                });
 
                 highlightCounty(countyFeature);
 
@@ -2130,9 +2405,13 @@ window.MapLibreImpactMap = (function ()
 
             updateMapNavUI(3);
         }
+        catch (err)
+        {
+            console.error('Error selecting county:', err);
+        }
         finally
         {
-            // Ensure loading is hidden even if there's an error
+            // Always hide loading when done
             toggleLoading(false);
         }
     }
@@ -2713,7 +2992,8 @@ window.MapLibreImpactMap = (function ()
         getMap: () => map,
         loadState: (fips) => drillToState(fips),
         loadCounty: (fips) => selectCounty(fips),
-        setIsochroneVisibility: (v) => { toggleLayerVisibility('valhalla', v); const cb = document.getElementById('toggle-valhalla'); if (cb) cb.checked = v; }
+        setIsochroneVisibility: (v) => { toggleLayerVisibility('valhalla', v); const cb = document.getElementById('toggle-valhalla'); if (cb) cb.checked = v; },
+        setRiskZoneMode // expose
     };
 })();
 

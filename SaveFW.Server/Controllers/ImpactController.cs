@@ -204,4 +204,65 @@ public class ImpactController : ControllerBase
         _logger.LogInformation($"[ImpactController] 7. Returning File Result.");
         return File(bytes, "application/json");
     }
+    [HttpGet("grid-points")]
+    public async Task<IActionResult> GetGridPoints([FromQuery] string? stateFips = "18", [FromQuery] string? title = "Allen")
+    {
+        // Defaults align with appsettings for now
+        var connString = _config.GetConnectionString("DefaultConnection");
+        await using var conn = new NpgsqlConnection(connString);
+        await conn.OpenAsync();
+
+        // Query distinct points from cache
+        var sql = @"
+            SELECT DISTINCT lat, lon 
+            FROM isochrone_cache
+            LIMIT 5000; 
+        ";
+        
+        // Note: Realistically we should filter by run metadata or spatial bounds, 
+        // but for now we just grab what's in the cache since we know it's Allen County.
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        
+        var points = new List<object>();
+        while (await reader.ReadAsync())
+        {
+            points.Add(new { lat = reader.GetDouble(0), lon = reader.GetDouble(1) });
+        }
+
+        return Ok(points);
+    }
+
+    [HttpGet("cached-isochrone")]
+    public async Task<IActionResult> GetCachedIsochrone(double lat, double lon)
+    {
+        var connString = _config.GetConnectionString("DefaultConnection");
+        await using var conn = new NpgsqlConnection(connString);
+        await conn.OpenAsync();
+
+        var sql = @"
+            SELECT json_build_object(
+                'type', 'FeatureCollection',
+                'features', json_agg(
+                    json_build_object(
+                        'type', 'Feature',
+                        'properties', json_build_object('contour', minutes),
+                        'geometry', ST_AsGeoJSON(geom)::json
+                    )
+                )
+            )::text
+            FROM isochrone_cache
+            WHERE lat = @lat AND lon = @lon;
+        ";
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("lat", lat);
+        cmd.Parameters.AddWithValue("lon", lon);
+
+        var json = await cmd.ExecuteScalarAsync() as string;
+        if (string.IsNullOrEmpty(json)) return NotFound();
+
+        return Content(json, "application/json");
+    }
 }
