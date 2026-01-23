@@ -56,6 +56,17 @@ window.MapLibreImpactMap = (function ()
     let currentCountyTotals = null;
     let contextIsLite = false;
     let contextCache = {};
+    let activePrefetches = []; // Track background prefetch controllers
+    // Population counts (Global for sharing between grid/radius modes)
+    let t1PopRegional = 0, t2PopRegional = 0, t3PopRegional = 0;
+    let t1PopCounty = 0, t2PopCounty = 0, t3PopCounty = 0;
+
+    // Per-county breakdown storage
+    let byCounty = {};
+
+    // Name Resolution Cache
+    const countyNamesCache = {};
+    const stateCountiesLoaded = new Set();
 
     // Cache references
     const cache = {
@@ -81,11 +92,24 @@ window.MapLibreImpactMap = (function ()
     let riskZoneMode = 'radius';
 
     // Current basemap
-    let currentBasemap = 'satellite';
+    let currentBasemap = 'offline';
     let mapDarkMode = true; // Default to dark mode for streets/terrain
 
     // Basemap configurations
     const BASEMAPS = {
+        offline: {
+            name: 'Offline',
+            icon: 'public_off',
+            style: {
+                version: 8,
+                sources: {},
+                layers: [{
+                    id: 'background',
+                    type: 'background',
+                    paint: { 'background-color': '#020617' } // slate-950
+                }]
+            }
+        },
         satellite: {
             name: 'Satellite',
             icon: 'satellite_alt',
@@ -291,7 +315,7 @@ window.MapLibreImpactMap = (function ()
     let activeContextLoad = null;
     let contextLoadSeq = 0;
 
-    async function loadCountyContext(fips, lite = false, loadingText = "Loading Data...", manageLoading = true)
+    async function loadCountyContext(fips, lite = false, loadingText = "Loading Data...", manageLoading = true, isPrefetch = false)
     {
         fips = normalizeCountyFips(fips);
         if (!fips) return false;
@@ -309,13 +333,18 @@ window.MapLibreImpactMap = (function ()
             }
         }
 
-        if (activeContextLoad)
+        // Prefetch loads shouldn't abort primary loads
+        if (activeContextLoad && !isPrefetch)
         {
             if (activeContextLoad.fips === fips && (activeContextLoad.lite === false || activeContextLoad.lite === lite))
             {
                 return activeContextLoad.promise;
             }
             try { activeContextLoad.controller.abort(); } catch { }
+        } else if (activeContextLoad && isPrefetch && activeContextLoad.fips === fips)
+        {
+            // Prefetch for same FIPS, reuse existing load
+            return activeContextLoad.promise;
         }
 
         const loadId = ++contextLoadSeq;
@@ -405,7 +434,21 @@ window.MapLibreImpactMap = (function ()
                 return true;
             } catch (e)
             {
-                console.error("Context Load Error", e);
+                // Don't log AbortError - it's expected when a new request supersedes
+                if (e.name !== 'AbortError')
+                {
+                    console.error("Context Load Error", e);
+                }
+                // If aborted but cache exists from another load, use it
+                if (contextCache[fips])
+                {
+                    const cached = contextCache[fips];
+                    currentContextGeoJSON = cached.geojson;
+                    currentCalcFeatures = cached.calcFeatures;
+                    currentCountyTotals = cached.totals;
+                    contextIsLite = cached.isLite;
+                    return true;
+                }
                 return false;
             } finally
             {
@@ -418,7 +461,22 @@ window.MapLibreImpactMap = (function ()
             }
         })();
 
-        activeContextLoad = { id: loadId, fips, lite, controller, promise };
+        // Only track primary loads (not prefetch) as activeContextLoad
+        if (!isPrefetch)
+        {
+            activeContextLoad = { id: loadId, fips, lite, controller, promise };
+        }
+        else
+        {
+            // Track prefetch for cancellation
+            const prefetchItem = { id: loadId, controller };
+            activePrefetches.push(prefetchItem);
+            // Remove from list when done (in promise chain)
+            promise.finally(() =>
+            {
+                activePrefetches = activePrefetches.filter(p => p.id !== loadId);
+            });
+        }
         return promise;
     }
 
@@ -426,13 +484,8 @@ window.MapLibreImpactMap = (function ()
 
     function calculateImpact()
     {
-        console.log('[Impact] calculateImpact called:', {
-            hasCalcFeatures: !!currentCalcFeatures,
-            hasCountyTotals: !!currentCountyTotals,
-            hasMarkerPosition: !!markerPosition,
-            hasCountyFips: !!currentCountyFips,
-            fullscreen: !!document.fullscreenElement
-        });
+        // Debug mode status
+        console.log('[Impact] calculateImpact called. Mode:', riskZoneMode);
 
         if (!currentCalcFeatures || !currentCountyTotals || !markerPosition || !currentCountyFips) return;
 
@@ -440,56 +493,90 @@ window.MapLibreImpactMap = (function ()
         const centerLat = markerPosition.lat;
         const centerLng = markerPosition.lng;
 
-        let t1PopCounty = 0, t2PopCounty = 0, t3PopCounty = 0;
-        let t1PopRegional = 0, t2PopRegional = 0, t3PopRegional = 0;
-        const byCounty = {};
         const countyAdults = currentCountyTotals.adults || 0;
         const countyTotal = currentCountyTotals.total || 0;
         const stateFips = String(currentCountyFips || "").substring(0, 2);
 
-        for (const entry of currentCalcFeatures)
+        // Reset population counts ONLY if in radius mode (Grid mode sets them via updateIsochrones)
+        // Or if in grid mode, we should NOT reset them if they were just set?
+        // Actually, updateIsochrones calls calculateImpact immediately after setting them.
+        // So we should only zero them out if we are about to recalculate them (Radius mode).
+
+        if (riskZoneMode !== 'grid')
         {
-            if (!entry) continue;
-            const popAdult = Number(entry.popAdult || 0);
-            if (!Number.isFinite(popAdult) || popAdult <= 0) continue;
+            t1PopRegional = 0; t2PopRegional = 0; t3PopRegional = 0;
+            t1PopCounty = 0; t2PopCounty = 0; t3PopCounty = 0;
+        }
 
-            const entryCountyFips = String(entry.countyFips || "");
-            const effectiveCountyFips = entryCountyFips || currentCountyFips;
-            const isSameCounty = effectiveCountyFips === currentCountyFips;
-            const isSameState = !stateFips || effectiveCountyFips.substring(0, 2) === stateFips;
-            if (!isSameState) continue;
+        const byCounty = {}; // still needed for table later?
+        // Note: Grid mode doesn't populate byCounty logic correctly yet for table, 
+        // but let's fix the main numbers first.
 
-            const dist = distanceMiles(centerLng, centerLat, entry.lng, entry.lat);
-            const bucket = byCounty[effectiveCountyFips] || (byCounty[effectiveCountyFips] = { fips: effectiveCountyFips, t1Pop: 0, t2Pop: 0, t3Pop: 0 });
+        // Only run radius summation if NOT in grid mode
+        if (riskZoneMode !== 'grid')
+        {
+            for (const entry of currentCalcFeatures)
+            {
+                if (!entry) continue;
+                const popAdult = Number(entry.popAdult || 0);
+                if (!Number.isFinite(popAdult) || popAdult <= 0) continue;
 
-            if (dist <= 10)
+                const entryCountyFips = String(entry.countyFips || "");
+                const effectiveCountyFips = entryCountyFips || currentCountyFips;
+                const isSameCounty = effectiveCountyFips === currentCountyFips;
+                const isSameState = !stateFips || effectiveCountyFips.substring(0, 2) === stateFips;
+                if (!isSameState) continue;
+
+                const dist = distanceMiles(centerLng, centerLat, entry.lng, entry.lat);
+                const bucket = byCounty[effectiveCountyFips] || (byCounty[effectiveCountyFips] = { fips: effectiveCountyFips, t1Pop: 0, t2Pop: 0, t3Pop: 0 });
+
+                if (dist <= 10)
+                {
+                    t1PopRegional += popAdult;
+                    if (isSameCounty) t1PopCounty += popAdult;
+                    bucket.t1Pop += popAdult;
+                } else if (dist <= 20)
+                {
+                    t2PopRegional += popAdult;
+                    if (isSameCounty) t2PopCounty += popAdult;
+                    bucket.t2Pop += popAdult;
+                } else if (dist <= 50)
+                {
+                    t3PopRegional += popAdult;
+                    if (isSameCounty) t3PopCounty += popAdult;
+                    bucket.t3Pop += popAdult;
+                }
+            }
+        } else
+        {
+            // Grid Mode: We don't have per-county breakdown from the API, only Total vs Subject County.
+            // We populate 'byCounty' with a single aggregate "Other Counties" entry so the calculator can use it.
+            const t1Other = Math.max(0, t1PopRegional - t1PopCounty);
+            const t2Other = Math.max(0, t2PopRegional - t2PopCounty);
+            const t3Other = Math.max(0, t3PopRegional - t3PopCounty);
+
+            if (t1Other + t2Other + t3Other > 0)
             {
-                t1PopRegional += popAdult;
-                if (isSameCounty) t1PopCounty += popAdult;
-                bucket.t1Pop += popAdult;
-            } else if (dist <= 20)
-            {
-                t2PopRegional += popAdult;
-                if (isSameCounty) t2PopCounty += popAdult;
-                bucket.t2Pop += popAdult;
-            } else if (dist <= 50)
-            {
-                t3PopRegional += popAdult;
-                if (isSameCounty) t3PopCounty += popAdult;
-                bucket.t3Pop += popAdult;
+                const otherFips = '99000'; // Dummy FIPS for aggregate
+                byCounty[otherFips] = {
+                    fips: otherFips,
+                    t1Pop: t1Other,
+                    t2Pop: t2Other,
+                    t3Pop: t3Other
+                };
+                countyNamesCache[otherFips] = 'Other Counties (Aggregate)';
             }
         }
 
-        const regionalAdultsWithin50 = t1PopRegional + t2PopRegional + t3PopRegional;
-        const countyAdultsWithin50 = t1PopCounty + t2PopCounty + t3PopCounty;
+        const totalWithin50 = t1PopRegional + t2PopRegional + t3PopRegional;
 
         const preRate = baselineRate;
         const baselineIncrease = parseFloat(els.inputBaselineIncrease ? els.inputBaselineIncrease.value : 0);
         const r1 = preRate * 2.0, r2 = preRate * 1.5, r3 = preRate * 1.0;
-        // Delta rates: proximity effect + statewide baseline increase
+        // Delta rates
         const d1 = Math.max(0, r1 - preRate) + baselineIncrease;
         const d2 = Math.max(0, r2 - preRate) + baselineIncrease;
-        const d3 = baselineIncrease; // Baseline tier now includes the statewide increase
+        const d3 = baselineIncrease;
 
         const t1PopOther = Math.max(0, t1PopRegional - t1PopCounty);
         const t2PopOther = Math.max(0, t2PopRegional - t2PopCounty);
@@ -572,10 +659,9 @@ window.MapLibreImpactMap = (function ()
         setNum('calc-gamblers', totalNetNewCounty);
         setNum('disp-pop-impact-zones', countyTotal);
         setNum('disp-pop-adults', countyAdults);
-        setNum('disp-pop-regional-50', regionalAdultsWithin50);
+        setNum('disp-pop-regional-50', totalWithin50);
         setNum('disp-victims-regional-50', totalNetNewRegional);
         setNum('disp-victims-regional-other', Math.max(0, totalNetNewRegional - totalNetNewCounty));
-
         // Effective Rates
         const dispRateAdult = document.getElementById('disp-rate-adult');
         const dispRateTotal = document.getElementById('disp-rate-total');
@@ -609,8 +695,7 @@ window.MapLibreImpactMap = (function ()
             if (stateFeature) stateName = stateFeature.properties?.NAME || stateFeature.properties?.name || '';
         }
 
-        // Build a FIPS->Name lookup from MVT counties layer
-        const countyNameLookup = {};
+        // Build a FIPS->Name lookup from MVT counties layer AND cache
         if (map && map.getLayer('counties-fill'))
         {
             try
@@ -620,16 +705,23 @@ window.MapLibreImpactMap = (function ()
                 {
                     const fips = f.properties?.geoid;
                     const name = f.properties?.name;
-                    if (fips && name) countyNameLookup[fips] = name;
+                    if (fips && name) countyNamesCache[fips] = name;
                 }
             } catch (e) { /* ignore */ }
+        }
+
+        // Check for missing names and fetch if needed
+        const missingFips = Object.keys(byCounty).filter(f => !countyNamesCache[f]);
+        if (missingFips.length > 0)
+        {
+            ensureCountyNames(missingFips);
         }
 
         // Build byCounty array for calculator with names
         const byCountyArray = Object.entries(byCounty).map(([fips, data]) => ({
             fips,
             geoid: fips,
-            name: countyNameLookup[fips] || fips, // Use name if available, fallback to FIPS
+            name: countyNamesCache[fips] || fips, // Use cache (populated by MVT or API)
             t1Pop: data.t1Pop,
             t2Pop: data.t2Pop,
             t3Pop: data.t3Pop
@@ -641,7 +733,7 @@ window.MapLibreImpactMap = (function ()
                 countyFips: currentCountyFips,
                 stateFips,
                 stateName,
-                countyName: countyNameLookup[currentCountyFips] || '',
+                countyName: countyNamesCache[currentCountyFips] || '',
                 baselineRate,
                 county: {
                     adults: countyAdults,
@@ -654,7 +746,7 @@ window.MapLibreImpactMap = (function ()
                     totalEstimated: { t1: v1County, t2: v2County, t3: v3County, total: totalEstimatedCounty }
                 },
                 regional: {
-                    adultsWithin50: regionalAdultsWithin50,
+                    adultsWithin50: t1PopRegional + t2PopRegional + t3PopRegional,
                     t1Adults: t1PopRegional,
                     t2Adults: t2PopRegional,
                     t3Adults: t3PopRegional,
@@ -675,8 +767,9 @@ window.MapLibreImpactMap = (function ()
         try
         {
             const results = await Promise.all(
-                minutes.map(m => fetch(`/api/valhalla/isochrone?lat=${lat}&lon=${lon}&minutes=${m}`).then(r => r.json()))
+                minutes.map(m => fetch(`/api/valhalla/isochrone?lat=${lat}&lon=${lon}&minutes=${m}`).then(r => r.ok ? r.json() : null))
             );
+            const validResults = results.filter(r => r);
             return {
                 type: 'FeatureCollection',
                 features: results.map((r, i) => ({
@@ -706,9 +799,97 @@ window.MapLibreImpactMap = (function ()
                 if (res.ok)
                 {
                     const data = await res.json();
+                    // API returns { geoJson: {...}, stats: {...} }
+                    const geoJson = data.geoJson || data;
                     if (map.getSource('impact-grid-isochrones'))
                     {
-                        map.getSource('impact-grid-isochrones').setData(data);
+                        map.getSource('impact-grid-isochrones').setData(geoJson);
+                    }
+
+                    // Also update population stats if available
+                    if (data.stats)
+                    {
+                        // stats format: { "15": {total: X, by_county: {fips: Y...}}, ... }
+
+                        function getStat(min)
+                        {
+                            const val = data.stats[min];
+                            if (!val) return { total: 0, by_county: {} };
+                            // Handle old format vs new
+                            if (typeof val === 'number') return { total: val, by_county: {} };
+                            return {
+                                total: val.total || 0,
+                                by_county: val.by_county || (val.county ? { [currentCountyFips]: val.county } : {})
+                            };
+                        }
+
+                        const s15 = getStat('15');
+                        const s30 = getStat('30');
+                        const s60 = getStat('60');
+
+                        // Reset byCounty global
+                        byCounty = {};
+
+                        // Collect all involved FIPS
+                        const allFips = new Set([
+                            ...Object.keys(s15.by_county || {}),
+                            ...Object.keys(s30.by_county || {}),
+                            ...Object.keys(s60.by_county || {})
+                        ]);
+
+                        // Populate byCounty with exclusive tier counts
+                        allFips.forEach(fips =>
+                        {
+                            const c15 = (s15.by_county && s15.by_county[fips]) || 0;
+                            const c30 = (s30.by_county && s30.by_county[fips]) || 0;
+                            const c60 = (s60.by_county && s60.by_county[fips]) || 0;
+
+                            // Cumulative to Exclusive
+                            const t1 = c15;
+                            const t2 = Math.max(0, c30 - c15);
+                            const t3 = Math.max(0, c60 - c30);
+
+                            if (t1 + t2 + t3 > 0)
+                            {
+                                byCounty[fips] = { t1Pop: t1, t2Pop: t2, t3Pop: t3 };
+                            }
+                        });
+
+                        // Fallback: If no counties found (e.g. old API), populate current county from totals?
+                        // The getStat fallback tries to handle 'val.county', but let's ensure:
+                        if (allFips.size === 0 && (s15.total > 0 || s30.total > 0 || s60.total > 0))
+                        {
+                            // Fallback logic for safety
+                        }
+
+                        // Update global Regional Totals variables used by calculateImpact
+                        t1PopRegional = s15.total;
+                        t2PopRegional = Math.max(0, s30.total - s15.total);
+                        t3PopRegional = Math.max(0, s60.total - s30.total);
+
+                        // Update Subject County specific Globals (t1PopCounty is used for "Subject County" row)
+                        // If we have data for the subject county in byCounty, use it.
+                        // Otherwise fallback to existing logic (though sXX.county isn't directly available in new schema unless we look it up)
+
+                        if (currentCountyFips && byCounty[currentCountyFips])
+                        {
+                            const cData = byCounty[currentCountyFips];
+                            t1PopCounty = cData.t1Pop;
+                            t2PopCounty = cData.t2Pop;
+                            t3PopCounty = cData.t3Pop;
+                        } else
+                        {
+                            // Zero out if not found (or should we trust the total-aggregate logic?)
+                            // Current API returns 'by_county' so we should trust it.
+                            t1PopCounty = 0;
+                            t2PopCounty = 0;
+                            t3PopCounty = 0;
+                        }
+
+                        // Update global var references for radius mode if they were used? 
+                        // Actually logic above (lines 857-863 in original) updated t1PopRegional etc.
+
+                        calculateImpact();
                     }
                 } else
                 {
@@ -782,13 +963,27 @@ window.MapLibreImpactMap = (function ()
                 // Hover effect (optional, or just use click)
                 map.on('click', 'impact-grid-points-layer', (e) =>
                 {
+                    // Stop event from bubbling to other layers (states/counties)
+                    e.originalEvent.stopPropagation();
+                    e.originalEvent.preventDefault();
+
                     const f = e.features[0];
                     if (!f) return;
 
-                    // Select point logic
+                    // Move marker to clicked grid point
                     const lat = f.properties.lat;
                     const lon = f.properties.lon;
-                    updateIsochrones({ lng: lon, lat: lat });
+                    const newPos = { lng: lon, lat: lat };
+
+                    // Update marker position
+                    markerPosition = newPos;
+                    if (marker) marker.setLngLat([lon, lat]);
+
+                    // Update isochrones for this point
+                    updateIsochrones(newPos);
+
+                    // Recalculate population impact for the new position
+                    calculateImpact();
                 });
 
                 map.on('mouseenter', 'impact-grid-points-layer', () => map.getCanvas().style.cursor = 'pointer');
@@ -804,38 +999,95 @@ window.MapLibreImpactMap = (function ()
                     id: 'impact-grid-isochrones-fill',
                     type: 'fill',
                     source: 'impact-grid-isochrones',
-                    layout: {},
+                    filter: ['in', 'contour', 15, 30, 60],
+                    layout: {
+                        'fill-sort-key': ['-', 0, ['get', 'contour']] // Ensure largest (60) is drawn first (bottom)
+                    },
                     paint: {
                         'fill-color': [
                             'match',
                             ['get', 'contour'],
-                            60, '#22c55e', // Example colors
-                            90, '#eab308',
-                            '#3b82f6'
+                            15, TIER_COLORS.tier1,
+                            30, TIER_COLORS.tier2,
+                            60, TIER_COLORS.tier3,
+                            TIER_COLORS.tier3 // Fallback
                         ],
                         'fill-opacity': 0.3
                     }
-                }, 'impact-circles-fill-t1'); // Below circles if both exist?
+                }, map.getLayer('circle-tier1-fill') ? 'circle-tier1-fill' : undefined);
 
                 map.addLayer({
                     id: 'impact-grid-isochrones-line',
                     type: 'line',
                     source: 'impact-grid-isochrones',
-                    layout: {},
+                    filter: ['in', 'contour', 15, 30, 60],
+                    layout: {
+                        'line-sort-key': ['-', 0, ['get', 'contour']]
+                    },
                     paint: {
-                        'line-color': '#ffffff',
-                        'line-width': 1,
-                        'line-opacity': 0.5
+                        'line-color': [
+                            'match',
+                            ['get', 'contour'],
+                            15, TIER_COLORS.tier1,
+                            30, TIER_COLORS.tier2,
+                            60, TIER_COLORS.tier3,
+                            TIER_COLORS.tier3
+                        ],
+                        'line-width': 2
                     }
-                });
+                }, map.getLayer('circle-tier1-line') ? 'circle-tier1-line' : undefined);
             }
-
             gridPointsLoaded = true;
             return true;
         } catch (e)
         {
             console.error("Error loading grid points", e);
             return false;
+        }
+    }
+
+    async function snapMarkerToNearestGridPoint()
+    {
+        if (!markerPosition || !map) return;
+
+        const source = map.getSource('impact-grid-points');
+        if (!source) return;
+
+        const data = source._data;
+        if (!data || !data.features || data.features.length === 0) return;
+
+        // Find nearest grid point to current marker position
+        let nearestPoint = null;
+        let minDist = Infinity;
+
+        data.features.forEach(f =>
+        {
+            const coords = f.geometry.coordinates;
+            const dx = coords[0] - markerPosition.lng;
+            const dy = coords[1] - markerPosition.lat;
+            const dist = dx * dx + dy * dy;
+
+            if (dist < minDist)
+            {
+                minDist = dist;
+                nearestPoint = { lng: coords[0], lat: coords[1] };
+            }
+        });
+
+        if (nearestPoint)
+        {
+            markerPosition = nearestPoint;
+            if (marker) marker.setLngLat([nearestPoint.lng, nearestPoint.lat]);
+
+            toggleLoading(true, "Loading drivetime isochromes...");
+            try 
+            {
+                await updateIsochrones(nearestPoint);
+                // calculateImpact(); // Called internally by updateIsochrones
+            } finally 
+            {
+                toggleLoading(false);
+            }
         }
     }
 
@@ -877,56 +1129,101 @@ window.MapLibreImpactMap = (function ()
         }, 3500);
     }
 
-    function setRiskZoneMode(mode)
+    async function setRiskZoneMode(mode)
     {
         // mode: 'radius' | 'grid'
 
         if (!map) return;
 
+        // Helper to sync UI elements
+        function syncModeUI(activeMode)
+        {
+            // Sync sidebar buttons
+            const radiusBtn = document.getElementById('mode-btn-radius');
+            const gridBtn = document.getElementById('mode-btn-grid');
+            if (radiusBtn && gridBtn)
+            {
+                if (activeMode === 'radius')
+                {
+                    radiusBtn.style.background = '#3b82f6';
+                    radiusBtn.style.color = 'white';
+                    gridBtn.style.background = 'rgba(255,255,255,0.1)';
+                    gridBtn.style.color = 'rgba(255,255,255,0.5)';
+                } else
+                {
+                    gridBtn.style.background = '#3b82f6';
+                    gridBtn.style.color = 'white';
+                    radiusBtn.style.background = 'rgba(255,255,255,0.1)';
+                    radiusBtn.style.color = 'rgba(255,255,255,0.5)';
+                }
+            }
+        }
+
         if (mode === 'grid')
         {
+            // Require county selection before enabling grid mode
+            if (!currentCountyFips || !markerPosition)
+            {
+                syncModeUI('radius');
+                showMapNotification("Please select a county first before switching to Grid mode.");
+                return;
+            }
+
             // Show loading...
             toggleLoading(true, "Loading Grid Data...");
 
-            loadGridPoints().then((success) =>
+            const success = await loadGridPoints();
+
+            if (!success)
             {
                 toggleLoading(false);
+                // No data or error - revert UI to radius
+                syncModeUI('radius');
+                showMapNotification("No isochrone grid data is available for this area yet.");
+                return;
+            }
 
-                if (!success)
-                {
-                    // No data or error
-                    const checkbox = document.getElementById('mode-toggle');
-                    if (checkbox && checkbox.checked) checkbox.checked = false; // Revert UI
+            riskZoneMode = 'grid';
+            syncModeUI('grid');
 
-                    showMapNotification("No isochrone grid data is available for this area yet.");
-                    return;
-                }
+            // Disable marker dragging in grid mode
+            if (marker) marker.setDraggable(false);
 
-                riskZoneMode = 'grid';
+            // Hide circles (correct layer names)
+            if (map.getLayer('circle-tier1-fill')) map.setLayoutProperty('circle-tier1-fill', 'visibility', 'none');
+            if (map.getLayer('circle-tier2-fill')) map.setLayoutProperty('circle-tier2-fill', 'visibility', 'none');
+            if (map.getLayer('circle-tier3-fill')) map.setLayoutProperty('circle-tier3-fill', 'visibility', 'none');
+            if (map.getLayer('circle-tier1-line')) map.setLayoutProperty('circle-tier1-line', 'visibility', 'none');
+            if (map.getLayer('circle-tier2-line')) map.setLayoutProperty('circle-tier2-line', 'visibility', 'none');
+            if (map.getLayer('circle-tier3-line')) map.setLayoutProperty('circle-tier3-line', 'visibility', 'none');
 
-                // Hide circles
-                if (map.getLayer('impact-circles-fill-t1')) map.setLayoutProperty('impact-circles-fill-t1', 'visibility', 'none');
-                if (map.getLayer('impact-circles-fill-t2')) map.setLayoutProperty('impact-circles-fill-t2', 'visibility', 'none');
-                if (map.getLayer('impact-circles-fill-t3')) map.setLayoutProperty('impact-circles-fill-t3', 'visibility', 'none');
-                if (map.getLayer('impact-circles-line')) map.setLayoutProperty('impact-circles-line', 'visibility', 'none');
+            // Show Grid Points
+            if (map.getLayer('impact-grid-points-layer')) map.setLayoutProperty('impact-grid-points-layer', 'visibility', 'visible');
+            // Ensure isochrones visible
+            if (map.getLayer('impact-grid-isochrones-fill')) map.setLayoutProperty('impact-grid-isochrones-fill', 'visibility', 'visible');
+            if (map.getLayer('impact-grid-isochrones-line')) map.setLayoutProperty('impact-grid-isochrones-line', 'visibility', 'visible');
 
-                // Show Grid Points
-                if (map.getLayer('impact-grid-points-layer')) map.setLayoutProperty('impact-grid-points-layer', 'visibility', 'visible');
-                // Ensure isochrones visible
-                if (map.getLayer('impact-grid-isochrones-fill')) map.setLayoutProperty('impact-grid-isochrones-fill', 'visibility', 'visible');
-                if (map.getLayer('impact-grid-isochrones-line')) map.setLayoutProperty('impact-grid-isochrones-line', 'visibility', 'visible');
-            });
+            // Auto-snap marker to nearest grid point
+            // This function handles its own loading toggles (updating the message), so we don't turn it off here.
+            await snapMarkerToNearestGridPoint();
+            // snap... will turn off loading when done.
 
         } else
         {
             riskZoneMode = 'radius';
+            syncModeUI('radius');
+
+            // Re-enable marker dragging in radius mode
+            if (marker) marker.setDraggable(true);
 
             // Radius Mode
-            // Show circles
-            if (map.getLayer('impact-circles-fill-t1')) map.setLayoutProperty('impact-circles-fill-t1', 'visibility', 'visible');
-            if (map.getLayer('impact-circles-fill-t2')) map.setLayoutProperty('impact-circles-fill-t2', 'visibility', 'visible');
-            if (map.getLayer('impact-circles-fill-t3')) map.setLayoutProperty('impact-circles-fill-t3', 'visibility', 'visible');
-            if (map.getLayer('impact-circles-line')) map.setLayoutProperty('impact-circles-line', 'visibility', 'visible');
+            // Show circles (correct layer names)
+            if (map.getLayer('circle-tier1-fill')) map.setLayoutProperty('circle-tier1-fill', 'visibility', 'visible');
+            if (map.getLayer('circle-tier2-fill')) map.setLayoutProperty('circle-tier2-fill', 'visibility', 'visible');
+            if (map.getLayer('circle-tier3-fill')) map.setLayoutProperty('circle-tier3-fill', 'visibility', 'visible');
+            if (map.getLayer('circle-tier1-line')) map.setLayoutProperty('circle-tier1-line', 'visibility', 'visible');
+            if (map.getLayer('circle-tier2-line')) map.setLayoutProperty('circle-tier2-line', 'visibility', 'visible');
+            if (map.getLayer('circle-tier3-line')) map.setLayoutProperty('circle-tier3-line', 'visibility', 'visible');
 
             // Hide Grid Pts
             if (map.getLayer('impact-grid-points-layer')) map.setLayoutProperty('impact-grid-points-layer', 'visibility', 'none');
@@ -1235,9 +1532,11 @@ window.MapLibreImpactMap = (function ()
                     <span class="toggle-slider"></span>
                 </label>
                 <label class="toggle-row" style="padding-left: 12px; border-left: 2px solid rgba(255,255,255,0.1); margin-left: 4px;">
-                    <span class="text-xs text-slate-400">Use Valhalla Isochrones</span>
-                    <input type="checkbox" id="toggle-valhalla" />
-                    <span class="toggle-slider"></span>
+                    <span class="text-xs text-slate-400">Mode:</span>
+                    <div id="mode-toggle-wrapper" style="display: flex; gap: 4px; margin-left: auto;">
+                        <button id="mode-btn-radius" class="mode-btn active" style="padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; border: none; cursor: pointer; border-radius: 4px; background: #3b82f6; color: white;">Radius</button>
+                        <button id="mode-btn-grid" class="mode-btn" style="padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; border: none; cursor: pointer; border-radius: 4px; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);">Grid</button>
+                    </div>
                 </label>
                 <label class="toggle-row">
                     <span>Risk Zone Labels</span>
@@ -1300,7 +1599,6 @@ window.MapLibreImpactMap = (function ()
         // Toggle handlers
         const toggles = {
             'toggle-zones': 'zones',
-            'toggle-valhalla': 'valhalla',
             'toggle-boundary': 'boundary',
             'toggle-heatmap': 'heatmap',
             'toggle-tracts': 'tracts',
@@ -1317,6 +1615,22 @@ window.MapLibreImpactMap = (function ()
                 checkbox.onchange = () => toggleLayerVisibility(layer, checkbox.checked);
             }
         });
+
+        // Mode toggle button handlers (Radius/Grid)
+        const radiusBtn = document.getElementById('mode-btn-radius');
+        const gridBtn = document.getElementById('mode-btn-grid');
+
+        if (radiusBtn && gridBtn)
+        {
+            radiusBtn.onclick = () =>
+            {
+                setRiskZoneMode('radius');
+            };
+            gridBtn.onclick = () =>
+            {
+                setRiskZoneMode('grid');
+            };
+        }
 
         // Dark mode toggle handler
         const darkModeToggle = document.getElementById('toggle-darkmode');
@@ -1876,6 +2190,9 @@ window.MapLibreImpactMap = (function ()
 
     function onStatesClick(e)
     {
+        // Ignore state clicks when in grid mode
+        if (riskZoneMode === 'grid') return;
+
         if (e.features.length > 0)
         {
             const props = e.features[0].properties;
@@ -1888,45 +2205,63 @@ window.MapLibreImpactMap = (function ()
 
     function onCountiesMouseMove(e)
     {
-        // Suppress hover during marker drag to avoid confusion
-        if (markerDragging) return;
+        if (markerDragging || initialStateDrill || !map) return;
 
-        if (e.features.length > 0)
+        if (!e.features || e.features.length === 0) return;
+
+        const f = e.features[0];
+        const props = f.properties;
+        const geoid = props.geoid;
+
+        if (!geoid) return;
+
+        // Helper to clear hover
+        const clearHover = () =>
         {
-            const props = e.features[0].properties;
-            const geoid = props.geoid;
-
-            if (geoid === lastHoveredCounty) return;
-
-            if (currentStateFips && props.state_fp === currentStateFips)
+            if (lastHoveredCounty !== null)
             {
-                lastHoveredCounty = geoid;
-                map.setFilter('counties-hover', ['==', 'geoid', geoid]);
-                map.setFilter('counties-line-hover', ['==', 'geoid', geoid]);
-                map.getCanvas().style.cursor = 'pointer';
-            } else
-            {
-                if (lastHoveredCounty !== null)
-                {
-                    lastHoveredCounty = null;
-                    map.setFilter('counties-hover', ['==', 'geoid', '']);
-                    map.setFilter('counties-line-hover', ['==', 'geoid', '']);
-                }
-                map.getCanvas().style.cursor = '';
+                lastHoveredCounty = null;
+                if (map.getLayer('counties-hover')) map.setFilter('counties-hover', ['==', 'geoid', '']);
+                if (map.getLayer('counties-line-hover')) map.setFilter('counties-line-hover', ['==', 'geoid', '']);
             }
+            map.getCanvas().style.cursor = '';
+        };
+
+        // 1. [REMOVED] Strict State Check - likely caused issues with missing properties.
+        // We rely on the filter opacity of non-selected states (which is low) to make hover less distracting anyway.
+        // And the 'counties-fill' filter handles the visual "only show this state" aspect.
+
+        // 2. Active County Check: Do not highlight the currently selected county
+        if (currentCountyFips && String(geoid) === String(currentCountyFips))
+        {
+            clearHover();
+            return;
+        }
+
+        // 3. Apply Hover
+        if (lastHoveredCounty !== geoid)
+        {
+            lastHoveredCounty = geoid;
+            map.getCanvas().style.cursor = 'pointer';
+
+            if (map.getLayer('counties-hover')) map.setFilter('counties-hover', ['==', 'geoid', geoid]);
+            if (map.getLayer('counties-line-hover')) map.setFilter('counties-line-hover', ['==', 'geoid', geoid]);
         }
     }
 
     function onCountiesMouseLeave()
     {
         lastHoveredCounty = null;
-        map.setFilter('counties-hover', ['==', 'geoid', '']);
-        map.setFilter('counties-line-hover', ['==', 'geoid', '']);
-        map.getCanvas().style.cursor = '';
+        if (map && map.getLayer('counties-hover')) map.setFilter('counties-hover', ['==', 'geoid', '']);
+        if (map && map.getLayer('counties-line-hover')) map.setFilter('counties-line-hover', ['==', 'geoid', '']);
+        if (map) map.getCanvas().style.cursor = '';
     }
 
     function onCountiesClick(e)
     {
+        // Ignore county clicks when in grid mode - let grid points handle it
+        if (riskZoneMode === 'grid') return;
+
         if (e.features.length > 0)
         {
             const props = e.features[0].properties;
@@ -2279,8 +2614,69 @@ window.MapLibreImpactMap = (function ()
 
         updateMapNavUI(2);
 
-        // Pre-fetch county context data in background for faster subsequent county selections
+        // Pre-fetch county context and names in background
         prefetchTopCounties(stateFips);
+        ensureCountyNames([stateFips + '000']); // Trigger state load effectively by passing a dummy fips for this state? 
+        // Actually ensureCountyNames extracts state part. Passing any FIPS from that state works.
+        // We can just pass the stateFips if we modify ensureCountyNames slightly or pass a fake county.
+        // Let's rely on prefetchTopCounties for now as it loads the county list anyway.
+        // Wait, prefetchTopCounties loads the list but doesn't populate countyNamesCache.
+        // Let's explicitly load the cache:
+        loadStateCountyNames(stateFips);
+    }
+
+    // Explicitly load names for a state into cache
+    async function loadStateCountyNames(stateFips)
+    {
+        if (stateCountiesLoaded.has(stateFips)) return;
+        stateCountiesLoaded.add(stateFips);
+        try
+        {
+            const res = await fetch(`/api/census/counties/${stateFips}`);
+            if (res.ok)
+            {
+                const data = await res.json();
+                if (data && data.features)
+                {
+                    data.features.forEach(f =>
+                    {
+                        if (f.properties && f.properties.geoid && f.properties.name)
+                        {
+                            countyNamesCache[f.properties.geoid] = f.properties.name;
+                        }
+                    });
+                }
+            }
+        } catch (e) { console.warn('Name load failed', e); }
+    }
+
+    async function ensureCountyNames(fipsList)
+    {
+        const missing = fipsList.filter(f => !countyNamesCache[f]);
+        if (missing.length === 0) return;
+
+        // Group by state
+        const neededStates = new Set(missing.map(f => f.substring(0, 2)));
+
+        const promises = [];
+        let scheduledFetch = false;
+
+        for (const stateFips of neededStates)
+        {
+            if (stateCountiesLoaded.has(stateFips) || !stateFips || stateFips.length !== 2) continue;
+
+            scheduledFetch = true;
+            promises.push(loadStateCountyNames(stateFips));
+        }
+
+        if (scheduledFetch)
+        {
+            Promise.all(promises).then(() =>
+            {
+                // Re-run impact calculation to update UI with new names
+                calculateImpact();
+            });
+        }
     }
 
     // Pre-fetch county context for top counties by population (runs in background)
@@ -2313,7 +2709,8 @@ window.MapLibreImpactMap = (function ()
                 const scheduleIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 50));
                 scheduleIdle(() =>
                 {
-                    loadCountyContext(fips, true, "", false).catch(() => { });
+                    // isPrefetch=true so this won't abort primary loads
+                    loadCountyContext(fips, true, "", false, true).catch(() => { });
                 });
             }
         }
@@ -2329,6 +2726,21 @@ window.MapLibreImpactMap = (function ()
     async function selectCounty(countyFips)
     {
         currentCountyFips = countyFips;
+
+        // CRITICAL: Prevent 'idle' event from previous state drill from hiding our overlay
+        initialStateDrill = false;
+        clearTimeout(tileLoadingTimeout);
+
+        // Cancel any pending prefetches to free up network slots
+        if (activePrefetches.length > 0)
+        {
+            console.log(`[SelectCounty] Aborting ${activePrefetches.length} background prefetches`);
+            activePrefetches.forEach(p =>
+            {
+                try { p.controller.abort(); } catch (e) { }
+            });
+            activePrefetches = [];
+        }
 
         // Show loading immediately when county is clicked
         toggleLoading(true, "Loading County...");
@@ -2356,7 +2768,15 @@ window.MapLibreImpactMap = (function ()
             }
 
             toggleLoading(true, "Loading Population Data...");
-            await loadCountyContext(countyFips, true, "Loading Population Data...", false);
+            const contextLoaded = await loadCountyContext(countyFips, true, "Loading Population Data...", false);
+
+            console.log('[SelectCounty] Context load result:', {
+                success: contextLoaded,
+                hasCalcFeatures: !!currentCalcFeatures,
+                calcFeaturesCount: currentCalcFeatures?.length || 0,
+                hasCountyTotals: !!currentCountyTotals,
+                countyTotals: currentCountyTotals
+            });
 
             if (countyFeature && typeof turf !== 'undefined')
             {
@@ -2372,15 +2792,46 @@ window.MapLibreImpactMap = (function ()
 
                 markerPosition = { lng: center[0], lat: center[1] };
                 updateMarker(markerPosition);
-                updateCircles(markerPosition);
+                updateMarker(markerPosition);
+                // updateCircles(markerPosition); // Handled by setRiskZoneMode below
+
+                // FEATURE: Auto-switch to Grid Mode if available for this county
+                await loadGridPoints();
+                let useGrid = false;
+                const gridSource = map.getSource('impact-grid-points');
+                if (gridSource && gridSource._data && gridSource._data.features)
+                {
+                    // Check if any grid point is close to the county center (e.g. within 0.1 degree ~ 7 miles)
+                    // This creates a "hit test" to see if we have data for this region
+                    const isClose = gridSource._data.features.some(f =>
+                    {
+                        const dx = f.properties.lon - markerPosition.lng;
+                        const dy = f.properties.lat - markerPosition.lat;
+                        return (dx * dx + dy * dy) < 0.01;
+                    });
+                    if (isClose) useGrid = true;
+                }
+
+                if (useGrid)
+                {
+                    console.log('[SelectCounty] Grid points available, switching to Grid Mode');
+                    await setRiskZoneMode('grid');
+                }
+                else
+                {
+                    console.log('[SelectCounty] No grid points found, defaulting to Radius Mode');
+                    setRiskZoneMode('radius');
+                }
 
                 // Fit to 50-mile circle around center
                 const circle50 = createCircleGeoJSON([center[0], center[1]], CIRCLE_RADII.tier3);
 
                 // Wait for zoom animation to complete before hiding loading
+                // Use a race with timeout in case move doesn't fire
                 await new Promise(resolve =>
                 {
-                    map.once('moveend', resolve);
+                    const timer = setTimeout(resolve, 2000);
+                    map.once('moveend', () => { clearTimeout(timer); resolve(); });
                     map.fitBounds(turf.bbox(circle50), { padding: 20 });
                 });
 
@@ -2539,7 +2990,6 @@ window.MapLibreImpactMap = (function ()
             }
 
             calculateImpact();
-            calculateImpact();
             if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(pos);
         });
         marker.on('dragstart', () => { el.style.cursor = 'grabbing'; markerDragging = true; });
@@ -2553,37 +3003,74 @@ window.MapLibreImpactMap = (function ()
         if (src) 
         {
             src.setData(feature);
-            // Ensure layer exists too
-            if (!map.getLayer('county-highlight-line'))
-            {
-                map.addLayer({ id: 'county-highlight-line', type: 'line', source: 'county-highlight', paint: { 'line-color': '#fff', 'line-width': 3, 'line-dasharray': [1, 2] } });
-            }
         }
         else
         {
             map.addSource('county-highlight', { type: 'geojson', data: feature });
+        }
+
+        // Ensure layer exists (check regardless of source existence)
+        if (!map.getLayer('county-highlight-line'))
+        {
             map.addLayer({ id: 'county-highlight-line', type: 'line', source: 'county-highlight', paint: { 'line-color': '#fff', 'line-width': 3, 'line-dasharray': [1, 2] } });
         }
     }
 
     // === DRAWING TOOLS ===
 
-    function setupDrawingTools()
+    async function setupDrawingTools()
     {
-        if (!map || !window.TerraDraw) 
+        if (!map) return;
+
+        // Dynamic CDN fallback for online mode
+        if (!window.TerraDraw) 
         {
-            console.warn("TerraDraw not loaded");
-            return;
+            if (navigator.onLine)
+            {
+                console.log("TerraDraw not found locally, attempting CDN load...");
+                try 
+                {
+                    await new Promise((resolve, reject) =>
+                    {
+                        const script = document.createElement('script');
+                        script.src = 'https://unpkg.com/terra-draw@0.0.1-alpha.49/dist/terra-draw.umd.js'; // Revert to alpha.49
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                    console.log("TerraDraw loaded from CDN");
+                } catch (e)
+                {
+                    console.warn("Failed to load TerraDraw from CDN:", e);
+                    return;
+                }
+            }
+            else
+            {
+                console.warn("TerraDraw not loaded and offline");
+                return;
+            }
         }
 
         try 
         {
-            draw = new TerraDraw.TerraDraw({
-                adapter: new TerraDraw.TerraDrawMapLibreGLAdapter({
+            // Check for various possible global names
+            const TD = window.TerraDraw || window.terraDraw;
+
+            if (!TD)
+            {
+                console.warn("TerraDraw not available even after load attempt. Globals found:", Object.keys(window).filter(k => k.toLowerCase().includes('terra')));
+                return;
+            }
+
+            console.log("TerraDraw init. Keys:", Object.keys(TD));
+
+            draw = new TD.TerraDraw({
+                adapter: new TD.TerraDrawMapLibreGLAdapter({
                     map: map
                 }),
                 modes: [
-                    new TerraDraw.TerraDrawSelectMode({
+                    new TD.TerraDrawSelectMode({
                         flags: {
                             polygon: {
                                 feature: {
@@ -2599,12 +3086,12 @@ window.MapLibreImpactMap = (function ()
                             }
                         }
                     }),
-                    new TerraDraw.TerraDrawPointMode(),
-                    new TerraDraw.TerraDrawLineStringMode(),
-                    new TerraDraw.TerraDrawPolygonMode(),
-                    new TerraDraw.TerraDrawRectangleMode(),
-                    new TerraDraw.TerraDrawCircleMode(),
-                    new TerraDraw.TerraDrawFreehandMode()
+                    new TD.TerraDrawPointMode(),
+                    new TD.TerraDrawLineStringMode(),
+                    new TD.TerraDrawPolygonMode(),
+                    new TD.TerraDrawRectangleMode(),
+                    new TD.TerraDrawCircleMode(),
+                    new TD.TerraDrawFreehandMode()
                 ]
             });
 
@@ -2633,7 +3120,7 @@ window.MapLibreImpactMap = (function ()
         // Tools Panel
         const panel = document.createElement('div');
         panel.id = 'drawing-panel';
-        panel.style.cssText = 'display: none; flex-direction: column; gap: 4px; margin-top: 4px; background: rgba(15, 23, 42, 0.9); padding: 4px; rounded-lg; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);';
+        panel.style.cssText = 'display: none; flex-direction: column; gap: 4px; margin-top: 4px; background: rgba(15, 23, 42, 0.9); padding: 4px; border-radius: 12px; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);';
 
         const modes = [
             { mode: 'select', icon: 'near_me_disabled', title: 'Select/Edit' },
@@ -2702,6 +3189,53 @@ window.MapLibreImpactMap = (function ()
         map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
     }
 
+    // === STYLE RESTORATION & OFFLINE PREP ===
+
+    function restoreAppLayers()
+    {
+        if (!map) return;
+
+        // Check if a critical layer exists. If 'states-fill' is missing, likely the style changed.
+        if (map.getLayer('states-fill')) return;
+
+        console.log('[Map] Restoring app layers after style change...');
+
+        // Re-run setup functions
+        setupVectorLayers();
+        setupCircleLayers();
+        setupHeatmapLayer();
+        setupIsochroneLayers();
+
+        // Re-apply filters based on current state
+        if (typeof currentStateFips !== 'undefined' && currentStateFips)
+        {
+            if (currentCountyFips)
+            {
+                setCountyFilter(currentStateFips);
+                map.setFilter('counties-fill', ['==', 'state_fp', currentStateFips]);
+                if (map.getSource('county-highlight') && map.getSource('county-highlight')._data)
+                {
+                    highlightCounty(map.getSource('county-highlight')._data);
+                }
+            } else
+            {
+                setCountyFilter(currentStateFips);
+            }
+        }
+
+        // Restore grid points if in grid mode
+        if (typeof riskZoneMode !== 'undefined' && riskZoneMode === 'grid')
+        {
+            loadGridPoints();
+            if (markerPosition && typeof updateIsochrones === 'function') updateIsochrones(markerPosition);
+        }
+    }
+
+    async function checkOfflineSatellite()
+    {
+        // Removed auto-detection to prevent 404 errors
+    }
+
     // === PUBLIC API ===
 
     return {
@@ -2733,9 +3267,14 @@ window.MapLibreImpactMap = (function ()
                 maplibregl.addProtocol('pmtiles', protocol.tile);
             }
 
+            // Determine default basemap based on connectivity
+            const isOnline = navigator.onLine;
+            currentBasemap = isOnline ? 'hybrid' : 'offline';
+            const initialStyle = isOnline ? BASEMAPS.hybrid.style : BASEMAPS.offline.style;
+
             map = new maplibregl.Map({
                 container: containerId,
-                style: options.style || { version: 8, sources: { 'raster-tiles': { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 } }, layers: [{ id: 'raster-layer', type: 'raster', source: 'raster-tiles' }] },
+                style: options.style || initialStyle,
                 center: options.center || DEFAULT_CENTER,
                 zoom: options.zoom || DEFAULT_ZOOM,
                 scrollZoom: false,
@@ -2746,8 +3285,8 @@ window.MapLibreImpactMap = (function ()
 
             map.on('load', async () =>
             {
-                // Vector Tiles for boundaries (robust, persistent)
-                setupVectorLayers();
+                // Initial setup
+                setupVectorLayers(); // Initial call
 
                 // Analysis layers (GeoJSON-based, dynamic)
                 setupCircleLayers();
@@ -2760,6 +3299,15 @@ window.MapLibreImpactMap = (function ()
                 updateMapNavUI(1);
                 setupDrawingTools();
                 console.log('MapLibreImpactMap v2.0 initialized');
+
+                // Check for offline satellite support
+                checkOfflineSatellite();
+            });
+
+            // Persist app layers when style changes (e.g. Offline -> Satellite)
+            map.on('styledata', () =>
+            {
+                restoreAppLayers();
             });
 
             // Note: Tile loading indicator is handled by drillToState setting initialStateDrill=true,

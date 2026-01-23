@@ -52,11 +52,14 @@ builder.Services.AddScoped<SaveFW.Server.Services.IsochroneSeedingService>();
 
 var app = builder.Build();
 
-if (args.Contains("--run-allen-isochrones"))
+if (args.Contains("--seed-isochrones") || args.Contains("--run-allen-isochrones"))
 {
     using var scope = app.Services.CreateScope();
     var seeder = scope.ServiceProvider.GetRequiredService<SaveFW.Server.Services.IsochroneSeedingService>();
-    await seeder.RunAllenCountyAsync(CancellationToken.None);
+    // High-res (2.5km) grid for Allen + DeKalb + Steuben
+    var counties = new[] { "Allen", "DeKalb", "Steuben" };
+    var gridMeters = 2500; 
+    await seeder.RunSeedingJobAsync(counties, gridMeters, CancellationToken.None);
     return;
 }
 

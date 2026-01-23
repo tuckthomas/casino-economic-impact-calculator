@@ -114,6 +114,8 @@ public class ImpactController : ControllerBase
     public async Task<IActionResult> GetCountyContext(string fips, [FromQuery] bool lite = false)
     {
         _logger.LogInformation($"[ImpactController] 1. Request received for {fips} (Lite: {lite})");
+        try
+        {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         
         var connString = _config.GetConnectionString("DefaultConnection");
@@ -152,9 +154,10 @@ public class ImpactController : ControllerBase
                 )::text
                 FROM census_block_groups b, county_center c
                 WHERE
-                    ST_DWithin(b.geom::geography, c.pt::geography, 80467.2)
+                    b.geoid LIKE SUBSTRING(@fips, 1, 2) || '%'
                     AND b.pop_18_plus > 0
-                    AND SUBSTRING(b.geoid, 1, 2) = SUBSTRING(@fips, 1, 2);
+                    AND ST_DWithin(b.geom, c.pt, 1.5) -- Use geometry index first (approx 100 miles)
+                    AND ST_DWithin(b.geom::geography, c.pt::geography, 80467.2);
             "
             : @"
                 SELECT json_build_object(
@@ -204,6 +207,12 @@ public class ImpactController : ControllerBase
         _logger.LogInformation($"[ImpactController] 7. Returning File Result.");
         return File(bytes, "application/json");
     }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, $"[ImpactController] Error in GetCountyContext for {fips}");
+        return StatusCode(500, new { error = ex.Message });
+    }
+}
     [HttpGet("grid-points")]
     public async Task<IActionResult> GetGridPoints([FromQuery] string? stateFips = "18", [FromQuery] string? title = "Allen")
     {
@@ -212,17 +221,24 @@ public class ImpactController : ControllerBase
         await using var conn = new NpgsqlConnection(connString);
         await conn.OpenAsync();
 
-        // Query distinct points from cache
+        // Query distinct points from cache intersected with the requested county
         var sql = @"
-            SELECT DISTINCT lat, lon 
-            FROM isochrone_cache
+            WITH target_county AS (
+                SELECT geom 
+                FROM tiger_counties 
+                WHERE statefp = @stateFips AND name = @countyName
+                LIMIT 1
+            )
+            SELECT DISTINCT c.lat, c.lon 
+            FROM isochrone_cache c
+            JOIN target_county t ON ST_Contains(t.geom, c.geom)
             LIMIT 5000; 
         ";
         
-        // Note: Realistically we should filter by run metadata or spatial bounds, 
-        // but for now we just grab what's in the cache since we know it's Allen County.
-
         await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("stateFips", stateFips ?? "18");
+        cmd.Parameters.AddWithValue("countyName", title ?? "Allen");
+
         await using var reader = await cmd.ExecuteReaderAsync();
         
         var points = new List<object>();
@@ -241,28 +257,76 @@ public class ImpactController : ControllerBase
         await using var conn = new NpgsqlConnection(connString);
         await conn.OpenAsync();
 
+        // Query both the GeoJSON and the population statistics for the 3 tiers
         var sql = @"
-            SELECT json_build_object(
-                'type', 'FeatureCollection',
-                'features', json_agg(
-                    json_build_object(
-                        'type', 'Feature',
-                        'properties', json_build_object('contour', minutes),
-                        'geometry', ST_AsGeoJSON(geom)::json
+            WITH isochrones AS (
+                SELECT geom, minutes
+                FROM isochrone_cache
+                WHERE lat = @lat AND lon = @lon
+            ),
+            intersection_stats AS (
+                SELECT 
+                    i.minutes,
+                    SUBSTRING(b.geoid, 1, 5) as fips,
+                    SUM(b.pop_18_plus * (ST_Area(ST_Intersection(b.geom, i.geom)) / ST_Area(b.geom))) as pop
+                FROM census_block_groups b
+                JOIN isochrones i ON ST_Intersects(b.geom, i.geom)
+                GROUP BY i.minutes, SUBSTRING(b.geoid, 1, 5)
+            ),
+            pop_stats AS (
+                SELECT 
+                    minutes,
+                    SUM(pop) as pop_adult_total,
+                    json_object_agg(fips, pop) as by_county
+                FROM intersection_stats
+                GROUP BY minutes
+            )
+            SELECT 
+                (SELECT json_build_object(
+                    'type', 'FeatureCollection',
+                    'features', json_agg(
+                        json_build_object(
+                            'type', 'Feature',
+                            'properties', json_build_object('contour', minutes),
+                            'geometry', ST_AsGeoJSON(geom)::json
+                        )
                     )
-                )
-            )::text
-            FROM isochrone_cache
-            WHERE lat = @lat AND lon = @lon;
+                ) FROM isochrones) as geojson,
+                
+                (SELECT 
+                    json_object_agg(minutes, json_build_object(
+                        'total', pop_adult_total,
+                        'by_county', by_county
+                    ))
+                 FROM pop_stats) as stats;
         ";
 
         await using var cmd = new NpgsqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("lat", lat);
         cmd.Parameters.AddWithValue("lon", lon);
 
-        var json = await cmd.ExecuteScalarAsync() as string;
-        if (string.IsNullOrEmpty(json)) return NotFound();
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
+        {
+            var geoJsonStr = reader.IsDBNull(0) ? null : reader.GetString(0);
+            var statsJsonStr = reader.IsDBNull(1) ? "{}" : reader.GetString(1);
+            
+            if (string.IsNullOrEmpty(geoJsonStr)) return NotFound();
 
-        return Content(json, "application/json");
+            // We need to parse the stats to structure the response for the frontend
+            // Expected contours: 15, 30, 45 (or similar)
+            // We'll return them mapped to t1, t2, t3 logic if possible, or just raw
+            
+            // For now, let's return a composite JSON
+            var result = new 
+            {
+                geoJson = System.Text.Json.JsonDocument.Parse(geoJsonStr).RootElement,
+                stats = System.Text.Json.JsonDocument.Parse(statsJsonStr).RootElement
+            };
+
+            return Ok(result);
+        }
+
+        return NotFound();
     }
 }

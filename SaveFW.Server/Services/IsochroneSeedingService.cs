@@ -29,13 +29,10 @@ public class IsochroneSeedingService
         _logger = logger;
     }
 
-    public async Task RunAllenCountyAsync(CancellationToken ct)
+    public async Task RunSeedingJobAsync(string[] counties, int gridMeters, CancellationToken ct)
     {
         var stateFips = _config["IsochroneSeeding:StateFips"] ?? "18";
-        var countyName = _config["IsochroneSeeding:CountyName"] ?? "Allen";
-        var gridMeters = int.TryParse(_config["IsochroneSeeding:GridMeters"], out var meters)
-            ? meters
-            : 10000;
+        // var gridMeters = int.TryParse(_config["IsochroneSeeding:GridMeters"], out var meters) ? meters : 10000;
         var contours = _config.GetSection("IsochroneSeeding:ContoursMinutes").Get<int[]>() ?? new[] { 60, 90 };
         var maxContoursPerRequest = int.TryParse(_config["IsochroneSeeding:MaxContoursPerRequest"], out var maxContours)
             ? Math.Max(1, maxContours)
@@ -49,94 +46,101 @@ public class IsochroneSeedingService
             await EnsureIsochroneCacheTableAsync(ct);
             await EnsureIsochroneRunTableAsync(ct);
 
-            var points = await GetCountyGridPointsAsync(stateFips, countyName, gridMeters, ct);
-            if (points.Count == 0)
+            foreach (var countyName in counties)
             {
-                _logger.LogWarning("No grid points found for {CountyName} County, state {StateFips}.", countyName, stateFips);
-                return;
-            }
+                _logger.LogInformation("Starting seeding job for {CountyName} County...", countyName);
 
-            var countyAreaSqMiles = await GetCountyAreaSqMilesAsync(stateFips, countyName, ct);
-            var (cpuModel, cpuCores, memoryGb) = GetHardwareInfo(hardwareNote);
-
-            _logger.LogInformation("Seeding {PointCount} grid points for {CountyName} County ({GridMeters}m).", points.Count, countyName, gridMeters);
-
-            var startUtc = DateTime.UtcNow;
-            var requestCount = 0;
-            var totalRequestMs = 0.0;
-            var minRequestMs = double.MaxValue;
-            var maxRequestMs = 0.0;
-            var insertedIsochrones = 0;
-
-            foreach (var point in points)
-            {
-                ct.ThrowIfCancellationRequested();
-                var lat = Math.Round(point.Lat, 6);
-                var lon = Math.Round(point.Lon, 6);
-                var sourceHash = ComputeSourceHash(lat, lon, contours);
-
-                var missing = await GetMissingContoursAsync(lat, lon, contours, ct);
-                if (missing.Count == 0)
+                var points = await GetCountyGridPointsAsync(stateFips, countyName, gridMeters, ct);
+                if (points.Count == 0)
                 {
+                    _logger.LogWarning("No grid points found for {CountyName} County, state {StateFips}.", countyName, stateFips);
                     continue;
                 }
 
-                foreach (var batch in BatchContours(missing, maxContoursPerRequest))
+                var countyAreaSqMiles = await GetCountyAreaSqMilesAsync(stateFips, countyName, ct);
+                var (cpuModel, cpuCores, memoryGb) = GetHardwareInfo(hardwareNote);
+
+                _logger.LogInformation("Seeding {PointCount} grid points for {CountyName} County ({GridMeters}m).", points.Count, countyName, gridMeters);
+
+                var startUtc = DateTime.UtcNow;
+                var requestCount = 0;
+                var totalRequestMs = 0.0;
+                var minRequestMs = double.MaxValue;
+                var maxRequestMs = 0.0;
+                var insertedIsochrones = 0;
+
+                foreach (var point in points)
                 {
-                    _logger.LogInformation("Fetching isochrones for {Lat},{Lon} ({Minutes}).", lat, lon, string.Join(",", batch));
-                    var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                    var json = await _valhalla.GetIsochroneJsonAsync(lat, lon, batch, ct);
-                    stopwatch.Stop();
+                    ct.ThrowIfCancellationRequested();
+                    var lat = Math.Round(point.Lat, 6);
+                    var lon = Math.Round(point.Lon, 6);
+                    var sourceHash = ComputeSourceHash(lat, lon, contours);
 
-                    requestCount++;
-                    totalRequestMs += stopwatch.Elapsed.TotalMilliseconds;
-                    minRequestMs = Math.Min(minRequestMs, stopwatch.Elapsed.TotalMilliseconds);
-                    maxRequestMs = Math.Max(maxRequestMs, stopwatch.Elapsed.TotalMilliseconds);
-
-                    if (string.IsNullOrWhiteSpace(json))
+                    var missing = await GetMissingContoursAsync(lat, lon, contours, ct);
+                    if (missing.Count == 0)
                     {
-                        _logger.LogWarning("Valhalla returned empty response for {Lat},{Lon}.", lat, lon);
                         continue;
                     }
 
-                    var inserts = ExtractContourGeometries(json, batch);
-                    if (inserts.Count == 0)
+                    foreach (var batch in BatchContours(missing, maxContoursPerRequest))
                     {
-                        _logger.LogWarning("No contours parsed for {Lat},{Lon}.", lat, lon);
-                        continue;
-                    }
+                        _logger.LogInformation("Fetching isochrones for {Lat},{Lon} ({Minutes}).", lat, lon, string.Join(",", batch));
+                        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                        var json = await _valhalla.GetIsochroneJsonAsync(lat, lon, batch, ct);
+                        stopwatch.Stop();
 
-                    insertedIsochrones += await InsertIsochronesAsync(lat, lon, sourceHash, inserts, ct);
+                        requestCount++;
+                        totalRequestMs += stopwatch.Elapsed.TotalMilliseconds;
+                        minRequestMs = Math.Min(minRequestMs, stopwatch.Elapsed.TotalMilliseconds);
+                        maxRequestMs = Math.Max(maxRequestMs, stopwatch.Elapsed.TotalMilliseconds);
+
+                        if (string.IsNullOrWhiteSpace(json))
+                        {
+                            _logger.LogWarning("Valhalla returned empty response for {Lat},{Lon}.", lat, lon);
+                            continue;
+                        }
+
+                        var inserts = ExtractContourGeometries(json, batch);
+                        if (inserts.Count == 0)
+                        {
+                            _logger.LogWarning("No contours parsed for {Lat},{Lon}.", lat, lon);
+                            continue;
+                        }
+
+                        insertedIsochrones += await InsertIsochronesAsync(lat, lon, sourceHash, inserts, ct);
+                    }
                 }
-            }
 
-            var completedUtc = DateTime.UtcNow;
-            var avgRequestMs = requestCount > 0 ? totalRequestMs / requestCount : 0.0;
-            if (minRequestMs == double.MaxValue)
-            {
-                minRequestMs = 0.0;
-            }
+                var completedUtc = DateTime.UtcNow;
+                var avgRequestMs = requestCount > 0 ? totalRequestMs / requestCount : 0.0;
+                if (minRequestMs == double.MaxValue)
+                {
+                    minRequestMs = 0.0;
+                }
 
-            await InsertRunMetadataAsync(
-                stateFips,
-                countyName,
-                gridMeters,
-                contours,
-                points.Count,
-                requestCount,
-                insertedIsochrones,
-                avgRequestMs,
-                minRequestMs,
-                maxRequestMs,
-                countyAreaSqMiles,
-                cpuModel,
-                cpuCores,
-                memoryGb,
-                hardwareNote,
-                valhallaBaseUrl,
-                startUtc,
-                completedUtc,
-                ct);
+                await InsertRunMetadataAsync(
+                    stateFips,
+                    countyName,
+                    gridMeters,
+                    contours,
+                    points.Count,
+                    requestCount,
+                    insertedIsochrones,
+                    avgRequestMs,
+                    minRequestMs,
+                    maxRequestMs,
+                    countyAreaSqMiles,
+                    cpuModel,
+                    cpuCores,
+                    memoryGb,
+                    hardwareNote,
+                    valhallaBaseUrl,
+                    startUtc,
+                    completedUtc,
+                    ct);
+                
+                _logger.LogInformation("Completed seeding for {CountyName}.", countyName);
+            }
         }
         finally
         {

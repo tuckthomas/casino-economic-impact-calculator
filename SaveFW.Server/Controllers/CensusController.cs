@@ -119,7 +119,7 @@ namespace SaveFW.Server.Controllers
             }
             catch (Exception ex)
             {
-                 return StatusCode(500, ex.Message);
+                 return StatusCode(500, new { error = ex.Message });
             }
         }
 
@@ -172,7 +172,7 @@ namespace SaveFW.Server.Controllers
             }
             catch (Exception ex)
             {
-                 return StatusCode(500, ex.Message);
+                 return StatusCode(500, new { error = ex.Message });
             }
         }
 
@@ -196,6 +196,7 @@ namespace SaveFW.Server.Controllers
                                SUM(pop_total) AS pop_total,
                                SUM(pop_18_plus) AS pop_adult
                         FROM census_block_groups
+                        WHERE geoid LIKE @fips || '%'
                         GROUP BY 1
                     )
                     SELECT json_build_object(
@@ -235,7 +236,8 @@ namespace SaveFW.Server.Controllers
             }
             catch (Exception ex)
             {
-                 return StatusCode(500, ex.Message);
+                Console.WriteLine($"[CensusController] GetCounties Error: {ex}");
+                 return StatusCode(500, new { error = ex.Message });
             }
         }
 
@@ -310,7 +312,7 @@ namespace SaveFW.Server.Controllers
             }
             catch (Exception ex)
             {
-                 return StatusCode(500, ex.Message);
+                 return StatusCode(500, new { error = ex.Message });
             }
         }
         /// <summary>
@@ -432,7 +434,7 @@ namespace SaveFW.Server.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error generating tile {z}/{x}/{y}: {ex.Message}");
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, new { error = ex.Message });
             }
         }
     }

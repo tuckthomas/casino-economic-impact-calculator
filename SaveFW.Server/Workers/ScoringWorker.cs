@@ -36,6 +36,7 @@ public class ScoringWorker : BackgroundService
     {
         using var scope = _scopeFactory.CreateScope();
         var seeder = scope.ServiceProvider.GetRequiredService<IsochroneSeedingService>();
-        await seeder.RunAllenCountyAsync(ct);
+        // Default to Allen County
+        await seeder.RunSeedingJobAsync(new[] { "Allen" }, 2500, ct);
     }
 }
