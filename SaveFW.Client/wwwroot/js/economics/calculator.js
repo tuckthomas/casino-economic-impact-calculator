@@ -458,10 +458,32 @@ window.EconomicCalculator = (function ()
         // Toggle Visibility for Detailed Social Cost Breakdown
         const breakdownEmpty = document.getElementById('detailed-breakdown-empty-state');
         const breakdownContent = document.getElementById('detailed-breakdown-content');
+
+        // New calculation containers to toggle
+        const taxRevenueContainer = document.getElementById('calc-tax-revenue-container');
+        const taxAllocationContainer = document.getElementById('calc-tax-allocation-container');
+        const problemGamblerContainer = document.getElementById('calc-problem-gambler-container');
+
         if (breakdownEmpty && breakdownContent)
         {
-            if (hasLocation) { breakdownEmpty.classList.add('hidden'); breakdownContent.classList.remove('hidden'); }
-            else { breakdownEmpty.classList.remove('hidden'); breakdownContent.classList.add('hidden'); }
+            if (hasLocation) 
+            {
+                breakdownEmpty.classList.add('hidden');
+                breakdownContent.classList.remove('hidden');
+
+                if (taxRevenueContainer) taxRevenueContainer.classList.remove('hidden');
+                if (taxAllocationContainer) taxAllocationContainer.classList.remove('hidden');
+                if (problemGamblerContainer) problemGamblerContainer.classList.remove('hidden');
+            }
+            else 
+            {
+                breakdownEmpty.classList.remove('hidden');
+                breakdownContent.classList.add('hidden');
+
+                if (taxRevenueContainer) taxRevenueContainer.classList.add('hidden');
+                if (taxAllocationContainer) taxAllocationContainer.classList.add('hidden');
+                if (problemGamblerContainer) problemGamblerContainer.classList.add('hidden');
+            }
         }
 
         // Update Title
@@ -510,19 +532,17 @@ window.EconomicCalculator = (function ()
             try { isSyncing = true; els.inAGR.dispatchEvent(new Event('input', { bubbles: true })); } finally { isSyncing = false; }
         } else
         {
-            // Init or other inputs: Default to Revenue as Master (e.g. 27.5M)
-            // If this is init, inRevenue has 27.5.
-            revenueM = parseFloat(els.inRevenue.value);
-            const targetTax = revenueM * 1000000;
-            const agr = calculateAGRFromTax(targetTax);
-            agrM = agr / 1000000;
-            taxResult = calculateTax(agr); // Recalculate for breakdown
+            // Init or other inputs: Default to AGR as Master (Default 204.3M)
+            agrM = parseFloat(els.inAGR.value);
+            taxResult = calculateTax(agrM * 1000000);
+            revenueM = taxResult.total / 1000000;
+
             if (!source)
             {
-                els.inAGR.value = agrM.toFixed(2); // Only update on init
+                els.inRevenue.value = revenueM.toFixed(2);
                 if (els.valAGR && document.activeElement !== els.valAGR) els.valAGR.value = agrM.toFixed(2);
                 if (els.valRevenue && document.activeElement !== els.valRevenue) els.valRevenue.value = revenueM.toFixed(2);
-                try { isSyncing = true; els.inAGR.dispatchEvent(new Event('input', { bubbles: true })); } finally { isSyncing = false; }
+                try { isSyncing = true; els.inRevenue.dispatchEvent(new Event('input', { bubbles: true })); } finally { isSyncing = false; }
             }
         }
 
@@ -1185,7 +1205,7 @@ window.EconomicCalculator = (function ()
             // 1. Disclaimer (Sub-header + Bullet)
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Disclaimers</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
-            analysisHTML += `<li><strong>Open-Source Transparency:</strong> In an effort to encourage community involvement and transparency, SaveFW has published the source code for this Economic Impact Calculator as free and open-source software (FOSS) under the AGPL-3.0 License, available on GitHub at <a href="https://github.com/savefw/casino-economic-impact-calculator" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">https://github.com/savefw/casino-economic-impact-calculator</a>.</li>`;
+            analysisHTML += `<li><strong>Open-Source Transparency:</strong> In an effort to encourage community involvement and transparency, SaveFW has published the source code for this Economic Impact Calculator as free and open-source software (FOSS) under the AGPL-3.0 License, available on GitHub at <a href="https://github.com/tuckthomas/casino-economic-impact-calculator.git" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">https://github.com/tuckthomas/casino-economic-impact-calculator.git</a>.</li>`;
             analysisHTML += `<li><strong>Substitution Effect:</strong> SaveFW's current analysis (v0.9.2 Beta) does not yet account for the <em>Substitution Effect</em>, also known as the displacement coefficient. This economic phenomenon describes how local casino spending displaces consumer expenditures that would otherwise circulate through existing local businesses—particularly in discretionary sectors such as retail, dining, and entertainment. Research indicates that for every $1,000 increase in casino revenue, businesses within a 10–30 mile radius may experience approximately $243 in lost sales (the "243 coefficient"). Because this displacement represents a net reduction in local economic activity, incorporating it would produce a more negative Net Economic Impact than currently reported.
                                             <ul class="list-[circle] pl-8 mt-2 space-y-3">
                                                 <li><strong>Planned Methodology:</strong> Prior to SaveFW's 1.0.0 release, this analysis will implement a <em>Sector-Weighted Casino Displacement Model</em>. This enhanced approach will:

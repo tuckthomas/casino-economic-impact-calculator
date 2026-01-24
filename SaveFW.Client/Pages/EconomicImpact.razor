@@ -71,13 +71,13 @@
                         
                         <!-- AGR Input -->
                         <div class="border-b border-slate-700 pb-8">
-                            <SliderInput Id="agr" Label="Adjusted Gross Revenue (AGR)" Value="112"
-                                         MinValue="0" MaxValue="1000" Step="1"
+                            <SliderInput Id="agr" Label="Adjusted Gross Revenue (AGR)" Value="204.3"
+                                         MinValue="0" MaxValue="1000" Step="0.01"
                                          InputType="MoneyMM" DecimalPlaces="2"
                                          MajorTickInterval="200" MinorTickInterval="50"
                                          MarkerColor="green"
                                          Tooltip="Total gambling losses from all players, before taxes and expenses."
-                                         Markers='@(new List<SliderMarker> { new() { Label="Default", Value=112, TooltipDescription="Spectrum Gaming Projection" } })' />
+                                         Markers='@(new List<SliderMarker> { new() { Label="Default", Value=204.3, TooltipDescription="Spectrum Gaming Projection" } })' />
 
                             <!-- Tax Details (Always Visible) -->
                             <div id="tax-details-container"
@@ -88,13 +88,13 @@
 
                         <!-- Revenue Input -->
                         <div class="border-b border-slate-700 pb-8 mt-8">
-                            <SliderInput Id="revenue" Label="Tax Revenue" Value="27.5"
-                                         MinValue="0" MaxValue="400" Step="0.5"
+                            <SliderInput Id="revenue" Label="Tax Revenue" Value="61.21"
+                                         MinValue="0" MaxValue="400" Step="0.01"
                                          InputType="MoneyMM" DecimalPlaces="2"
                                          MajorTickInterval="100" MinorTickInterval="25"
                                          MarkerColor="green"
                                          Tooltip="The portion of AGR collected by the state and local government."
-                                         Markers='@(new List<SliderMarker> { new() { Label="Default", Value=27.5, TooltipDescription="Spectrum Gaming Projection" } })' />
+                                         Markers='@(new List<SliderMarker> { new() { Label="Default", Value=61.21, TooltipDescription="Spectrum Gaming Projection" } })' />
                         </div>
 
                         <!-- Revenue Allocation Control -->
@@ -202,8 +202,8 @@
                             </div>
 
                             <!-- Tax Revenue Calculation -->
-                            <div
-                                class="mt-20 mb-6 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600">
+                            <div id="calc-tax-revenue-container"
+                                class="hidden mt-20 mb-6 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600">
                                 <div
                                     class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
                                     Tax Revenue Calculation</div>
@@ -232,8 +232,8 @@
                             </div>
 
                             <!-- Tax Revenue Allocation Calculation -->
-                            <div
-                                class="mb-6 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600 space-y-8">
+                            <div id="calc-tax-allocation-container"
+                                class="hidden mb-6 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600 space-y-8">
                                 <!-- Humanitarian -->
                                 <div>
                                     <div
@@ -298,7 +298,8 @@
                             </div>
 
                             <!-- Calculation Breakdown -->
-                            <div class="mb-6 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600">
+                            <div id="calc-problem-gambler-container"
+                                class="hidden mb-6 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600">
                                 <div
                                     class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
                                     Problem Gambler Calculation</div>
@@ -326,7 +327,7 @@
                             </div>
 
                             <!-- Detailed Social Cost Breakdown -->
-                            <div id="detailed-breakdown-empty-state" class="p-8 text-center bg-slate-800/30 rounded-xl border border-dashed border-slate-700 mb-8">
+                            <div id="detailed-breakdown-empty-state" class="p-8 text-center bg-slate-800/30 rounded-xl border border-dashed border-slate-700 mt-16 mb-8">
                                 <p class="text-slate-500 text-sm italic">
                                     Breakdown details will be populated once a location is selected.
                                 </p>
