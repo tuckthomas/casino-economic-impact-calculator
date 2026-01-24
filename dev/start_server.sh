@@ -3,13 +3,20 @@
 # Define the development port
 DEV_PORT=5000
 
-# Kill any existing process on the development port
-PID_DEV=$(lsof -t -i :$DEV_PORT)
-if [ -n "$PID_DEV" ]; then
-  echo "Killing process on port $DEV_PORT (PID: $PID_DEV)"
-  kill -9 $PID_DEV
+# Kill any existing development processes (strictly dotnet watch for SaveFW.Server)
+# This avoids killing the production container which runs "dotnet SaveFW.Server.dll" directly
+echo "Cleaning up existing dotnet watch processes..."
+# We explicitly look for "watch" in the command line
+pids=$(pgrep -f "dotnet.*watch.*SaveFW.Server")
+
+if [ -n "$pids" ]; then
+  echo "Found development watchers: $pids"
+  for pid in $pids; do
+      echo "Killing watcher PID $pid..."
+      kill -9 $pid 2>/dev/null || true
+  done
 else
-  echo "No process found on port $DEV_PORT"
+  echo "No existing development watchers found."
 fi
 
 # NOTE: We do NOT kill port 80 or 8002 as those are used by the production Docker instance.

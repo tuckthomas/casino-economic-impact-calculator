@@ -216,38 +216,46 @@ public class ImpactController : ControllerBase
     [HttpGet("grid-points")]
     public async Task<IActionResult> GetGridPoints([FromQuery] string? stateFips = "18", [FromQuery] string? title = "Allen")
     {
-        // Defaults align with appsettings for now
-        var connString = _config.GetConnectionString("DefaultConnection");
-        await using var conn = new NpgsqlConnection(connString);
-        await conn.OpenAsync();
-
-        // Query distinct points from cache intersected with the requested county
-        var sql = @"
-            WITH target_county AS (
-                SELECT geom 
-                FROM tiger_counties 
-                WHERE statefp = @stateFips AND name = @countyName
-                LIMIT 1
-            )
-            SELECT DISTINCT c.lat, c.lon 
-            FROM isochrone_cache c
-            JOIN target_county t ON ST_Contains(t.geom, c.geom)
-            LIMIT 5000; 
-        ";
-        
-        await using var cmd = new NpgsqlCommand(sql, conn);
-        cmd.Parameters.AddWithValue("stateFips", stateFips ?? "18");
-        cmd.Parameters.AddWithValue("countyName", title ?? "Allen");
-
-        await using var reader = await cmd.ExecuteReaderAsync();
-        
-        var points = new List<object>();
-        while (await reader.ReadAsync())
+        try
         {
-            points.Add(new { lat = reader.GetDouble(0), lon = reader.GetDouble(1) });
-        }
+            // Defaults align with appsettings for now
+            var connString = _config.GetConnectionString("DefaultConnection");
+            await using var conn = new NpgsqlConnection(connString);
+            await conn.OpenAsync();
 
-        return Ok(points);
+            // Query distinct points from cache intersected with the requested county
+            var sql = @"
+                WITH target_county AS (
+                    SELECT geom 
+                    FROM tiger_counties 
+                    WHERE state_fp = @stateFips AND name = @countyName
+                    LIMIT 1
+                )
+                SELECT DISTINCT c.lat, c.lon 
+                FROM isochrone_cache c
+                JOIN target_county t ON ST_Contains(t.geom, c.geom)
+                LIMIT 5000; 
+            ";
+            
+            await using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("stateFips", stateFips ?? "18");
+            cmd.Parameters.AddWithValue("countyName", title ?? "Allen");
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            
+            var points = new List<object>();
+            while (await reader.ReadAsync())
+            {
+                points.Add(new { lat = reader.GetDouble(0), lon = reader.GetDouble(1) });
+            }
+
+            return Ok(points);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"[ImpactController] Error in GetGridPoints for {title}, {stateFips}");
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 
     [HttpGet("cached-isochrone")]

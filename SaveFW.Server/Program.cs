@@ -15,11 +15,6 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddRazorPages();
 builder.Services.AddOpenApi();
-// builder.Services.AddHttpsRedirection(options =>
-// {
-//     options.RedirectStatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status307TemporaryRedirect;
-//     options.HttpsPort = 443;
-// });
 
 // Register DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -88,12 +83,12 @@ using (var scope = app.Services.CreateScope())
 _ = Task.Run(async () =>
 {
     using var scope = app.Services.CreateScope();
-    var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
+    // var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
     try
     {
-        Console.WriteLine("Starting TIGER Data Seeding Check...");
-        await seeder.EnsureSeededAsync();
-        Console.WriteLine("TIGER Data Seeding Check Complete.");
+        // Console.WriteLine("Starting TIGER Data Seeding Check...");
+        // await seeder.EnsureSeededAsync();
+        // Console.WriteLine("TIGER Data Seeding Check Complete.");
 
         await WarmStateCacheAsync(scope.ServiceProvider);
         await WarmMvtTilesAsync(scope.ServiceProvider);
