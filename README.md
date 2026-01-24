@@ -175,7 +175,7 @@ Once **Docker** is installed, simply clone the repo and start the containers. Th
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/savefw/casino-economic-impact-calculator.git
+git clone https://github.com/tuckthomas/casino-economic-impact-calculator.git
 cd casino-economic-impact-calculator/SaveFW
 
 # 2. Start the application
