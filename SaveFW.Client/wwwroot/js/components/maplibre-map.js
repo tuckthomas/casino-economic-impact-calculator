@@ -508,13 +508,12 @@ window.MapLibreImpactMap = (function ()
             t1PopCounty = 0; t2PopCounty = 0; t3PopCounty = 0;
         }
 
-        const byCounty = {}; // still needed for table later?
-        // Note: Grid mode doesn't populate byCounty logic correctly yet for table, 
-        // but let's fix the main numbers first.
+        // const byCounty = {}; // REMOVED - using global byCounty
 
         // Only run radius summation if NOT in grid mode
         if (riskZoneMode !== 'grid')
         {
+            byCounty = {}; // Reset global for Radius calculation
             for (const entry of currentCalcFeatures)
             {
                 if (!entry) continue;
@@ -549,23 +548,25 @@ window.MapLibreImpactMap = (function ()
             }
         } else
         {
-            // Grid Mode: We don't have per-county breakdown from the API, only Total vs Subject County.
-            // We populate 'byCounty' with a single aggregate "Other Counties" entry so the calculator can use it.
-            const t1Other = Math.max(0, t1PopRegional - t1PopCounty);
-            const t2Other = Math.max(0, t2PopRegional - t2PopCounty);
-            const t3Other = Math.max(0, t3PopRegional - t3PopCounty);
-
-            if (t1Other + t2Other + t3Other > 0)
+            // Grid Mode: Filter global byCounty to strictly include only the selected state
+            const allCounties = { ...byCounty }; // Snapshot
+            
+            // Reset totals for strict recalculation
+            t1PopRegional = 0; t2PopRegional = 0; t3PopRegional = 0;
+            
+            // Clear global to repopulate with only valid entries
+            byCounty = {};
+            
+            Object.entries(allCounties).forEach(([fips, data]) => 
             {
-                const otherFips = '99000'; // Dummy FIPS for aggregate
-                byCounty[otherFips] = {
-                    fips: otherFips,
-                    t1Pop: t1Other,
-                    t2Pop: t2Other,
-                    t3Pop: t3Other
-                };
-                countyNamesCache[otherFips] = 'Other Counties (Aggregate)';
-            }
+               if (fips && fips.startsWith(stateFips))
+               {
+                   t1PopRegional += data.t1Pop;
+                   t2PopRegional += data.t2Pop;
+                   t3PopRegional += data.t3Pop;
+                   byCounty[fips] = data;
+               }
+            });
         }
 
         const totalWithin50 = t1PopRegional + t2PopRegional + t3PopRegional;
