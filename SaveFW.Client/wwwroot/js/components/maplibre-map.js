@@ -2261,7 +2261,8 @@ window.MapLibreImpactMap = (function ()
     function onCountiesClick(e)
     {
         // Ignore county clicks when in grid mode - let grid points handle it
-        if (riskZoneMode === 'grid') return;
+        // REMOVED restriction to allow navigation:
+        // if (riskZoneMode === 'grid') return;
 
         if (e.features.length > 0)
         {

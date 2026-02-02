@@ -51,9 +51,13 @@ if (args.Contains("--seed-isochrones") || args.Contains("--run-allen-isochrones"
 {
     using var scope = app.Services.CreateScope();
     var seeder = scope.ServiceProvider.GetRequiredService<SaveFW.Server.Services.IsochroneSeedingService>();
-    // High-res (2.5km) grid for Allen + DeKalb + Steuben
-    var counties = new[] { "Allen", "DeKalb", "Steuben" };
-    var gridMeters = 2500; 
+    // High-res (1km) grid for Northeast Indiana Region
+    var counties = new[] 
+    { 
+        "Allen", "Adams", "DeKalb", "Huntington", "LaGrange", 
+        "Noble", "Steuben", "Wabash", "Wells", "Whitley" 
+    };
+    var gridMeters = 1000; 
     await seeder.RunSeedingJobAsync(counties, gridMeters, CancellationToken.None);
     return;
 }
