@@ -230,27 +230,21 @@ window.SliderInputLogic = (function ()
                     labelDiv.style.top = 'calc(50%)';
                     labelDiv.style.transform = 'translateX(-50%)';
 
-                    const tooltipId = `tooltip-${rangeInput.id}-${String(marker.value).replace(/\./g, '_')}`;
                     labelDiv.innerHTML = `
                         <div style="height: 32px; width: 1px; background-color: rgba(100,116,139,0.5); margin-bottom: 4px; pointer-events: none;"></div>
                         <div class="marker-hover-trigger relative flex items-center gap-1 cursor-help hover:text-blue-500 transition-colors text-[10px] text-slate-400 uppercase font-bold tracking-wider whitespace-nowrap">
                             <span>${marker.label}</span>
                             <span class="material-symbols-outlined text-[12px]">info</span>
-                            <div id="${tooltipId}" style="bottom: calc(100% + 10px); opacity: 0;" class="absolute left-1/2 -translate-x-1/2 min-w-[150px] max-w-[200px] p-2 bg-slate-900 text-white text-xs leading-tight rounded border border-slate-600 transition-opacity pointer-events-none z-150 normal-case font-normal text-center shadow-lg whitespace-normal">
-                                ${marker.tooltipDescription || ''}
-                            </div>
                         </div>
                     `;
 
                     relativeContainer.appendChild(labelDiv);
 
-                    // Add JS hover handlers for tooltip
+                    // Attach portal tooltip (renders at body level, escaping stacking contexts)
                     const trigger = labelDiv.querySelector('.marker-hover-trigger');
-                    const tooltip = labelDiv.querySelector(`#${tooltipId}`);
-                    if (trigger && tooltip)
+                    if (trigger && marker.tooltipDescription && window.TooltipPortal)
                     {
-                        trigger.addEventListener('mouseenter', () => { tooltip.style.opacity = '1'; });
-                        trigger.addEventListener('mouseleave', () => { tooltip.style.opacity = '0'; });
+                        TooltipPortal.attach(trigger, marker.tooltipDescription);
                     }
 
                     rangeInput.addEventListener('input', updateRadio);
