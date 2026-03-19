@@ -144,6 +144,15 @@ namespace SaveFW.Server.Data
                     CREATE INDEX IF NOT EXISTS idx_{tableName}_geom_simplified
                     ON {tableName} USING GIST (geom_simplified);
                 ";
+                
+                if (tableName == "census_block_groups") 
+                {
+                    cmd.CommandText += $@"
+                        CREATE INDEX IF NOT EXISTS idx_{tableName}_geoid 
+                        ON {tableName} (geoid text_pattern_ops);
+                    ";
+                }
+                
                 await cmd.ExecuteNonQueryAsync();
             }
 

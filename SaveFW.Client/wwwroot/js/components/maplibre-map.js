@@ -2740,21 +2740,25 @@ window.MapLibreImpactMap = (function ()
             );
             const topCounties = sorted.slice(0, 15);
 
-            console.log(`[Prefetch] Pre-warming cache for ${topCounties.length} counties in state ${stateFips}`);
+            console.log(`[Prefetch] Pre-warming cache sequentially for ${topCounties.length} counties in state ${stateFips}`);
 
-            // Prefetch context for each county with idle scheduling to avoid blocking
+            // Fetch contexts sequentially to prevent database connection pool exhaustion
             for (const county of topCounties)
             {
                 const fips = county.properties?.geoid;
                 if (!fips || contextCache[fips]) continue; // Skip if already cached
 
-                // Use requestIdleCallback if available, else setTimeout
-                const scheduleIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 50));
-                scheduleIdle(() =>
+                try 
                 {
                     // isPrefetch=true so this won't abort primary loads
-                    loadCountyContext(fips, true, "", false, true).catch(() => { });
-                });
+                    await loadCountyContext(fips, true, "", false, true);
+                    // Add a tiny delay between fetches to let the DB breathe
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                } 
+                catch (e) 
+                {
+                    console.warn(`[Prefetch] Failed to prefetch ${fips}`, e);
+                }
             }
         }
         catch (e)

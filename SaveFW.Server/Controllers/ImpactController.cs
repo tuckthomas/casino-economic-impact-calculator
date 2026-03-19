@@ -182,6 +182,7 @@ public class ImpactController : ControllerBase
             ";
 
         await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.CommandTimeout = 60;
         cmd.Parameters.AddWithValue("fips", fips);
 
         _logger.LogInformation($"[ImpactController] 3. Executing SQL... ({sw.ElapsedMilliseconds}ms)");
