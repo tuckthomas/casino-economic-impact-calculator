@@ -1078,7 +1078,15 @@ window.MapLibreImpactMap = (function ()
     {
         if (!markerPosition || !map) return;
 
-        if (!currentGridFeatures || currentGridFeatures.length === 0) return;
+        const hasPoints = await loadGridPoints();
+        if (!hasPoints || !currentGridFeatures || currentGridFeatures.length === 0) 
+        {
+            if (riskZoneMode === 'grid') {
+                console.log('[Snap] No grid points for new county, switching to radius mode');
+                setRiskZoneMode('radius');
+            }
+            return;
+        }
 
         // Find nearest grid point to current marker position
         let nearestPoint = null;
@@ -2591,6 +2599,10 @@ window.MapLibreImpactMap = (function ()
         const countyFips = props.geoid;
         if (!countyFips) return;
 
+        if (props.name || props.NAME) {
+            countyNamesCache[countyFips] = props.name || props.NAME;
+        }
+
         // selectCounty handles zoom, marker placement, and all the other logic
         await selectCounty(countyFips);
     }
@@ -3037,6 +3049,10 @@ window.MapLibreImpactMap = (function ()
                 // Only process if county is in selected state
                 if (countyStateFips === currentStateFips && newCountyFips && newCountyFips !== currentCountyFips)
                 {
+                    const countyName = matchedCounty.properties.name || matchedCounty.properties.NAME;
+                    if (countyName) {
+                        countyNamesCache[newCountyFips] = countyName;
+                    }
                     currentCountyFips = newCountyFips;
                     // Use lite=true to get all block groups within 50-mile radius
                     loadCountyContext(newCountyFips, true, "Loading Impact Analysis...").then(() =>
@@ -3052,7 +3068,6 @@ window.MapLibreImpactMap = (function ()
                             if (feature) highlightCounty(feature);
                         });
 
-                    const countyName = matchedCounty.properties.name;
                     window.dispatchEvent(new CustomEvent('county-selected-map', {
                         detail: { name: countyName, geoid: newCountyFips }
                     }));
@@ -3065,6 +3080,8 @@ window.MapLibreImpactMap = (function ()
                         window.notifyBlazorCountySelected(newCountyFips, countyName);
                     }
 
+                    // In grid mode we update dynamically only when snapping at dragend
+                    // In radius mode we update isochrones dynamically
                     if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(pos);
                     return; // Exit early, calculateImpact will be called after context loads
                 }
@@ -3073,18 +3090,19 @@ window.MapLibreImpactMap = (function ()
             calculateImpact();
             if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(pos);
         });
+
         marker.on('dragstart', () => { el.style.cursor = 'grabbing'; markerDragging = true; });
-        marker.on('dragend', () => { 
-            el.style.cursor = 'grab'; 
-            markerDragging = false; 
-            
+        
+        marker.on('dragend', async () => {
+            el.style.cursor = 'grab';
+            markerDragging = false;
+
             // Auto-snap to grid point if in grid mode
             if (riskZoneMode === 'grid') {
-                snapMarkerToNearestGridPoint();
+                await snapMarkerToNearestGridPoint();
             }
         });
     }
-
     function highlightCounty(feature)
     {
         if (!map) return;
