@@ -2286,16 +2286,31 @@ window.MapLibreImpactMap = (function ()
 
     function onCountiesClick(e)
     {
-        // Ignore county clicks when in grid mode - let grid points handle it
-        // REMOVED restriction to allow navigation:
-        // if (riskZoneMode === 'grid') return;
-
         if (e.features.length > 0)
         {
             const props = e.features[0].properties;
             if (currentStateFips && props.state_fp === currentStateFips)
             {
-                selectCountyFromMVT(props);
+                // If they clicked inside the ALREADY selected county, just move the marker
+                if (currentCountyFips === props.geoid && marker)
+                {
+                    const newPos = e.lngLat;
+                    marker.setLngLat([newPos.lng, newPos.lat]);
+                    markerPosition = newPos;
+                    
+                    if (riskZoneMode === 'grid') {
+                        snapMarkerToNearestGridPoint();
+                    } else {
+                        updateCircles(newPos);
+                        calculateImpact();
+                        if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(newPos);
+                    }
+                } 
+                else 
+                {
+                    // Otherwise, load the new county
+                    selectCountyFromMVT(props);
+                }
             }
         }
     }
