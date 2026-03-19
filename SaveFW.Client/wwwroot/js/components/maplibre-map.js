@@ -2722,46 +2722,67 @@ window.MapLibreImpactMap = (function ()
         }
     }
 
-    // Pre-fetch county context for top counties by population (runs in background)
+    // Pre-fetch county context for specific priority counties, then top by population (runs in background)
     async function prefetchTopCounties(stateFips)
     {
         try
         {
-            // Fetch county list with population from census API (already server-cached)
-            const res = await fetch(`/api/census/counties/${stateFips}`);
-            if (!res.ok) return;
+            // FIPS codes for Northeast Indiana region that we have specific isochrone grid data for
+            const neIndianaFips = [
+                '18003', // Allen
+                '18033', // DeKalb
+                '18087', // LaGrange
+                '18113', // Noble
+                '18151', // Steuben
+                '18183', // Whitley
+                '18001', // Adams
+                '18069', // Huntington
+                '18169', // Wabash
+                '18179'  // Wells
+            ];
 
-            const data = await res.json();
-            if (!data?.features) return;
+            let targetCounties = [];
 
-            // Sort by adult population descending, take top 15
-            const sorted = [...data.features].sort((a, b) =>
-                (b.properties?.pop_adult || 0) - (a.properties?.pop_adult || 0)
-            );
-            const topCounties = sorted.slice(0, 15);
+            if (stateFips === '18') 
+            {
+                targetCounties = neIndianaFips;
+            } 
+            else 
+            {
+                // For other states, fetch county list with population from census API and sort by pop
+                const res = await fetch(`/api/census/counties/${stateFips}`);
+                if (!res.ok) return;
 
-            console.log(`[Prefetch] Pre-warming cache sequentially for ${topCounties.length} counties in state ${stateFips}`);
+                const data = await res.json();
+                if (!data?.features) return;
+
+                // Sort by adult population descending, take top 10
+                const sorted = [...data.features].sort((a, b) =>
+                    (b.properties?.pop_adult || 0) - (a.properties?.pop_adult || 0)
+                );
+                targetCounties = sorted.slice(0, 10).map(f => f.properties?.geoid).filter(Boolean);
+            }
+
+            console.log(`[Prefetch] Pre-warming cache sequentially for ${targetCounties.length} targeted counties in state ${stateFips}`);
 
             // Fetch contexts sequentially to prevent database connection pool exhaustion
-            for (const county of topCounties)
+            for (const fips of targetCounties)
             {
-                const fips = county.properties?.geoid;
                 if (!fips || contextCache[fips]) continue; // Skip if already cached
 
-                try 
+                try
                 {
                     // isPrefetch=true so this won't abort primary loads
                     await loadCountyContext(fips, true, "", false, true);
                     // Add a tiny delay between fetches to let the DB breathe
                     await new Promise(resolve => setTimeout(resolve, 200));
-                } 
-                catch (e) 
+                }
+                catch (e)
                 {
                     console.warn(`[Prefetch] Failed to prefetch ${fips}`, e);
                 }
             }
-        }
-        catch (e)
+        }        catch (e)
         {
             console.warn('[Prefetch] Error pre-fetching county contexts:', e);
         }
