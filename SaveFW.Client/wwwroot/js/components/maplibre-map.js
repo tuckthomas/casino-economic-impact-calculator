@@ -1209,9 +1209,6 @@ window.MapLibreImpactMap = (function ()
             riskZoneMode = 'grid';
             syncModeUI('grid');
 
-            // Disable marker dragging in grid mode
-            if (marker) marker.setDraggable(false);
-
             // Hide circles (correct layer names)
             if (map.getLayer('circle-tier1-fill')) map.setLayoutProperty('circle-tier1-fill', 'visibility', 'none');
             if (map.getLayer('circle-tier2-fill')) map.setLayoutProperty('circle-tier2-fill', 'visibility', 'none');
@@ -3037,7 +3034,15 @@ window.MapLibreImpactMap = (function ()
             if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(pos);
         });
         marker.on('dragstart', () => { el.style.cursor = 'grabbing'; markerDragging = true; });
-        marker.on('dragend', () => { el.style.cursor = 'grab'; markerDragging = false; });
+        marker.on('dragend', () => { 
+            el.style.cursor = 'grab'; 
+            markerDragging = false; 
+            
+            // Auto-snap to grid point if in grid mode
+            if (riskZoneMode === 'grid') {
+                snapMarkerToNearestGridPoint();
+            }
+        });
     }
 
     function highlightCounty(feature)
