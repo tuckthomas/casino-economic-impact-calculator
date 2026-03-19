@@ -972,8 +972,20 @@ window.MapLibreImpactMap = (function ()
                     layout: { visibility: 'none' }
                 });
 
+                // Invisible hit layer for easier clicking
+                map.addLayer({
+                    id: 'impact-grid-points-hit-layer',
+                    type: 'circle',
+                    source: 'impact-grid-points',
+                    paint: {
+                        'circle-radius': 15,
+                        'circle-color': 'transparent'
+                    },
+                    layout: { visibility: 'none' }
+                });
+
                 // Hover effect (optional, or just use click)
-                map.on('click', 'impact-grid-points-layer', (e) =>
+                map.on('click', 'impact-grid-points-hit-layer', (e) =>
                 {
                     // Stop event from bubbling to other layers (states/counties)
                     e.originalEvent.stopPropagation();
@@ -1001,8 +1013,8 @@ window.MapLibreImpactMap = (function ()
                     calculateImpact();
                 });
 
-                map.on('mouseenter', 'impact-grid-points-layer', () => map.getCanvas().style.cursor = 'pointer');
-                map.on('mouseleave', 'impact-grid-points-layer', () => map.getCanvas().style.cursor = '');
+                map.on('mouseenter', 'impact-grid-points-hit-layer', () => map.getCanvas().style.cursor = 'pointer');
+                map.on('mouseleave', 'impact-grid-points-hit-layer', () => map.getCanvas().style.cursor = '');
             } else {
                 map.getSource('impact-grid-points').setData(geojson);
             }
@@ -1210,6 +1222,7 @@ window.MapLibreImpactMap = (function ()
 
             // Show Grid Points
             if (map.getLayer('impact-grid-points-layer')) map.setLayoutProperty('impact-grid-points-layer', 'visibility', 'visible');
+            if (map.getLayer('impact-grid-points-hit-layer')) map.setLayoutProperty('impact-grid-points-hit-layer', 'visibility', 'visible');
             // Ensure isochrones visible
             if (map.getLayer('impact-grid-isochrones-fill')) map.setLayoutProperty('impact-grid-isochrones-fill', 'visibility', 'visible');
             if (map.getLayer('impact-grid-isochrones-line')) map.setLayoutProperty('impact-grid-isochrones-line', 'visibility', 'visible');
@@ -1238,6 +1251,7 @@ window.MapLibreImpactMap = (function ()
 
             // Hide Grid Pts
             if (map.getLayer('impact-grid-points-layer')) map.setLayoutProperty('impact-grid-points-layer', 'visibility', 'none');
+            if (map.getLayer('impact-grid-points-hit-layer')) map.setLayoutProperty('impact-grid-points-hit-layer', 'visibility', 'none');
             if (map.getLayer('impact-grid-isochrones-fill')) map.setLayoutProperty('impact-grid-isochrones-fill', 'visibility', 'none');
             if (map.getLayer('impact-grid-isochrones-line')) map.setLayoutProperty('impact-grid-isochrones-line', 'visibility', 'none');
 
