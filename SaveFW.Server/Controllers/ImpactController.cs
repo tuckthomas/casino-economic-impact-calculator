@@ -226,15 +226,15 @@ public class ImpactController : ControllerBase
             // Query distinct points from cache intersected with the requested county
             var sql = @"
                 WITH target_county AS (
-                    SELECT geom 
-                    FROM tiger_counties 
+                    SELECT geom
+                    FROM tiger_counties
                     WHERE state_fp = @stateFips AND name = @countyName
                     LIMIT 1
                 )
-                SELECT DISTINCT c.lat, c.lon 
+                SELECT DISTINCT c.lat, c.lon
                 FROM isochrone_cache c
-                JOIN target_county t ON ST_Contains(t.geom, c.geom)
-                LIMIT 5000; 
+                JOIN target_county t ON ST_Contains(t.geom, ST_SetSRID(ST_MakePoint(c.lon, c.lat), 4326))
+                LIMIT 5000;
             ";
             
             await using var cmd = new NpgsqlCommand(sql, conn);
