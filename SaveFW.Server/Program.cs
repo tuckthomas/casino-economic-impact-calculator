@@ -54,8 +54,8 @@ if (args.Contains("--seed-isochrones") || args.Contains("--run-allen-isochrones"
     // High-res (1km) grid for Northeast Indiana Region
     var counties = new[] 
     { 
-        "Allen", "Adams", "DeKalb", "Huntington", "LaGrange", 
-        "Noble", "Steuben", "Wabash", "Wells", "Whitley" 
+        "Steuben", "Allen", "Adams", "DeKalb", "Huntington", "LaGrange", 
+        "Noble", "Wabash", "Wells", "Whitley" 
     };
     var gridMeters = 1000; 
     await seeder.RunSeedingJobAsync(counties, gridMeters, CancellationToken.None);

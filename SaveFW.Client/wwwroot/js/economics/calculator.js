@@ -1071,17 +1071,17 @@ window.EconomicCalculator = (function ()
             }
         ];
 
+        const hasImpact = !!(lastImpactBreakdown && lastImpactBreakdown.countyFips);
+
         renderNetEconomicImpactTable({
             subjectCountyName,
             subjectCountyFips,
             subjectStateName,
             baselineRate: rate,
-            rows: netImpactRows,
-            otherCounties: otherCosts ? otherCosts.counties : [],
+            rows: hasImpact ? netImpactRows : [],
+            otherCounties: hasImpact && otherCosts ? otherCosts.counties : [],
             expanded: otherCountiesExpanded
         });
-
-        const hasImpact = !!(lastImpactBreakdown && lastImpactBreakdown.countyFips);
 
         if (hasImpact)
         {
@@ -1478,6 +1478,7 @@ window.EconomicCalculator = (function ()
         }
     }
 
+    window.renderNetEconomicImpactTable = renderNetEconomicImpactTable;
     function renderNetEconomicImpactTable(model)
     {
         const container = document.getElementById('net-impact-table');

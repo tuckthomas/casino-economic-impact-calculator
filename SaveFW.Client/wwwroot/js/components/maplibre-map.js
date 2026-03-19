@@ -550,22 +550,22 @@ window.MapLibreImpactMap = (function ()
         {
             // Grid Mode: Filter global byCounty to strictly include only the selected state
             const allCounties = { ...byCounty }; // Snapshot
-            
+
             // Reset totals for strict recalculation
             t1PopRegional = 0; t2PopRegional = 0; t3PopRegional = 0;
-            
+
             // Clear global to repopulate with only valid entries
             byCounty = {};
-            
+
             Object.entries(allCounties).forEach(([fips, data]) => 
             {
-               if (fips && fips.startsWith(stateFips))
-               {
-                   t1PopRegional += data.t1Pop;
-                   t2PopRegional += data.t2Pop;
-                   t3PopRegional += data.t3Pop;
-                   byCounty[fips] = data;
-               }
+                if (fips && fips.startsWith(stateFips))
+                {
+                    t1PopRegional += data.t1Pop;
+                    t2PopRegional += data.t2Pop;
+                    t3PopRegional += data.t3Pop;
+                    byCounty[fips] = data;
+                }
             });
         }
 
@@ -914,19 +914,29 @@ window.MapLibreImpactMap = (function ()
 
     // === GRID MODE ===
 
-    let gridPointsLoaded = false;
+    let currentGridCounty = null;
+    let currentGridFeatures = [];
 
     async function loadGridPoints() 
     {
-        if (gridPointsLoaded) return true;
+        if (!currentCountyFips) return false;
+
+        let stateFips = currentCountyFips.substring(0, 2);
+        let countyName = countyNamesCache[currentCountyFips] || 'Allen';
+        
+        let countyKey = stateFips + "_" + countyName;
+        if (currentGridCounty === countyKey) return true;
+
         try
         {
-            const res = await fetch('/api/Impact/grid-points'); // defaults to Allen County
+            const res = await fetch(`/api/Impact/grid-points?stateFips=${stateFips}&title=${countyName}`);
             if (!res.ok) return false;
 
             const points = await res.json();
 
             if (!Array.isArray(points) || points.length === 0) return false;
+            
+            currentGridCounty = countyKey;
 
             const features = points.map((p, i) => ({
                 type: 'Feature',
@@ -934,6 +944,8 @@ window.MapLibreImpactMap = (function ()
                 geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
                 properties: { lat: p.lat, lon: p.lon }
             }));
+
+            currentGridFeatures = features;
 
             const geojson = { type: 'FeatureCollection', features };
 
@@ -971,10 +983,13 @@ window.MapLibreImpactMap = (function ()
                     const f = e.features[0];
                     if (!f) return;
 
-                    // Move marker to clicked grid point
-                    const lat = f.properties.lat;
-                    const lon = f.properties.lon;
+                    // Use geometry coordinates (always numeric) instead of properties
+                    // which can be stringified by MapLibre's feature serialization.
+                    // marker.setLngLat() silently fails with string values.
+                    const [lon, lat] = f.geometry.coordinates;
                     const newPos = { lng: lon, lat: lat };
+
+                    console.log('[GridClick] Moving marker to grid point:', { lon, lat });
 
                     // Update marker position
                     markerPosition = newPos;
@@ -989,6 +1004,8 @@ window.MapLibreImpactMap = (function ()
 
                 map.on('mouseenter', 'impact-grid-points-layer', () => map.getCanvas().style.cursor = 'pointer');
                 map.on('mouseleave', 'impact-grid-points-layer', () => map.getCanvas().style.cursor = '');
+            } else {
+                map.getSource('impact-grid-points').setData(geojson);
             }
 
             // Add isochrone layer for grid mode
@@ -1038,7 +1055,6 @@ window.MapLibreImpactMap = (function ()
                     }
                 }, map.getLayer('circle-tier1-line') ? 'circle-tier1-line' : undefined);
             }
-            gridPointsLoaded = true;
             return true;
         } catch (e)
         {
@@ -1051,17 +1067,13 @@ window.MapLibreImpactMap = (function ()
     {
         if (!markerPosition || !map) return;
 
-        const source = map.getSource('impact-grid-points');
-        if (!source) return;
-
-        const data = source._data;
-        if (!data || !data.features || data.features.length === 0) return;
+        if (!currentGridFeatures || currentGridFeatures.length === 0) return;
 
         // Find nearest grid point to current marker position
         let nearestPoint = null;
         let minDist = Infinity;
 
-        data.features.forEach(f =>
+        currentGridFeatures.forEach(f =>
         {
             const coords = f.geometry.coordinates;
             const dx = coords[0] - markerPosition.lng;
@@ -1081,17 +1093,16 @@ window.MapLibreImpactMap = (function ()
             if (marker) marker.setLngLat([nearestPoint.lng, nearestPoint.lat]);
 
             toggleLoading(true, "Loading drivetime isochromes...");
-            try 
+            try
             {
                 await updateIsochrones(nearestPoint);
                 // calculateImpact(); // Called internally by updateIsochrones
-            } finally 
+            } finally
             {
                 toggleLoading(false);
             }
         }
     }
-
     function showMapNotification(message)
     {
         let el = document.getElementById('map-notification-toast');
@@ -1303,6 +1314,11 @@ window.MapLibreImpactMap = (function ()
         currentCountyTotals = null;
         const idsToZero = ['val-t1', 'val-t2', 'val-t3', 'total-gamblers', 'calc-result', 'calc-gamblers', 'disp-pop-impact-zones', 'disp-pop-adults'];
         idsToZero.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = "0"; });
+        
+        if (typeof window.renderNetEconomicImpactTable === 'function') {
+             window.renderNetEconomicImpactTable({ rows: [] });
+        }
+        
         window.dispatchEvent(new Event('map-state-reset'));
     }
 
@@ -2798,20 +2814,33 @@ window.MapLibreImpactMap = (function ()
                 // updateCircles(markerPosition); // Handled by setRiskZoneMode below
 
                 // FEATURE: Auto-switch to Grid Mode if available for this county
-                await loadGridPoints();
+                const hasPoints = await loadGridPoints();
                 let useGrid = false;
-                const gridSource = map.getSource('impact-grid-points');
-                if (gridSource && gridSource._data && gridSource._data.features)
+                
+                if (hasPoints && currentGridFeatures && currentGridFeatures.length > 0)
                 {
-                    // Check if any grid point is close to the county center (e.g. within 0.1 degree ~ 7 miles)
-                    // This creates a "hit test" to see if we have data for this region
-                    const isClose = gridSource._data.features.some(f =>
+                    // Find the closest grid point to the county center
+                    let closestPoint = null;
+                    let minDistanceSq = Infinity;
+
+                    for (const f of currentGridFeatures)
                     {
                         const dx = f.properties.lon - markerPosition.lng;
                         const dy = f.properties.lat - markerPosition.lat;
-                        return (dx * dx + dy * dy) < 0.01;
-                    });
-                    if (isClose) useGrid = true;
+                        const distSq = dx * dx + dy * dy;
+                        if (distSq < minDistanceSq) {
+                            minDistanceSq = distSq;
+                            closestPoint = f.properties;
+                        }
+                    }
+
+                    // If a point is reasonably close (within ~15 miles or 0.05 degrees squared), snap to it
+                    if (closestPoint && minDistanceSq < 0.05)
+                    {
+                        useGrid = true;
+                        markerPosition = { lng: closestPoint.lon, lat: closestPoint.lat };
+                        updateMarker(markerPosition);
+                    }
                 }
 
                 if (useGrid)
