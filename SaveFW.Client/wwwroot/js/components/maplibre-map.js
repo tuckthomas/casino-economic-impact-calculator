@@ -959,15 +959,14 @@ window.MapLibreImpactMap = (function ()
                     type: 'circle',
                     source: 'impact-grid-points',
                     paint: {
-                        'circle-radius': 5,
-                        'circle-color': '#3b82f6',
-                        'circle-stroke-width': 1,
-                        'circle-stroke-color': '#ffffff',
+                        'circle-radius': 1.5,
+                        'circle-color': '#ffffff',
+                        'circle-stroke-width': 0,
                         'circle-opacity': [
                             'case',
                             ['boolean', ['feature-state', 'selected'], false],
                             1,
-                            0.6
+                            0.15
                         ]
                     },
                     layout: { visibility: 'none' }
