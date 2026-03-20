@@ -156,7 +156,17 @@
   - [ ] A limited-feature off-track betting venue should carry minimal or no meaningful competition weight.
   - [ ] The schema must support adding additional venue types later without breaking calculations.
 
-### 3.4 Data scope and geography
+### 3.4 Visual representations (Map Markers)
+
+- [ ] Utilize the existing custom SVG map markers for rendering competitor locations on the interactive map.
+  - [ ] Source directory: `SaveFW.Client/wwwroot/assets/existing-locations-map-markers`
+  - [ ] Map `full_service_casino` to `EXISTING_CASINO_MARKER.svg`.
+  - [ ] Map `racino` to `EXISTING_CASINO_RACETRACK_MARKER.svg`.
+  - [ ] Map standalone racetracks to `EXISTING_RACETRACK_MARKER.svg`.
+  - [ ] Map tribal operations to `EXISTING_TRIBAL_CASINO_MARKER.svg`.
+- [ ] Ensure competitor markers are static (not draggable) on the map interface, unlike the primary proposed casino marker.
+
+### 3.5 Data scope and geography
 
 - [ ] Populate the dataset with:
   - [ ] Indiana casinos
