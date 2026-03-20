@@ -1,57 +1,92 @@
 window.PdfHelper = {
-    captureMapAndGenerate: async function(mapElementId) {
-        const mapElement = document.getElementById(mapElementId);
+    captureMapAndGenerate: async function (mapElementId)
+    {
+        const mapContainer = document.getElementById(mapElementId);
         let base64 = null;
-        
-        if (mapElement) {
-            try {
-                const canvas = await html2canvas(mapElement, {
+
+        if (!mapContainer) return null;
+
+        try
+        {
+            // Access the MapLibre GL map instance via the global reference
+            const mapInstance = window.MapLibreImpactMap && window.MapLibreImpactMap.getMap
+                ? window.MapLibreImpactMap.getMap()
+                : null;
+
+            if (mapInstance)
+            {
+                // Strategy: Composite MapLibre's WebGL canvas + DOM overlays (markers)
+                const glCanvas = mapInstance.getCanvas();
+                const width = glCanvas.width;
+                const height = glCanvas.height;
+                const dpr = window.devicePixelRatio || 1;
+
+                // Create compositing canvas
+                const compositeCanvas = document.createElement('canvas');
+                compositeCanvas.width = width;
+                compositeCanvas.height = height;
+                const ctx = compositeCanvas.getContext('2d');
+
+                // 1. Draw the WebGL map canvas (tiles, vectors, isochrones, etc.)
+                ctx.drawImage(glCanvas, 0, 0);
+
+                // 2. Capture DOM overlays (markers, popups) via html2canvas
+                // MapLibre renders markers as absolutely positioned DOM elements
+                // inside .maplibregl-canvas-container's sibling containers
+                try
+                {
+                    const overlayCanvas = await html2canvas(mapContainer, {
+                        useCORS: true,
+                        allowTaint: true,
+                        logging: false,
+                        scale: dpr,
+                        backgroundColor: null, // Transparent so we only get DOM overlays
+                        ignoreElements: (el) =>
+                        {
+                            // Ignore the WebGL canvas itself (we already drew it)
+                            if (el.tagName === 'CANVAS' && el.classList.contains('maplibregl-canvas')) return true;
+                            // Ignore controls we don't want in PDF
+                            if (el.id === 'map-navigation-overlay') return true;
+                            if (el.id === 'map-zoom-hint') return true;
+                            if (el.id === 'map-overlay-panel') return true;
+                            if (el.id === 'map-overlay-topright') return true;
+                            if (el.classList && el.classList.contains('maplibregl-ctrl-top-right')) return true;
+                            if (el.classList && el.classList.contains('maplibregl-ctrl-bottom-right')) return true;
+                            if (el.classList && el.classList.contains('maplibregl-ctrl-top-left')) return true;
+                            if (el.classList && el.classList.contains('maplibregl-ctrl-bottom-left')) return true;
+                            return false;
+                        }
+                    });
+                    // Draw marker/popup overlays on top of the map
+                    ctx.drawImage(overlayCanvas, 0, 0, width, height);
+                } catch (overlayErr)
+                {
+                    console.warn("Overlay capture failed, map still captured:", overlayErr);
+                }
+
+                base64 = compositeCanvas.toDataURL("image/png");
+            } else
+            {
+                // Fallback: try html2canvas for the whole container (won't get WebGL)
+                console.warn("MapLibre instance not found, falling back to html2canvas");
+                const canvas = await html2canvas(mapContainer, {
                     useCORS: true,
                     allowTaint: true,
                     logging: false,
-                    scale: 2,
-                    onclone: (clonedDoc) => {
-                        // 1. Hide Controls in Clone
-                        const selectors = [
-                            '#map-navigation-overlay',
-                            '#map-zoom-hint',
-                            '#map-overlay-panel',
-                            '#map-overlay-topright',
-                            'button[onclick="toggleMapOverlay()"]',
-                            '.leaflet-control-container .leaflet-top.leaflet-left',
-                            '.leaflet-control-container .leaflet-bottom.leaflet-right'
-                        ];
-                        selectors.forEach(s => {
-                            const el = clonedDoc.querySelector(s);
-                            if (el) el.style.display = 'none';
-                        });
-
-                        // 2. Fix Markers (translate3d -> translate)
-                        // html2canvas sometimes miscalculates 3D transforms or absolute positioning on markers.
-                        // Converting to simple 2D translate often resolves alignment issues.
-                        const markers = clonedDoc.querySelectorAll('.leaflet-marker-icon, .leaflet-marker-shadow');
-                        markers.forEach(m => {
-                            const t = m.style.transform;
-                            if (t && t.includes('translate3d')) {
-                                const parts = t.match(/translate3d\(([^,]+),\s*([^,]+)/);
-                                if (parts && parts.length >= 3) {
-                                    m.style.transform = `translate(${parts[1]}, ${parts[2]})`;
-                                }
-                            }
-                        });
-                    }
+                    scale: 2
                 });
-                
                 base64 = canvas.toDataURL("image/png");
-            } catch (err) {
-                console.error("Map capture failed:", err);
             }
+        } catch (err)
+        {
+            console.error("Map capture failed:", err);
         }
-        
+
         return base64;
     },
-    
-    downloadFileFromStream: async function(filename, contentStreamReference) {
+
+    downloadFileFromStream: async function (filename, contentStreamReference)
+    {
         const arrayBuffer = await contentStreamReference.arrayBuffer();
         const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
@@ -63,23 +98,27 @@ window.PdfHelper = {
         URL.revokeObjectURL(url);
     },
 
-    getReportData: function() {
+    getReportData: function ()
+    {
         // 1. Scrape Main Table (Net Economic Impact)
         const table = document.querySelector('#net-impact-table table');
         let mainTableData = { headers: [], rows: [] };
-        
-        if (table) {
+
+        if (table)
+        {
             const ths = Array.from(table.querySelectorAll('thead th'));
             mainTableData.headers = ths.map(th => th.innerText.trim());
             const trs = Array.from(table.querySelectorAll('tbody tr'));
-            mainTableData.rows = trs.map(tr => {
+            mainTableData.rows = trs.map(tr =>
+            {
                 const cells = Array.from(tr.querySelectorAll('td'));
                 return cells.map(td => td.innerText.trim().replace(/[\n\r]+|info/g, ' '));
             });
         }
 
         // 2. Scrape Supplementary Tables (Breakdowns)
-        const getRow = (label, idVictims, idPer, idTotal) => {
+        const getRow = (label, idVictims, idPer, idTotal) =>
+        {
             return [
                 label,
                 document.getElementById(idVictims)?.innerText || "-",
@@ -111,30 +150,36 @@ window.PdfHelper = {
         // 3. Scrape Analysis Text (Markdown-ish)
         const analysisEl = document.getElementById('analysis-text');
         let formattedText = "";
-        
+
         // Recursive list processor
-        const processList = (ul, level = 0) => {
+        const processList = (ul, level = 0) =>
+        {
             let result = "";
             const indent = " ".repeat(level * 2);
-            for (const child of ul.children) {
-                if (child.tagName === 'LI') {
+            for (const child of ul.children)
+            {
+                if (child.tagName === 'LI')
+                {
                     // Clone to get text without child lists
                     const clone = child.cloneNode(true);
                     const nested = clone.querySelectorAll('ul, ol');
                     nested.forEach(n => n.remove());
-                    
+
                     let liText = clone.innerHTML;
                     liText = liText.replace(/<(strong|b)>(.*?)<\/\1>/gi, "**$2**");
                     liText = liText.replace(/<[^>]+>/g, ""); // Strip other tags
                     liText = liText.trim();
-                    
-                    if (liText) {
+
+                    if (liText)
+                    {
                         result += `${indent}* ${liText}\n`;
                     }
-                    
+
                     // Process nested lists from original child
-                    for (const sub of child.children) {
-                        if (sub.tagName === 'UL' || sub.tagName === 'OL') {
+                    for (const sub of child.children)
+                    {
+                        if (sub.tagName === 'UL' || sub.tagName === 'OL')
+                        {
                             result += processList(sub, level + 1);
                         }
                     }
@@ -143,15 +188,21 @@ window.PdfHelper = {
             return result;
         };
 
-        if (analysisEl) {
-            for (const node of analysisEl.childNodes) {
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    if (node.tagName === 'DIV' && node.classList.contains('font-bold')) {
+        if (analysisEl)
+        {
+            for (const node of analysisEl.childNodes)
+            {
+                if (node.nodeType === Node.ELEMENT_NODE)
+                {
+                    if (node.tagName === 'DIV' && node.classList.contains('font-bold'))
+                    {
                         formattedText += `### ${node.innerText.trim()}\n`;
-                    } else if (node.tagName === 'UL') {
+                    } else if (node.tagName === 'UL')
+                    {
                         formattedText += processList(node);
                         formattedText += "\n";
-                    } else if (node.tagName === 'P') {
+                    } else if (node.tagName === 'P')
+                    {
                         formattedText += `${node.innerText.trim()}\n\n`;
                     }
                 }
@@ -160,7 +211,8 @@ window.PdfHelper = {
 
         // 4. Retrieve Detailed Calc Data
         let calcData = null;
-        if (window.EconomicCalculator && window.EconomicCalculator.getLastCalculationData) {
+        if (window.EconomicCalculator && window.EconomicCalculator.getLastCalculationData)
+        {
             calcData = window.EconomicCalculator.getLastCalculationData();
         }
 
@@ -169,10 +221,12 @@ window.PdfHelper = {
         // 5. Build Final Other Breakdown
         let breakdownOtherData = [];
         const fmtM = (v) => '$' + (v / 1000000).toFixed(1) + 'MM';
-        
-        if (calcData && calcData.otherCosts && Array.isArray(calcData.otherCosts.counties) && calcData.otherCosts.counties.length > 0) {
+
+        if (calcData && calcData.otherCosts && Array.isArray(calcData.otherCosts.counties) && calcData.otherCosts.counties.length > 0)
+        {
             const counties = calcData.otherCosts.counties;
-            breakdownOtherData = counties.map(c => {
+            breakdownOtherData = counties.map(c =>
+            {
                 return [
                     c.name + " County",
                     fmtM(c.costs.health),
@@ -184,7 +238,8 @@ window.PdfHelper = {
                     fmtM(c.costs.total)
                 ];
             });
-        } else {
+        } else
+        {
             // Use scraped summary if detailed data missing (fallback)
             // But scraped data is [Category, Victims, Per, Total] (rows).
             // We need to transpose it to fit the new table structure [Name, PH, SS, ...]
@@ -193,7 +248,7 @@ window.PdfHelper = {
             // Scraped indices: 0=PH, 1=SS, 2=Law, 3=Legal, 4=Abused, 5=Emp, 6=Total.
             // Value is at index 3 of each row.
             const val = (idx) => breakdownOtherData_Scraped[idx][3];
-            
+
             breakdownOtherData = [[
                 "Regional Spillover (Summary)",
                 val(0), val(1), val(2), val(3), val(4), val(5), val(6)

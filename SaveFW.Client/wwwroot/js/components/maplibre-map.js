@@ -925,15 +925,18 @@ window.MapLibreImpactMap = (function ()
         let countyName = countyNamesCache[currentCountyFips];
 
         // Robust name resolution if cache miss
-        if (!countyName) {
-            try {
+        if (!countyName)
+        {
+            try
+            {
                 const res = await fetch(`/api/census/county/${currentCountyFips}`);
-                if (res.ok) {
+                if (res.ok)
+                {
                     const feature = await res.json();
                     countyName = feature.properties.name || feature.properties.NAME;
                     if (countyName) countyNamesCache[currentCountyFips] = countyName;
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
 
         if (!countyName) countyName = 'Allen'; // Absolute last resort
@@ -942,13 +945,14 @@ window.MapLibreImpactMap = (function ()
         if (currentGridCounty === countyKey) return true;
 
         try
-        {            const res = await fetch(`/api/Impact/grid-points?stateFips=${stateFips}&title=${countyName}`);
+        {
+            const res = await fetch(`/api/Impact/grid-points?stateFips=${stateFips}&title=${countyName}`);
             if (!res.ok) return false;
 
             const points = await res.json();
 
             if (!Array.isArray(points) || points.length === 0) return false;
-            
+
             currentGridCounty = countyKey;
 
             const features = points.map((p, i) => ({
@@ -1028,7 +1032,8 @@ window.MapLibreImpactMap = (function ()
 
                 map.on('mouseenter', 'impact-grid-points-hit-layer', () => map.getCanvas().style.cursor = 'pointer');
                 map.on('mouseleave', 'impact-grid-points-hit-layer', () => map.getCanvas().style.cursor = '');
-            } else {
+            } else
+            {
                 map.getSource('impact-grid-points').setData(geojson);
             }
 
@@ -1094,7 +1099,8 @@ window.MapLibreImpactMap = (function ()
         const hasPoints = await loadGridPoints();
         if (!hasPoints || !currentGridFeatures || currentGridFeatures.length === 0) 
         {
-            if (riskZoneMode === 'grid') {
+            if (riskZoneMode === 'grid')
+            {
                 console.log('[Snap] No grid points for new county, switching to radius mode');
                 setRiskZoneMode('radius');
             }
@@ -1345,11 +1351,12 @@ window.MapLibreImpactMap = (function ()
         currentCountyTotals = null;
         const idsToZero = ['val-t1', 'val-t2', 'val-t3', 'total-gamblers', 'calc-result', 'calc-gamblers', 'disp-pop-impact-zones', 'disp-pop-adults'];
         idsToZero.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = "0"; });
-        
-        if (typeof window.renderNetEconomicImpactTable === 'function') {
-             window.renderNetEconomicImpactTable({ rows: [] });
+
+        if (typeof window.renderNetEconomicImpactTable === 'function')
+        {
+            window.renderNetEconomicImpactTable({ rows: [] });
         }
-        
+
         window.dispatchEvent(new Event('map-state-reset'));
     }
 
@@ -2318,15 +2325,17 @@ window.MapLibreImpactMap = (function ()
                     const newPos = e.lngLat;
                     marker.setLngLat([newPos.lng, newPos.lat]);
                     markerPosition = newPos;
-                    
-                    if (riskZoneMode === 'grid') {
+
+                    if (riskZoneMode === 'grid')
+                    {
                         snapMarkerToNearestGridPoint();
-                    } else {
+                    } else
+                    {
                         updateCircles(newPos);
                         calculateImpact();
                         if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(newPos);
                     }
-                } 
+                }
                 else 
                 {
                     // Otherwise, load the new county
@@ -2612,7 +2621,8 @@ window.MapLibreImpactMap = (function ()
         const countyFips = props.geoid;
         if (!countyFips) return;
 
-        if (props.name || props.NAME) {
+        if (props.name || props.NAME)
+        {
             countyNamesCache[countyFips] = props.name || props.NAME;
         }
 
@@ -2771,7 +2781,7 @@ window.MapLibreImpactMap = (function ()
             if (stateFips === '18') 
             {
                 targetCounties = neIndianaFips;
-            } 
+            }
             else 
             {
                 // For other states, fetch county list with population from census API and sort by pop
@@ -2807,7 +2817,7 @@ window.MapLibreImpactMap = (function ()
                     console.warn(`[Prefetch] Failed to prefetch ${fips}`, e);
                 }
             }
-        }        catch (e)
+        } catch (e)
         {
             console.warn('[Prefetch] Error pre-fetching county contexts:', e);
         }
@@ -2891,7 +2901,7 @@ window.MapLibreImpactMap = (function ()
                 // FEATURE: Auto-switch to Grid Mode if available for this county
                 const hasPoints = await loadGridPoints();
                 let useGrid = false;
-                
+
                 if (hasPoints && currentGridFeatures && currentGridFeatures.length > 0)
                 {
                     // Find the closest grid point to the county center
@@ -2903,7 +2913,8 @@ window.MapLibreImpactMap = (function ()
                         const dx = f.properties.lon - markerPosition.lng;
                         const dy = f.properties.lat - markerPosition.lat;
                         const distSq = dx * dx + dy * dy;
-                        if (distSq < minDistanceSq) {
+                        if (distSq < minDistanceSq)
+                        {
                             minDistanceSq = distSq;
                             closestPoint = f.properties;
                         }
@@ -3063,7 +3074,8 @@ window.MapLibreImpactMap = (function ()
                 if (countyStateFips === currentStateFips && newCountyFips && newCountyFips !== currentCountyFips)
                 {
                     const countyName = matchedCounty.properties.name || matchedCounty.properties.NAME;
-                    if (countyName) {
+                    if (countyName)
+                    {
                         countyNamesCache[newCountyFips] = countyName;
                     }
                     currentCountyFips = newCountyFips;
@@ -3105,13 +3117,15 @@ window.MapLibreImpactMap = (function ()
         });
 
         marker.on('dragstart', () => { el.style.cursor = 'grabbing'; markerDragging = true; });
-        
-        marker.on('dragend', async () => {
+
+        marker.on('dragend', async () =>
+        {
             el.style.cursor = 'grab';
             markerDragging = false;
 
             // Auto-snap to grid point if in grid mode
-            if (riskZoneMode === 'grid') {
+            if (riskZoneMode === 'grid')
+            {
                 await snapMarkerToNearestGridPoint();
             }
         });
@@ -3398,7 +3412,8 @@ window.MapLibreImpactMap = (function ()
                 center: options.center || DEFAULT_CENTER,
                 zoom: options.zoom || DEFAULT_ZOOM,
                 scrollZoom: false,
-                attributionControl: false
+                attributionControl: false,
+                preserveDrawingBuffer: true  // Required for PDF/image export via canvas.toDataURL()
             });
 
             map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
