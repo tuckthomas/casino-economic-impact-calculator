@@ -17,4 +17,14 @@
     <ProjectReference Include="..\SaveFW.Shared\SaveFW.Shared.csproj" />
   </ItemGroup>
 
+  <!-- NPM Build Integration -->
+  <Target Name="NpmInstall" BeforeTargets="PreBuildEvent" Condition="!Exists('..\node_modules')">
+    <Exec Command="npm install" WorkingDirectory=".." />
+  </Target>
+
+  <Target Name="BuildFrontendAssets" BeforeTargets="PreBuildEvent">
+    <Exec Command="npm run copy-libs" WorkingDirectory=".." />
+    <Exec Command="npm run build:css" WorkingDirectory=".." />
+  </Target>
+
 </Project>
