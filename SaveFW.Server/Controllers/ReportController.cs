@@ -53,8 +53,33 @@ namespace SaveFW.Server.Controllers
                 
                 var brandColor = Color.FromHex("#0f172a");
             
+                // Helper: shared footer across all page blocks
+                void AddFooter(PageDescriptor page, byte[]? logo)
+                {
+                    page.Footer()
+                        .Row(row => {
+                            if (logo != null)
+                            {
+                                row.RelativeItem().AlignLeft().Height(0.8f, Unit.Centimetre).Image(logo).FitArea();
+                            }
+                            else
+                            {
+                                 row.RelativeItem().AlignLeft().Text("SaveFW.org").FontSize(10).FontColor(Colors.Grey.Medium);
+                            }
+                            
+                            row.RelativeItem().AlignRight().Text(x =>
+                            {
+                                x.Span("Page ");
+                                x.CurrentPageNumber();
+                                x.Span(" of ");
+                                x.TotalPages();
+                            });
+                        });
+                }
+
                 var document = Document.Create(container =>
                 {
+                    // === Pages 1-3: Cover, TOC, Map (Portrait A4) ===
                     container.Page(page =>
                     {
                         page.Size(PageSizes.A4);
@@ -62,11 +87,11 @@ namespace SaveFW.Server.Controllers
                         page.PageColor(Colors.White);
                         page.DefaultTextStyle(x => x.FontSize(10));
 
-                        // 1. Cover Page
                         page.Content().Column(col =>
                         {
                             col.Spacing(20);
                             
+                            // Cover Page
                             col.Item().PaddingTop(2, Unit.Centimetre).AlignCenter().Text("Net Economic Impact Analysis").FontSize(28).Bold().FontColor(brandColor);
                             col.Item().AlignCenter().Text("Fort Wayne Casino Proposal").FontSize(18).SemiBold().FontColor(Colors.Grey.Darken1);
                             
@@ -83,7 +108,7 @@ namespace SaveFW.Server.Controllers
                             
                             col.Item().PageBreak();
 
-                            // 2. Table of Contents
+                            // Table of Contents
                             col.Item().Text("Table of Contents").FontSize(24).Bold().FontColor(brandColor);
                             col.Item().PaddingTop(1, Unit.Centimetre).Column(toc => 
                             {
@@ -96,7 +121,7 @@ namespace SaveFW.Server.Controllers
                             
                             col.Item().PageBreak();
 
-                            // 3. Map Page
+                            // Map Page
                             col.Item().Text("1. Geographic Impact Map").FontSize(20).Bold().FontColor(brandColor);
                             
                             if (!string.IsNullOrEmpty(request.MapImageBase64))
@@ -117,10 +142,23 @@ namespace SaveFW.Server.Controllers
                             {
                                  col.Item().Text("[Map Image Not Provided]");
                             }
-                            
-                            col.Item().PageBreak();
+                        });
 
-                            // 4. Net Economic Impact Table
+                        AddFooter(page, logoBytes);
+                    });
+
+                    // === Page 4: Net Economic Impact Table (LANDSCAPE A4) ===
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4.Landscape());
+                        page.Margin(1.5f, Unit.Centimetre);
+                        page.PageColor(Colors.White);
+                        page.DefaultTextStyle(x => x.FontSize(10));
+
+                        page.Content().Column(col =>
+                        {
+                            col.Spacing(10);
+
                             col.Item().Text("2. Net Economic Impact Table").FontSize(20).Bold().FontColor(brandColor);
                             
                             if (request.MainTable != null && request.MainTable.Rows != null && request.MainTable.Rows.Count > 0)
@@ -152,9 +190,6 @@ namespace SaveFW.Server.Controllers
                                     {
                                         foreach (var cell in row)
                                         {
-                                            // Detect row type by content? Or just style generally.
-                                            // The UI uses bold for Totals/Subtotals. 
-                                            // We can check if the first cell starts with "Subtotal" or "Total".
                                             bool isTotal = row[0].Contains("Total", StringComparison.OrdinalIgnoreCase) || row[0].Contains("Subtotal", StringComparison.OrdinalIgnoreCase);
                                             
                                             table.Cell().Element(c => CombinedCellStyle(c, isTotal)).Text(cell);
@@ -166,10 +201,24 @@ namespace SaveFW.Server.Controllers
                             {
                                 col.Item().Text("No table data available.");
                             }
+                        });
 
-                            col.Item().PageBreak();
+                        AddFooter(page, logoBytes);
+                    });
 
-                            // 5. Detailed Breakdown (Supplementary)
+                    // === Pages 5+: Breakdown & Analysis (Portrait A4) ===
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4);
+                        page.Margin(2, Unit.Centimetre);
+                        page.PageColor(Colors.White);
+                        page.DefaultTextStyle(x => x.FontSize(10));
+
+                        page.Content().Column(col =>
+                        {
+                            col.Spacing(20);
+
+                            // Detailed Breakdown (Supplementary)
                             col.Item().Text("3. Detailed Cost Breakdown").FontSize(20).Bold().FontColor(brandColor);
                             col.Item().Text("Supplementary analysis of social costs per problem gambler.").FontSize(10).Italic().FontColor(Colors.Grey.Medium);
 
@@ -177,7 +226,7 @@ namespace SaveFW.Server.Controllers
 
                             col.Item().PageBreak();
 
-                            // 6. Analysis Text
+                            // Analysis Text
                             col.Item().Text("4. Economic Analysis").FontSize(20).Bold().FontColor(brandColor);
                             
                             if (!string.IsNullOrEmpty(request.AnalysisText))
@@ -186,25 +235,7 @@ namespace SaveFW.Server.Controllers
                             }
                         });
 
-                        page.Footer()
-                            .Row(row => {
-                                if (logoBytes != null)
-                                {
-                                    row.RelativeItem().AlignLeft().Height(0.8f, Unit.Centimetre).Image(logoBytes).FitArea();
-                                }
-                                else
-                                {
-                                     row.RelativeItem().AlignLeft().Text("SaveFW.org").FontSize(10).FontColor(Colors.Grey.Medium);
-                                }
-                                
-                                row.RelativeItem().AlignRight().Text(x =>
-                                {
-                                    x.Span("Page ");
-                                    x.CurrentPageNumber();
-                                    x.Span(" of ");
-                                    x.TotalPages();
-                                });
-                            });
+                        AddFooter(page, logoBytes);
                     });
                 });
 
