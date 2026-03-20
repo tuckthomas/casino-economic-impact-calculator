@@ -140,7 +140,8 @@ static async Task WarmStateCacheAsync(IServiceProvider services)
         var conn = db.Database.GetDbConnection();
         await conn.OpenAsync();
         using var cmd = conn.CreateCommand();
-        
+        cmd.CommandTimeout = 120; // Allow sufficient time for the initial large aggregate query
+
         // MUST match the query in CensusController.GetStates()
         cmd.CommandText = @"
             WITH state_pop AS (

@@ -80,6 +80,7 @@ namespace SaveFW.Server.Controllers
                 var conn = _db.Database.GetDbConnection();
                 await conn.OpenAsync();
                 using var cmd = conn.CreateCommand();
+                cmd.CommandTimeout = 120; // Allow sufficient time for the large aggregate query
                 cmd.CommandText = @"
                     WITH state_pop AS (
                         SELECT substring(geoid, 1, 2) AS state_fips,
