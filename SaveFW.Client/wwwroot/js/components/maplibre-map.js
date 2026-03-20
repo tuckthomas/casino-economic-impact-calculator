@@ -917,19 +917,32 @@ window.MapLibreImpactMap = (function ()
     let currentGridCounty = null;
     let currentGridFeatures = [];
 
-    async function loadGridPoints() 
+    async function loadGridPoints()
     {
         if (!currentCountyFips) return false;
 
         let stateFips = currentCountyFips.substring(0, 2);
-        let countyName = countyNamesCache[currentCountyFips] || 'Allen';
-        
+        let countyName = countyNamesCache[currentCountyFips];
+
+        // Robust name resolution if cache miss
+        if (!countyName) {
+            try {
+                const res = await fetch(`/api/census/county/${currentCountyFips}`);
+                if (res.ok) {
+                    const feature = await res.json();
+                    countyName = feature.properties.name || feature.properties.NAME;
+                    if (countyName) countyNamesCache[currentCountyFips] = countyName;
+                }
+            } catch (e) {}
+        }
+
+        if (!countyName) countyName = 'Allen'; // Absolute last resort
+
         let countyKey = stateFips + "_" + countyName;
         if (currentGridCounty === countyKey) return true;
 
         try
-        {
-            const res = await fetch(`/api/Impact/grid-points?stateFips=${stateFips}&title=${countyName}`);
+        {            const res = await fetch(`/api/Impact/grid-points?stateFips=${stateFips}&title=${countyName}`);
             if (!res.ok) return false;
 
             const points = await res.json();
