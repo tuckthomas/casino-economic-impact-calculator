@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     // Phase 9: Address Point Infrastructure
     public DbSet<SaveFW.Server.Data.Entities.AddressPoint> AddressPoints => Set<SaveFW.Server.Data.Entities.AddressPoint>();
     public DbSet<SaveFW.Server.Data.Entities.TigerAddressRange> TigerAddressRanges => Set<SaveFW.Server.Data.Entities.TigerAddressRange>();
+    public DbSet<SaveFW.Server.Data.Entities.CasinoCompetitor> CasinoCompetitors => Set<SaveFW.Server.Data.Entities.CasinoCompetitor>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,6 +69,11 @@ public class AppDbContext : DbContext
         // TigerAddressRange: Lookup index for interpolation
         modelBuilder.Entity<SaveFW.Server.Data.Entities.TigerAddressRange>()
             .HasIndex(t => new { t.State, t.NameNorm });
+            
+        // CasinoCompetitor: GIST index on geometry
+        modelBuilder.Entity<SaveFW.Server.Data.Entities.CasinoCompetitor>()
+            .HasIndex(c => c.Geom)
+            .HasMethod("gist");
     }
 }
 

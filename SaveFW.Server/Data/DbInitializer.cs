@@ -109,6 +109,9 @@ public static class DbInitializer
             }
         }
 
+        // 4. Seed Casino Competitors
+        await CasinoCompetitorSeeder.SeedAsync(db);
+
         await db.SaveChangesAsync();
     }
 

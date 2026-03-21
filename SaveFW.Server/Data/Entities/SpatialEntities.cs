@@ -190,3 +190,93 @@ public class TigerAddressRange
     [Column(TypeName = "geometry(LineString, 4326)")]
     public LineString Geom { get; set; } = null!;
 }
+
+/// <summary>
+/// Reference dataset of existing casinos and casino-like gambling venues.
+/// Used for competition-aware location scoring and revenue heuristics.
+/// </summary>
+[Table("casino_competitors")]
+public class CasinoCompetitor
+{
+    [Key]
+    [Column("id")]
+    public int Id { get; set; }
+    
+    [Required]
+    [MaxLength(200)]
+    [Column("name")]
+    public string Name { get; set; } = string.Empty;
+    
+    [Required]
+    [MaxLength(2)]
+    [Column("state")]
+    public string State { get; set; } = string.Empty;
+    
+    [MaxLength(100)]
+    [Column("county")]
+    public string? County { get; set; }
+    
+    [MaxLength(100)]
+    [Column("city")]
+    public string? City { get; set; }
+    
+    [Column("latitude")]
+    public double Latitude { get; set; }
+    
+    [Column("longitude")]
+    public double Longitude { get; set; }
+    
+    [Column("is_active")]
+    public bool IsActive { get; set; } = true;
+    
+    [Column("notes")]
+    public string? Notes { get; set; }
+    
+    // Venue classification fields
+    [Required]
+    [MaxLength(50)]
+    [Column("venue_type")]
+    public string VenueType { get; set; } = string.Empty;
+    
+    [MaxLength(200)]
+    [Column("operator_name")]
+    public string? OperatorName { get; set; }
+    
+    [Column("market_notes")]
+    public string? MarketNotes { get; set; }
+    
+    [MaxLength(500)]
+    [Column("source_url")]
+    public string? SourceUrl { get; set; }
+    
+    [Column("last_verified_at")]
+    public DateTime? LastVerifiedAt { get; set; }
+    
+    // Competition/feature fields
+    [Column("has_slots")]
+    public bool HasSlots { get; set; }
+    [Column("has_table_games")]
+    public bool HasTableGames { get; set; }
+    [Column("has_poker")]
+    public bool HasPoker { get; set; }
+    [Column("has_sportsbook")]
+    public bool HasSportsbook { get; set; }
+    [Column("has_racetrack")]
+    public bool HasRacetrack { get; set; }
+    [Column("has_hotel")]
+    public bool HasHotel { get; set; }
+    [Column("has_restaurants")]
+    public bool HasRestaurants { get; set; }
+    [Column("has_entertainment")]
+    public bool HasEntertainment { get; set; }
+    [Column("has_loyalty_program")]
+    public bool HasLoyaltyProgram { get; set; }
+    [Column("has_resort_amenities")]
+    public bool HasResortAmenities { get; set; }
+    
+    [Column("estimated_competition_weight")]
+    public double? EstimatedCompetitionWeight { get; set; }
+
+    [Column("geom", TypeName = "geometry(Point, 4326)")]
+    public Point Geom { get; set; } = null!;
+}
