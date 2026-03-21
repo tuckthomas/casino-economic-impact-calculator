@@ -253,6 +253,57 @@ window.MapLibreImpactMap = (function ()
 
     // === DATA LOADING ===
 
+    async function loadCompetitors()
+    {
+        try
+        {
+            const res = await fetch('/api/Revenue/competitors');
+            if (!res.ok) throw new Error('Failed to fetch competitors');
+
+            const competitors = await res.json();
+
+            competitors.forEach(comp =>
+            {
+                let iconUrl = '/assets/existing-locations-map-markers/EXISTING_CASINO_MARKER.svg'; // fallback
+                if (comp.venueType === 'racino')
+                {
+                    iconUrl = '/assets/existing-locations-map-markers/EXISTING_CASINO_RACETRACK_MARKER.svg';
+                } else if (comp.venueType === 'racetrack_only' || comp.venueType === 'racetrack')
+                {
+                    iconUrl = '/assets/existing-locations-map-markers/EXISTING_RACETRACK_MARKER.svg';
+                } else if (comp.venueType === 'tribal')
+                { // Assuming tribal marker logic if applicable
+                    iconUrl = '/assets/existing-locations-map-markers/EXISTING_TRIBAL_CASINO_MARKER.svg';
+                }
+
+                // Create custom HTML element for marker
+                const el = document.createElement('div');
+                el.className = 'competitor-marker';
+                el.style.backgroundImage = `url(${iconUrl})`;
+                el.style.width = '30px';
+                el.style.height = '40px';
+                el.style.backgroundSize = 'contain';
+                el.style.backgroundRepeat = 'no-repeat';
+                el.style.cursor = 'pointer';
+
+                // Add to map
+                new maplibregl.Marker({ element: el })
+                    .setLngLat([comp.longitude, comp.latitude])
+                    .setPopup(new maplibregl.Popup({ offset: 25 }) // add popups
+                        .setHTML(`<div class="p-2">
+                                    <h3 class="font-bold text-slate-900">${comp.name}</h3>
+                                    <p class="text-sm text-slate-600">${comp.venueType.replace(/_/g, ' ')}</p>
+                                    ${comp.operatorName ? `<p class="text-xs text-slate-500">Op: ${comp.operatorName}</p>` : ''}
+                                  </div>`))
+                    .addTo(map);
+            });
+            console.log(`Loaded ${competitors.length} competitors.`);
+        } catch (e)
+        {
+            console.error('Error loading competitors:', e);
+        }
+    }
+
     async function loadStates()
     {
         if (cache.states) return cache.states;
@@ -759,6 +810,56 @@ window.MapLibreImpactMap = (function ()
 
         const triggerInput = document.getElementById('input-revenue');
         if (triggerInput) triggerInput.dispatchEvent(new Event('input'));
+
+        // Asynchronously update the revenue potential alert
+        updateRevenuePotential(centerLat, centerLng);
+    }
+
+    async function updateRevenuePotential(lat, lng)
+    {
+        try
+        {
+            const res = await fetch(`/api/Revenue/potential?lat=${lat}&lon=${lng}`);
+            if (res.ok)
+            {
+                const data = await res.json();
+                const alertEl = document.getElementById('revenue-potential-alert');
+                const titleEl = document.getElementById('revenue-alert-title');
+                const msgEl = document.getElementById('revenue-alert-message');
+                const iconEl = document.getElementById('revenue-alert-icon');
+
+                if (alertEl && titleEl && msgEl)
+                {
+                    alertEl.classList.remove('hidden', 'border-red-500', 'bg-red-500/10', 'border-yellow-500', 'bg-yellow-500/10', 'border-emerald-500', 'bg-emerald-500/10');
+                    iconEl.classList.remove('text-red-400', 'text-yellow-400', 'text-emerald-400');
+
+                    titleEl.innerText = data.classification;
+                    msgEl.innerText = data.recommendationMessage;
+
+                    if (data.normalizedMultiplier >= 0.85)
+                    {
+                        alertEl.classList.add('border-emerald-500', 'bg-emerald-500/10');
+                        iconEl.classList.add('text-emerald-400');
+                        iconEl.innerText = 'check_circle';
+                    } else if (data.normalizedMultiplier >= 0.60)
+                    {
+                        alertEl.classList.add('border-yellow-500', 'bg-yellow-500/10');
+                        iconEl.classList.add('text-yellow-400');
+                        iconEl.innerText = 'warning';
+                    } else
+                    {
+                        alertEl.classList.add('border-red-500', 'bg-red-500/10');
+                        iconEl.classList.add('text-red-400');
+                        iconEl.innerText = 'error';
+                    }
+
+                    window.currentRevenueMultiplier = data.normalizedMultiplier;
+                }
+            }
+        } catch (e)
+        {
+            console.error('Failed to fetch revenue potential', e);
+        }
     }
 
     // === ISOCHRONE INTEGRATION ===
@@ -3413,7 +3514,13 @@ window.MapLibreImpactMap = (function ()
                 zoom: options.zoom || DEFAULT_ZOOM,
                 scrollZoom: false,
                 attributionControl: false,
-                preserveDrawingBuffer: true  // Required for PDF/image export via canvas.toDataURL()
+                preserveDrawingBuffer: true,  // Required for PDF/image export via canvas.toDataURL()
+                transformRequest: (url, resourceType) =>
+                {
+                    // Ensure all tile requests use CORS so the WebGL canvas is not tainted
+                    // (required for canvas.toDataURL() export for PDF generation)
+                    return { url, credentials: 'same-origin' };
+                }
             });
 
             map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
@@ -3430,6 +3537,9 @@ window.MapLibreImpactMap = (function ()
 
                 // Load state data for dropdown/UI (not for map rendering)
                 await loadStates();
+
+                // Load and render casino competitors
+                await loadCompetitors();
 
                 updateMapNavUI(1);
                 setupDrawingTools();

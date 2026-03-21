@@ -69,6 +69,17 @@
                         <div id="manual-controls"
                             class="rounded-2xl px-4 sm:px-6 py-8 transition-all duration-500 ease-in-out @(_manualControlsExpanded ? "max-h-[8000px] opacity-100 overflow-visible" : "max-h-0 opacity-0 overflow-hidden")">
                         
+                        <!-- Revenue Potential Alert (Populated by JS) -->
+                        <div id="revenue-potential-alert" class="hidden mb-6 p-4 rounded-xl border-l-4">
+                            <div class="flex items-start gap-3">
+                                <span class="material-symbols-outlined mt-0.5 text-xl" id="revenue-alert-icon">info</span>
+                                <div>
+                                    <h4 class="font-bold text-white mb-1" id="revenue-alert-title">Location Assessment</h4>
+                                    <p class="text-sm text-slate-300" id="revenue-alert-message">Assessing relative revenue potential...</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- AGR Input -->
                         <div class="border-b border-slate-700 pb-8">
                             <SliderInput Id="agr" Label="Adjusted Gross Revenue (AGR)" Value="204.3"
@@ -78,6 +89,20 @@
                                          MarkerColor="green"
                                          Tooltip="Total gambling losses from all players, before taxes and expenses."
                                          Markers='@(new List<SliderMarker> { new() { Label="Default", Value=204.3, TooltipDescription="Spectrum Gaming Projection" } })' />
+
+                            <!-- AGR Sensitivity Presets -->
+                            <div class="mt-16 mb-4">
+                                <label class="text-sm font-bold text-slate-300 mb-2 block">Quick Sensitivity Scenarios</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <button type="button" onclick="window.applyAgrSensitivity(1.0)" class="text-xs py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white transition-colors">Base Scenario</button>
+                                    <button type="button" onclick="window.applyAgrSensitivity(0.85)" class="text-xs py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white transition-colors">Mild Reduction (-15%)</button>
+                                    <button type="button" onclick="window.applyAgrSensitivity(0.65)" class="text-xs py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white transition-colors">Moderate Reduction (-35%)</button>
+                                    <button type="button" onclick="window.applyAgrSensitivity(0.50)" class="text-xs py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white transition-colors">Severe Reduction (-50%)</button>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-4 italic">
+                                    <strong>Methodology Note:</strong> The revenue-potential heuristic uses public demographic and competition data to estimate relative market depth. It is directionally informed by public descriptions of the Spectrum methodology, but it does not replicate Spectrum's proprietary state/operator capture model. Revenue estimates should be treated as scenarios rather than exact forecasts.
+                                </p>
+                            </div>
 
                             <!-- Tax Details (Always Visible) -->
                             <div id="tax-details-container"

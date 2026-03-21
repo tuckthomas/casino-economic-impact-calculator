@@ -1872,6 +1872,27 @@ window.EconomicCalculator = (function ()
     };
 })();
 
+// Global function for applying AGR sensitivity presets
+window.applyAgrSensitivity = function(multiplier) {
+    const baseAgr = 204.3; // Default Spectrum projection
+    const newAgr = (baseAgr * multiplier).toFixed(2);
+    
+    const agrSlider = document.getElementById('slider-agr');
+    const agrInput = document.getElementById('input-agr');
+    
+    if (agrInput) {
+        agrInput.value = newAgr;
+        agrInput.dispatchEvent(new Event('input', { bubbles: true }));
+        agrInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    if (agrSlider) {
+        agrSlider.value = newAgr;
+        agrSlider.dispatchEvent(new Event('input', { bubbles: true }));
+        agrSlider.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+};
+
 // Expose for Blazor
 window.initEconomicCalculator = window.EconomicCalculator.init;
 

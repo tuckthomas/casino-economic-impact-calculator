@@ -13,39 +13,86 @@ window.PdfHelper = {
                 ? window.MapLibreImpactMap.getMap()
                 : null;
 
+            console.log('[PDF] Map instance:', mapInstance ? 'found' : 'NOT FOUND');
+
             if (mapInstance)
             {
-                // Strategy: Composite MapLibre's WebGL canvas + DOM overlays (markers)
                 const glCanvas = mapInstance.getCanvas();
                 const width = glCanvas.width;
                 const height = glCanvas.height;
                 const dpr = window.devicePixelRatio || 1;
 
-                // Create compositing canvas
-                const compositeCanvas = document.createElement('canvas');
-                compositeCanvas.width = width;
-                compositeCanvas.height = height;
-                const ctx = compositeCanvas.getContext('2d');
+                console.log('[PDF] GL canvas size:', width, 'x', height, 'DPR:', dpr);
 
-                // 1. Draw the WebGL map canvas (tiles, vectors, isochrones, etc.)
-                ctx.drawImage(glCanvas, 0, 0);
+                // Try Method 1: Direct WebGL canvas export (works when tiles are same-origin)
+                let glExportSuccess = false;
+                let glDataUrl = null;
+                try {
+                    glDataUrl = glCanvas.toDataURL('image/png');
+                    glExportSuccess = glDataUrl && glDataUrl.length > 100;
+                    console.log('[PDF] WebGL toDataURL:', glExportSuccess ? 'SUCCESS' : 'FAILED (empty)', 'length:', glDataUrl?.length);
+                } catch (e) {
+                    console.warn('[PDF] WebGL toDataURL threw (canvas tainted by cross-origin tiles):', e.message);
+                }
 
-                // 2. Capture DOM overlays (markers, popups) via html2canvas
-                // MapLibre renders markers as absolutely positioned DOM elements
-                // inside .maplibregl-canvas-container's sibling containers
-                try
+                if (glExportSuccess)
                 {
-                    const overlayCanvas = await html2canvas(mapContainer, {
+                    // Clean path: composite WebGL canvas + DOM overlays
+                    const compositeCanvas = document.createElement('canvas');
+                    compositeCanvas.width = width;
+                    compositeCanvas.height = height;
+                    const ctx = compositeCanvas.getContext('2d');
+
+                    // Draw the map
+                    const mapImg = new Image();
+                    mapImg.src = glDataUrl;
+                    await new Promise(resolve => { mapImg.onload = resolve; });
+                    ctx.drawImage(mapImg, 0, 0);
+
+                    // Overlay DOM elements (markers, popups)
+                    try {
+                        const overlayCanvas = await html2canvas(mapContainer, {
+                            useCORS: true,
+                            allowTaint: true,
+                            logging: false,
+                            scale: dpr,
+                            backgroundColor: null,
+                            ignoreElements: (el) => {
+                                if (el.tagName === 'CANVAS' && el.classList.contains('maplibregl-canvas')) return true;
+                                if (el.id === 'map-navigation-overlay') return true;
+                                if (el.id === 'map-zoom-hint') return true;
+                                if (el.id === 'map-overlay-panel') return true;
+                                if (el.id === 'map-overlay-topright') return true;
+                                if (el.classList && el.classList.contains('maplibregl-ctrl-top-right')) return true;
+                                if (el.classList && el.classList.contains('maplibregl-ctrl-bottom-right')) return true;
+                                if (el.classList && el.classList.contains('maplibregl-ctrl-top-left')) return true;
+                                if (el.classList && el.classList.contains('maplibregl-ctrl-bottom-left')) return true;
+                                return false;
+                            }
+                        });
+                        ctx.drawImage(overlayCanvas, 0, 0, width, height);
+                        console.log('[PDF] Overlays composited');
+                    } catch (overlayErr) {
+                        console.warn('[PDF] Overlay capture failed:', overlayErr);
+                    }
+
+                    base64 = compositeCanvas.toDataURL('image/png');
+                    console.log('[PDF] Export successful via WebGL path, length:', base64.length);
+                }
+                else
+                {
+                    // Fallback: Canvas is tainted by cross-origin raster tiles.
+                    // Use html2canvas with allowTaint for full container capture.
+                    // html2canvas can't render WebGL, but it captures DOM + the tainted
+                    // canvas pixels when allowTaint is true.
+                    console.log('[PDF] Using html2canvas full capture fallback (tainted canvas)');
+                    const canvas = await html2canvas(mapContainer, {
                         useCORS: true,
                         allowTaint: true,
                         logging: false,
                         scale: dpr,
-                        backgroundColor: null, // Transparent so we only get DOM overlays
-                        ignoreElements: (el) =>
-                        {
-                            // Ignore the WebGL canvas itself (we already drew it)
-                            if (el.tagName === 'CANVAS' && el.classList.contains('maplibregl-canvas')) return true;
-                            // Ignore controls we don't want in PDF
+                        backgroundColor: '#0f172a',
+                        ignoreElements: (el) => {
                             if (el.id === 'map-navigation-overlay') return true;
                             if (el.id === 'map-zoom-hint') return true;
                             if (el.id === 'map-overlay-panel') return true;
@@ -57,29 +104,24 @@ window.PdfHelper = {
                             return false;
                         }
                     });
-                    // Draw marker/popup overlays on top of the map
-                    ctx.drawImage(overlayCanvas, 0, 0, width, height);
-                } catch (overlayErr)
-                {
-                    console.warn("Overlay capture failed, map still captured:", overlayErr);
+                    base64 = canvas.toDataURL('image/png');
+                    console.log('[PDF] Fallback export, length:', base64.length);
                 }
-
-                base64 = compositeCanvas.toDataURL("image/png");
             } else
             {
-                // Fallback: try html2canvas for the whole container (won't get WebGL)
-                console.warn("MapLibre instance not found, falling back to html2canvas");
+                // No MapLibre instance at all
+                console.warn('[PDF] MapLibre instance not found, falling back to html2canvas');
                 const canvas = await html2canvas(mapContainer, {
                     useCORS: true,
                     allowTaint: true,
                     logging: false,
                     scale: 2
                 });
-                base64 = canvas.toDataURL("image/png");
+                base64 = canvas.toDataURL('image/png');
             }
         } catch (err)
         {
-            console.error("Map capture failed:", err);
+            console.error('[PDF] Map capture failed:', err);
         }
 
         return base64;
