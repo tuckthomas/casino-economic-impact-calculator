@@ -195,16 +195,18 @@ The application is now running! Access the services at:
 
 ## For Developers (Optional)
 
-If you wish to modify the C# code or run the application without Docker, you will need the [.NET 10 SDK](https://dotnet.microsoft.com/download).
+If you wish to modify the C# code or run the application without Docker, you will need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and **Node.js/npm**.
 
 ```bash
-# Local Development Command
-# This will start the dev server on port 5000 to avoid conflicting with port 80 (Docker).
-# Ensure Valhalla is available (standard port 8002 for Docker, or 8003 for Dev).
-export PATH=$PATH:/root/.dotnet
+# 1. Ensure backend services are running
+docker compose up -d savefw-db valhalla
+
+# 2. Start the dev server with hot reload (port 5000)
 cd SaveFW
-./dev/start_server.sh
+npm run dev
 ```
+
+> **Note:** Frontend dependencies (`npm install`, Tailwind CSS build, library copying) are handled automatically by MSBuild pre-build targets — no separate build step is needed.
 
 ## Dependencies & Offline Support
 
