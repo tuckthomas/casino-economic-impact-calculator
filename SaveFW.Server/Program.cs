@@ -42,6 +42,12 @@ builder.Services.AddHttpClient<SaveFW.Server.Services.CensusIngestionService>();
 // Register Isochrone Seeding Service
 builder.Services.AddScoped<SaveFW.Server.Services.IsochroneSeedingService>();
 
+// Register Competition Scoring Service
+builder.Services.AddScoped<SaveFW.Server.Services.CompetitionScoringService>();
+
+// Register Revenue Heuristic Service
+builder.Services.AddScoped<SaveFW.Server.Services.RevenueHeuristicService>();
+
 // Register Workers
 // builder.Services.AddHostedService<SaveFW.Server.Workers.ScoringWorker>();
 
@@ -76,10 +82,12 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("Migrations applied successfully.");
         }
 
+        // Initialize and seed database
+        await SaveFW.Server.Data.DbInitializer.Seed(db);
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Migration failed: {ex.Message}");
+        Console.WriteLine($"Migration or Seeding failed: {ex.Message}");
     }
 }
 

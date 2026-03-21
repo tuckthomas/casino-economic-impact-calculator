@@ -21,6 +21,13 @@ public class ImpactController : ControllerBase
         _logger = logger;
     }
 
+    [HttpGet("schema")]
+    public IActionResult GetSchema()
+    {
+        var script = _db.Database.GenerateCreateScript();
+        return Content(script, "text/plain");
+    }
+
     [HttpGet("calculate")]
     public async Task<IActionResult> CalculateImpact(double lat, double lon)
     {
