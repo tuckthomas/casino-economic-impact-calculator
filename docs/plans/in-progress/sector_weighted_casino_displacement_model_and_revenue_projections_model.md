@@ -703,16 +703,16 @@
 
 ## 17. Implementation order — do this in sequence
 
-- [ ] Step 1: create the casino competitor database table and seed structure.
-- [ ] Step 2: ingest and normalize venue records for Indiana and surrounding relevant states.
-- [ ] Step 3: add venue-type and feature-aware competition scoring.
-- [ ] Step 4: add public-data market-depth ingestion and computations.
-- [ ] Step 5: add the location-based revenue-potential heuristic.
-- [ ] Step 6: add Spectrum-informed calibration anchors and documentation language.
-- [ ] Step 7: add user-facing revenue warning logic.
-- [ ] Step 8: add AGR sensitivity presets.
-- [ ] Step 9: add uncertainty and methodology disclosures.
-- [ ] Step 10: integrate with the sector-weighted displacement model.
+- [x] Step 1: create the casino competitor database table and seed structure.
+- [x] Step 2: ingest and normalize venue records for Indiana and surrounding relevant states.
+- [x] Step 3: add venue-type and feature-aware competition scoring.
+- [x] Step 4: add public-data market-depth ingestion and computations.
+- [x] Step 5: add the location-based revenue-potential heuristic.
+- [x] Step 6: add Spectrum-informed calibration anchors and documentation language.
+- [x] Step 7: add user-facing revenue warning logic.
+- [x] Step 8: add AGR sensitivity presets.
+- [x] Step 9: add uncertainty and methodology disclosures.
+- [x] Step 10: integrate with the sector-weighted displacement model.
 - [ ] Step 11: run benchmark and edge-case tests.
 - [ ] Step 12: document all assumptions in code comments and user-facing methodology notes.
 
@@ -720,19 +720,19 @@
 
 ## 18. Final acceptance criteria
 
-- [ ] The project contains a persistent casino competitor dataset.
-- [ ] Competing venues are not all treated equally.
-- [ ] Venue type and feature richness affect competition weight.
-- [ ] Catchment overlap affects competition weight.
-- [ ] Public-data weighted market depth is incorporated into the revenue-potential logic.
-- [ ] A benchmark-relative revenue heuristic exists.
-- [ ] Spectrum is used only as public calibration guidance, not as a false replication claim.
-- [ ] The app warns users when a proposed site is in a weaker-demand location.
-- [ ] The app provides explicit AGR sensitivity presets.
-- [ ] The app clearly discloses sensitivity to baseline prevalence and AGR.
-- [ ] The app preserves the sector-weighted displacement methodology.
-- [ ] The app’s code separates data, calculation, recommendation, and UI concerns cleanly.
-- [ ] The final user experience is more transparent, more defensible, and harder to misread than the prior version.
+- [x] The project contains a persistent casino competitor dataset.
+- [x] Competing venues are not all treated equally.
+- [x] Venue type and feature richness affect competition weight.
+- [x] Catchment overlap affects competition weight.
+- [x] Public-data weighted market depth is incorporated into the revenue-potential logic.
+- [x] A benchmark-relative revenue heuristic exists.
+- [x] Spectrum is used only as public calibration guidance, not as a false replication claim.
+- [x] The app warns users when a proposed site is in a weaker-demand location.
+- [x] The app provides explicit AGR sensitivity presets.
+- [x] The app clearly discloses sensitivity to baseline prevalence and AGR.
+- [x] The app preserves the sector-weighted displacement methodology.
+- [x] The app’s code separates data, calculation, recommendation, and UI concerns cleanly.
+- [x] The final user experience is more transparent, more defensible, and harder to misread than the prior version.
 
 ---
 
