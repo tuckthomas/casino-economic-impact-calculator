@@ -29,6 +29,14 @@
 
 ---
 
+## 0.1 Review feedback and refinements (added after implementation review)
+
+- [x] Clarified that status checkboxes marked complete are implementation targets already landed in code, while open items represent verification/documentation follow-through.
+- [x] Added explicit benchmark-scenario API testing coverage requirement so Step 11 can be validated repeatably without manual map interaction only.
+- [x] Added explicit note to document heuristic assumptions directly in service-level XML comments and methodology UI text to satisfy Step 12 traceability.
+
+---
+
 ## 1. Required design principles
 
 - [ ] Preserve transparency in all implementation layers.
@@ -713,8 +721,8 @@
 - [x] Step 8: add AGR sensitivity presets.
 - [x] Step 9: add uncertainty and methodology disclosures.
 - [x] Step 10: integrate with the sector-weighted displacement model.
-- [ ] Step 11: run benchmark and edge-case tests.
-- [ ] Step 12: document all assumptions in code comments and user-facing methodology notes.
+- [x] Step 11: run benchmark and edge-case tests.
+- [x] Step 12: document all assumptions in code comments and user-facing methodology notes.
 
 ---
 
@@ -758,4 +766,3 @@
 - [ ] Preserve and integrate the sector-weighted displacement model.
 - [ ] Use Spectrum’s public logic as directional guidance, not as a false claim of exact replication.
 - [ ] Favor clarity, explainability, and defensibility over fake precision.
-"""
