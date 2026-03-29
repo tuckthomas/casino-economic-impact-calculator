@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SaveFW.Server.Data;
 using SaveFW.Server.Data.Entities;
-using NetTopologySuite.Geometries;
 
 namespace SaveFW.Server.Services;
 
@@ -12,6 +11,8 @@ public class CompetitionScoreResult
     public double FeatureWeight { get; set; }
     public double TotalWeight { get; set; }
     public double DistanceMiles { get; set; }
+    public double MarketCenterDistanceMiles { get; set; }
+    public double MarketOverlapFactor { get; set; }
     public double OverlapPressure { get; set; }
 }
 
@@ -25,6 +26,9 @@ public class SiteCompetitionResult
 
 public class CompetitionScoringService
 {
+    private const double FtWayneLat = 41.0793;
+    private const double FtWayneLon = -85.1394;
+
     private readonly AppDbContext _db;
 
     public CompetitionScoringService(AppDbContext db)
@@ -32,12 +36,9 @@ public class CompetitionScoringService
         _db = db;
     }
 
-    public double ComputeVenueWeight(CasinoCompetitor venue)
+    public (double BaseWeight, double FeatureWeight, double TotalWeight) ComputeVenueWeightBreakdown(CasinoCompetitor venue)
     {
-        double score = 0;
-        
-        // Base type values
-        score += venue.VenueType switch
+        var baseWeight = venue.VenueType switch
         {
             "full_service_casino" => 1.00,
             "racino" => 0.70,
@@ -47,72 +48,73 @@ public class CompetitionScoringService
             _ => 0.0
         };
 
-        // Feature adders
-        if (venue.HasSlots) score += 0.15;
-        if (venue.HasTableGames) score += 0.20;
-        if (venue.HasPoker) score += 0.10;
-        if (venue.HasSportsbook) score += 0.05;
-        if (venue.HasHotel) score += 0.15;
-        if (venue.HasEntertainment) score += 0.05;
-        if (venue.HasRestaurants) score += 0.05;
+        var featureWeight = 0.0;
+        if (venue.HasSlots) featureWeight += 0.15;
+        if (venue.HasTableGames) featureWeight += 0.20;
+        if (venue.HasPoker) featureWeight += 0.10;
+        if (venue.HasSportsbook) featureWeight += 0.05;
+        if (venue.HasHotel) featureWeight += 0.15;
+        if (venue.HasEntertainment) featureWeight += 0.05;
+        if (venue.HasRestaurants) featureWeight += 0.05;
 
-        return score;
+        return (baseWeight, featureWeight, baseWeight + featureWeight);
     }
 
+    public double ComputeVenueWeight(CasinoCompetitor venue)
+        => ComputeVenueWeightBreakdown(venue).TotalWeight;
+
     /// <summary>
-    /// Computes the competitive pressure on a proposed site based on existing active venues.
-    /// Overlap pressure decreases over distance using a gravity model proxy.
+    /// Computes competitive pressure using venue weights, distance decay,
+    /// and overlap with the Fort Wayne primary demand center.
     /// </summary>
     public async Task<SiteCompetitionResult> ComputeSiteCompetitionPressureAsync(double lat, double lon, double maxDistanceMiles = 150)
     {
-        var targetPoint = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326)
-            .CreatePoint(new Coordinate(lon, lat));
-
-        // Note: we fetch all and calculate precise distance in memory to avoid complex PostGIS 
-        // coordinate casting issues unless it's a huge dataset, but N=100 is tiny.
         var competitors = await _db.CasinoCompetitors
             .Where(c => c.IsActive)
             .ToListAsync();
-            
+
         var result = new SiteCompetitionResult { Latitude = lat, Longitude = lon };
 
         foreach (var comp in competitors)
         {
             var distanceMeters = CalculateHaversineDistance(lat, lon, comp.Latitude, comp.Longitude);
             var distanceMiles = distanceMeters / 1609.34;
-            
             if (distanceMiles > maxDistanceMiles) continue;
 
-            var totalW = ComputeVenueWeight(comp);
+            var marketCenterDistanceMiles = CalculateHaversineDistance(FtWayneLat, FtWayneLon, comp.Latitude, comp.Longitude) / 1609.34;
+            var marketOverlapFactor = 1.0 / (1.0 + Math.Pow(marketCenterDistanceMiles / 55.0, 2));
 
-            // Pressure decays with distance. 
-            // Using a gravity-like model where close competitors matter much more.
-            // Half-distance roughly 40 miles: 1 / (1 + (distance/40)^2)
+            var weightBreakdown = ComputeVenueWeightBreakdown(comp);
+
             var distanceDecay = 1.0 / (1.0 + Math.Pow(distanceMiles / 40.0, 2));
-            var overlapPressure = totalW * distanceDecay;
+            var overlapAdjustment = 0.6 + (0.4 * marketOverlapFactor);
+            var overlapPressure = weightBreakdown.TotalWeight * distanceDecay * overlapAdjustment;
 
             result.CompetitorDetails.Add(new CompetitionScoreResult
             {
                 Competitor = comp,
-                BaseWeight = totalW - (comp.HasSlots ? 0.15 : 0), // Simplifying display
-                FeatureWeight = totalW, // Simplifying display
-                TotalWeight = totalW,
+                BaseWeight = weightBreakdown.BaseWeight,
+                FeatureWeight = weightBreakdown.FeatureWeight,
+                TotalWeight = weightBreakdown.TotalWeight,
                 DistanceMiles = distanceMiles,
+                MarketCenterDistanceMiles = marketCenterDistanceMiles,
+                MarketOverlapFactor = marketOverlapFactor,
                 OverlapPressure = overlapPressure
             });
-            
+
             result.TotalPressureScore += overlapPressure;
         }
 
-        // Sort by pressure descending for easier debugging
-        result.CompetitorDetails = result.CompetitorDetails.OrderByDescending(c => c.OverlapPressure).ToList();
+        result.CompetitorDetails = result.CompetitorDetails
+            .OrderByDescending(c => c.OverlapPressure)
+            .ToList();
 
         return result;
     }
 
     private static double CalculateHaversineDistance(double lat1, double lon1, double lat2, double lon2)
     {
-        var R = 6371e3; // metres
+        var R = 6371e3;
         var phi1 = lat1 * Math.PI / 180;
         var phi2 = lat2 * Math.PI / 180;
         var deltaPhi = (lat2 - lat1) * Math.PI / 180;

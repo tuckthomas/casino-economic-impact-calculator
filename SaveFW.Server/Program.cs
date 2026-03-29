@@ -48,6 +48,9 @@ builder.Services.AddScoped<SaveFW.Server.Services.CompetitionScoringService>();
 // Register Revenue Heuristic Service
 builder.Services.AddScoped<SaveFW.Server.Services.RevenueHeuristicService>();
 
+// Register ZIP switching model service
+builder.Services.AddScoped<SaveFW.Server.Services.ZipSwitchingModelService>();
+
 // Register Workers
 // builder.Services.AddHostedService<SaveFW.Server.Workers.ScoringWorker>();
 
@@ -333,4 +336,3 @@ static async Task WarmMvtTilesAsync(IServiceProvider services)
         Console.WriteLine($"MVT tile cache warm failed: {ex.Message}");
     }
 }
-

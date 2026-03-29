@@ -1872,26 +1872,69 @@ window.EconomicCalculator = (function ()
     };
 })();
 
-// Global function for applying AGR sensitivity presets
-window.applyAgrSensitivity = function(multiplier) {
-    const baseAgr = 204.3; // Default Spectrum projection
-    const newAgr = (baseAgr * multiplier).toFixed(2);
-    
+const benchmarkAgrPresets = {
+    steubenLow: 188.6,
+    steubenBase: 203.1,
+    steubenHigh: 214.0
+};
+
+function setActiveAgrPresetButton(presetKey)
+{
+    const buttons = document.querySelectorAll('[data-agr-preset]');
+    buttons.forEach(button =>
+    {
+        const isActive = presetKey && button.dataset.agrPreset === presetKey;
+        button.classList.toggle('border-emerald-400', !!isActive);
+        button.classList.toggle('bg-emerald-700/30', !!isActive);
+        button.classList.toggle('text-emerald-200', !!isActive);
+        button.classList.toggle('border-slate-600', !isActive);
+        button.classList.toggle('text-white', !isActive);
+    });
+}
+
+// Global function for applying AGR presets directly (AGR/GGR in MM).
+window.applyAgrPreset = function(agrValue, label = null, presetKey = null)
+{
+    const parsedAgr = parseFloat(agrValue);
+    if (!Number.isFinite(parsedAgr) || parsedAgr < 0) return;
+
+    const normalizedAgr = parsedAgr.toFixed(2);
     const agrSlider = document.getElementById('slider-agr');
     const agrInput = document.getElementById('input-agr');
-    
-    if (agrInput) {
-        agrInput.value = newAgr;
+
+    if (agrSlider)
+    {
+        agrSlider.value = normalizedAgr;
+    }
+
+    if (agrInput)
+    {
+        agrInput.value = normalizedAgr;
         agrInput.dispatchEvent(new Event('input', { bubbles: true }));
         agrInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
-    
-    if (agrSlider) {
-        agrSlider.value = newAgr;
+
+    if (agrSlider)
+    {
         agrSlider.dispatchEvent(new Event('input', { bubbles: true }));
         agrSlider.dispatchEvent(new Event('change', { bubbles: true }));
     }
+
+    setActiveAgrPresetButton(presetKey);
+    window.currentAgrPreset = label || null;
 };
+
+// Backward-compatible multiplier helper for any existing callers.
+window.applyAgrSensitivity = function(multiplier)
+{
+    const baseAgr = 204.3;
+    const numericMultiplier = parseFloat(multiplier);
+    if (!Number.isFinite(numericMultiplier)) return;
+    const newAgr = baseAgr * numericMultiplier;
+    window.applyAgrPreset(newAgr, `Sensitivity (${numericMultiplier})`);
+};
+
+window.benchmarkAgrPresets = benchmarkAgrPresets;
 
 // Expose for Blazor
 window.initEconomicCalculator = window.EconomicCalculator.init;
@@ -2070,9 +2113,7 @@ window.runSimulation = function ()
 
     if (mainAgrInput)
     {
-        mainAgrInput.value = agrVal;
-        mainAgrInput.dispatchEvent(new Event('input'));
-        mainAgrInput.dispatchEvent(new Event('change'));
+        window.applyAgrPreset(agrVal, 'Simulator Scenario');
     }
 
     if (mainAllocInput)

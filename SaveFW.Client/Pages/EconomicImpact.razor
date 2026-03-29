@@ -92,16 +92,25 @@
 
                             <!-- AGR Sensitivity Presets -->
                             <div class="mt-16 mb-4">
-                                <label class="text-sm font-bold text-slate-300 mb-2 block">Quick Sensitivity Scenarios</label>
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    <button type="button" onclick="window.applyAgrSensitivity(1.0)" class="text-xs py-2.5 px-3 rounded-lg bg-gradient-to-b from-slate-700 to-slate-800 hover:from-blue-600 hover:to-blue-700 border border-slate-600 hover:border-blue-400 text-slate-200 hover:text-white transition-all shadow-sm hover:shadow-blue-500/20 active:scale-95 font-medium tracking-wide">Base Scenario</button>
-                                    <button type="button" onclick="window.applyAgrSensitivity(0.85)" class="text-xs py-2.5 px-3 rounded-lg bg-gradient-to-b from-slate-700 to-slate-800 hover:from-purple-600 hover:to-purple-700 border border-slate-600 hover:border-purple-400 text-slate-200 hover:text-white transition-all shadow-sm hover:shadow-purple-500/20 active:scale-95 font-medium tracking-wide">Mild Reduction (-15%)</button>
-                                    <button type="button" onclick="window.applyAgrSensitivity(0.65)" class="text-xs py-2.5 px-3 rounded-lg bg-gradient-to-b from-slate-700 to-slate-800 hover:from-amber-600 hover:to-amber-700 border border-slate-600 hover:border-amber-400 text-slate-200 hover:text-white transition-all shadow-sm hover:shadow-amber-500/20 active:scale-95 font-medium tracking-wide">Moderate Reduction (-35%)</button>
-                                    <button type="button" onclick="window.applyAgrSensitivity(0.50)" class="text-xs py-2.5 px-3 rounded-lg bg-gradient-to-b from-slate-700 to-slate-800 hover:from-red-600 hover:to-red-700 border border-slate-600 hover:border-red-400 text-slate-200 hover:text-white transition-all shadow-sm hover:shadow-red-500/20 active:scale-95 font-medium tracking-wide">Severe Reduction (-50%)</button>
+                                <label class="text-sm font-bold text-slate-300 mb-2 block">Steuben County Benchmark AGR Scenarios</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <button type="button" data-agr-preset="steubenLow" onclick="window.applyAgrPreset(188.6, 'Steuben Low', 'steubenLow')" class="text-xs py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white transition-colors">Steuben Low (188.6)</button>
+                                    <button type="button" data-agr-preset="steubenBase" onclick="window.applyAgrPreset(203.1, 'Steuben Base', 'steubenBase')" class="text-xs py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white transition-colors">Steuben Base (203.1)</button>
+                                    <button type="button" data-agr-preset="steubenHigh" onclick="window.applyAgrPreset(214.0, 'Steuben High', 'steubenHigh')" class="text-xs py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white transition-colors">Steuben High (214.0)</button>
                                 </div>
                                 <p class="text-xs text-slate-400 mt-4 italic">
-                                    <strong>Methodology Note:</strong> The revenue-potential heuristic uses public demographic and competition data to estimate relative market depth. It is directionally informed by public descriptions of the Spectrum methodology, but it does not replicate Spectrum's proprietary state/operator capture model. Revenue estimates should be treated as scenarios rather than exact forecasts.
+                                    <strong>Methodology Note:</strong> These benchmark presets are Steuben County market-feasibility GGR/AGR scenarios from the A.M. Steinberg Advisors study (March 5, 2026). They are provided for scenario testing and do not represent validated economic-impact conclusions.
                                 </p>
+
+                                <details class="mt-4 rounded-lg border border-slate-700 bg-slate-900/60 p-3 text-xs text-slate-300">
+                                    <summary class="cursor-pointer font-semibold text-slate-200">What does the ZIP-by-ZIP switching model mean?</summary>
+                                    <div class="mt-3 space-y-2 text-slate-300 leading-relaxed">
+                                        <p><strong>ZIP Demand Pool:</strong> An estimate of gambling demand from each ZIP code based on adult population and scenario inputs.</p>
+                                        <p><strong>Venue Utility Score:</strong> A relative attractiveness score that goes up for stronger casino offerings and down as travel distance increases.</p>
+                                        <p><strong>Share Allocation:</strong> For each ZIP code, the model splits demand across the proposed casino and existing competitors based on relative utility.</p>
+                                        <p><strong>Projected GGR/AGR:</strong> The model sums the proposed site's ZIP-level shares into a scenario estimate. Treat this as directional scenario analysis, not a precise forecast.</p>
+                                    </div>
+                                </details>
                             </div>
 
                             <!-- Tax Details (Always Visible) -->
