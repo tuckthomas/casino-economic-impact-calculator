@@ -39,6 +39,7 @@ window.MapLibreImpactMap = (function ()
 
     const DEFAULT_CENTER = [-98.35, 39.5];
     const DEFAULT_ZOOM = 3.5; // Zoomed out enough to see continental US
+    const ADULT_POPULATION_BASE_YEAR = 2020;
 
     // === STATE ===
     let map = null;
@@ -206,6 +207,80 @@ window.MapLibreImpactMap = (function ()
     {
         if (!el) return;
         el.textContent = Math.round(val).toLocaleString();
+    }
+
+    function getAdultPopulationProjectionSettings()
+    {
+        const rawTargetYear = parseInt(els.inputAdultProjectionYear ? els.inputAdultProjectionYear.value : ADULT_POPULATION_BASE_YEAR, 10);
+        const rawAnnualGrowthRate = parseFloat(els.inputAdultProjectionGrowth ? els.inputAdultProjectionGrowth.value : 0);
+
+        const targetYear = Number.isFinite(rawTargetYear)
+            ? Math.max(ADULT_POPULATION_BASE_YEAR, rawTargetYear)
+            : ADULT_POPULATION_BASE_YEAR;
+        const annualGrowthRate = Number.isFinite(rawAnnualGrowthRate) ? rawAnnualGrowthRate : 0;
+        const yearsFromBase = Math.max(0, targetYear - ADULT_POPULATION_BASE_YEAR);
+
+        let multiplier = Math.pow(1 + (annualGrowthRate / 100), yearsFromBase);
+        if (!Number.isFinite(multiplier) || multiplier <= 0) multiplier = 1;
+
+        return {
+            baseYear: ADULT_POPULATION_BASE_YEAR,
+            targetYear,
+            annualGrowthRate,
+            yearsFromBase,
+            multiplier,
+            usesProjectedAdults: yearsFromBase > 0 && Math.abs(annualGrowthRate) > 0.0001
+        };
+    }
+
+    function scaleAdultPopulation(value, multiplier)
+    {
+        const numericValue = Number(value || 0);
+        if (!Number.isFinite(numericValue) || numericValue <= 0) return 0;
+        return Math.max(0, Math.round(numericValue * multiplier));
+    }
+
+    function updateAdultPopulationProjectionDisplay(settings)
+    {
+        const summaryEl = document.getElementById('adult-projection-summary');
+        const detailEl = document.getElementById('adult-projection-detail');
+        if (!summaryEl || !detailEl) return;
+
+        if (settings.yearsFromBase === 0)
+        {
+            summaryEl.textContent = 'Using current adult population as calculated.';
+        } else if (!settings.usesProjectedAdults)
+        {
+            summaryEl.textContent = `Projection year ${settings.targetYear} selected, but adult population remains unchanged at 0.0% annual growth.`;
+        } else
+        {
+            summaryEl.textContent = `Projecting adult population to ${settings.targetYear} at ${settings.annualGrowthRate.toFixed(1)}% annual growth.`;
+        }
+
+        detailEl.textContent = `${settings.baseYear} census adult population baseline, ${settings.annualGrowthRate.toFixed(1)}% annual growth, ${settings.multiplier.toFixed(3)}x multiplier.`;
+    }
+
+    function syncProjectionInputRefs(target)
+    {
+        if (!target || !target.id) return false;
+
+        switch (target.id)
+        {
+            case 'input-rate':
+                els.inputRate = target;
+                return true;
+            case 'input-baseline-increase':
+                els.inputBaselineIncrease = target;
+                return true;
+            case 'input-adult-projection-year':
+                els.inputAdultProjectionYear = target;
+                return true;
+            case 'input-adult-projection-growth':
+                els.inputAdultProjectionGrowth = target;
+                return true;
+            default:
+                return false;
+        }
     }
 
     // === CIRCLE GENERATION ===
@@ -538,13 +613,16 @@ window.MapLibreImpactMap = (function ()
         // Debug mode status
         console.log('[Impact] calculateImpact called. Mode:', riskZoneMode);
 
+        const adultPopulationProjection = getAdultPopulationProjectionSettings();
+        updateAdultPopulationProjectionDisplay(adultPopulationProjection);
+
         if (!currentCalcFeatures || !currentCountyTotals || !markerPosition || !currentCountyFips) return;
 
         const baselineRate = parseFloat(els.inputRate ? els.inputRate.value : 2.3);
         const centerLat = markerPosition.lat;
         const centerLng = markerPosition.lng;
 
-        const countyAdults = currentCountyTotals.adults || 0;
+        const countyAdults = scaleAdultPopulation(currentCountyTotals.adults || 0, adultPopulationProjection.multiplier);
         const countyTotal = currentCountyTotals.total || 0;
         const stateFips = String(currentCountyFips || "").substring(0, 2);
 
@@ -561,6 +639,8 @@ window.MapLibreImpactMap = (function ()
 
         // const byCounty = {}; // REMOVED - using global byCounty
 
+        let baseAdultsWithin50 = 0;
+
         // Only run radius summation if NOT in grid mode
         if (riskZoneMode !== 'grid')
         {
@@ -568,7 +648,8 @@ window.MapLibreImpactMap = (function ()
             for (const entry of currentCalcFeatures)
             {
                 if (!entry) continue;
-                const popAdult = Number(entry.popAdult || 0);
+                const basePopAdult = Number(entry.popAdult || 0);
+                const popAdult = scaleAdultPopulation(basePopAdult, adultPopulationProjection.multiplier);
                 if (!Number.isFinite(popAdult) || popAdult <= 0) continue;
 
                 const entryCountyFips = String(entry.countyFips || "");
@@ -582,16 +663,19 @@ window.MapLibreImpactMap = (function ()
 
                 if (dist <= 10)
                 {
+                    baseAdultsWithin50 += basePopAdult;
                     t1PopRegional += popAdult;
                     if (isSameCounty) t1PopCounty += popAdult;
                     bucket.t1Pop += popAdult;
                 } else if (dist <= 20)
                 {
+                    baseAdultsWithin50 += basePopAdult;
                     t2PopRegional += popAdult;
                     if (isSameCounty) t2PopCounty += popAdult;
                     bucket.t2Pop += popAdult;
                 } else if (dist <= 50)
                 {
+                    baseAdultsWithin50 += basePopAdult;
                     t3PopRegional += popAdult;
                     if (isSameCounty) t3PopCounty += popAdult;
                     bucket.t3Pop += popAdult;
@@ -612,12 +696,33 @@ window.MapLibreImpactMap = (function ()
             {
                 if (fips && fips.startsWith(stateFips))
                 {
-                    t1PopRegional += data.t1Pop;
-                    t2PopRegional += data.t2Pop;
-                    t3PopRegional += data.t3Pop;
-                    byCounty[fips] = data;
+                    baseAdultsWithin50 += Number(data.t1Pop || 0) + Number(data.t2Pop || 0) + Number(data.t3Pop || 0);
+                    const scaledData = {
+                        ...data,
+                        t1Pop: scaleAdultPopulation(data.t1Pop, adultPopulationProjection.multiplier),
+                        t2Pop: scaleAdultPopulation(data.t2Pop, adultPopulationProjection.multiplier),
+                        t3Pop: scaleAdultPopulation(data.t3Pop, adultPopulationProjection.multiplier)
+                    };
+
+                    t1PopRegional += scaledData.t1Pop;
+                    t2PopRegional += scaledData.t2Pop;
+                    t3PopRegional += scaledData.t3Pop;
+                    byCounty[fips] = scaledData;
                 }
             });
+
+            if (currentCountyFips && byCounty[currentCountyFips])
+            {
+                const countyData = byCounty[currentCountyFips];
+                t1PopCounty = countyData.t1Pop;
+                t2PopCounty = countyData.t2Pop;
+                t3PopCounty = countyData.t3Pop;
+            } else
+            {
+                t1PopCounty = 0;
+                t2PopCounty = 0;
+                t3PopCounty = 0;
+            }
         }
 
         const totalWithin50 = t1PopRegional + t2PopRegional + t3PopRegional;
@@ -787,8 +892,10 @@ window.MapLibreImpactMap = (function ()
                 stateName,
                 countyName: countyNamesCache[currentCountyFips] || '',
                 baselineRate,
+                populationProjection: adultPopulationProjection,
                 county: {
                     adults: countyAdults,
+                    baseAdults: currentCountyTotals.adults || 0,
                     total: countyTotal,
                     t1Adults: t1PopCounty,
                     t2Adults: t2PopCounty,
@@ -799,6 +906,7 @@ window.MapLibreImpactMap = (function ()
                 },
                 regional: {
                     adultsWithin50: t1PopRegional + t2PopRegional + t3PopRegional,
+                    baseAdultsWithin50,
                     t1Adults: t1PopRegional,
                     t2Adults: t2PopRegional,
                     t3Adults: t3PopRegional,
@@ -3492,6 +3600,8 @@ window.MapLibreImpactMap = (function ()
                 totalVictims: document.getElementById('total-gamblers'),
                 inputRate: document.getElementById('input-rate'),
                 inputBaselineIncrease: document.getElementById('input-baseline-increase'),
+                inputAdultProjectionYear: document.getElementById('input-adult-projection-year'),
+                inputAdultProjectionGrowth: document.getElementById('input-adult-projection-growth'),
                 stateDisplay: document.getElementById('state-display'),
                 displayCounty: document.getElementById('display-impact-county')
             };
@@ -3638,20 +3748,26 @@ window.MapLibreImpactMap = (function ()
             // Use event delegation as backup in case elements load after map init
             if (els.inputRate) els.inputRate.addEventListener('input', () => calculateImpact());
             if (els.inputBaselineIncrease) els.inputBaselineIncrease.addEventListener('input', () => calculateImpact());
+            if (els.inputAdultProjectionYear) els.inputAdultProjectionYear.addEventListener('input', () => calculateImpact());
+            if (els.inputAdultProjectionGrowth) els.inputAdultProjectionGrowth.addEventListener('input', () => calculateImpact());
 
-            // Fallback: global listener for baseline increase in case element wasn't ready at init
-            document.addEventListener('input', (e) =>
+            updateAdultPopulationProjectionDisplay(getAdultPopulationProjectionSettings());
+
+            const handleProjectionControlEvent = (event) =>
             {
-                if (e.target && e.target.id === 'input-baseline-increase')
-                {
-                    // Update els reference if it was null before
-                    if (!els.inputBaselineIncrease)
-                    {
-                        els.inputBaselineIncrease = e.target;
-                    }
-                    calculateImpact();
-                }
-            });
+                const target = event && event.target ? event.target : null;
+                if (!syncProjectionInputRefs(target)) return;
+
+                calculateImpact();
+            };
+
+            // Fallback: global listeners in case elements weren't ready at init
+            document.addEventListener('input', handleProjectionControlEvent);
+
+            // Slider text-entry and grouped sync paths can bypass the direct map listeners.
+            // Listen to the calculator's global sync event as well so population projection
+            // changes always propagate through the map -> breakdown -> calculator pipeline.
+            window.addEventListener('slider-input-sync', handleProjectionControlEvent);
 
             return map;
         },

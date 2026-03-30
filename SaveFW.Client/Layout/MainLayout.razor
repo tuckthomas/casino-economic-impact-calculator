@@ -1,21 +1,27 @@
 @inherits LayoutComponentBase
 @inject IJSRuntime JSRuntime
-@using SaveFW.Client.Pages
 
 <div class="bg-slate-900 dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100 font-display selection:bg-accent selection:text-black">
-    <FloatingTOC />
     <nav class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-background-dark/90 backdrop-blur-md">
-        <div class="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto flex min-h-20 max-w-7xl items-center gap-6 px-4 py-3 sm:px-6 lg:px-8">
             <a class="flex items-center gap-3 group" href="#">
                 <img src="assets/SAVEFW.svg" alt="Save Fort Wayne" class="h-12 w-auto object-contain" />
             </a>
-            <div class="hidden items-center gap-8 md:flex">
+            <div class="hidden min-w-0 flex-1 items-center justify-center gap-6 lg:flex xl:gap-8">
                 <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
                     href="#">Home</a>
                 <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
                     href="#" onclick="openFlipbook(event)">Our Analysis</a>
                 <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
-                    href="#impact-visualizer">Economic Impact Calculator</a>
+                    href="#mayor-critique">Decoding The Spin</a>
+                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                    href="#economic-analysis">Economic Impact Calculator</a>
+                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                    href="#economic-analysis-part-2">Substitution Effect</a>
+                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                    href="#tribal-analysis">Tribal Fact Check</a>
+                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                    href="#crime-safety">Crime & Safety</a>
             </div>
             <div class="flex items-center gap-3">
                 <a href="https://github.com/tuckthomas/casino-economic-impact-calculator.git" target="_blank"
@@ -56,8 +62,16 @@
                     href="#" onclick="closeDrawer()">Home</a>
                 <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
                     href="#" onclick="openFlipbook(event); closeDrawer()">Our Analysis</a>
-                <a class="block py-3 text-lg font-bold border-b border-slate-800" href="#impact-visualizer"
-                    onclick="closeDrawer()">Economic Impact Calculator</a>
+                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                    href="#mayor-critique" onclick="closeDrawer()">Decoding The Spin</a>
+                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                    href="#economic-analysis" onclick="closeDrawer()">Economic Impact Calculator</a>
+                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                    href="#economic-analysis-part-2" onclick="closeDrawer()">Substitution Effect</a>
+                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                    href="#tribal-analysis" onclick="closeDrawer()">Tribal Fact Check</a>
+                <a class="block py-3 text-lg font-bold border-b border-slate-800" href="#crime-safety"
+                    onclick="closeDrawer()">Crime & Safety</a>
                 <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
                     href="mailto:outreach@savefw.com" onclick="closeDrawer()">Contact</a>
             </div>

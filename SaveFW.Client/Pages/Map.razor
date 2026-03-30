@@ -167,17 +167,51 @@
                              })' />
             </div>
             <div class="mt-6" style="margin-bottom: 6rem;">
-                 <SliderInput Id="baseline-increase" Label="Expected Baseline Increase (Statewide Effect)" Value="0"
+                 <SliderInput Id="baseline-increase" Label="Expected Baseline Increase (Catchment Area)" Value="0"
                              MinValue="0" MaxValue="3" Step="0.1"
                              InputType="Percent" DecimalPlaces="1"
                              MajorTickInterval="0.5" MinorTickInterval="0.25"
-                             Tooltip="An expected increase in the statewide baseline problem gambling rate after casino opens."
-                             Description="Set this if you expect the casino to cause a general increase in problem gambling across ALL zones, not just within the proximity tiers. This adds to the net new calculation for every tier, including the baseline 50-mile zone."
+                             Tooltip="Expected background increase in problem gambling prevalence across the full 50-mile catchment area after the casino opens."
+                             Description="Use this to model a broad catchment-wide lift in baseline problem gambling prevalence, beyond the extra proximity effects in the 0-10 and 10-20 mile tiers. This increment is added across all three zones, including the baseline 20-50 mile band."
                              Markers='@(new List<SliderMarker> { 
-                                 new() { Label="None", Value=0, TooltipDescription="No expected statewide increase beyond proximity effects." },
-                                 new() { Label="Low", Value=0.5, TooltipDescription="Conservative estimate of statewide increase (+0.5%)." },
-                                 new() { Label="High", Value=1.0, TooltipDescription="Higher estimate based on regional casino studies (+1.0%)." }
+                                 new() { Label="None", Value=0, TooltipDescription="No additional catchment-wide increase beyond proximity effects." },
+                                 new() { Label="Low", Value=0.5, TooltipDescription="Conservative catchment-wide increase (+0.5%)." },
+                                 new() { Label="High", Value=1.0, TooltipDescription="Higher catchment-wide increase (+1.0%)." }
                              })' />
+            </div>
+            <div class="mt-6" style="margin-bottom: 6rem;">
+                 <SliderInput Id="adult-projection-year" Label="Adult Population Projection Year" Value="2020"
+                             MinValue="2020" MaxValue="2040" Step="1"
+                             InputType="Number" DecimalPlaces="0"
+                             MajorTickInterval="5" MinorTickInterval="1"
+                             Tooltip="Projects block-level adult population forward from the 2020 census baseline using the annual growth rate below."
+                             Description="Leave this at 2020 with 0.0% annual growth to use the currently calculated adult population as-is. Set a future year, such as 2030, to align scenario testing with projected adult population assumptions."
+                             Markers='@(new List<SliderMarker> {
+                                 new() { Label="Current", Value=2020, TooltipDescription="Use the current calculated adult population with no year-based projection." },
+                                 new() { Label="2030", Value=2030, TooltipDescription="Project adult population through 2030 using the annual growth rate below." }
+                             })' />
+            </div>
+            <div class="mt-6" style="margin-bottom: 3rem;">
+                 <SliderInput Id="adult-projection-growth" Label="Annual Adult Population Growth Rate" Value="0"
+                             MinValue="-2" MaxValue="2" Step="0.1"
+                             InputType="Percent" DecimalPlaces="1"
+                             MajorTickInterval="1" MinorTickInterval="0.25"
+                             Tooltip="Compound annual growth rate applied uniformly to block-level adult population for the selected projection year."
+                             Description="Positive values grow adult population each year; negative values shrink it. Default 0.0% keeps the current calculated adult population unchanged."
+                             Markers='@(new List<SliderMarker> {
+                                 new() { Label="Flat", Value=0, TooltipDescription="No annual growth. Adult population stays at the current calculated level." },
+                                 new() { Label="+0.5", Value=0.5, TooltipDescription="Moderate annual adult population growth." },
+                                 new() { Label="+1.0", Value=1.0, TooltipDescription="Higher annual adult population growth." }
+                             })' />
+            </div>
+            <div id="adult-population-projection-note" class="mb-10 rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4 text-sm text-slate-300">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined text-cyan-400">timeline</span>
+                    <div class="space-y-1">
+                        <div class="font-semibold text-white" id="adult-projection-summary">Using current adult population as calculated.</div>
+                        <div class="text-slate-400" id="adult-projection-detail">2020 census adult population baseline, 0.0% annual growth, 1.000x multiplier.</div>
+                    </div>
+                </div>
             </div>
             <!-- END SLIDER SECTION -->
 
