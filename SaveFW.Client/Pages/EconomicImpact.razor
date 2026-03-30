@@ -3,11 +3,15 @@
 @using SaveFW.Shared
 @using SaveFW.Client.Pages
 
-    <section class="bg-[#0f172a] py-24 relative overflow-hidden" id="economic-analysis">
+    <section class="bg-[#0f172a] relative overflow-hidden" id="economic-analysis">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
+            <div class="economic-analysis-opening">
+                <Map />
+            </div>
+
             <!-- Economic Analysis Header -->
-            <div class="mb-12 text-center max-w-4xl mx-auto" id="economic-analysis-header">
+            <div class="economic-analysis-sticky-header mb-12 text-center max-w-4xl mx-auto" id="economic-analysis-header">
                 <span class="text-blue-500 font-bold tracking-wider uppercase text-sm mb-2 block">Economic
                     Analysis</span>
                 <h2 class="text-3xl font-black tracking-tight text-white sm:text-4xl">
@@ -18,11 +22,8 @@
                 </p>
             </div>
 
-            <!-- Refactored Map Component -->
-            <Map />
-
             <!-- Calculator Grid -->
-            <div class="flex flex-col gap-12 mb-16">
+            <div class="flex flex-col gap-12 mb-16 pb-24">
 
             <!-- Controls Card -->
             <div id="calculator-controls"
@@ -131,50 +132,12 @@
                                          Markers='@(new List<SliderMarker> { new() { Label="Default", Value=61.21, TooltipDescription="Spectrum Gaming Projection" } })' />
                         </div>
 
-                        <!-- Revenue Allocation Control -->
-                        <div class="pt-6">
-                            <div class="flex flex-col mb-3 mt-10">
-                                <label class="text-base font-bold text-white">Tax Revenue Allocation</label>
-                                <p class="text-sm text-slate-400 italic">
-                                    Drag to adjust the split between the Humanitarian Fund and General Taxpayer
-                                    Services.
-                                </p>
-                            </div>
-
-                            <!-- Visual Bar / Slider Wrapper -->
-                            <div
-                                class="relative h-10 w-full rounded-xl overflow-hidden cursor-pointer group shadow-inner border border-slate-600">
-                                <!-- Backgrounds -->
-                                <div class="absolute inset-0 flex">
-                                    <div id="alloc-bar-human"
-                                        class="h-full bg-purple-600 transition-all duration-75 flex items-center pl-3 overflow-hidden"
-                                        style="width: 40%">
-                                        <span
-                                            class="text-xs sm:text-sm font-bold text-white whitespace-nowrap drop-shadow-md">Humanitarian</span>
-                                    </div>
-                                    <div id="alloc-bar-taxpayer"
-                                        class="h-full bg-emerald-600 transition-all duration-75 flex items-center justify-end pr-3 overflow-hidden"
-                                        style="width: 60%">
-                                        <span
-                                            class="text-xs sm:text-sm font-bold text-white whitespace-nowrap drop-shadow-md">Taxpayer
-                                            Services</span>
-                                    </div>
-                                </div>
-
-                                <!-- Percentage Overlay (Centered) -->
-                                <div
-                                    class="absolute inset-0 flex justify-center items-center pointer-events-none gap-4">
-                                    <div class="bg-slate-900/80 px-2 py-1 rounded text-sm font-mono font-bold text-purple-300 border border-purple-500/30"
-                                        id="alloc-text-human">40%</div>
-                                    <div class="bg-slate-900/80 px-2 py-1 rounded text-sm font-mono font-bold text-emerald-300 border border-emerald-500/30"
-                                        id="alloc-text-taxpayer">60%</div>
-                                </div>
-
-                                <!-- Hidden Range Input -->
-                                <input type="range" min="0" max="100" step="1" value="40" id="input-allocation"
-                                    class="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
-                                    aria-label="Revenue Allocation">
-                            </div>
+                        <div class="pt-6 mt-10 rounded-xl border border-slate-700 bg-slate-900/60 p-4">
+                            <label class="text-base font-bold text-white block mb-2">Base-Case Revenue Distribution</label>
+                            <p class="text-sm text-slate-400 italic">
+                                Base case reflects final HB 1038 statutory distributions for a casino located inside Fort Wayne city limits. The city receives the regular local share, while the supplemental wagering tax is split among Fort Wayne, Allen County, and the Northeast Indiana RDA.
+                            </p>
+                            <input type="hidden" value="0" id="input-allocation" aria-hidden="true">
                         </div>
 
                         <!-- Social Cost Input -->
@@ -265,72 +228,6 @@
                                 </div>
                             </div>
 
-                            <!-- Tax Revenue Allocation Calculation -->
-                            <div id="calc-tax-allocation-container"
-                                class="hidden mb-6 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600 space-y-8">
-                                <!-- Humanitarian -->
-                                <div>
-                                    <div
-                                        class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
-                                        Humanitarian Fund Allocation</div>
-                                    <div
-                                        class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-xs">
-                                        <div class="flex flex-col items-center">
-                                            <span
-                                                class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                Tax Revenue</span>
-                                            <span class="text-white font-mono font-bold" id="calc-rev-total-h">-</span>
-                                        </div>
-                                        <div class="text-slate-500 font-bold mb-3">×</div>
-                                        <div class="flex flex-col items-center">
-                                            <span
-                                                class="text-slate-500 uppercase font-bold mb-1 text-center">Allocation
-                                                Percentage</span>
-                                            <span class="text-white font-mono font-bold" id="calc-alloc-pct-h">-</span>
-                                        </div>
-                                        <div class="text-slate-500 font-bold mb-3">=</div>
-                                        <div class="flex flex-col items-center">
-                                            <span
-                                                class="text-slate-500 uppercase font-bold mb-1 text-center">Humanitarian
-                                                Fund Total</span>
-                                            <span class="text-white font-mono font-bold"
-                                                id="calc-alloc-human-val">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- General -->
-                                <div class="border-t border-slate-700 pt-8">
-                                    <div
-                                        class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
-                                        General Fund Allocation</div>
-                                    <div
-                                        class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-xs">
-                                        <div class="flex flex-col items-center">
-                                            <span
-                                                class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                Tax Revenue</span>
-                                            <span class="text-white font-mono font-bold" id="calc-rev-total-g">-</span>
-                                        </div>
-                                        <div class="text-slate-500 font-bold mb-3">×</div>
-                                        <div class="flex flex-col items-center">
-                                            <span
-                                                class="text-slate-500 uppercase font-bold mb-1 text-center">Allocation
-                                                Percentage</span>
-                                            <span class="text-white font-mono font-bold" id="calc-alloc-pct-g">-</span>
-                                        </div>
-                                        <div class="text-slate-500 font-bold mb-3">=</div>
-                                        <div class="flex flex-col items-center">
-                                            <span
-                                                class="text-slate-500 uppercase font-bold mb-1 text-center">General
-                                                Fund Total</span>
-                                            <span class="text-white font-mono font-bold"
-                                                id="calc-alloc-gen-val">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                             <!-- Calculation Breakdown -->
                             <div id="calc-problem-gambler-container"
                                 class="hidden mb-6 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600">
@@ -377,7 +274,7 @@
                                     <!-- 1. Public Health -->
                                     <div>
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Public
-                                            Health (Humanitarian Fund)</div>
+                                            Health (Base-Case Public Health Burden)</div>
                                         <div
                                             class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-xs">
                                             <div class="flex flex-col items-center">
@@ -608,7 +505,7 @@
                                     <!-- 1. Public Health -->
                                     <div>
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Public
-                                            Health (Humanitarian Fund)</div>
+                                            Health (Base-Case Public Health Burden)</div>
                                         <div
                                             class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-xs">
                                             <div class="flex flex-col items-center">
@@ -893,13 +790,39 @@
                             </div>
 
                             <p class="text-sm text-slate-400 leading-relaxed mb-6 px-4 text-left">
-                                Tax revenue is allocated based on a tiered prioritization model. The Humanitarian Fund exclusively targets Public
-                                Health liabilities (addiction and mental health). The General Fund is distributed pro-rata among Law
-                                Enforcement, Social Services, and Civil Legal based on their relative share of the total
-                                public sector burden. Private sector economic
-                                losses (Abused Dollars and Lost Employment) receive zero direct tax revenue offset in this
-                                analysis.
+                                Base case reflects final HB 1038 statutory distributions only. For a casino inside Fort Wayne city limits,
+                                the City of Fort Wayne receives the local share of the regular graduated wagering tax, while the 3.5%
+                                supplemental wagering tax is split between the city, Allen County, and the Northeast Indiana RDA.
+                                Public-health and other host-area burdens are shown where they are incurred, and same-state spillover costs are shown separately.
                             </p>
+
+                            <div class="economic-chart-card mb-8">
+                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                    <div class="max-w-2xl">
+                                        <h4 class="flex items-center gap-2 text-lg font-bold text-white">
+                                            <span class="material-symbols-outlined text-emerald-400">bar_chart</span>
+                                            Live Net Balance by Category
+                                        </h4>
+                                        <p class="mt-2 text-sm leading-relaxed text-slate-400">
+                                            Positive balances extend right. Negative balances extend left. Switch between the subject county only and the broader Indiana balance that includes same-state spillover costs.
+                                        </p>
+                                    </div>
+                                    <div class="economic-chart-toggle-group" role="tablist" aria-label="Net impact chart mode">
+                                        <button type="button" id="net-impact-mode-county" data-net-chart-mode="county"
+                                            class="economic-chart-toggle is-active" aria-pressed="true">
+                                            County Net Balance
+                                        </button>
+                                        <button type="button" id="net-impact-mode-state" data-net-chart-mode="state"
+                                            class="economic-chart-toggle" aria-pressed="false">
+                                            Indiana Net Balance
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="economic-chart-canvas-shell mt-6">
+                                    <canvas id="net-impact-balance-chart" aria-label="Net economic impact by category"></canvas>
+                                </div>
+                                <div id="net-impact-balance-summary" class="economic-chart-summary-grid mt-5"></div>
+                            </div>
 
                             <div class="overflow-x-auto rounded-xl border border-slate-700 bg-slate-950/40">
                                 <div id="net-impact-table" class="min-w-max">
@@ -909,6 +832,34 @@
                                 </div>
                             </div>
                             <p class="mt-2 text-[11px] text-slate-500 italic text-left" id="net-impact-note"></p>
+
+                            <div class="economic-chart-card mt-8">
+                                <div class="mt-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                    <div class="max-w-2xl">
+                                        <h4 class="flex items-center gap-2 text-lg font-bold text-white">
+                                            <span class="material-symbols-outlined text-blue-400">show_chart</span>
+                                            AGR Sensitivity Curve
+                                        </h4>
+                                        <p class="text-sm leading-relaxed text-slate-400">
+                                            This chart stays visible and shows one line at a time so the breakeven crossing and current scenario are easier to read.
+                                        </p>
+                                    </div>
+                                    <div class="economic-chart-toggle-group" role="tablist" aria-label="Sensitivity series mode">
+                                        <button type="button" id="sensitivity-series-mode-county" data-sensitivity-series-mode="county"
+                                            class="economic-chart-toggle is-active" aria-pressed="true">
+                                            County Net
+                                        </button>
+                                        <button type="button" id="sensitivity-series-mode-state" data-sensitivity-series-mode="state"
+                                            class="economic-chart-toggle" aria-pressed="false">
+                                            Indiana Net
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="economic-chart-canvas-shell mt-6">
+                                    <canvas id="net-impact-sensitivity-chart" aria-label="AGR sensitivity chart"></canvas>
+                                </div>
+                                <div id="net-impact-sensitivity-summary" class="economic-chart-summary-grid mt-5"></div>
+                            </div>
 
 		                        <!-- Progress Bar -->
 		                        <div class="relative z-10 mt-8 mb-4">

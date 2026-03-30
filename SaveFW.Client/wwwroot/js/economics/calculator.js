@@ -10,6 +10,11 @@ window.EconomicCalculator = (function ()
     let lastImpactBreakdown = null;
     let otherCountiesExpanded = false;
     let lastCalculationResult = null;
+    let netImpactBarChart = null;
+    let netImpactSensitivityChart = null;
+    let activeNetChartMode = 'county';
+    let activeSensitivitySeriesMode = 'county';
+    let lastChartModel = null;
 
     function escapeHtml(input)
     {
@@ -34,6 +39,29 @@ window.EconomicCalculator = (function ()
         return `${sign}${fmtM(Math.abs(v))}`;
     }
 
+    function fmtCompactCurrency(value)
+    {
+        const v = Number(value) || 0;
+        const abs = Math.abs(v);
+        if (abs >= 1000000000) return '$' + (abs / 1000000000).toFixed(1) + 'B';
+        if (abs >= 1000000) return '$' + (abs / 1000000).toFixed(1) + 'M';
+        if (abs >= 1000) return '$' + (abs / 1000).toFixed(1) + 'K';
+        return '$' + abs.toFixed(0);
+    }
+
+    function fmtSignedCompactCurrency(value)
+    {
+        const v = Number(value) || 0;
+        if (Math.abs(v) < 0.5) return '$0';
+        return (v < 0 ? '-' : '+') + fmtCompactCurrency(Math.abs(v));
+    }
+
+    function getValueSignClass(value)
+    {
+        const v = Number(value) || 0;
+        return v > 0 ? 'positive' : (v < 0 ? 'negative' : '');
+    }
+
     // DOM element references - populated by init()
     let els = {};
 
@@ -54,12 +82,6 @@ window.EconomicCalculator = (function ()
             inCostIllness: document.getElementById('input-cost-illness'),
             inCostServices: document.getElementById('input-cost-services'),
             inCostAbused: document.getElementById('input-cost-abused'),
-
-            // Allocation Visuals
-            allocBarHuman: document.getElementById('alloc-bar-human'),
-            allocBarTaxpayer: document.getElementById('alloc-bar-taxpayer'),
-            allocTextHuman: document.getElementById('alloc-text-human'),
-            allocTextTaxpayer: document.getElementById('alloc-text-taxpayer'),
 
             valRevenue: document.getElementById('val-revenue'),
             valAGR: document.getElementById('val-agr'),
@@ -88,15 +110,6 @@ window.EconomicCalculator = (function ()
             calcAGR: document.getElementById('calc-agr'),
             calcTaxRate: document.getElementById('calc-tax-rate'),
             calcTaxTotal: document.getElementById('calc-tax-total'),
-
-            // Split Allocation Elements
-            calcRevTotalH: document.getElementById('calc-rev-total-h'),
-            calcAllocPctH: document.getElementById('calc-alloc-pct-h'),
-            calcAllocHumanVal: document.getElementById('calc-alloc-human-val'),
-
-            calcRevTotalG: document.getElementById('calc-rev-total-g'),
-            calcAllocPctG: document.getElementById('calc-alloc-pct-g'),
-            calcAllocGenVal: document.getElementById('calc-alloc-gen-val'),
 
             // Detailed Breakdown Elements
             calcBreakHealthVictims: document.getElementById('calc-break-health-victims'),
@@ -413,6 +426,554 @@ window.EconomicCalculator = (function ()
         return mid;
     }
 
+    function destroyChartInstance(chart)
+    {
+        if (chart && typeof chart.destroy === 'function')
+        {
+            chart.destroy();
+        }
+    }
+
+    function setSummaryCards(containerId, cards)
+    {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const safeCards = Array.isArray(cards) ? cards : [];
+        container.innerHTML = safeCards.map(card =>
+        {
+            const valueClass = getValueSignClass(card && card.valueClassValue);
+            return `
+                <div class="economic-chart-stat">
+                    <span class="economic-chart-stat-label">${escapeHtml(card && card.label ? card.label : '')}</span>
+                    <span class="economic-chart-stat-value ${valueClass}">${escapeHtml(card && card.value ? card.value : '—')}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function syncNetImpactModeButtons()
+    {
+        document.querySelectorAll('[data-net-chart-mode]').forEach(button =>
+        {
+            const isActive = button.dataset.netChartMode === activeNetChartMode;
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+    }
+
+    function syncSensitivitySeriesButtons()
+    {
+        document.querySelectorAll('[data-sensitivity-series-mode]').forEach(button =>
+        {
+            const isActive = button.dataset.sensitivitySeriesMode === activeSensitivitySeriesMode;
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+    }
+
+    function updateNetImpactModeButtonLabels(model)
+    {
+        const countyButton = document.getElementById('net-impact-mode-county');
+        const stateButton = document.getElementById('net-impact-mode-state');
+
+        if (countyButton)
+        {
+            const countyName = String(model && model.subjectCountyName || '').trim();
+            countyButton.textContent = countyName
+                ? (/\bcounty\b/i.test(countyName) ? `${countyName} Net Balance` : `${countyName} County Net Balance`)
+                : 'County Net Balance';
+        }
+
+        if (stateButton)
+        {
+            const stateName = String(model && model.subjectStateName || '').trim();
+            stateButton.textContent = stateName ? `${stateName} Net Balance` : 'State Net Balance';
+        }
+    }
+
+    function getNetValueForMode(row, mode)
+    {
+        const countyBalance = Number(row && row.countyBalance || 0);
+        const otherCost = Number(row && row.otherCost || 0);
+        return mode === 'state' ? countyBalance - otherCost : countyBalance;
+    }
+
+    function getChartRowSubset(rows)
+    {
+        const desiredOrder = [
+            'health_local',
+            'crime',
+            'social',
+            'legal',
+            'abused',
+            'employment',
+            'total'
+        ];
+
+        const rowMap = new Map((Array.isArray(rows) ? rows : []).map(row => [String(row.key || ''), row]));
+        return desiredOrder.map(key => rowMap.get(key)).filter(Boolean);
+    }
+
+    function findLargestPositive(rows, mode)
+    {
+        return rows
+            .map(row => ({ row, value: getNetValueForMode(row, mode) }))
+            .filter(entry => entry.row && entry.row.key !== 'total' && entry.value > 0)
+            .sort((a, b) => b.value - a.value)[0] || null;
+    }
+
+    function findLargestNegative(rows, mode)
+    {
+        return rows
+            .map(row => ({ row, value: getNetValueForMode(row, mode) }))
+            .filter(entry => entry.row && entry.row.key !== 'total' && entry.value < 0)
+            .sort((a, b) => a.value - b.value)[0] || null;
+    }
+
+    function estimateBreakEvenAgr(totalCost)
+    {
+        const cost = Number(totalCost || 0);
+        if (cost <= 0) return 0;
+
+        const maxAgr = 2000000000;
+        if (calculateTax(maxAgr).total < cost)
+        {
+            return null;
+        }
+
+        return calculateAGRFromTax(cost) / 1000000;
+    }
+
+    function renderNetImpactBalanceChart(model)
+    {
+        const canvas = document.getElementById('net-impact-balance-chart');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        destroyChartInstance(netImpactBarChart);
+        netImpactBarChart = null;
+
+        const chartRows = getChartRowSubset(model.rows);
+        const labels = chartRows.map(row => String(row.label || ''));
+        const values = chartRows.map(row => getNetValueForMode(row, activeNetChartMode));
+
+        netImpactBarChart = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    borderRadius: 999,
+                    borderSkipped: false,
+                    backgroundColor: values.map(value => value >= 0 ? 'rgba(52, 211, 153, 0.85)' : 'rgba(248, 113, 113, 0.82)'),
+                    borderColor: values.map(value => value >= 0 ? 'rgba(16, 185, 129, 1)' : 'rgba(239, 68, 68, 1)'),
+                    borderWidth: 1.5,
+                    barThickness: 18,
+                    maxBarThickness: 22
+                }]
+            },
+            options: {
+                animation: false,
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: { top: 8, right: 12, bottom: 8, left: 8 }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.96)',
+                        titleColor: '#fff',
+                        bodyColor: '#cbd5e1',
+                        borderColor: 'rgba(100, 116, 139, 0.55)',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            title(items)
+                            {
+                                return items && items[0] ? items[0].label : '';
+                            },
+                            label(context)
+                            {
+                                const value = Number(context.parsed.x || 0);
+                                const direction = value > 0 ? 'Positive' : (value < 0 ? 'Negative' : 'Neutral');
+                                return `${direction}: ${fmtSignedCompactCurrency(value)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color(context)
+                            {
+                                return context.tick && context.tick.value === 0
+                                    ? 'rgba(226, 232, 240, 0.35)'
+                                    : 'rgba(51, 65, 85, 0.55)';
+                            },
+                            lineWidth(context)
+                            {
+                                return context.tick && context.tick.value === 0 ? 1.5 : 1;
+                            }
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback(value)
+                            {
+                                return fmtSignedCompactCurrency(value);
+                            }
+                        }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#e2e8f0',
+                            font: { size: 11, weight: '600' }
+                        }
+                    }
+                }
+            }
+        });
+
+        const totalRow = chartRows.find(row => row.key === 'total') || null;
+        const totalValue = getNetValueForMode(totalRow, activeNetChartMode);
+        const strongestPositive = findLargestPositive(chartRows, activeNetChartMode);
+        const largestDrag = findLargestNegative(chartRows, activeNetChartMode);
+        const spilloverCost = Number(model.totalOtherCost || 0);
+
+        setSummaryCards('net-impact-balance-summary', [
+            {
+                label: activeNetChartMode === 'state' ? 'Indiana Total Net' : 'County Total Net',
+                value: fmtSignedCompactCurrency(totalValue),
+                valueClassValue: totalValue
+            },
+            {
+                label: 'Largest Positive',
+                value: strongestPositive ? `${strongestPositive.row.label}: ${fmtSignedCompactCurrency(strongestPositive.value)}` : 'No positive category',
+                valueClassValue: strongestPositive ? strongestPositive.value : 0
+            },
+            {
+                label: 'Largest Drag',
+                value: largestDrag ? `${largestDrag.row.label}: ${fmtSignedCompactCurrency(largestDrag.value)}` : 'No negative category',
+                valueClassValue: largestDrag ? largestDrag.value : 0
+            },
+            {
+                label: 'Same-State Spillover Cost',
+                value: fmtCompactCurrency(spilloverCost),
+                valueClassValue: spilloverCost > 0 ? -spilloverCost : 0
+            }
+        ]);
+    }
+
+    function renderSensitivityChart(model)
+    {
+        const canvas = document.getElementById('net-impact-sensitivity-chart');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        destroyChartInstance(netImpactSensitivityChart);
+        netImpactSensitivityChart = null;
+
+        const currentAgrM = Number(model.currentAgrM || 0);
+        const sliderMax = Math.max(Number(els.inAGR && els.inAGR.max || 0), currentAgrM, 100);
+        const samples = 40;
+        const countyBreakEvenAgr = estimateBreakEvenAgr(model.totalCountyCost);
+        const stateBreakEvenAgr = estimateBreakEvenAgr(Number(model.totalCountyCost || 0) + Number(model.totalOtherCost || 0));
+        const countySeries = [];
+        const stateSeries = [];
+
+        for (let index = 0; index <= samples; index++)
+        {
+            const agrM = (sliderMax * index) / samples;
+            const revenue = calculateTax(agrM * 1000000).total;
+            countySeries.push({ x: agrM, y: revenue - Number(model.totalCountyCost || 0) });
+            stateSeries.push({ x: agrM, y: revenue - Number(model.totalCountyCost || 0) - Number(model.totalOtherCost || 0) });
+        }
+
+        const sensitivityOverlayPlugin = {
+            id: 'sensitivityOverlayPlugin',
+            beforeDatasetsDraw(chart)
+            {
+                const chartArea = chart.chartArea;
+                const xScale = chart.scales.x;
+                const yScale = chart.scales.y;
+                if (!chartArea || !xScale || !yScale) return;
+
+                const ctx = chart.ctx;
+                const overlay = chart.options.plugins.sensitivityOverlayPlugin.overlay || null;
+
+                ctx.save();
+
+                if (overlay)
+                {
+                    const x = xScale.getPixelForValue(overlay.agr);
+                    ctx.strokeStyle = overlay.lineColor;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([7, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(x, chartArea.top);
+                    ctx.lineTo(x, chartArea.bottom);
+                    ctx.stroke();
+
+                    const labelText = overlay.label;
+                    ctx.setLineDash([]);
+                    ctx.font = '600 11px "Public Sans", sans-serif';
+                    const textWidth = ctx.measureText(labelText).width;
+                    const boxWidth = textWidth + 12;
+                    const preferredLeft = x + 8;
+                    const boxX = Math.min(chartArea.right - boxWidth - 4, Math.max(chartArea.left + 4, preferredLeft));
+                    const labelY = chartArea.top + 16;
+                    ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
+                    ctx.strokeStyle = overlay.lineColor;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.roundRect(boxX, labelY - 11, boxWidth, 18, 6);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.fillText(labelText, boxX + 6, labelY + 2);
+                }
+
+                const zeroY = yScale.getPixelForValue(0);
+                ctx.strokeStyle = 'rgba(226, 232, 240, 0.45)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([0]);
+                ctx.beginPath();
+                ctx.moveTo(chartArea.left, zeroY);
+                ctx.lineTo(chartArea.right, zeroY);
+                ctx.stroke();
+
+                ctx.restore();
+            },
+            afterDatasetsDraw(chart)
+            {
+                const chartArea = chart.chartArea;
+                const xScale = chart.scales.x;
+                const yScale = chart.scales.y;
+                if (!chartArea || !xScale || !yScale) return;
+
+                const ctx = chart.ctx;
+                const callout = chart.options.plugins.sensitivityOverlayPlugin.currentMarker || null;
+
+                ctx.save();
+                ctx.font = '700 11px "Public Sans", sans-serif';
+                ctx.textBaseline = 'middle';
+
+                if (callout)
+                {
+                    const x = xScale.getPixelForValue(callout.x);
+                    const y = yScale.getPixelForValue(callout.y);
+                    const text = callout.label;
+                    const textWidth = ctx.measureText(text).width;
+                    const boxWidth = textWidth + 14;
+                    const boxX = Math.min(chartArea.right - boxWidth - 4, Math.max(chartArea.left + 4, x + 10));
+                    const boxY = Math.max(chartArea.top + 6, Math.min(chartArea.bottom - 24, y - 24));
+
+                    ctx.fillStyle = 'rgba(2, 6, 23, 0.94)';
+                    ctx.strokeStyle = callout.borderColor;
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath();
+                    ctx.roundRect(boxX, boxY, boxWidth, 18, 6);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.fillText(text, boxX + 7, boxY + 9);
+                }
+
+                ctx.restore();
+            }
+        };
+
+        const isCountyMode = activeSensitivitySeriesMode === 'county';
+        const activeSeries = isCountyMode ? countySeries : stateSeries;
+        const activeBreakEvenAgr = isCountyMode ? countyBreakEvenAgr : stateBreakEvenAgr;
+        const activeCurrentNet = isCountyMode ? Number(model.currentCountyNet || 0) : Number(model.currentStateNet || 0);
+        const activeLabel = isCountyMode ? 'County Net' : 'Indiana Net';
+        const activeColor = isCountyMode ? 'rgba(52, 211, 153, 1)' : 'rgba(96, 165, 250, 1)';
+        const activeFill = isCountyMode ? 'rgba(52, 211, 153, 0.18)' : 'rgba(96, 165, 250, 0.18)';
+        const currentMarkerLabel = `${activeLabel} @ $${currentAgrM.toFixed(1)}M`;
+        const activeOverlay = activeBreakEvenAgr === null ? null : {
+            agr: Number(activeBreakEvenAgr),
+            label: `${isCountyMode ? 'County' : 'Indiana'} breakeven: $${Number(activeBreakEvenAgr).toFixed(1)}M`,
+            lineColor: activeColor
+        };
+
+        netImpactSensitivityChart = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: activeLabel,
+                        data: activeSeries,
+                        parsing: false,
+                        borderColor: activeColor,
+                        backgroundColor: activeFill,
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        tension: 0.22
+                    },
+                    {
+                        type: 'scatter',
+                        label: `Current ${activeLabel}`,
+                        data: [{ x: currentAgrM, y: activeCurrentNet }],
+                        parsing: false,
+                        pointRadius: 6,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: 'rgba(255, 255, 255, 0.96)',
+                        pointBorderColor: activeColor,
+                        pointBorderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'nearest',
+                    intersect: false
+                },
+                layout: {
+                    padding: { top: 8, right: 14, bottom: 6, left: 8 }
+                },
+                plugins: {
+                    legend: { display: false },
+                    sensitivityOverlayPlugin: {
+                        overlay: activeOverlay,
+                        currentMarker: {
+                            x: currentAgrM,
+                            y: activeCurrentNet,
+                            label: currentMarkerLabel,
+                            borderColor: activeColor
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.96)',
+                        titleColor: '#fff',
+                        bodyColor: '#cbd5e1',
+                        borderColor: 'rgba(100, 116, 139, 0.55)',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            title(items)
+                            {
+                                const x = items && items[0] && items[0].parsed ? Number(items[0].parsed.x || 0) : 0;
+                                return `AGR: $${x.toFixed(1)}M`;
+                            },
+                            label(context)
+                            {
+                                return `${context.dataset.label}: ${fmtSignedCompactCurrency(context.parsed.y)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        title: {
+                            display: true,
+                            text: 'Adjusted Gross Revenue (AGR)',
+                            color: '#cbd5e1',
+                            font: { size: 12, weight: '700' }
+                        },
+                        grid: {
+                            color: 'rgba(51, 65, 85, 0.45)'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback(value)
+                            {
+                                return '$' + Number(value).toFixed(0) + 'M';
+                            }
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Net Economic Impact',
+                            color: '#cbd5e1',
+                            font: { size: 12, weight: '700' }
+                        },
+                        grid: {
+                            color(context)
+                            {
+                                return context.tick && context.tick.value === 0
+                                    ? 'rgba(226, 232, 240, 0.35)'
+                                    : 'rgba(51, 65, 85, 0.45)';
+                            },
+                            lineWidth(context)
+                            {
+                                return context.tick && context.tick.value === 0 ? 1.5 : 1;
+                            }
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback(value)
+                            {
+                                return fmtSignedCompactCurrency(value);
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [sensitivityOverlayPlugin]
+        });
+
+        const activeGapToBreakEven = activeBreakEvenAgr === null ? null : (Number(activeBreakEvenAgr) - currentAgrM) * 1000000;
+
+        setSummaryCards('net-impact-sensitivity-summary', [
+            {
+                label: 'Current AGR Marker',
+                value: '$' + currentAgrM.toFixed(2) + 'M',
+                valueClassValue: activeCurrentNet
+            },
+            {
+                label: `${activeLabel} Current Net`,
+                value: fmtSignedCompactCurrency(activeCurrentNet),
+                valueClassValue: activeCurrentNet
+            },
+            {
+                label: `${isCountyMode ? 'County' : 'Indiana'} Breakeven`,
+                value: activeBreakEvenAgr === null ? 'Above current range' : '$' + Number(activeBreakEvenAgr).toFixed(1) + 'M',
+                valueClassValue: 0
+            },
+            {
+                label: 'Gap To Breakeven',
+                value: activeGapToBreakEven === null
+                    ? 'Above current range'
+                    : activeGapToBreakEven > 0
+                        ? fmtCompactCurrency(activeGapToBreakEven) + ' below'
+                        : fmtCompactCurrency(Math.abs(activeGapToBreakEven)) + ' above',
+                valueClassValue: activeGapToBreakEven === null ? 0 : -activeGapToBreakEven
+            }
+        ]);
+    }
+
+    function renderNetImpactCharts(model)
+    {
+        lastChartModel = model || null;
+        updateNetImpactModeButtonLabels(model);
+        syncNetImpactModeButtons();
+        syncSensitivitySeriesButtons();
+
+        if (!model || !model.hasImpact)
+        {
+            destroyChartInstance(netImpactBarChart);
+            destroyChartInstance(netImpactSensitivityChart);
+            netImpactBarChart = null;
+            netImpactSensitivityChart = null;
+
+            setSummaryCards('net-impact-balance-summary', []);
+            setSummaryCards('net-impact-sensitivity-summary', []);
+            return;
+        }
+
+        renderNetImpactBalanceChart(model);
+        renderSensitivityChart(model);
+    }
+
     function calculate(e)
     {
         if (isSyncing) return;
@@ -461,7 +1022,6 @@ window.EconomicCalculator = (function ()
 
         // New calculation containers to toggle
         const taxRevenueContainer = document.getElementById('calc-tax-revenue-container');
-        const taxAllocationContainer = document.getElementById('calc-tax-allocation-container');
         const problemGamblerContainer = document.getElementById('calc-problem-gambler-container');
 
         if (breakdownEmpty && breakdownContent)
@@ -472,7 +1032,6 @@ window.EconomicCalculator = (function ()
                 breakdownContent.classList.remove('hidden');
 
                 if (taxRevenueContainer) taxRevenueContainer.classList.remove('hidden');
-                if (taxAllocationContainer) taxAllocationContainer.classList.remove('hidden');
                 if (problemGamblerContainer) problemGamblerContainer.classList.remove('hidden');
             }
             else 
@@ -481,7 +1040,6 @@ window.EconomicCalculator = (function ()
                 breakdownContent.classList.add('hidden');
 
                 if (taxRevenueContainer) taxRevenueContainer.classList.add('hidden');
-                if (taxAllocationContainer) taxAllocationContainer.classList.add('hidden');
                 if (problemGamblerContainer) problemGamblerContainer.classList.add('hidden');
             }
         }
@@ -734,7 +1292,7 @@ window.EconomicCalculator = (function ()
         if (adultPop > 0) gamblerGrowthRate = (victims / adultPop) * 100;
 
         // --- 5-GROUP COST CALCULATIONS ---
-        // 1. Public Health (Humanitarian)
+        // 1. Public Health / Treatment
         const costHealthPer = cIllness;
         const totalCostHealth = victims * costHealthPer;
 
@@ -765,69 +1323,20 @@ window.EconomicCalculator = (function ()
         const totalCostM = totalCost / 1000000;
         // --- REVENUE SPLIT ---
         const totalRevenue = revenueM * 1000000;
+        const agrTotal = agrM * 1000000;
+        const supplementalTax = agrTotal * 0.035;
+        const regularTax = Math.max(0, totalRevenue - supplementalTax);
+        const revenueState = regularTax * 0.75;
+        const revenueCity = (regularTax * 0.25) + (supplementalTax * 0.45);
+        const revenueCounty = supplementalTax * 0.45;
+        const revenueRda = supplementalTax * 0.10;
 
-        // Get Allocation %
-        const allocPct = parseInt(els.inAllocation.value);
-
-        // Update Allocation Bar Visuals
-        els.allocBarHuman.style.width = allocPct + '%';
-        els.allocBarTaxpayer.style.width = (100 - allocPct) + '%';
-        els.allocTextHuman.textContent = allocPct + '%';
-        els.allocTextTaxpayer.textContent = (100 - allocPct) + '%';
-
-        // Calculate Pools
-        const revHealthPool = totalRevenue * (allocPct / 100);
-        const revGeneralPool = totalRevenue * ((100 - allocPct) / 100);
-
-        // --- COST COVERAGE LOGIC ---
-
-        // 1. Humanitarian Fund covers Public Health first
-        let revHealthAllocated = 0;
-        let healthSurplus = 0;
-        let healthUncovered = 0;
-
-        if (revHealthPool >= totalCostHealth)
-        {
-            revHealthAllocated = totalCostHealth;
-            healthSurplus = revHealthPool - totalCostHealth;
-            healthUncovered = 0;
-        } else
-        {
-            revHealthAllocated = revHealthPool;
-            healthSurplus = 0;
-            healthUncovered = totalCostHealth - revHealthPool;
-        }
-
-        // 2. General Fund covers remaining burdens (Taxpayer Health + Crime + Social + Legal)
-        // We use a weighted average distribution for the General Fund
-        // UPDATED: General Fund does NOT cover Public Health gaps. Public Health is solely the responsibility of the Humanitarian Fund.
-        const burdenHealth = 0;
-        const burdenCrime = totalCostCrime;
-        const burdenSocial = totalCostSocial;
-        const burdenLegal = totalCostLegal;
-
-        const totalGeneralBurden = burdenHealth + burdenCrime + burdenSocial + burdenLegal;
-
-        let revHealthFromGen = 0;
-        let revCrime = 0;
-        let revSocial = 0;
-        let revLegal = 0;
-
-        if (totalGeneralBurden > 0)
-        {
-            revHealthFromGen = revGeneralPool * (burdenHealth / totalGeneralBurden);
-            revCrime = revGeneralPool * (burdenCrime / totalGeneralBurden);
-            revSocial = revGeneralPool * (burdenSocial / totalGeneralBurden);
-            revLegal = revGeneralPool * (burdenLegal / totalGeneralBurden);
-        } else
-        {
-            // If no burden, revenue sits as surplus? 
-            // For now, it remains unallocated in this logic block, 
-            // but effectively it's a general surplus.
-        }
-
-        // Private gets 0
-        const revEcon = 0;
+        // --- BURDEN-BASED PUBLIC REVENUE ALLOCATION ---
+        const totalPublicBurden = totalCostHealth + totalCostCrime + totalCostSocial + totalCostLegal;
+        const revHealth = totalPublicBurden > 0 ? totalRevenue * (totalCostHealth / totalPublicBurden) : 0;
+        const revCrime = totalPublicBurden > 0 ? totalRevenue * (totalCostCrime / totalPublicBurden) : 0;
+        const revSocial = totalPublicBurden > 0 ? totalRevenue * (totalCostSocial / totalPublicBurden) : 0;
+        const revLegal = totalPublicBurden > 0 ? totalRevenue * (totalCostLegal / totalPublicBurden) : 0;
 
         // --- BALANCES (NET IMPACT ANALYSIS) ---
 
@@ -842,11 +1351,10 @@ window.EconomicCalculator = (function ()
         const setClass = (id, cls) => { const el = document.getElementById(id); if (el) el.className = cls; };
 
         // 1. Net Impact Analysis (Balance Sheet)
-        const netHealthTax = revHealthFromGen - healthUncovered;
-
-        const subHealthRev = revHealthPool + revHealthFromGen;
-        const subHealthCost = revHealthAllocated + healthUncovered;
-        const subHealthNet = healthSurplus + netHealthTax;
+        const netHealth = revHealth - totalCostHealth;
+        const subHealthRev = revHealth;
+        const subHealthCost = totalCostHealth;
+        const subHealthNet = netHealth;
 
         const netCrime = revCrime - totalCostCrime;
         const netSocial = revSocial - totalCostSocial;
@@ -905,9 +1413,6 @@ window.EconomicCalculator = (function ()
         const otherAdults = Math.round(Number(o.adults || 0));
         const otherVictims = Math.round(Number(o.victims || 0));
         const otherRate = otherAdults > 0 ? (otherVictims / otherAdults) * 100 : 0;
-        const agrTotal = agrM * 1000000;
-        const effectiveTaxRate = agrTotal > 0 ? (totalRevenue / agrTotal) * 100 : 0;
-
         const fmtVictims = Math.round(victims).toLocaleString();
         setTxt('calc-pop', Math.round(currentPop).toLocaleString());
         setTxt('calc-rate', gamblerGrowthRate.toFixed(2) + '%');
@@ -943,25 +1448,58 @@ window.EconomicCalculator = (function ()
 
         const netImpactRows = [
             {
-                key: 'health_human',
-                kind: 'detail',
-                label: 'Public Health (Humanitarian)',
+                key: 'state_revenue',
+                kind: 'revenue',
+                label: 'State of Indiana Revenue',
                 labelClass: '',
-                tooltip: 'Addiction treatment, counseling, and prevention programs funded specifically by the Humanitarian Fund allocation.',
-                revenue: revHealthPool,
-                countyCost: revHealthAllocated,
-                countyBalance: healthSurplus,
+                tooltip: 'State share of the regular graduated wagering tax in the base-case HB 1038 city-site model.',
+                revenue: revenueState,
+                countyCost: 0,
+                countyBalance: revenueState,
                 otherCost: 0
             },
             {
-                key: 'health_tax',
-                kind: 'detail',
-                label: 'Public Health (Taxpayer)',
+                key: 'city_revenue',
+                kind: 'revenue',
+                label: 'City of Fort Wayne Revenue',
                 labelClass: '',
-                tooltip: 'Excess public health costs falling on the general taxpayer after Humanitarian funds are exhausted.',
-                revenue: revHealthFromGen,
-                countyCost: healthUncovered,
-                countyBalance: netHealthTax,
+                tooltip: 'City share of the supplemental wagering tax plus the city’s local share of the regular graduated wagering tax for a Fort Wayne city-site.',
+                revenue: revenueCity,
+                countyCost: 0,
+                countyBalance: revenueCity,
+                otherCost: 0
+            },
+            {
+                key: 'county_revenue',
+                kind: 'revenue',
+                label: 'Allen County Revenue',
+                labelClass: '',
+                tooltip: 'County share of the 3.5% supplemental wagering tax only in the base-case Fort Wayne city-site model.',
+                revenue: revenueCounty,
+                countyCost: 0,
+                countyBalance: revenueCounty,
+                otherCost: 0
+            },
+            {
+                key: 'rda_revenue',
+                kind: 'revenue',
+                label: 'Northeast Indiana RDA Revenue',
+                labelClass: '',
+                tooltip: 'Regional Development Authority share of the 3.5% supplemental wagering tax under final HB 1038.',
+                revenue: revenueRda,
+                countyCost: 0,
+                countyBalance: revenueRda,
+                otherCost: 0
+            },
+            {
+                key: 'health_local',
+                kind: 'detail',
+                label: 'Public Health / Treatment',
+                labelClass: '',
+                tooltip: 'Addiction treatment, counseling, crisis response, and recovery burden in the base case, with no dedicated statutory earmark offset.',
+                revenue: revHealth,
+                countyCost: totalCostHealth,
+                countyBalance: netHealth,
                 otherCost: otherTotals.health
             },
             {
@@ -969,9 +1507,9 @@ window.EconomicCalculator = (function ()
                 kind: 'subtotal',
                 label: 'Subtotal: Public Health',
                 labelClass: '',
-                revenue: subHealthRev,
-                countyCost: subHealthCost,
-                countyBalance: subHealthNet,
+                revenue: revHealth,
+                countyCost: totalCostHealth,
+                countyBalance: netHealth,
                 otherCost: otherTotals.health
             },
             {
@@ -1083,6 +1621,18 @@ window.EconomicCalculator = (function ()
             expanded: otherCountiesExpanded
         });
 
+        renderNetImpactCharts({
+            hasImpact,
+            rows: hasImpact ? netImpactRows : [],
+            subjectCountyName,
+            subjectStateName,
+            currentAgrM: agrM,
+            totalCountyCost: totalCost,
+            totalOtherCost: otherTotals.total,
+            currentCountyNet: netTotalBalance,
+            currentStateNet: netTotalBalance - otherTotals.total
+        });
+
         if (hasImpact)
         {
             const taxEffRateActual = agrM > 0 ? (totalRevenue / (agrM * 1000000)) * 100 : 0;
@@ -1090,13 +1640,6 @@ window.EconomicCalculator = (function ()
             if (els.calcTaxRate) els.calcTaxRate.textContent = taxEffRateActual.toFixed(2) + '%';
             if (els.calcTaxTotal) els.calcTaxTotal.textContent = fmtM(totalRevenue);
 
-            if (els.calcRevTotalH) els.calcRevTotalH.textContent = fmtM(totalRevenue);
-            if (els.calcAllocPctH) els.calcAllocPctH.textContent = allocPct + '%';
-            if (els.calcAllocHumanVal) els.calcAllocHumanVal.textContent = fmtM(revHealthPool);
-
-            if (els.calcRevTotalG) els.calcRevTotalG.textContent = fmtM(totalRevenue);
-            if (els.calcAllocPctG) els.calcAllocPctG.textContent = (100 - allocPct) + '%';
-            if (els.calcAllocGenVal) els.calcAllocGenVal.textContent = fmtM(revGeneralPool);
         }
 
         const otherVictimsRaw = otherCosts && Array.isArray(otherCosts.counties)
@@ -1195,6 +1738,11 @@ window.EconomicCalculator = (function ()
 
             const regionalImpact = lastImpactBreakdown && lastImpactBreakdown.regional ? lastImpactBreakdown.regional : {};
             const regionalAdults = Number(regionalImpact.adultsWithin50 || 0);
+            const populationProjection = lastImpactBreakdown && lastImpactBreakdown.populationProjection ? lastImpactBreakdown.populationProjection : null;
+            const countyBaseAdults = countyBreakdown && Number.isFinite(countyBreakdown.baseAdults) ? Number(countyBreakdown.baseAdults) : adultPop;
+            const regionalBaseAdults = Number.isFinite(regionalImpact.baseAdultsWithin50) ? Number(regionalImpact.baseAdultsWithin50) : regionalAdults;
+            const projectionUsesProjectedAdults = !!(populationProjection && populationProjection.usesProjectedAdults);
+            const projectionHasFutureYear = !!(populationProjection && Number(populationProjection.yearsFromBase || 0) > 0);
             const otherCountiesCount = (otherCosts && Array.isArray(otherCosts.counties)) ? otherCosts.counties.length : 0;
             const otherTotalCost = Number(otherTotals.total || 0);
             const stateWideSocialCost = totalCost + otherTotalCost;
@@ -1239,7 +1787,7 @@ window.EconomicCalculator = (function ()
             // 2. Assumptions (Sub-header + Bullets)
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Assumptions</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
-            analysisHTML += `<li><strong>Prioritization:</strong> In the current iteration of this model, the Humanitarian Fund (${allocPct}%) is prioritized for Public Health expenditures. Future updates may include the functionality to define discrete allocations for various humanitarian initiatives.</li>`;
+            analysisHTML += `<li><strong>Base Case:</strong> This model uses final HB 1038 statutory distributions only. No separate public-health earmark is assumed outside those enacted revenue streams.</li>`;
             analysisHTML += `<li><strong>Private Sector Burden:</strong> The Local Economy category represents private sector losses (productivity, debt) borne directly by households and businesses.</li>`;
             analysisHTML += `</ul>`;
 
@@ -1248,11 +1796,35 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
             analysisHTML += `<li><strong>Geospatial Data:</strong> Population data is sourced directly from the <a href="https://www.census.gov/data/developers/data-sets/decennial-census.html" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">U.S. Census Bureau's 2020 Decennial Census API</a>, seeded into the SaveFW database in January 2026. Geographic boundaries utilize high-precision 2020 TIGER/Line Shapefiles processed via PostGIS.</li>`;
             analysisHTML += `<li><strong>Scope of Analysis:</strong> The primary balance-sheet results model fiscal exposure for the assessed county. The Net Economic Impact table also includes an Other Counties Costs column estimating how same-state impacts may distribute within a 50-mile radius (out-of-state excluded); use Expand to view the county-by-county breakout.</li>`;
+            if (populationProjection)
+            {
+                if (projectionUsesProjectedAdults)
+                {
+                    analysisHTML += `<li><strong>Adult Population Projection:</strong> Adult counts in this run are projected from the ${populationProjection.baseYear} census baseline to ${populationProjection.targetYear} using ${Number(populationProjection.annualGrowthRate || 0).toFixed(1)}% annual growth (${Number(populationProjection.multiplier || 1).toFixed(3)}x multiplier).</li>`;
+                } else if (projectionHasFutureYear)
+                {
+                    analysisHTML += `<li><strong>Adult Population Projection:</strong> Projection year ${populationProjection.targetYear} is selected, but the ${Number(populationProjection.annualGrowthRate || 0).toFixed(1)}% annual growth assumption leaves adult counts unchanged for this run.</li>`;
+                } else
+                {
+                    analysisHTML += `<li><strong>Adult Population Projection:</strong> This run uses the current calculated adult population with no forward projection applied.</li>`;
+                }
+            }
 
             // updated specific bullet point with adult pop
             let adultPopStr = adultPop > 0 ? adultPop.toLocaleString() : "Unknown";
-            analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${subjectCountyName} County, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area is ${adultPopStr}.</li>`;
-            analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 50-mile impact radius, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
+            if (projectionUsesProjectedAdults)
+            {
+                analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${subjectCountyName} County, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) used in this run is ${adultPopStr}, projected from the ${Math.round(countyBaseAdults).toLocaleString()} baseline to ${populationProjection.targetYear}.</li>`;
+                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 50-mile impact radius, representing a projected regional adult population of ${regionalAdults.toLocaleString()} (up from a ${Math.round(regionalBaseAdults).toLocaleString()} baseline).</li>`;
+            } else if (projectionHasFutureYear)
+            {
+                analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${subjectCountyName} County, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area remains ${adultPopStr} because the selected projection settings do not change the baseline adult count.</li>`;
+                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 50-mile impact radius, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
+            } else
+            {
+                analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${subjectCountyName} County, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area is ${adultPopStr}.</li>`;
+                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 50-mile impact radius, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
+            }
 
             analysisHTML += `<li><strong>Impact Distribution:</strong> This distribution models the increased statistical likelihood of residents developing problem gambling behaviors (Gambling Disorder) based on their geographic proximity to the casino site.
                                             <ul class="list-[circle] pl-8 mt-2 space-y-2">
@@ -1278,7 +1850,8 @@ window.EconomicCalculator = (function ()
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
             analysisHTML += `<li><strong>Adjusted Gross Revenue (AGR):</strong> The projected base of ${fmtM(agrM * 1000000)} represent the total wealth extracted from gamblers. Unlike standard sales or property taxes, gambling revenue is subject to a unique progressive structure in Indiana, utilizing a 3.5% supplemental tax and tiered brackets that scale based on volume.</li>`;
             analysisHTML += `<li><strong>Effective Tax Rate:</strong> For this scenario, the calculated effective tax rate is ${taxEffRate.toFixed(2)}%, resulting in ${fmtM(totalRevenue)} in estimated public tax revenue.</li>`;
-            analysisHTML += `<li><strong>Revenue Allocation:</strong> The model directs ${allocPct}% (${fmtM(revHealthPool)}) to the Humanitarian Fund and ${100 - allocPct}% (${fmtM(revGeneralPool)}) to the General Fund. This General Fund portion is distributed pro rata (proportionally based on share of total cost) towards addressing remaining burdens: Law Enforcement, Social Services, and Civil Legal.</li>`;
+            analysisHTML += `<li><strong>Statutory Distribution:</strong> In the Fort Wayne city-site base case, the 3.5% supplemental wagering tax is split 45% to Allen County, 45% to the City of Fort Wayne, and 10% to the Northeast Indiana RDA. The city also receives the local share of the regular graduated wagering tax, while the state retains the remaining regular tax share.</li>`;
+            analysisHTML += `<li><strong>Recipient Totals:</strong> This run yields approximately ${fmtM(revenueState)} to the State of Indiana, ${fmtM(revenueCity)} to the City of Fort Wayne, ${fmtM(revenueCounty)} to Allen County, and ${fmtM(revenueRda)} to the Northeast Indiana RDA.</li>`;
             analysisHTML += '</ul>';
 
             // B. SOCIAL COSTS
@@ -1286,13 +1859,7 @@ window.EconomicCalculator = (function ()
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
             analysisHTML += `<li><strong>Data Source:</strong> Baseline social cost valuations are derived from peer-reviewed research by <a href="https://www.senate.ga.gov/committees/Documents/HiddenCostsofGam.pdf" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">Grinols</a> (2011), with values adjusted for 2025 inflation to reflect current economic conditions.</li>`;
             // Public Health
-            if (revHealthPool >= totalCostHealth)
-            {
-                analysisHTML += `<li><strong>Public Health:</strong> The ${allocPct}% Humanitarian allocation is fully sufficient to cover the projected ${fmtM(totalCostHealth)} in Public Health costs. This surplus enables proactive recovery initiatives, which can stabilize vulnerable households and reduce long-term homelessness.</li>`;
-            } else
-            {
-                analysisHTML += `<li><strong>Public Health:</strong> The projected Public Health costs exceed the capacity of the ${allocPct}% Humanitarian allocation, leaving a funding gap for addiction and mental health treatments. This shortfall risks exacerbating homelessness and straining emergency medical services as untreated conditions escalate.</li>`;
-            }
+            analysisHTML += `<li><strong>Public Health:</strong> Public health and treatment costs are treated as real host-local and broader statewide burdens that must be covered from actual statutory revenue streams or other public resources.</li>`;
             // General Taxpayer Services Analysis (Dollar Amounts)
 
             // Law Enforcement
@@ -1462,8 +2029,11 @@ window.EconomicCalculator = (function ()
         const c = costs || {};
         switch (rowKey)
         {
-            case 'health_human': return 0;
-            case 'health_tax': return Number(c.health || 0);
+            case 'state_revenue': return 0;
+            case 'city_revenue': return 0;
+            case 'county_revenue': return 0;
+            case 'rda_revenue': return 0;
+            case 'health_local': return Number(c.health || 0);
             case 'health_sub': return Number(c.health || 0);
             case 'crime': return Number(c.crime || 0);
             case 'social': return Number(c.social || 0);
@@ -1494,15 +2064,11 @@ window.EconomicCalculator = (function ()
 
         const subjectCountyName = String((model && model.subjectCountyName) || "").trim();
         const subjectStateName = String((model && model.subjectStateName) || "").trim();
-        const countyRevenueHeaderText = subjectCountyName
-            ? (/\bcounty\b/i.test(subjectCountyName) ? `${subjectCountyName} Revenue` : `${subjectCountyName} County Revenue`)
-            : 'County Revenue';
+        const countyRevenueHeaderText = 'Direct Public Revenue';
         const countyHeaderText = subjectCountyName
-            ? (/\bcounty\b/i.test(subjectCountyName) ? `${subjectCountyName} Costs` : `${subjectCountyName} County Costs`)
-            : 'County Costs';
-        const countyNetHeaderText = subjectCountyName
-            ? (/\bcounty\b/i.test(subjectCountyName) ? `${subjectCountyName} Net Balance` : `${subjectCountyName} County Net Balance`)
-            : 'County Net Balance';
+            ? `Host Local Costs (${subjectCountyName} + Fort Wayne)`
+            : 'Host Local Costs';
+        const countyNetHeaderText = 'Base-Case Net Balance';
         const stateNetHeaderText = subjectStateName ? `${subjectStateName} Net Balance` : 'Total Net Balance';
         const otherHeaderText = otherCounties.length
             ? `Other ${subjectStateName || 'State'} Counties Cost\u00a0(${otherCounties.length})`
@@ -1636,7 +2202,7 @@ window.EconomicCalculator = (function ()
 
         if (noteEl)
         {
-            noteEl.textContent = `Baseline rate: ${baselineRateDisplay}%. ${countyNetHeaderText} = County Revenue − County Costs. ${stateNetHeaderText} = County Revenue − (County Costs + Other Counties Costs). Other Counties Costs totals same-state spillover within 50 miles (no revenue offsets modeled for those counties).`;
+            noteEl.textContent = `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Allen County receives only its 45% share of the supplemental wagering tax for a Fort Wayne city-site, while Fort Wayne receives the local share of the regular graduated wagering tax. Other Counties Costs totals same-state spillover within 50 miles.`;
         }
     }
 
@@ -1652,6 +2218,40 @@ window.EconomicCalculator = (function ()
         inputs.forEach(input =>
         {
             if (input) input.addEventListener('input', calculate);
+        });
+
+        document.querySelectorAll('[data-net-chart-mode]').forEach(button =>
+        {
+            button.onclick = () =>
+            {
+                const nextMode = String(button.dataset.netChartMode || 'county');
+                if (nextMode === activeNetChartMode) return;
+
+                activeNetChartMode = nextMode;
+                syncNetImpactModeButtons();
+
+                if (lastChartModel)
+                {
+                    renderNetImpactCharts(lastChartModel);
+                }
+            };
+        });
+
+        document.querySelectorAll('[data-sensitivity-series-mode]').forEach(button =>
+        {
+            button.onclick = () =>
+            {
+                const nextMode = String(button.dataset.sensitivitySeriesMode || 'county');
+                if (nextMode === activeSensitivitySeriesMode) return;
+
+                activeSensitivitySeriesMode = nextMode;
+                syncSensitivitySeriesButtons();
+
+                if (lastChartModel)
+                {
+                    renderNetImpactCharts(lastChartModel);
+                }
+            };
         });
 
         // Listen for map updates (replaces old county select logic)
@@ -1697,6 +2297,8 @@ window.EconomicCalculator = (function ()
 
         // Populate DOM references
         initElements();
+        syncNetImpactModeButtons();
+        syncSensitivitySeriesButtons();
 
         // Set up event listeners
         initListeners();

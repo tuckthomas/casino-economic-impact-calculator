@@ -1,0 +1,23 @@
+# UI Table Updates Checklist
+
+- [x] Update the Fort Wayne casino impact table to reflect the final enrolled HB 1038 statutory revenue distribution.
+- [x] Treat the base case as a Fort Wayne city-site unless an unincorporated county scenario is explicitly added later.
+- [x] Stop crediting Allen County with the full local gaming revenue in the base case.
+- [x] Model the 3.5% supplemental wagering tax as 10% Northeast Indiana RDA, 45% city, and 45% county.
+- [x] Route the 25% local share of the regular graduated wagering tax to the City of Fort Wayne for the base city-site assumption.
+- [x] Update the displayed revenue recipients to show State of Indiana Revenue, City of Fort Wayne Revenue, Allen County Revenue, and Northeast Indiana RDA Revenue.
+- [x] Remove the humanitarian/general-fund allocation from the base case.
+- [x] Set Humanitarian Fund Revenue to $0 in the base case.
+- [x] Remove or replace UI copy that presents the humanitarian carve-out as the default statutory model.
+- [x] Rename cost framing so host-area burdens are not mislabeled as Allen County-only burdens.
+- [x] Reframe cost allocation around burden incidence rather than fictional earmark allocation.
+- [x] Treat public health as a host-local plus broader statewide burden without a humanitarian offset in the base case.
+- [x] Keep law-enforcement costs weighted toward the host local area.
+- [x] Keep social-services and civil-legal burdens distributed between host local and other Indiana counties.
+- [x] Apply the immediate Fort Wayne city-site corrections:
+  - [x] Allen County Revenue ≈ $3.25M
+  - [x] City of Fort Wayne Revenue ≈ $16.94M
+  - [x] Northeast Indiana RDA Revenue ≈ $0.72M
+  - [x] Humanitarian Fund Revenue = $0
+- [x] Update notes/footnotes to state that the base case reflects final HB 1038 statutory distributions only.
+- [x] Preserve room for later optional scenarios such as a local development agreement or unincorporated county siting.
