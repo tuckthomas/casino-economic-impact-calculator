@@ -27,40 +27,33 @@ if [[ "${foreground}" -eq 1 ]]; then
   trap cleanup EXIT INT TERM
   wait "${child_pid}"
 else
-  info "Building local server for managed background start."
-  DOTNET_ROOT=/root/.dotnet PATH=/root/.dotnet:"${PATH}" dotnet build "${PROJECT_PATH}" >/dev/null
-
-  info "Starting local dev server in background."
+  info "Starting local dev watcher in background."
   : > "${LOGFILE}"
-  cd "${REPO_ROOT}/SaveFW.Server"
-  setsid "${dev_run_cmd[@]}" >> "${LOGFILE}" 2>&1 &
-  launcher_pid=$!
-  launcher_pgid="$(pgid_for_pid "${launcher_pid}")"
-  target_pid=""
+  cd "${REPO_ROOT}"
+  setsid "${dev_watch_cmd[@]}" >> "${LOGFILE}" 2>&1 &
+  watcher_pid=$!
+  watcher_pgid="$(pgid_for_pid "${watcher_pid}")"
 
-  for _ in $(seq 1 20); do
+  for _ in $(seq 1 60); do
     sleep 1
-    while IFS= read -r pid; do
-      [[ -n "${pid}" ]] || continue
-      if pid_is_repo_dev_process "${pid}"; then
-        if [[ -n "${launcher_pgid}" && "$(pgid_for_pid "${pid}")" == "${launcher_pgid}" ]]; then
-          target_pid="${pid}"
-          break 2
-        fi
-        if [[ -z "${target_pid}" ]]; then
-          target_pid="${pid}"
-        fi
-      fi
-    done < <(list_port_pids || true)
+    if ! process_exists "${watcher_pid}"; then
+      fail "Local dev watcher exited before binding port ${PORT}. See ${LOGFILE}."
+    fi
+
+    if ss -ltn "( sport = :${PORT} )" 2>/dev/null | grep -q ":${PORT}"; then
+      break
+    fi
   done
 
-  [[ -n "${target_pid}" ]] || fail "Local dev server failed to bind port ${PORT}."
-  pid_is_containerized "${target_pid}" && fail "Refusing to record pid ${target_pid}: it appears containerized."
+  if ! ss -ltn "( sport = :${PORT} )" 2>/dev/null | grep -q ":${PORT}"; then
+    fail "Local dev watcher failed to bind port ${PORT}. See ${LOGFILE}."
+  fi
 
-  child_pgid="$(pgid_for_pid "${target_pid}")"
-  write_pidfile "${target_pid}" "${child_pgid}" "background"
-  info "Local dev server started."
-  info "PID: ${target_pid}"
-  info "PGID: ${child_pgid}"
+  pid_is_containerized "${watcher_pid}" && fail "Refusing to record pid ${watcher_pid}: it appears containerized."
+
+  write_pidfile "${watcher_pid}" "${watcher_pgid}" "background"
+  info "Local dev watcher started."
+  info "PID: ${watcher_pid}"
+  info "PGID: ${watcher_pgid}"
   info "Log: ${LOGFILE}"
 fi

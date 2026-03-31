@@ -1,8 +1,4 @@
 @page "/"
-@inject SaveFW.Server.Services.StaticAssetFingerprintService AssetFingerprints
-@functions {
-    private string Asset(string path) => AssetFingerprints.GetPath(path);
-}
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth bg-slate-900">
 
@@ -12,23 +8,23 @@
     <title>Save Fort Wayne - Protect Our Future</title>
     <base href="/" />
 
-    <link href="@Asset("lib/public-sans/index.css")" rel="stylesheet" />
-    <link href="@Asset("lib/material-symbols-outlined/index.css")" rel="stylesheet" />
+    <link href="lib/public-sans/index.css" rel="stylesheet" asp-append-version="true" />
+    <link href="lib/material-symbols-outlined/index.css" rel="stylesheet" asp-append-version="true" />
 
-    <link rel="stylesheet" href="@Asset("css/maplibre-gl.css")" />
-    <script src="@Asset("js/lib/maplibre-gl.js")"></script>
-    <script src="@Asset("js/lib/pmtiles.js")"></script>
+    <link rel="stylesheet" href="css/maplibre-gl.css" asp-append-version="true" />
+    <script src="js/lib/maplibre-gl.js" asp-append-version="true"></script>
+    <script src="js/lib/pmtiles.js" asp-append-version="true"></script>
 
-    <script src="@Asset("js/lib/turf.min.js")"></script>
-    <script src="@Asset("js/lib/chart.js")"></script>
-    <script src="@Asset("js/lib/terra-draw.umd.js")"></script>
+    <script src="js/lib/turf.min.js" asp-append-version="true"></script>
+    <script src="js/lib/chart.js" asp-append-version="true"></script>
+    <script src="js/lib/terra-draw.umd.js" asp-append-version="true"></script>
 
-    <script src="@Asset("js/lib/pdf.min.js")"></script>
-    <script src="@Asset("js/lib/page-flip.browser.js")"></script>
+    <script src="js/lib/pdf.min.js" asp-append-version="true"></script>
+    <script src="js/lib/page-flip.browser.js" asp-append-version="true"></script>
 
-    <link href="@Asset("css/app.css")" rel="stylesheet" />
-    <link href="@Asset("SaveFW.Client.styles.css")" rel="stylesheet" />
-    <link rel="icon" type="image/svg+xml" href="@Asset("assets/favicon.svg")" />
+    <link href="css/app.css" rel="stylesheet" asp-append-version="true" />
+    <link href="SaveFW.Client.styles.css" rel="stylesheet" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" asp-append-version="true" />
     <style>
         html {
             overflow-y: scroll;
@@ -118,25 +114,25 @@
 
     <script src="_framework/blazor.webassembly.js"></script>
 
-    <script src="@Asset("js/lib/html2canvas.min.js")"></script>
-    <script src="@Asset("js/pdf-helper.js")"></script>
-    <script src="@Asset("js/data/indiana-counties.js")"></script>
-    <script src="@Asset("js/components/slot-machine.js")"></script>
-    <script src="@Asset("js/components/adaptive-toast.js")"></script>
-    <script src="@Asset("js/components/maplibre-map.js")"></script>
-    <script src="@Asset("js/components/legislators.js")"></script>
-    <script src="@Asset("js/components/image-modal.js")"></script>
-    <script src="@Asset("js/components/modals.js")"></script>
-    <script src="@Asset("js/components/flipbook.js")"></script>
-    <script src="@Asset("js/components/toc.js")"></script>
-    <script src="@Asset("js/components/reveal.js")"></script>
-    <script src="@Asset("js/components/charts.js")"></script>
-    <script src="@Asset("js/components/tooltip-portal.js")"></script>
-    <script src="@Asset("js/components/slider-input-logic.js")"></script>
-    <script src="@Asset("js/components/slider-input-group-logic.js")"></script>
-    <script src="@Asset("js/components/home-header.js")"></script>
-    <script src="@Asset("js/economics/calculator.js")"></script>
-    <script src="@Asset("js/economics/substitution.js")"></script>
+    <script src="js/lib/html2canvas.min.js" asp-append-version="true"></script>
+    <script src="js/pdf-helper.js" asp-append-version="true"></script>
+    <script src="js/data/indiana-counties.js" asp-append-version="true"></script>
+    <script src="js/components/slot-machine.js" asp-append-version="true"></script>
+    <script src="js/components/adaptive-toast.js" asp-append-version="true"></script>
+    <script src="js/components/maplibre-map.js" asp-append-version="true"></script>
+    <script src="js/components/legislators.js" asp-append-version="true"></script>
+    <script src="js/components/image-modal.js" asp-append-version="true"></script>
+    <script src="js/components/modals.js" asp-append-version="true"></script>
+    <script src="js/components/flipbook.js" asp-append-version="true"></script>
+    <script src="js/components/toc.js" asp-append-version="true"></script>
+    <script src="js/components/reveal.js" asp-append-version="true"></script>
+    <script src="js/components/charts.js" asp-append-version="true"></script>
+    <script src="js/components/tooltip-portal.js" asp-append-version="true"></script>
+    <script src="js/components/slider-input-logic.js" asp-append-version="true"></script>
+    <script src="js/components/slider-input-group-logic.js" asp-append-version="true"></script>
+    <script src="js/components/home-header.js" asp-append-version="true"></script>
+    <script src="js/economics/calculator.js" asp-append-version="true"></script>
+    <script src="js/economics/substitution.js" asp-append-version="true"></script>
 </body>
 
 </html>

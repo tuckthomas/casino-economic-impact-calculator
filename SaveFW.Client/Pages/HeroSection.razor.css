@@ -9,30 +9,30 @@
 
 .hero-line,
 .hero-kicker-part {
-    animation: hero-line-reveal 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    animation-delay: var(--hero-delay, 0s);
-    clip-path: inset(0 100% 0 0);
     display: block;
-    opacity: 0;
-    transform: translateY(0.35rem);
     width: fit-content;
+}
+
+.hero-char {
+    animation: hero-char-fade 900ms ease-out forwards;
+    animation-delay: var(--hero-delay, 0s);
+    display: inline-block;
+    opacity: 0;
+    will-change: opacity;
+    white-space: pre;
 }
 
 .hero-kicker-part + .hero-kicker-part {
     margin-top: 0.15rem;
 }
 
-@keyframes hero-line-reveal {
+@keyframes hero-char-fade {
     from {
-        clip-path: inset(0 100% 0 0);
         opacity: 0;
-        transform: translateY(0.35rem);
     }
 
     to {
-        clip-path: inset(0 0 0 0);
         opacity: 1;
-        transform: translateY(0);
     }
 }
 

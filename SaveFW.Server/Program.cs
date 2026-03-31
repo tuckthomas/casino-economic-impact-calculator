@@ -50,7 +50,6 @@ builder.Services.AddScoped<SaveFW.Server.Services.RevenueHeuristicService>();
 
 // Register ZIP switching model service
 builder.Services.AddScoped<SaveFW.Server.Services.ZipSwitchingModelService>();
-builder.Services.AddSingleton<SaveFW.Server.Services.StaticAssetFingerprintService>();
 
 // Register Workers
 // builder.Services.AddHostedService<SaveFW.Server.Workers.ScoringWorker>();
