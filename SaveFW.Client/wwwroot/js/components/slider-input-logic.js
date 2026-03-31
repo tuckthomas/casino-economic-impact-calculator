@@ -114,7 +114,8 @@ window.SliderInputLogic = (function ()
 
             const fmtNum = (n) => n.toLocaleString(undefined, {
                 minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals
+                maximumFractionDigits: decimals,
+                useGrouping: type !== 'Number'
             });
 
             const clamp = (v) => Math.min(Math.max(v, min), max);

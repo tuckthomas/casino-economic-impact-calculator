@@ -1,0 +1,43 @@
+.hero-copy {
+    max-width: 42rem;
+}
+
+.hero-headline,
+.hero-kicker {
+    overflow: hidden;
+}
+
+.hero-line,
+.hero-kicker-part {
+    animation: hero-line-reveal 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: var(--hero-delay, 0s);
+    clip-path: inset(0 100% 0 0);
+    display: block;
+    opacity: 0;
+    transform: translateY(0.35rem);
+    width: fit-content;
+}
+
+.hero-kicker-part + .hero-kicker-part {
+    margin-top: 0.15rem;
+}
+
+@keyframes hero-line-reveal {
+    from {
+        clip-path: inset(0 100% 0 0);
+        opacity: 0;
+        transform: translateY(0.35rem);
+    }
+
+    to {
+        clip-path: inset(0 0 0 0);
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 1023px) {
+    .hero-copy {
+        max-width: 100%;
+    }
+}

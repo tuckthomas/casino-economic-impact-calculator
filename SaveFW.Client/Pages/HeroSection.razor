@@ -1,18 +1,18 @@
 @inject IJSRuntime JSRuntime
 
 <section class="relative w-full overflow-hidden min-h-[100svh]">
-    <div class="mx-auto max-w-7xl flex min-h-[100svh] flex-col lg:flex-row items-center">
+    <div class="mx-auto flex min-h-[100svh] w-full max-w-[96rem] flex-col items-center px-4 sm:px-6 lg:flex-row lg:px-8 xl:px-10">
         <!-- Text Content -->
-        <div class="flex-1 relative z-20 flex flex-col justify-center px-8 py-24 lg:py-32 sm:px-12 lg:px-12 text-white">
-            <h1 class="text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl mb-6">
-                DON'T LET THEM<br />
-                <span class="text-accent underline decoration-4 decoration-accent/50 underline-offset-4">GAMBLE
-                    AWAY</span><br />
-                OUR CITY'S<br />
-                FUTURE.
+        <div class="hero-copy flex-1 relative z-20 flex flex-col justify-center py-24 text-white lg:py-32 lg:pr-8 xl:pr-12">
+            <h1 class="hero-headline text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl mb-6">
+                <span class="hero-line" style="--hero-delay: 0.1s;">DON'T LET THEM</span>
+                <span class="hero-line hero-line--accent text-accent underline decoration-4 decoration-accent/50 underline-offset-4" style="--hero-delay: 0.55s;">GAMBLE AWAY</span>
+                <span class="hero-line" style="--hero-delay: 1s;">OUR CITY'S</span>
+                <span class="hero-line" style="--hero-delay: 1.45s;">FUTURE.</span>
             </h1>
-            <h2 class="text-2xl font-bold text-accent mb-6 uppercase tracking-wider">
-                Fort Wayne Deserves Better.
+            <h2 class="hero-kicker text-2xl font-bold text-accent mb-6 uppercase tracking-wider">
+                <span class="hero-kicker-part" style="--hero-delay: 2s;">Fort Wayne</span>
+                <span class="hero-kicker-part" style="--hero-delay: 2.35s;">Deserves Better.</span>
             </h2>
             <p class="text-lg text-slate-200 font-medium leading-relaxed mb-10 max-w-xl">
                 The proposed casino expansion creates a net fiscal loss for our city, introducing risks of addiction and
@@ -39,10 +39,10 @@
         </div>
 
         <!-- Image Side -->
-        <div class="relative w-full lg:w-1/2">
+        <div class="relative w-full lg:w-[55%]">
             <!-- Slot Machine (Moved Here) -->
             <div
-                class="relative max-w-[800px] mx-auto z-0 scale-75 sm:scale-90 lg:scale-100 origin-top lg:origin-center mt-6 lg:mt-10">
+                class="relative max-w-[900px] mx-auto z-0 scale-75 sm:scale-90 lg:scale-100 origin-top lg:origin-center mt-6 lg:mt-10">
                 <!-- LEVER -->
                 <!-- LEVER BASE (Layered Behind) -->
                 <div class="lever-container" style="z-index: 0;">

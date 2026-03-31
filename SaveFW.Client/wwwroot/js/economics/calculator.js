@@ -1360,16 +1360,14 @@ window.EconomicCalculator = (function ()
         const netSocial = revSocial - totalCostSocial;
         const netLegal = revLegal - totalCostLegal;
 
-        const subGenRev = revCrime + revSocial + revLegal;
-        const subGenCost = totalCostCrime + totalCostSocial + totalCostLegal;
-        const subGenNet = netCrime + netSocial + netLegal;
-
-        const subPublicRev = subHealthRev + subGenRev;
-        const subPublicCost = subHealthCost + subGenCost;
-        const subPublicNet = subHealthNet + subGenNet;
+        const subGeneralRev = revHealth + revCrime + revSocial + revLegal;
+        const subGeneralCost = totalCostHealth + totalCostCrime + totalCostSocial + totalCostLegal;
+        const subGeneralNet = netHealth + netCrime + netSocial + netLegal;
 
         const totalCostPrivate = totalCostAbused + totalCostEmployment;
         const netTotalBalance = totalRevenue - totalCost;
+        const hostLocalRevenue = revenueCity + revenueCounty;
+        const hostLocalNetBalance = hostLocalRevenue - totalCost;
 
         const subjectCountyName = (lastImpactBreakdown && lastImpactBreakdown.countyName) || countyIndex.get(subjectCountyFips) || subjectCountyFips || "Subject County";
         const subjectStateName = String((lastImpactBreakdown && lastImpactBreakdown.stateName) || "").trim();
@@ -1492,21 +1490,33 @@ window.EconomicCalculator = (function ()
                 otherCost: 0
             },
             {
+                key: 'host_local_revenue_sub',
+                kind: 'subtotal',
+                label: 'Subtotal: Allen County + Fort Wayne Revenue',
+                labelClass: '',
+                tooltip: 'Combined direct public revenue flowing to the City of Fort Wayne and Allen County in the base-case Fort Wayne city-site model.',
+                revenue: hostLocalRevenue,
+                countyCost: 0,
+                countyBalance: hostLocalRevenue,
+                otherCost: 0
+            },
+            {
+                key: 'all_public_revenue_sub',
+                kind: 'subtotal',
+                label: 'Subtotal: All Public Revenue',
+                labelClass: '',
+                tooltip: 'Combined statewide, city, county, and regional authority revenue before applying social and economic costs.',
+                revenue: totalRevenue,
+                countyCost: 0,
+                countyBalance: totalRevenue,
+                otherCost: 0
+            },
+            {
                 key: 'health_local',
                 kind: 'detail',
                 label: 'Public Health / Treatment',
                 labelClass: '',
-                tooltip: 'Addiction treatment, counseling, crisis response, and recovery burden in the base case, with no dedicated statutory earmark offset.',
-                revenue: revHealth,
-                countyCost: totalCostHealth,
-                countyBalance: netHealth,
-                otherCost: otherTotals.health
-            },
-            {
-                key: 'health_sub',
-                kind: 'subtotal',
-                label: 'Subtotal: Public Health',
-                labelClass: '',
+                tooltip: 'Addiction treatment, counseling, crisis response, and recovery burden in the base case, grouped with general taxpayer services.',
                 revenue: revHealth,
                 countyCost: totalCostHealth,
                 countyBalance: netHealth,
@@ -1550,19 +1560,9 @@ window.EconomicCalculator = (function ()
                 kind: 'subtotal',
                 label: 'Subtotal: General Taxpayer Services',
                 labelClass: '',
-                revenue: subGenRev,
-                countyCost: subGenCost,
-                countyBalance: subGenNet,
-                otherCost: otherTotals.crime + otherTotals.social + otherTotals.legal
-            },
-            {
-                key: 'public_sub',
-                kind: 'subtotal',
-                label: 'Subtotal: Public Sector Impact',
-                labelClass: '',
-                revenue: subPublicRev,
-                countyCost: subPublicCost,
-                countyBalance: subPublicNet,
+                revenue: subGeneralRev,
+                countyCost: subGeneralCost,
+                countyBalance: subGeneralNet,
                 otherCost: otherTotals.public
             },
             {
@@ -1598,9 +1598,20 @@ window.EconomicCalculator = (function ()
                 otherCost: otherTotals.private
             },
             {
+                key: 'host_local_total',
+                kind: 'total',
+                label: 'Net Impact: Allen County + Fort Wayne',
+                labelClass: 'text-white',
+                tooltip: 'Combined Fort Wayne and Allen County direct revenue, less total modeled host-local social and private-sector costs.',
+                revenue: hostLocalRevenue,
+                countyCost: totalCost,
+                countyBalance: hostLocalNetBalance,
+                otherCost: 0
+            },
+            {
                 key: 'total',
                 kind: 'total',
-                label: 'Total Net Economic Impact',
+                label: 'Total Net Economic Impact (Indiana)',
                 labelClass: 'text-white',
                 revenue: totalRevenue,
                 countyCost: totalCost,
@@ -1906,7 +1917,7 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Net Economic Impact Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 text-slate-300">';
 
-            analysisHTML += `<li><strong>Sector Comparison:</strong> The Public Sector (government departments) projected impact is a ${fmtM(Math.abs(subPublicNet))} ${subPublicNet >= 0 ? 'surplus' : 'deficit'}. In comparison, the Private Sector (Local Economy) faces an unmitigated loss of ${fmtM(totalCostPrivate)}.</li>`;
+            analysisHTML += `<li><strong>Sector Comparison:</strong> The Public Sector (government departments) projected impact is a ${fmtM(Math.abs(subGeneralNet))} ${subGeneralNet >= 0 ? 'surplus' : 'deficit'}. In comparison, the Private Sector (Local Economy) faces an unmitigated loss of ${fmtM(totalCostPrivate)}.</li>`;
 
             analysisHTML += `<li><strong>Subject County Fiscal Balance:</strong> When balancing tax revenue against direct social costs, ${subjectCountyName} County realizes a net impact of ${fmtDiffM(netTotalBalance)}.</li>`;
 
@@ -2068,7 +2079,7 @@ window.EconomicCalculator = (function ()
         const countyHeaderText = subjectCountyName
             ? `Host Local Costs (${subjectCountyName} + Fort Wayne)`
             : 'Host Local Costs';
-        const countyNetHeaderText = 'Base-Case Net Balance';
+        const countyNetHeaderText = 'Row Net Balance';
         const stateNetHeaderText = subjectStateName ? `${subjectStateName} Net Balance` : 'Total Net Balance';
         const otherHeaderText = otherCounties.length
             ? `Other ${subjectStateName || 'State'} Counties Cost\u00a0(${otherCounties.length})`
@@ -2202,7 +2213,7 @@ window.EconomicCalculator = (function ()
 
         if (noteEl)
         {
-            noteEl.textContent = `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Allen County receives only its 45% share of the supplemental wagering tax for a Fort Wayne city-site, while Fort Wayne receives the local share of the regular graduated wagering tax. Other Counties Costs totals same-state spillover within 50 miles.`;
+            noteEl.textContent = `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Allen County receives only its 45% share of the supplemental wagering tax for a Fort Wayne city-site, while Fort Wayne receives the local share of the regular graduated wagering tax. Use "Subtotal: Allen County + Fort Wayne Revenue" and "Net Impact: Allen County + Fort Wayne" for the direct host-local fiscal view. Other Counties Costs totals same-state spillover within 50 miles.`;
         }
     }
 

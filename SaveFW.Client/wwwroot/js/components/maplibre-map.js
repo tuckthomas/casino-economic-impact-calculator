@@ -55,6 +55,8 @@ window.MapLibreImpactMap = (function ()
     let currentContextGeoJSON = null;
     let currentCalcFeatures = null;
     let currentCountyTotals = null;
+    let competitorMarkers = [];
+    let activeCompetitorPopup = null;
     let contextIsLite = false;
     let contextCache = {};
     let activePrefetches = []; // Track background prefetch controllers
@@ -175,6 +177,47 @@ window.MapLibreImpactMap = (function ()
         const s = String(value == null ? "" : value).trim();
         if (!s) return "";
         return /^\d+$/.test(s) ? s.padStart(5, '0') : s;
+    }
+
+    function escapeHtml(input)
+    {
+        return String(input ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function updateCompetitorMarkerScale()
+    {
+        if (!map || !competitorMarkers.length) return;
+
+        const zoom = Number(map.getZoom() || 0);
+        let width = 12;
+        let height = 16;
+
+        if (zoom >= 7)
+        {
+            width = 30;
+            height = 40;
+        } else if (zoom >= 6)
+        {
+            width = 24;
+            height = 32;
+        } else if (zoom >= 5)
+        {
+            width = 18;
+            height = 24;
+        }
+
+        competitorMarkers.forEach(markerInstance =>
+        {
+            const element = markerInstance.getElement();
+            if (!element) return;
+            element.style.width = `${width}px`;
+            element.style.height = `${height}px`;
+        });
     }
 
     function distanceMiles(lng1, lat1, lng2, lat2)
@@ -332,6 +375,14 @@ window.MapLibreImpactMap = (function ()
     {
         try
         {
+            competitorMarkers.forEach(markerInstance => markerInstance.remove());
+            competitorMarkers = [];
+            if (activeCompetitorPopup)
+            {
+                activeCompetitorPopup.remove();
+                activeCompetitorPopup = null;
+            }
+
             const res = await fetch('/api/Revenue/competitors');
             if (!res.ok) throw new Error('Failed to fetch competitors');
 
@@ -355,23 +406,96 @@ window.MapLibreImpactMap = (function ()
                 const el = document.createElement('div');
                 el.className = 'competitor-marker';
                 el.style.backgroundImage = `url(${iconUrl})`;
-                el.style.width = '30px';
-                el.style.height = '40px';
+                el.style.width = '12px';
+                el.style.height = '16px';
                 el.style.backgroundSize = 'contain';
                 el.style.backgroundRepeat = 'no-repeat';
                 el.style.cursor = 'pointer';
 
-                // Add to map
-                new maplibregl.Marker({ element: el })
-                    .setLngLat([comp.longitude, comp.latitude])
-                    .setPopup(new maplibregl.Popup({ offset: 25 }) // add popups
-                        .setHTML(`<div class="p-2">
-                                    <h3 class="font-bold text-slate-900">${comp.name}</h3>
-                                    <p class="text-sm text-slate-600">${comp.venueType.replace(/_/g, ' ')}</p>
-                                    ${comp.operatorName ? `<p class="text-xs text-slate-500">Op: ${comp.operatorName}</p>` : ''}
-                                  </div>`))
+                const popup = new maplibregl.Popup({
+                    offset: 25,
+                    closeButton: true,
+                    closeOnClick: true,
+                    className: 'competitor-popup'
+                }).setHTML(`<div class="competitor-popup-inner">
+                                <h3 class="competitor-popup-title">${escapeHtml(comp.name || 'Existing venue')}</h3>
+                                <p class="competitor-popup-type">${escapeHtml(String(comp.venueType || '').replace(/_/g, ' '))}</p>
+                                ${comp.operatorName ? `<p class="competitor-popup-operator">Op: ${escapeHtml(comp.operatorName)}</p>` : ''}
+                             </div>`);
+
+                popup.on('close', () =>
+                {
+                    if (activeCompetitorPopup === popup) activeCompetitorPopup = null;
+                });
+
+                popup.on('open', () =>
+                {
+                    if (activeCompetitorPopup && activeCompetitorPopup !== popup)
+                    {
+                        activeCompetitorPopup.remove();
+                    }
+                    activeCompetitorPopup = popup;
+                });
+
+                const markerInstance = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+                    .setLngLat([Number(comp.longitude), Number(comp.latitude)])
                     .addTo(map);
+
+                const markerElement = markerInstance.getElement();
+                const openPopup = () =>
+                {
+                    if (activeCompetitorPopup && activeCompetitorPopup !== popup)
+                    {
+                        activeCompetitorPopup.remove();
+                    }
+
+                    popup
+                        .setLngLat(markerInstance.getLngLat())
+                        .addTo(map);
+
+                    activeCompetitorPopup = popup;
+                };
+
+                markerElement.addEventListener('mousedown', (event) => event.stopPropagation());
+                markerElement.addEventListener('mouseup', (event) => event.stopPropagation());
+                markerElement.addEventListener('touchstart', (event) => event.stopPropagation(), { passive: true });
+                markerElement.addEventListener('mouseenter', () =>
+                {
+                    if (map.getZoom() >= 5)
+                    {
+                        openPopup();
+                    }
+                });
+                markerElement.addEventListener('click', (event) =>
+                {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openPopup();
+                });
+
+                competitorMarkers.push(markerInstance);
             });
+
+            updateCompetitorMarkerScale();
+
+            if (map && !map.__competitorMarkerScaleBound)
+            {
+                map.on('zoom', updateCompetitorMarkerScale);
+                map.__competitorMarkerScaleBound = true;
+            }
+
+            if (map && !map.__competitorPopupCloseBound)
+            {
+                map.on('click', () =>
+                {
+                    if (activeCompetitorPopup)
+                    {
+                        activeCompetitorPopup.remove();
+                        activeCompetitorPopup = null;
+                    }
+                });
+                map.__competitorPopupCloseBound = true;
+            }
             console.log(`Loaded ${competitors.length} competitors.`);
         } catch (e)
         {

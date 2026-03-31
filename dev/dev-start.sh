@@ -32,6 +32,7 @@ else
 
   info "Starting local dev server in background."
   : > "${LOGFILE}"
+  cd "${REPO_ROOT}/SaveFW.Server"
   setsid "${dev_run_cmd[@]}" >> "${LOGFILE}" 2>&1 &
   launcher_pid=$!
   launcher_pgid="$(pgid_for_pid "${launcher_pid}")"
