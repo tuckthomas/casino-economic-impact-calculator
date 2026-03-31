@@ -1,20 +1,30 @@
-.economic-analysis-opening {
-    align-items: center;
-    display: flex;
-    min-height: 100vh;
-    padding: 6rem 0 3rem;
+.economic-analysis-section-heading {
+    padding: 0;
 }
 
-.economic-analysis-sticky-header {
-    backdrop-filter: blur(14px);
-    background: rgba(15, 23, 42, 0.9);
-    border: 1px solid rgba(51, 65, 85, 0.78);
-    border-radius: 1.5rem;
-    margin-top: 0;
-    padding: 1.25rem 1.5rem;
-    position: sticky;
-    top: 5.25rem;
-    z-index: 20;
+.economic-analysis-opening-shell {
+    display: flex;
+    min-height: 100svh;
+    width: 100%;
+}
+
+.economic-analysis-opening {
+    align-items: stretch;
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 100svh;
+    padding: 0;
+    width: 100%;
+}
+
+.economic-analysis-content-shell {
+    position: relative;
+    width: 100%;
+    z-index: 10;
+}
+
+.economic-analysis-content {
+    padding-top: 0;
 }
 
 .economic-chart-card {
@@ -112,15 +122,21 @@
 }
 
 @media (max-width: 767px) {
-    .economic-analysis-opening {
+    .economic-analysis-opening-shell {
         min-height: 100svh;
-        padding: 5rem 0 2rem;
     }
 
-    .economic-analysis-sticky-header {
+    .economic-analysis-opening {
+        min-height: 100svh;
+    }
+
+    .economic-analysis-content {
+        padding-top: 0;
+    }
+
+    .economic-analysis-section-heading {
         border-radius: 1rem;
         padding: 1rem 1.1rem;
-        top: 4.75rem;
     }
 
     .economic-chart-card {

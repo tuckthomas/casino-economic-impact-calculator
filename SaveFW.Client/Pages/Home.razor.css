@@ -1,0 +1,36 @@
+.home-page {
+    background: #0f172a;
+}
+
+.home-hero-gradient {
+    background: linear-gradient(to right bottom, #0f172a, #1e293b, #334155);
+}
+
+.home-hero-shell {
+    min-height: 100svh;
+}
+
+.home-sticky-header-shell {
+    background: linear-gradient(to right bottom, #0f172a, #1e293b, #334155);
+    width: 100%;
+}
+
+.home-sticky-header-shell.is-stuck {
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 60;
+}
+
+.home-sticky-header-nav {
+    background: transparent;
+}
+
+.home-sticky-header-spacer {
+    height: 0;
+}
+
+.home-sticky-header-spacer.is-active {
+    height: var(--home-header-height, 5rem);
+}
