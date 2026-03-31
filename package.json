@@ -3,7 +3,11 @@
   "version": "0.9.1",
   "description": "SaveFW - Economic Impact Analysis",
   "scripts": {
-    "dev": "ASPNETCORE_ENVIRONMENT=Development DOTNET_ROOT=/root/.dotnet PATH=/root/.dotnet:$PATH dotnet watch run --project SaveFW.Server/SaveFW.Server.csproj --urls http://0.0.0.0:5000",
+    "dev": "./dev/dev-start.sh --foreground",
+    "dev:start": "./dev/dev-start.sh",
+    "dev:stop": "./dev/dev-stop.sh",
+    "dev:restart": "./dev/dev-restart.sh",
+    "dev:status": "./dev/dev-status.sh",
     "build:css": "BROWSERSLIST_IGNORE_OLD_DATA=true tailwindcss -i ./SaveFW.Client/Styles/app.css -o ./SaveFW.Client/wwwroot/css/app.css --minify",
     "copy-libs": "cp node_modules/@turf/turf/turf.min.js SaveFW.Client/wwwroot/js/lib/ && cp node_modules/chart.js/dist/chart.umd.min.js SaveFW.Client/wwwroot/js/lib/chart.js && cp node_modules/html2canvas/dist/html2canvas.min.js SaveFW.Client/wwwroot/js/lib/ && cp -r node_modules/@fontsource-variable/public-sans SaveFW.Client/wwwroot/lib/ && cp -r node_modules/@fontsource-variable/material-symbols-outlined SaveFW.Client/wwwroot/lib/ && cp node_modules/terra-draw/dist/terra-draw.umd.js SaveFW.Client/wwwroot/js/lib/"
   },

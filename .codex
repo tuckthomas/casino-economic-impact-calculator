@@ -1,0 +1,8 @@
+Local dev process control for this repo is restricted to the scripts in `/root/SaveFW/dev/`.
+
+Hard rules:
+- Use only `npm run dev`, `npm run dev:start`, `npm run dev:stop`, `npm run dev:restart`, `npm run dev:status`, or the matching `dev/dev-*.sh` scripts.
+- Never use ad hoc `kill`, `pkill`, `killall`, broad `ps | grep` cleanup, or port-based process termination to manage local development.
+- Never touch Docker, Docker Compose, Podman, containerd, kubepods, or any containerized process while fixing the local dev server.
+- Never stop any `SaveFW.Server`, `dotnet`, `npm`, or `node` process unless it is the exact pid recorded in `/root/SaveFW/dev/.local-dev-server.pid` and validated by the repo script.
+- If port 5000 is occupied by an unmanaged process, refuse to stop it automatically and report it instead.
