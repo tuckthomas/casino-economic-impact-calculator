@@ -30,3 +30,4 @@ valhalla_tiles.tar
 .DS_Store
 Thumbs.db
 *.log
+dev/.local-dev-server.pid

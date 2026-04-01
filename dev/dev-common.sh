@@ -2,38 +2,6 @@
 
 set -euo pipefail
 
-readonly DEV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly REPO_ROOT="$(cd "${DEV_DIR}/.." && pwd)"
-readonly PIDFILE="${DEV_DIR}/.local-dev-server.pid"
-readonly LOGFILE="${DEV_DIR}/local-dev-server.log"
-readonly PORT="5000"
-readonly PROJECT_PATH="SaveFW.Server/SaveFW.Server.csproj"
-readonly SERVER_BINARY="${REPO_ROOT}/SaveFW.Server/bin/Debug/net10.0/SaveFW.Server"
-
-dev_watch_cmd=(
-  env
-  ASPNETCORE_ENVIRONMENT=Development
-  DOTNET_ROOT=/root/.dotnet
-  PATH=/root/.dotnet:"${PATH}"
-  dotnet
-  watch
-  run
-  --project
-  "${PROJECT_PATH}"
-  --urls
-  "http://0.0.0.0:${PORT}"
-)
-
-dev_run_cmd=(
-  env
-  ASPNETCORE_ENVIRONMENT=Development
-  DOTNET_ROOT=/root/.dotnet
-  PATH=/root/.dotnet:"${PATH}"
-  "${SERVER_BINARY}"
-  --urls
-  "http://0.0.0.0:${PORT}"
-)
-
 fail() {
   echo "ERROR: $*" >&2
   exit 1
@@ -41,6 +9,59 @@ fail() {
 
 info() {
   echo "$*"
+}
+
+resolve_dotnet_bin() {
+  local dotnet_bin=""
+
+  if command -v dotnet >/dev/null 2>&1; then
+    dotnet_bin="$(command -v dotnet)"
+  elif [[ -x "/root/.dotnet/dotnet" ]]; then
+    dotnet_bin="/root/.dotnet/dotnet"
+  else
+    fail "dotnet was not found on PATH and /root/.dotnet/dotnet does not exist."
+  fi
+
+  readlink -f "${dotnet_bin}"
+}
+
+readonly DEV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly REPO_ROOT="$(cd "${DEV_DIR}/.." && pwd)"
+readonly PIDFILE="${DEV_DIR}/.local-dev-server.pid"
+readonly LOGFILE="${DEV_DIR}/local-dev-server.log"
+readonly PORT="5000"
+readonly PROJECT_PATH="SaveFW.Server/SaveFW.Server.csproj"
+readonly SERVER_WORKDIR="${REPO_ROOT}/SaveFW.Server"
+readonly SERVER_BINARY="${REPO_ROOT}/SaveFW.Server/bin/Debug/net10.0/SaveFW.Server"
+readonly DOTNET_BIN="$(resolve_dotnet_bin)"
+readonly DOTNET_HOME="$(dirname "${DOTNET_BIN}")"
+
+build_watch_cmd() {
+  local interactive_mode="$1"
+
+  local cmd=(
+    env
+    ASPNETCORE_ENVIRONMENT=Development
+    DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=1
+    DOTNET_ROOT="${DOTNET_HOME}"
+    PATH="${DOTNET_HOME}:${PATH}"
+    "${DOTNET_BIN}"
+    watch
+  )
+
+  if [[ "${interactive_mode}" == "background" ]]; then
+    cmd+=(--non-interactive)
+  fi
+
+  cmd+=(
+    run
+    --project
+    "${PROJECT_PATH}"
+    --urls
+    "http://0.0.0.0:${PORT}"
+  )
+
+  printf '%s\0' "${cmd[@]}"
 }
 
 process_exists() {
@@ -88,12 +109,18 @@ pid_is_repo_dev_process() {
   cmdline="$(cmdline_for_pid "${pid}")"
 
   [[ -n "${cwd}" && "${cwd}" == "${REPO_ROOT}"* ]] || return 1
-  if [[ "${cmdline}" == *"dotnet watch run"* || "${cmdline}" == *"dotnet-watch.dll run"* ]]; then
+  if [[ "${cmdline}" == *"dotnet watch"* || "${cmdline}" == *"dotnet-watch.dll"* ]]; then
     [[ "${cmdline}" == *"${PROJECT_PATH}"* ]] || return 1
     return 0
   fi
 
   if [[ "${cmdline}" == *"${SERVER_BINARY}"* ]]; then
+    return 0
+  fi
+
+  if [[ "${cmdline}" == *"dotnet run --no-launch-profile"* ]]; then
+    [[ "${cwd}" == "${SERVER_WORKDIR}"* ]] || return 1
+    [[ "${cmdline}" == *"--urls http://0.0.0.0:${PORT}"* ]] || return 1
     return 0
   fi
 
@@ -105,11 +132,13 @@ load_pidfile() {
   PID=""
   PGID=""
   MODE=""
+  PIDFILE_REPO_ROOT=""
   while IFS='=' read -r key value; do
     case "${key}" in
       PID) PID="${value}" ;;
       PGID) PGID="${value}" ;;
       MODE) MODE="${value}" ;;
+      REPO_ROOT) PIDFILE_REPO_ROOT="${value}" ;;
     esac
   done < "${PIDFILE}"
   [[ -n "${PID}" ]]
@@ -123,6 +152,7 @@ write_pidfile() {
 PID=${pid}
 PGID=${pgid}
 MODE=${mode}
+REPO_ROOT=${REPO_ROOT}
 EOF
 }
 
@@ -144,7 +174,9 @@ cleanup_stale_pidfile() {
 
 assert_pidfile_matches_repo() {
   load_pidfile || fail "No local dev pidfile found at ${PIDFILE}."
-  [[ "${REPO_ROOT}" == "${REPO_ROOT:-}" ]] || fail "Pidfile repo root mismatch."
+  if [[ -n "${PIDFILE_REPO_ROOT:-}" && "${PIDFILE_REPO_ROOT}" != "${REPO_ROOT}" ]]; then
+    fail "Pidfile repo root mismatch."
+  fi
   process_exists "${PID:-}" || fail "Recorded local dev pid ${PID:-missing} is not running."
   pid_is_containerized "${PID}" && fail "Refusing to touch pid ${PID}: it appears to be a Docker/container process."
   pid_is_repo_dev_process "${PID}" || fail "Refusing to touch pid ${PID}: it does not match this repo's recorded local dev watcher."
@@ -162,7 +194,7 @@ assert_safe_to_start() {
 
   if load_pidfile && process_exists "${PID:-}"; then
     assert_pidfile_matches_repo
-    fail "Local dev watcher already running with pid ${PID}. Use dev/dev-stop.sh or dev/dev-restart.sh."
+    fail "Local dev process already running with pid ${PID}. Use dev/dev-stop.sh or dev/dev-restart.sh."
   fi
 
   local port_pids
@@ -177,7 +209,7 @@ assert_safe_to_start() {
       fail "Port ${PORT} is owned by containerized pid ${pid}. Refusing to touch Docker/container targets."
     fi
     if pid_is_repo_dev_process "${pid}"; then
-      fail "Port ${PORT} is already in use by this repo's dev watcher pid ${pid}. Use dev/dev-stop.sh or dev/dev-restart.sh."
+      fail "Port ${PORT} is already in use by this repo's dev process pid ${pid}. Use dev/dev-stop.sh or dev/dev-restart.sh."
     fi
     fail "Port ${PORT} is already in use by unmanaged pid ${pid}. Refusing to stop it automatically."
   done <<< "${port_pids}"
@@ -195,7 +227,7 @@ stop_recorded_process() {
     kill -TERM "${pid}" 2>/dev/null || true
   fi
 
-  for _ in $(seq 1 30); do
+  for _ in $(seq 1 5); do
     if ! process_exists "${pid}"; then
       remove_pidfile
       return 0
@@ -203,5 +235,19 @@ stop_recorded_process() {
     sleep 1
   done
 
-  fail "Timed out waiting for local dev watcher pid ${pid} to exit. Refusing to escalate with force-kill."
+  if [[ -n "${pgid}" ]]; then
+    kill -KILL -- "-${pgid}" 2>/dev/null || true
+  else
+    kill -KILL "${pid}" 2>/dev/null || true
+  fi
+
+  for _ in $(seq 1 5); do
+    if ! process_exists "${pid}"; then
+      remove_pidfile
+      return 0
+    fi
+    sleep 1
+  done
+
+  fail "Timed out waiting for local dev process pid ${pid} to exit after managed escalation."
 }

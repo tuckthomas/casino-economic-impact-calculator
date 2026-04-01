@@ -15,6 +15,7 @@ cd "${REPO_ROOT}"
 
 if [[ "${foreground}" -eq 1 ]]; then
   info "Starting local dev watcher in foreground."
+  mapfile -d '' -t dev_watch_cmd < <(build_watch_cmd foreground)
   "${dev_watch_cmd[@]}" &
   child_pid=$!
   child_pgid="$(pgid_for_pid "${child_pid}")"
@@ -30,6 +31,7 @@ else
   info "Starting local dev watcher in background."
   : > "${LOGFILE}"
   cd "${REPO_ROOT}"
+  mapfile -d '' -t dev_watch_cmd < <(build_watch_cmd background)
   setsid "${dev_watch_cmd[@]}" >> "${LOGFILE}" 2>&1 &
   watcher_pid=$!
   watcher_pgid="$(pgid_for_pid "${watcher_pid}")"

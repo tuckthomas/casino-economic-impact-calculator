@@ -2,6 +2,7 @@ Local dev process control for this repo is restricted to the scripts in `/root/S
 
 Hard rules:
 - Use only `npm run dev`, `npm run dev:start`, `npm run dev:stop`, `npm run dev:restart`, `npm run dev:status`, or the matching `dev/dev-*.sh` scripts.
+- Both foreground and managed background dev paths must run the repo watcher. Background mode must use the repo script's pseudo-terminal wrapper instead of a detached plain `dotnet watch` process.
 - Never use ad hoc `kill`, `pkill`, `killall`, broad `ps | grep` cleanup, or port-based process termination to manage local development.
 - Never touch Docker, Docker Compose, Podman, containerd, kubepods, or any containerized process while fixing the local dev server.
 - Never stop any `SaveFW.Server`, `dotnet`, `npm`, or `node` process unless it is the exact pid recorded in `/root/SaveFW/dev/.local-dev-server.pid` and validated by the repo script.

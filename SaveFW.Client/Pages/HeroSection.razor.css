@@ -2,38 +2,13 @@
     max-width: 42rem;
 }
 
-.hero-headline,
-.hero-kicker {
-    overflow: hidden;
-}
-
 .hero-line,
 .hero-kicker-part {
     display: block;
-    width: fit-content;
-}
-
-.hero-char {
-    animation: hero-char-fade 900ms ease-out forwards;
-    animation-delay: var(--hero-delay, 0s);
-    display: inline-block;
-    opacity: 0;
-    will-change: opacity;
-    white-space: pre;
 }
 
 .hero-kicker-part + .hero-kicker-part {
     margin-top: 0.15rem;
-}
-
-@keyframes hero-char-fade {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
 }
 
 @media (max-width: 1023px) {
