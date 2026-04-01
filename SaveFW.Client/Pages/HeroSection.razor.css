@@ -2,6 +2,12 @@
     max-width: 42rem;
 }
 
+.hero-slot-shell {
+    max-width: 54rem;
+    transform: scale(0.88);
+    transform-origin: top center;
+}
+
 .hero-line,
 .hero-kicker-part {
     display: block;
@@ -9,6 +15,27 @@
 
 .hero-kicker-part + .hero-kicker-part {
     margin-top: 0.15rem;
+}
+
+@media (min-width: 640px) {
+    .hero-slot-shell {
+        transform: scale(1);
+    }
+}
+
+@media (min-width: 1024px) {
+    .hero-slot-shell {
+        max-width: 56rem;
+        transform: scale3d(0.96, 1.14, 1);
+        transform-origin: top center;
+    }
+}
+
+@media (min-width: 1280px) {
+    .hero-slot-shell {
+        max-width: 58rem;
+        transform: scale3d(0.98, 1.22, 1);
+    }
 }
 
 @media (max-width: 1023px) {

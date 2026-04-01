@@ -1444,18 +1444,10 @@ window.EconomicCalculator = (function ()
         setTxt('calc-total-cost-per', fmt(costPer));
         setTxt('calc-total-cost-combined', fmtM(totalCost));
 
+        const selectedCountyFips = String((lastImpactBreakdown && lastImpactBreakdown.countyFips) || (els.inCounty && els.inCounty.value) || "");
+        const isAllenCountySelection = selectedCountyFips === "18003";
+
         const netImpactRows = [
-            {
-                key: 'state_revenue',
-                kind: 'revenue',
-                label: 'State of Indiana Revenue',
-                labelClass: '',
-                tooltip: 'State share of the regular graduated wagering tax in the base-case HB 1038 city-site model.',
-                revenue: revenueState,
-                countyCost: 0,
-                countyBalance: revenueState,
-                otherCost: 0
-            },
             {
                 key: 'city_revenue',
                 kind: 'revenue',
@@ -1478,6 +1470,28 @@ window.EconomicCalculator = (function ()
                 countyBalance: revenueCounty,
                 otherCost: 0
             },
+            ...(isAllenCountySelection ? [{
+                key: 'host_local_revenue_sub',
+                kind: 'subtotal',
+                label: 'Subtotal: Allen County + Fort Wayne Revenue',
+                labelClass: '',
+                tooltip: 'Combined direct public revenue flowing to the City of Fort Wayne and Allen County in the base-case Fort Wayne city-site model.',
+                revenue: hostLocalRevenue,
+                countyCost: 0,
+                countyBalance: hostLocalRevenue,
+                otherCost: 0
+            }] : []),
+            {
+                key: 'state_revenue',
+                kind: 'revenue',
+                label: 'State of Indiana Revenue',
+                labelClass: '',
+                tooltip: 'State share of the regular graduated wagering tax in the base-case HB 1038 city-site model.',
+                revenue: revenueState,
+                countyCost: 0,
+                countyBalance: revenueState,
+                otherCost: 0
+            },
             {
                 key: 'rda_revenue',
                 kind: 'revenue',
@@ -1490,22 +1504,22 @@ window.EconomicCalculator = (function ()
                 otherCost: 0
             },
             {
-                key: 'host_local_revenue_sub',
+                key: 'regional_state_revenue_sub',
                 kind: 'subtotal',
-                label: 'Subtotal: Allen County + Fort Wayne Revenue',
+                label: 'Subtotal: State + Regional Revenue',
                 labelClass: '',
-                tooltip: 'Combined direct public revenue flowing to the City of Fort Wayne and Allen County in the base-case Fort Wayne city-site model.',
-                revenue: hostLocalRevenue,
+                tooltip: 'Combined State of Indiana revenue plus Regional Development Authority revenue before applying social and economic costs.',
+                revenue: revenueState + revenueRda,
                 countyCost: 0,
-                countyBalance: hostLocalRevenue,
+                countyBalance: revenueState + revenueRda,
                 otherCost: 0
             },
             {
-                key: 'all_public_revenue_sub',
-                kind: 'subtotal',
-                label: 'Subtotal: All Public Revenue',
-                labelClass: '',
-                tooltip: 'Combined statewide, city, county, and regional authority revenue before applying social and economic costs.',
+                key: 'total_revenue',
+                kind: 'revenue_total',
+                label: 'Total Revenue',
+                labelClass: 'text-white',
+                tooltip: 'Combined host-local, state, and regional public revenue before applying modeled social and private-sector costs.',
                 revenue: totalRevenue,
                 countyCost: 0,
                 countyBalance: totalRevenue,
@@ -1597,7 +1611,7 @@ window.EconomicCalculator = (function ()
                 countyBalance: -totalCostPrivate,
                 otherCost: otherTotals.private
             },
-            {
+            ...(isAllenCountySelection ? [{
                 key: 'host_local_total',
                 kind: 'total',
                 label: 'Net Impact: Allen County + Fort Wayne',
@@ -1607,7 +1621,7 @@ window.EconomicCalculator = (function ()
                 countyCost: totalCost,
                 countyBalance: hostLocalNetBalance,
                 otherCost: 0
-            },
+            }] : []),
             {
                 key: 'total',
                 kind: 'total',
@@ -2044,6 +2058,9 @@ window.EconomicCalculator = (function ()
             case 'city_revenue': return 0;
             case 'county_revenue': return 0;
             case 'rda_revenue': return 0;
+            case 'host_local_revenue_sub': return 0;
+            case 'regional_state_revenue_sub': return 0;
+            case 'total_revenue': return 0;
             case 'health_local': return Number(c.health || 0);
             case 'health_sub': return Number(c.health || 0);
             case 'crime': return Number(c.crime || 0);
@@ -2074,16 +2091,18 @@ window.EconomicCalculator = (function ()
         const baselineRateDisplay = Number.isFinite(baselineRate) ? baselineRate.toFixed(1) : "—";
 
         const subjectCountyName = String((model && model.subjectCountyName) || "").trim();
+        const subjectCountyFips = String((model && model.subjectCountyFips) || "").trim();
         const subjectStateName = String((model && model.subjectStateName) || "").trim();
-        const countyRevenueHeaderText = 'Direct Public Revenue';
+        const isAllenCountySelection = subjectCountyFips === "18003";
+        const countyRevenueHeaderText = 'Host Local<br>Revenue';
         const countyHeaderText = subjectCountyName
-            ? `Host Local Costs (${subjectCountyName} + Fort Wayne)`
-            : 'Host Local Costs';
-        const countyNetHeaderText = 'Row Net Balance';
-        const stateNetHeaderText = subjectStateName ? `${subjectStateName} Net Balance` : 'Total Net Balance';
+            ? `${escapeHtml(subjectCountyName)} + Fort Wayne<br>Direct Cost`
+            : 'Host Local<br>Direct Cost';
+        const countyNetHeaderText = 'Host Local<br>Net';
+        const stateNetHeaderText = subjectStateName ? `${escapeHtml(subjectStateName)}<br>Total Net` : 'Statewide<br>Total Net';
         const otherHeaderText = otherCounties.length
-            ? `Other ${subjectStateName || 'State'} Counties Cost\u00a0(${otherCounties.length})`
-            : `Other ${subjectStateName || 'State'} Counties Cost`;
+            ? `Other Included<br>Counties<br>Cost (${otherCounties.length})`
+            : 'Other Included<br>Counties<br>Cost';
 
         if (!rows.length)
         {
@@ -2096,19 +2115,25 @@ window.EconomicCalculator = (function ()
         }
 
         const headerExtra = expanded
-            ? otherCounties.map(c => `<th class="px-3 py-2 text-right text-slate-200 max-w-[120px]">${escapeHtml(c.name)}</th>`).join('')
+            ? otherCounties.map(c => `<th class="px-2 py-2 text-right text-slate-200 whitespace-normal leading-tight w-[6.5rem] min-w-[6.5rem]">${escapeHtml(c.name)}</th>`).join('')
             : '';
 
         const thead = `
 			            <thead>
+			                <tr class="border-b border-slate-700 bg-slate-950/90 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+			                    <th class="px-3 py-2 text-left sticky left-0 bg-slate-950/95 backdrop-blur border-r border-slate-800/80 min-w-[17rem]">Section</th>
+			                    <th class="px-3 py-2 text-center border-r border-slate-800/80" colspan="3">Host Local View</th>
+			                    <th class="px-3 py-2 text-center border-r border-slate-800/80" colspan="${expanded ? otherCounties.length + 1 : 1}">Spillover View</th>
+			                    <th class="px-3 py-2 text-center sticky right-0 bg-slate-950/95 backdrop-blur">Statewide View</th>
+			                </tr>
 			                <tr class="border-b border-slate-700 bg-slate-900/60 text-slate-200">
-			                    <th class="px-3 py-2 text-left sticky left-0 bg-slate-950/90 backdrop-blur max-w-[100px] border-r border-slate-800/80" data-col="group">GROUP</th>
-			                    <th class="px-3 py-2 text-right max-w-[150px] border-r border-slate-800/80">${escapeHtml(countyRevenueHeaderText.toUpperCase())}</th>
-			                    <th class="px-3 py-2 text-right max-w-[150px] border-r border-slate-800/80">${escapeHtml(countyHeaderText.toUpperCase())}</th>
-			                    <th class="px-3 py-2 text-right max-w-[150px] border-r border-slate-800/80">${escapeHtml(countyNetHeaderText.toUpperCase())}</th>
-			                    <th class="px-3 py-2 text-right max-w-[180px] border-r border-slate-700 relative group" data-col="other-cost">${otherHeaderText.toUpperCase()}</th>
+			                    <th class="px-3 py-3 text-left sticky left-0 bg-slate-950/95 backdrop-blur border-r border-slate-800/80 min-w-[17rem]" data-col="group">Category</th>
+			                    <th class="px-3 py-3 text-right whitespace-normal leading-tight w-[8.75rem] min-w-[8.75rem] border-r border-slate-800/80">${countyRevenueHeaderText}</th>
+			                    <th class="px-3 py-3 text-right whitespace-normal leading-tight w-[8.75rem] min-w-[8.75rem] border-r border-slate-800/80">${countyHeaderText}</th>
+			                    <th class="px-3 py-3 text-right whitespace-normal leading-tight w-[8.75rem] min-w-[8.75rem] border-r border-slate-800/80">${countyNetHeaderText}</th>
+			                    <th class="px-3 py-3 text-right whitespace-normal leading-tight w-[8.75rem] min-w-[8.75rem] border-r border-slate-700 relative group" data-col="other-cost">${otherHeaderText}</th>
 			                    ${headerExtra}
-			                    <th class="px-3 py-2 text-right sticky right-0 bg-slate-950/90 backdrop-blur max-w-[150px]">${escapeHtml(stateNetHeaderText.toUpperCase())}</th>
+			                    <th class="px-3 py-3 text-right whitespace-normal leading-tight sticky right-0 bg-slate-950/95 backdrop-blur w-[8.75rem] min-w-[8.75rem]">${stateNetHeaderText}</th>
 			                </tr>
 			            </thead>
 			        `;
@@ -2135,15 +2160,21 @@ window.EconomicCalculator = (function ()
 
             const rowBgClass = kind === 'total'
                 ? 'bg-slate-800/60 border-t-2 border-slate-500'
-                : kind === 'subtotal'
-                    ? 'bg-slate-800/30 border-t border-slate-600'
-                    : 'border-t border-slate-800/60';
+                : kind === 'revenue_total'
+                    ? 'bg-slate-950/90 border-t-2 border-slate-700'
+                    : kind === 'subtotal'
+                        ? 'bg-slate-800/30 border-t border-slate-600'
+                        : 'border-t border-slate-800/60';
 
-            const rowFontClass = kind === 'total'
+            const rowFontClass = kind === 'total' || kind === 'revenue_total'
                 ? 'font-black'
                 : kind === 'subtotal'
                     ? 'font-bold'
                     : 'font-semibold';
+
+            const stickyCellBgClass = kind === 'revenue_total'
+                ? 'bg-slate-950/90'
+                : 'bg-slate-950/95';
 
             const tooltip = row.tooltip
                 ? `
@@ -2156,12 +2187,12 @@ window.EconomicCalculator = (function ()
 		                `
                 : '';
 
-            const labelHtml = (kind === 'total' || kind === 'subtotal')
+            const labelHtml = (kind === 'total' || kind === 'subtotal' || kind === 'revenue_total')
                 ? `<div class="uppercase tracking-wider ${kind === 'subtotal' ? 'pl-4' : ''}">${escapeHtml(row.label || '')}</div>`
                 : escapeHtml(row.label || '');
 
             const labelCell = `
-		                <td class="px-3 py-2 whitespace-nowrap sticky left-0 bg-slate-950/90 backdrop-blur text-slate-200 ${rowFontClass} ${row.labelClass || ''} border-r border-slate-800/80">
+		                <td class="px-3 py-2 sticky left-0 bg-slate-950/90 backdrop-blur text-slate-200 ${rowFontClass} ${row.labelClass || ''} border-r border-slate-800/80 min-w-[17rem]">
 		                    <div class="flex items-center gap-1">
 		                        <span>${labelHtml}</span>
 		                        ${tooltip}
@@ -2174,7 +2205,7 @@ window.EconomicCalculator = (function ()
                 {
                     const val = getOtherCountyCostForRow(rowKey, c.costs);
                     const cellClass = val !== 0 ? 'text-red-400' : 'text-slate-200';
-                    return `<td class="px-3 py-2 text-right font-mono whitespace-nowrap ${cellClass}">${fmtVal(val, fmtM)}</td>`;
+                    return `<td class="px-2 py-2 text-right font-mono whitespace-nowrap w-[6.5rem] min-w-[6.5rem] ${cellClass}">${fmtVal(val, fmtM)}</td>`;
                 }).join('')
                 : '';
 
@@ -2186,13 +2217,16 @@ window.EconomicCalculator = (function ()
 			                    <td class="px-3 py-2 text-right font-mono whitespace-nowrap ${rowFontClass} ${countyBalanceClass} border-r border-slate-800/80">${fmtVal(rowCountyBalance, fmtDiffM)}</td>
 			                    <td class="px-3 py-2 text-right font-mono whitespace-nowrap ${otherCostClass} border-r border-slate-700">${fmtVal(rowOtherCost, fmtM)}</td>
 			                    ${otherExtraCells}
-			                    <td class="px-3 py-2 text-right font-mono whitespace-nowrap sticky right-0 bg-slate-950/95 backdrop-blur ${rowFontClass} ${totalBalanceClass}">${fmtVal(rowTotalBalance, fmtDiffM)}</td>
+			                    <td class="px-3 py-2 text-right font-mono whitespace-nowrap sticky right-0 ${stickyCellBgClass} backdrop-blur ${rowFontClass} ${totalBalanceClass}">${fmtVal(rowTotalBalance, fmtDiffM)}</td>
 			                </tr>
 			            `;
         }
         tbody += '</tbody>';
 
         container.innerHTML = `
+                    <div class="border-b border-slate-800 bg-slate-950/70 px-4 py-3 text-[11px] leading-relaxed text-slate-400">
+                        Read left to right: <span class="text-slate-200">host-local revenue</span>, <span class="text-slate-200">host-local cost</span>, <span class="text-slate-200">host-local net</span>, <span class="text-slate-200">spillover cost in other counties</span>, then <span class="text-slate-200">statewide net</span>. Within the cost rows, the revenue figures are a <span class="text-slate-200">modeled offset allocation</span>, not a literal statutory earmark.
+                    </div>
 		            <table class="w-full text-xs">
 		                ${thead}
 		                ${tbody}
@@ -2200,10 +2234,27 @@ window.EconomicCalculator = (function ()
 		        `;
 
         otherCountiesToggleState = { container, count: otherCounties.length, expanded };
-        positionOtherCountiesToggle();
+        try
+        {
+            positionOtherCountiesToggle();
+        }
+        catch (error)
+        {
+            console.error('[Calculator] Failed to position other-counties toggle.', error);
+        }
         if (!otherCountiesToggleResizeBound)
         {
-            const reposition = () => { positionOtherCountiesToggle(); };
+            const reposition = () =>
+            {
+                try
+                {
+                    positionOtherCountiesToggle();
+                }
+                catch (error)
+                {
+                    console.error('[Calculator] Failed to reposition other-counties toggle.', error);
+                }
+            };
             window.addEventListener('resize', reposition);
             const scrollParent = container.closest('.overflow-x-auto');
             if (scrollParent) scrollParent.addEventListener('scroll', reposition);
@@ -2213,7 +2264,9 @@ window.EconomicCalculator = (function ()
 
         if (noteEl)
         {
-            noteEl.textContent = `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Allen County receives only its 45% share of the supplemental wagering tax for a Fort Wayne city-site, while Fort Wayne receives the local share of the regular graduated wagering tax. Use "Subtotal: Allen County + Fort Wayne Revenue" and "Net Impact: Allen County + Fort Wayne" for the direct host-local fiscal view. Other Counties Costs totals same-state spillover within 50 miles.`;
+            noteEl.textContent = isAllenCountySelection
+                ? `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Allen County receives only its 45% share of the supplemental wagering tax for a Fort Wayne city-site, while Fort Wayne receives the local share of the regular graduated wagering tax. Because the selected county is Allen, the table shows a local subtotal for Fort Wayne + Allen County and a separate subtotal for State + Regional Revenue. Other Counties Costs totals same-state spillover within 50 miles.`
+                : `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Because the selected county is not Allen, the table omits the Fort Wayne + Allen County subtotal rows and separately shows State + Regional Revenue against the selected county's direct costs and same-state spillover.`;
         }
     }
 

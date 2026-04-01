@@ -466,6 +466,14 @@ window.MapLibreImpactMap = (function ()
                         openPopup();
                     }
                 });
+                markerElement.addEventListener('mouseleave', () =>
+                {
+                    if (activeCompetitorPopup === popup)
+                    {
+                        popup.remove();
+                        activeCompetitorPopup = null;
+                    }
+                });
                 markerElement.addEventListener('click', (event) =>
                 {
                     event.preventDefault();
@@ -1889,6 +1897,62 @@ window.MapLibreImpactMap = (function ()
     /**
      * Setup hamburger menu control (slide-out drawer)
      */
+    function basemapSupportsDarkMode(basemapKey = currentBasemap)
+    {
+        return basemapKey === 'streets' || basemapKey === 'terrain';
+    }
+
+    function basemapSupports3dBuildings(basemapKey = currentBasemap)
+    {
+        return basemapKey === 'streets' || basemapKey === 'terrain';
+    }
+
+    function syncMapOptionsPanelState()
+    {
+        const darkModeToggle = document.getElementById('toggle-darkmode');
+        const terrainToggle = document.getElementById('toggle-terrain3d');
+        const buildingsToggle = document.getElementById('toggle-buildings3d');
+        const riskLabelToggle = document.getElementById('toggle-risklabels');
+        const legend = document.getElementById('map-overlay-topright');
+
+        const darkModeSupported = basemapSupportsDarkMode();
+        const buildingsSupported = basemapSupports3dBuildings();
+
+        if (darkModeToggle)
+        {
+            darkModeToggle.disabled = !darkModeSupported;
+            darkModeToggle.checked = darkModeSupported ? mapDarkMode : false;
+            darkModeToggle.closest('.toggle-row')?.classList.toggle('is-disabled', !darkModeSupported);
+            darkModeToggle.closest('.toggle-row')?.setAttribute('title', darkModeSupported ? '' : 'Dark mode is available on Streets and Terrain basemaps.');
+        }
+
+        if (terrainToggle)
+        {
+            terrainToggle.checked = false;
+            terrainToggle.disabled = true;
+            terrainToggle.closest('.toggle-row')?.classList.add('is-disabled');
+            terrainToggle.closest('.toggle-row')?.setAttribute('title', '3D terrain is not available in the current map configuration.');
+        }
+
+        if (buildingsToggle)
+        {
+            if (!buildingsSupported && layersVisible.buildings3d)
+            {
+                layersVisible.buildings3d = false;
+            }
+
+            buildingsToggle.disabled = !buildingsSupported;
+            buildingsToggle.checked = buildingsSupported ? layersVisible.buildings3d : false;
+            buildingsToggle.closest('.toggle-row')?.classList.toggle('is-disabled', !buildingsSupported);
+            buildingsToggle.closest('.toggle-row')?.setAttribute('title', buildingsSupported ? '' : '3D buildings require the Streets or Terrain basemap.');
+        }
+
+        if (riskLabelToggle && legend)
+        {
+            riskLabelToggle.checked = legend.style.display !== 'none';
+        }
+    }
+
     function setupHamburgerMenu(container)
     {
         // Hamburger button
@@ -1912,60 +1976,51 @@ window.MapLibreImpactMap = (function ()
                 </button>
             </div>
             <div class="panel-section">
-            <div class="panel-section">
                 <span class="section-label">Overlays</span>
                 <label class="toggle-row">
-                    <span>Show Risk Zones</span>
+                    <span class="toggle-label">Show Risk Zones</span>
                     <input type="checkbox" id="toggle-zones" checked />
-                    <span class="toggle-slider"></span>
                 </label>
-                <label class="toggle-row" style="padding-left: 12px; border-left: 2px solid rgba(255,255,255,0.1); margin-left: 4px;">
-                    <span class="text-xs text-slate-400">Mode:</span>
-                    <div id="mode-toggle-wrapper" style="display: flex; gap: 4px; margin-left: auto;">
-                        <button id="mode-btn-radius" class="mode-btn active" style="padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; border: none; cursor: pointer; border-radius: 4px; background: #3b82f6; color: white;">Radius</button>
-                        <button id="mode-btn-grid" class="mode-btn" style="padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; border: none; cursor: pointer; border-radius: 4px; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);">Grid</button>
+                <div class="toggle-row toggle-row--mode">
+                    <span class="toggle-label toggle-label--muted">Risk Zone Mode</span>
+                    <div id="mode-toggle-wrapper" class="mode-toggle-wrapper">
+                        <button id="mode-btn-radius" class="mode-btn active">Radius</button>
+                        <button id="mode-btn-grid" class="mode-btn">Grid</button>
                     </div>
-                </label>
+                </div>
                 <label class="toggle-row">
-                    <span>Risk Zone Labels</span>
+                    <span class="toggle-label">Risk Zone Labels</span>
                     <input type="checkbox" id="toggle-risklabels" checked />
-                    <span class="toggle-slider"></span>
                 </label>
                 <label class="toggle-row">
-                    <span>County Boundaries</span>
+                    <span class="toggle-label">County Boundaries</span>
                     <input type="checkbox" id="toggle-boundary" checked />
-                    <span class="toggle-slider"></span>
                 </label>
                 <label class="toggle-row">
-                    <span>Heatmap</span>
+                    <span class="toggle-label">Heatmap</span>
                     <input type="checkbox" id="toggle-heatmap" />
-                    <span class="toggle-slider"></span>
                 </label>
                 <label class="toggle-row">
-                    <span>Census Tracts</span>
+                    <span class="toggle-label">Census Tracts</span>
                     <input type="checkbox" id="toggle-tracts" />
-                    <span class="toggle-slider"></span>
                 </label>
             </div>
             <div class="panel-section">
                 <span class="section-label">Map Theme</span>
                 <label class="toggle-row">
-                    <span>Dark Mode</span>
-                    <input type="checkbox" id="toggle-darkmode" checked />
-                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">Dark Mode</span>
+                    <input type="checkbox" id="toggle-darkmode" />
                 </label>
             </div>
             <div class="panel-section">
                 <span class="section-label">3D Features</span>
                 <label class="toggle-row">
-                    <span>3D Terrain</span>
+                    <span class="toggle-label">3D Terrain</span>
                     <input type="checkbox" id="toggle-terrain3d" />
-                    <span class="toggle-slider"></span>
                 </label>
                 <label class="toggle-row">
-                    <span>3D Buildings</span>
+                    <span class="toggle-label">3D Buildings</span>
                     <input type="checkbox" id="toggle-buildings3d" />
-                    <span class="toggle-slider"></span>
                 </label>
             </div>
         `;
@@ -2024,15 +2079,11 @@ window.MapLibreImpactMap = (function ()
         const darkModeToggle = document.getElementById('toggle-darkmode');
         if (darkModeToggle)
         {
-            darkModeToggle.checked = mapDarkMode;
             darkModeToggle.onchange = () =>
             {
+                if (!basemapSupportsDarkMode()) return;
                 mapDarkMode = darkModeToggle.checked;
-                // Re-apply current basemap if it's streets or terrain
-                if (currentBasemap === 'streets' || currentBasemap === 'terrain')
-                {
-                    switchBasemap(currentBasemap);
-                }
+                switchBasemap(currentBasemap, true);
             };
         }
 
@@ -2040,6 +2091,8 @@ window.MapLibreImpactMap = (function ()
         const riskLabelToggle = document.getElementById('toggle-risklabels');
         if (riskLabelToggle)
         {
+            const legend = document.getElementById('map-overlay-topright');
+            riskLabelToggle.checked = !legend || legend.style.display !== 'none';
             riskLabelToggle.onchange = () =>
             {
                 const el = document.getElementById('map-overlay-topright');
@@ -2105,13 +2158,29 @@ window.MapLibreImpactMap = (function ()
                     display: block;
                 }
                 .toggle-row {
-                    display: flex;
-                    justify-content: space-between;
+                    display: grid;
+                    grid-template-columns: minmax(0, 1fr) auto;
                     align-items: center;
+                    column-gap: 12px;
                     padding: 8px 0;
                     font-size: 13px;
                     cursor: pointer;
                     position: relative;
+                }
+                .toggle-row--mode {
+                    grid-template-columns: 1fr;
+                    row-gap: 8px;
+                    align-items: stretch;
+                    cursor: default;
+                }
+                .toggle-label {
+                    min-width: 0;
+                    line-height: 1.35;
+                }
+                .toggle-label--muted {
+                    color: rgba(255, 255, 255, 0.72);
+                    font-size: 12px;
+                    font-weight: 600;
                 }
                 .toggle-row input[type="checkbox"] {
                     appearance: none;
@@ -2122,6 +2191,7 @@ window.MapLibreImpactMap = (function ()
                     position: relative;
                     cursor: pointer;
                     transition: background 0.2s;
+                    justify-self: end;
                 }
                 .toggle-row input[type="checkbox"]:checked {
                     background: rgba(59, 130, 246, 0.7);
@@ -2140,17 +2210,43 @@ window.MapLibreImpactMap = (function ()
                 .toggle-row input[type="checkbox"]:checked::before {
                     transform: translateX(16px);
                 }
+                .toggle-row.is-disabled {
+                    opacity: 0.45;
+                }
+                .toggle-row.is-disabled,
+                .toggle-row.is-disabled input[type="checkbox"] {
+                    cursor: not-allowed;
+                }
+                .mode-toggle-wrapper {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 6px;
+                }
+                .mode-btn {
+                    padding: 6px 10px;
+                    font-size: 10px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    border: none;
+                    cursor: pointer;
+                    border-radius: 6px;
+                    background: rgba(255,255,255,0.1);
+                    color: rgba(255,255,255,0.6);
+                    transition: background 0.2s ease, color 0.2s ease;
+                }
             `;
             document.head.appendChild(style);
         }
+
+        syncMapOptionsPanelState();
     }
 
     /**
      * Switch basemap style
      */
-    async function switchBasemap(basemapKey)
+    async function switchBasemap(basemapKey, forceRefresh = false)
     {
-        if (basemapKey === currentBasemap) return;
+        if (basemapKey === currentBasemap && !forceRefresh) return;
 
         const config = BASEMAPS[basemapKey];
         if (!config) return;
@@ -2162,6 +2258,7 @@ window.MapLibreImpactMap = (function ()
         const bearing = map.getBearing();
 
         currentBasemap = basemapKey;
+        syncMapOptionsPanelState();
 
         // Update active card
         document.querySelectorAll('.layer-card').forEach(card =>
@@ -2232,6 +2329,7 @@ window.MapLibreImpactMap = (function ()
 
                 // Re-init drawing tools
                 setupDrawingTools();
+                syncMapOptionsPanelState();
 
             } catch (err)
             {
@@ -3746,7 +3844,7 @@ window.MapLibreImpactMap = (function ()
                 style: options.style || initialStyle,
                 center: options.center || DEFAULT_CENTER,
                 zoom: options.zoom || DEFAULT_ZOOM,
-                scrollZoom: false,
+                scrollZoom: true,
                 attributionControl: false,
                 preserveDrawingBuffer: true,  // Required for PDF/image export via canvas.toDataURL()
                 transformRequest: (url, resourceType) =>
@@ -3811,50 +3909,10 @@ window.MapLibreImpactMap = (function ()
             setupLayerSwitcher(container);
             setupHamburgerMenu(container);
 
-            // CTRL + Scroll zoom handling - use native scroll zoom when CTRL is held
-            let ctrlPressed = false;
-
-            // Enable/disable scroll zoom based on CTRL key
-            document.addEventListener('keydown', (e) =>
-            {
-                if (e.key === 'Control' && !ctrlPressed && !document.fullscreenElement)
-                {
-                    ctrlPressed = true;
-                    map.scrollZoom.enable();
-                }
-            });
-
-            document.addEventListener('keyup', (e) =>
-            {
-                if (e.key === 'Control' && ctrlPressed && !document.fullscreenElement)
-                {
-                    ctrlPressed = false;
-                    map.scrollZoom.disable();
-                }
-            });
-
-            // Show hint when scrolling without CTRL
-            container.addEventListener('wheel', (e) =>
-            {
-                if (document.fullscreenElement) return;
-                if (ctrlPressed) return; // Let native zoom handle it
-
-                const hint = document.getElementById('map-zoom-hint');
-                if (hint)
-                {
-                    hint.style.opacity = '1';
-                    clearTimeout(hint._hideTimeout);
-                    hint._hideTimeout = setTimeout(() => { hint.style.opacity = '0'; }, 1500);
-                }
-            }, { passive: true });
-
-            // CTRL + Plus/Minus keyboard zoom
+            // Keyboard zoom when the map container is focused
             container.setAttribute('tabindex', '0');
             container.addEventListener('keydown', (e) =>
             {
-                if (document.fullscreenElement) return;
-                if (!e.ctrlKey) return;
-
                 if (e.key === '+' || e.key === '=')
                 {
                     e.preventDefault();

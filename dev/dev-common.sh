@@ -25,16 +25,37 @@ resolve_dotnet_bin() {
   readlink -f "${dotnet_bin}"
 }
 
+resolve_dotnet_watch_ws_hostname() {
+  if [[ -n "${DOTNET_WATCH_AUTO_RELOAD_WS_HOSTNAME:-}" ]]; then
+    printf '%s\n' "${DOTNET_WATCH_AUTO_RELOAD_WS_HOSTNAME}"
+    return 0
+  fi
+
+  local route_ip=""
+  if command -v ip >/dev/null 2>&1; then
+    route_ip="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i = 1; i <= NF; i++) if ($i == "src") { print $(i + 1); exit }}')"
+  fi
+
+  if [[ -z "${route_ip}" || "${route_ip}" == 127.* ]]; then
+    route_ip="localhost"
+  fi
+
+  printf '%s\n' "${route_ip}"
+}
+
 readonly DEV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT="$(cd "${DEV_DIR}/.." && pwd)"
 readonly PIDFILE="${DEV_DIR}/.local-dev-server.pid"
 readonly LOGFILE="${DEV_DIR}/local-dev-server.log"
+readonly DOTNET_WATCH_HOME="${DEV_DIR}/.dotnet-watch-home"
 readonly PORT="5000"
 readonly PROJECT_PATH="SaveFW.Server/SaveFW.Server.csproj"
 readonly SERVER_WORKDIR="${REPO_ROOT}/SaveFW.Server"
 readonly SERVER_BINARY="${REPO_ROOT}/SaveFW.Server/bin/Debug/net10.0/SaveFW.Server"
 readonly DOTNET_BIN="$(resolve_dotnet_bin)"
 readonly DOTNET_HOME="$(dirname "${DOTNET_BIN}")"
+readonly DOTNET_WATCH_WS_HOSTNAME="$(resolve_dotnet_watch_ws_hostname)"
+readonly DOTNET_WATCH_BROWSER_REFRESH_SUPPRESSED="${DOTNET_WATCH_SUPPRESS_BROWSER_REFRESH:-0}"
 
 build_watch_cmd() {
   local interactive_mode="$1"
@@ -42,7 +63,16 @@ build_watch_cmd() {
   local cmd=(
     env
     ASPNETCORE_ENVIRONMENT=Development
+    HOME="${DOTNET_WATCH_HOME}"
+    DOTNET_CLI_HOME="${DOTNET_WATCH_HOME}"
+    DOTNET_CLI_TELEMETRY_OPTOUT=1
+    DOTNET_GENERATE_ASPNET_CERTIFICATE=false
+    DOTNET_NOLOGO=1
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+    DOTNET_USE_POLLING_FILE_WATCHER=1
     DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=1
+    DOTNET_WATCH_AUTO_RELOAD_WS_HOSTNAME="${DOTNET_WATCH_WS_HOSTNAME}"
+    DOTNET_WATCH_SUPPRESS_BROWSER_REFRESH="${DOTNET_WATCH_BROWSER_REFRESH_SUPPRESSED}"
     DOTNET_ROOT="${DOTNET_HOME}"
     PATH="${DOTNET_HOME}:${PATH}"
     "${DOTNET_BIN}"
@@ -158,6 +188,10 @@ EOF
 
 remove_pidfile() {
   rm -f "${PIDFILE}"
+}
+
+ensure_watch_home() {
+  mkdir -p "${DOTNET_WATCH_HOME}"
 }
 
 cleanup_stale_pidfile() {

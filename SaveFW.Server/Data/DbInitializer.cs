@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SaveFW.Shared;
+using System.Data.Common;
 using System.Text.Json;
 
 namespace SaveFW.Server.Data;
@@ -150,13 +151,27 @@ public static class DbInitializer
     {
         try
         {
-            // Check if we have the address_points table (schema exists)
-            var tableExists = await db.Database.ExecuteSqlRawAsync(@"
-                SELECT 1 FROM information_schema.tables 
-                WHERE table_name = 'address_points' LIMIT 1");
+            var conn = db.Database.GetDbConnection();
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                await conn.OpenAsync();
+            }
 
-            // Only proceed if the table exists
-            if (tableExists == 0) return;
+            var columns = await GetTableColumnsAsync(conn, "address_points");
+            if (columns.Count == 0)
+            {
+                return;
+            }
+
+            var stateColumn = RequireColumn(columns, "state");
+            var zipColumn = RequireColumn(columns, "zip");
+            var streetNameNormColumn = RequireColumn(columns, "street_name_norm");
+            var houseNumberColumn = RequireColumn(columns, "house_number");
+            var unitColumn = RequireColumn(columns, "unit");
+            var sourceRankColumn = RequireColumn(columns, "source_rank");
+            var sourceUpdatedAtColumn = RequireColumn(columns, "source_updated_at");
+            var ingestedAtColumn = RequireColumn(columns, "ingested_at");
+            var isActiveColumn = RequireColumn(columns, "is_active");
 
             // Create street name normalization function
             await db.Database.ExecuteSqlRawAsync(@"
@@ -188,14 +203,29 @@ public static class DbInitializer
             ");
 
             // Create preferred view for deduplication
-            await db.Database.ExecuteSqlRawAsync(@"
+            await using var createViewCommand = conn.CreateCommand();
+            createViewCommand.CommandText = $@"
                 CREATE OR REPLACE VIEW address_points_preferred AS
-                SELECT DISTINCT ON (state, COALESCE(zip, ''), street_name_norm, house_number, COALESCE(unit, '')) *
+                SELECT DISTINCT ON (
+                    {QuoteIdentifier(stateColumn)},
+                    COALESCE({QuoteIdentifier(zipColumn)}, ''),
+                    {QuoteIdentifier(streetNameNormColumn)},
+                    {QuoteIdentifier(houseNumberColumn)},
+                    COALESCE({QuoteIdentifier(unitColumn)}, '')
+                ) *
                 FROM address_points
-                WHERE is_active = TRUE
-                ORDER BY state, COALESCE(zip, ''), street_name_norm, house_number, COALESCE(unit, ''),
-                    source_rank ASC, source_updated_at DESC NULLS LAST, ingested_at DESC;
-            ");
+                WHERE {QuoteIdentifier(isActiveColumn)} = TRUE
+                ORDER BY
+                    {QuoteIdentifier(stateColumn)},
+                    COALESCE({QuoteIdentifier(zipColumn)}, ''),
+                    {QuoteIdentifier(streetNameNormColumn)},
+                    {QuoteIdentifier(houseNumberColumn)},
+                    COALESCE({QuoteIdentifier(unitColumn)}, ''),
+                    {QuoteIdentifier(sourceRankColumn)} ASC,
+                    {QuoteIdentifier(sourceUpdatedAtColumn)} DESC NULLS LAST,
+                    {QuoteIdentifier(ingestedAtColumn)} DESC;
+            ";
+            await createViewCommand.ExecuteNonQueryAsync();
 
             Console.WriteLine("Address points infrastructure initialized successfully.");
         }
@@ -205,5 +235,46 @@ public static class DbInitializer
             Console.WriteLine($"Warning: Could not initialize address points infrastructure: {ex.Message}");
         }
     }
-}
 
+    private static async Task<HashSet<string>> GetTableColumnsAsync(DbConnection conn, string tableName)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = @tableName;
+        ";
+
+        var parameter = cmd.CreateParameter();
+        parameter.ParameterName = "@tableName";
+        parameter.Value = tableName;
+        cmd.Parameters.Add(parameter);
+
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            columns.Add(reader.GetString(0));
+        }
+
+        return columns;
+    }
+
+    private static string RequireColumn(HashSet<string> columns, string expectedName)
+    {
+        var normalizedExpectedName = NormalizeIdentifier(expectedName);
+        var actualName = columns.FirstOrDefault(column => NormalizeIdentifier(column) == normalizedExpectedName);
+        if (actualName is null)
+        {
+            throw new InvalidOperationException($"address_points is missing expected column '{expectedName}'.");
+        }
+
+        return actualName;
+    }
+
+    private static string NormalizeIdentifier(string identifier)
+        => new(identifier.Where(ch => ch != '_').Select(char.ToLowerInvariant).ToArray());
+
+    private static string QuoteIdentifier(string identifier)
+        => $"\"{identifier.Replace("\"", "\"\"")}\"";
+}

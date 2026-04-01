@@ -12,19 +12,49 @@
 
 .home-sticky-header-shell {
     background: linear-gradient(to right bottom, #0f172a, #1e293b, #334155);
+    isolation: isolate;
+    position: relative;
+    transform: translateY(0);
+    transition: transform 220ms ease, box-shadow 220ms ease;
     width: 100%;
+    will-change: transform;
+    z-index: 120;
 }
 
 .home-sticky-header-shell.is-stuck {
+    box-shadow: 0 16px 40px rgb(15 23 42 / 0.32);
     left: 0;
     position: fixed;
     right: 0;
     top: 0;
-    z-index: 60;
+    z-index: 900;
+}
+
+.home-sticky-header-shell.is-hidden {
+    transform: translateY(calc(-100% - 0.5rem));
 }
 
 .home-sticky-header-nav {
     background: transparent;
+}
+
+.home-sticky-header-links {
+    margin-inline: -1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-inline: 1rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.home-sticky-header-links::-webkit-scrollbar {
+    display: none;
+}
+
+.home-sticky-header-links-track {
+    min-width: max-content;
+    padding-bottom: 0.125rem;
+    touch-action: pan-x;
 }
 
 .home-sticky-header-spacer {
@@ -33,4 +63,16 @@
 
 .home-sticky-header-spacer.is-active {
     height: var(--home-header-height, 5rem);
+}
+
+@media (min-width: 1024px) {
+    .home-sticky-header-links {
+        margin-inline: 0;
+        overflow: visible;
+        padding-inline: 0;
+    }
+
+    .home-sticky-header-links-track {
+        min-width: 0;
+    }
 }

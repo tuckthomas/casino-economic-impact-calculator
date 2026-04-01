@@ -10,6 +10,7 @@ if [[ "${1:-}" == "--foreground" ]]; then
 fi
 
 assert_safe_to_start
+ensure_watch_home
 
 cd "${REPO_ROOT}"
 

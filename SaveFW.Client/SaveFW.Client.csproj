@@ -17,6 +17,12 @@
     <ProjectReference Include="..\SaveFW.Shared\SaveFW.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(DotNetWatchBuild)' == 'true'">
+    <Content Update="wwwroot/css/app.css" Watch="false" />
+    <Content Update="wwwroot/js/lib/**/*" Watch="false" />
+    <Content Update="wwwroot/lib/**/*" Watch="false" />
+  </ItemGroup>
+
   <!-- NPM Build Integration -->
   <Target Name="NpmInstall" BeforeTargets="PreBuildEvent" Condition="!Exists('..\node_modules')">
     <Exec Command="npm install" WorkingDirectory=".." />
