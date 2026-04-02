@@ -2750,7 +2750,7 @@ window.EconomicCalculator = (function ()
                     ${moneyCell(Number(detail.amount || 0), fmtM, 'text-red-400')}
                 </tr>
             `).join('')}
-            <tr ${subtotalRowAttrs}>
+            <tr ${headerToneRowAttrs}>
                 <td class="px-3 py-2 pl-6 text-slate-100 font-bold uppercase tracking-wider">Subtotal: ${escapeText(label)}</td>
                 ${moneyCell(subtotal, fmtM, 'text-red-400')}
             </tr>
