@@ -118,6 +118,8 @@ _ = Task.Run(async () =>
 if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
+    app.UseBlazorFrameworkFiles();
+    app.UseStaticFiles();
     app.MapOpenApi();
 }
 
@@ -132,7 +134,10 @@ app.MapGet("/api/impacts", async (AppDbContext db) =>
 
 app.MapRazorPages();
 app.MapControllers();
-app.MapStaticAssets();
+if (!app.Environment.IsDevelopment())
+{
+    app.MapStaticAssets();
+}
 app.MapFallbackToPage("/Index");
 
 app.Run();

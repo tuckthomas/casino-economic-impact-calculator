@@ -2084,10 +2084,14 @@ window.EconomicCalculator = (function ()
     function renderNetEconomicImpactTable(model)
     {
         lastNetImpactTableModel = model || null;
-        const container = document.getElementById('net-impact-table');
-        if (!container) return;
+        const hostContainer = document.getElementById('net-impact-host-table');
+        const regionalContainer = document.getElementById('net-impact-regional-table');
+        const consolidatedContainer = document.getElementById('net-impact-consolidated-table');
+        if (!hostContainer || !regionalContainer || !consolidatedContainer) return;
 
         const noteEl = document.getElementById('net-impact-note');
+        const hostSubtitleEl = document.getElementById('net-impact-host-subtitle');
+        const regionalExpandAllEl = document.getElementById('net-impact-regional-expand-all');
 
         const rows = (model && Array.isArray(model.rows)) ? model.rows : [];
         const otherCounties = (model && Array.isArray(model.otherCounties)) ? model.otherCounties : [];
@@ -2101,7 +2105,20 @@ window.EconomicCalculator = (function ()
 
         if (!rows.length)
         {
-            container.innerHTML = `<div class="p-4 text-sm text-slate-500 italic text-center">Select a county on the map to see cost distribution.</div>`;
+            hostContainer.innerHTML = `<div class="p-4 text-sm text-slate-500 italic text-center">Select a county on the map to see cost distribution.</div>`;
+            regionalContainer.innerHTML = '';
+            consolidatedContainer.innerHTML = '';
+            if (hostSubtitleEl)
+            {
+                hostSubtitleEl.textContent = 'Shows the direct revenue to Fort Wayne and Allen County government against the selected county’s direct modeled costs.';
+            }
+            if (regionalExpandAllEl)
+            {
+                regionalExpandAllEl.textContent = 'Expand All Regional Rows';
+                regionalExpandAllEl.classList.remove('is-active');
+                regionalExpandAllEl.setAttribute('aria-pressed', 'false');
+                regionalExpandAllEl.onclick = () => window.EconomicCalculator.toggleStatementExpandAll();
+            }
             if (noteEl) noteEl.textContent = "";
             if (otherCountiesToggleEl) otherCountiesToggleEl.remove();
             otherCountiesToggleEl = null;
@@ -2183,26 +2200,7 @@ window.EconomicCalculator = (function ()
         const subtotalRowAttrs = rowAttrs('rgba(30, 41, 59, 0.52)', 'rgba(51, 65, 85, 0.78)', 'border-t border-slate-700');
         const summaryRowAttrs = rowAttrs('rgba(30, 41, 59, 0.62)', 'rgba(51, 65, 85, 0.82)', 'border-t border-slate-700');
         const totalRowAttrs = rowAttrs('rgba(51, 65, 85, 0.78)', 'rgba(71, 85, 105, 0.92)', 'border-t-2 border-slate-500');
-
-        const buildTableCard = (title, subtitle, headerHtml, bodyHtml, actionsHtml = '') => `
-            <section class="mx-auto max-w-4xl rounded-2xl border border-slate-800 bg-slate-950/70 shadow-[0_20px_50px_rgba(2,6,23,0.24)] overflow-hidden">
-                <div class="border-b border-slate-800 px-4 py-3">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <h4 class="text-base font-semibold text-slate-100">${title}</h4>
-                            <p class="mt-1 text-sm leading-relaxed text-slate-400">${subtitle}</p>
-                        </div>
-                        ${actionsHtml}
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full table-fixed text-sm leading-relaxed">
-                        ${headerHtml}
-                        ${bodyHtml}
-                    </table>
-                </div>
-            </section>
-        `;
+        const headerToneRowAttrs = rowAttrs('rgba(2, 6, 23, 0.9)', 'rgba(15, 23, 42, 0.96)', 'border-t border-slate-700');
 
         const expansionKey = (...parts) => parts.map(part => String(part || '')).join('::');
         const isCountyExpanded = (tableKey, countyKey) => statementExpandAll || !!statementExpandedCounties[expansionKey(tableKey, countyKey)];
@@ -2326,13 +2324,13 @@ window.EconomicCalculator = (function ()
                     <td class="px-3 py-2 text-slate-100 font-semibold">Allen County Revenue</td>
                     ${moneyCell(Number(countyRevenueRow && countyRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
                 </tr>
-                <tr ${summaryRowAttrs}>
-                    <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Subtotal: Host Government Revenue</td>
+                <tr ${headerToneRowAttrs}>
+                    <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Total Host Tax Revenue</td>
                     ${moneyCell(Number(hostRevenueRow && hostRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
                 </tr>
                 ${sectionRow('Expenses')}
                 ${hostCostBreakout}
-                <tr ${totalRowAttrs}>
+                <tr ${headerToneRowAttrs}>
                     <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Net Impact: Host Governments</td>
                     ${netCell(Number(hostNetRow && hostNetRow.countyBalance || 0))}
                 </tr>
@@ -2357,11 +2355,11 @@ window.EconomicCalculator = (function ()
                 const costs = county && county.costs ? county.costs : {};
                 return renderCountyCostSection('regional', countyKey, countyName, costs, index);
             }).join('')}
-            <tr ${summaryRowAttrs}>
-                <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Subtotal: Regional Spillover Costs</td>
+            <tr ${headerToneRowAttrs}>
+                <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Total Regional Spillover Social Costs</td>
                 ${moneyCell(spilloverTotalCost, fmtM, 'text-red-400')}
             </tr>
-            <tr ${totalRowAttrs}>
+            <tr ${headerToneRowAttrs}>
                 <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Net Impact: Regional Revenue Less Spillover Costs</td>
                 ${netCell(regionalNetAfterSpillover)}
             </tr>
@@ -2385,7 +2383,7 @@ window.EconomicCalculator = (function ()
                 <td class="px-3 py-2 text-slate-100 font-semibold">Northeast Indiana RDA Revenue</td>
                 ${moneyCell(Number(rdaRevenueRow && rdaRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
             </tr>
-            <tr ${summaryRowAttrs}>
+            <tr ${headerToneRowAttrs}>
                 <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Total Tax Revenue</td>
                 ${moneyCell(Number(totalRevenueRow && totalRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
             </tr>
@@ -2405,11 +2403,11 @@ window.EconomicCalculator = (function ()
                     </tr>
                 `;
             }).join('')}
-            <tr ${summaryRowAttrs}>
+            <tr ${headerToneRowAttrs}>
                 <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Total Social Costs</td>
                 ${moneyCell(subjectTotalCost + spilloverTotalCost, fmtM, 'text-red-400')}
             </tr>
-            <tr ${totalRowAttrs}>
+            <tr ${headerToneRowAttrs}>
                 <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Consolidated Net Impact</td>
                 ${netCell(statewideNet)}
             </tr>
@@ -2417,31 +2415,23 @@ window.EconomicCalculator = (function ()
 
         const expandAllLabel = statementExpandAll ? 'Collapse All Regional Rows' : 'Expand All Regional Rows';
 
-        container.innerHTML = `
-            <div class="space-y-5 min-w-0">
-                ${buildTableCard(
-                    'Host Government Fiscal View',
-                    isAllenCountySelection
-                        ? 'Shows the direct revenue to Fort Wayne and Allen County government against the selected county’s direct modeled costs.'
-                        : 'Host-government distributions are only applicable when Allen County is selected.',
-                    tableHeader('Host Fiscal Item'),
-                    hostBody
-                )}
-                ${buildTableCard(
-                    'Regional Revenue vs County Costs',
-                    'Shows only regional revenue, then expandable county cost sections.',
-                    tableHeader('Regional Item'),
-                    regionalBody,
-                    `<button type="button" class="shrink-0 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-200 hover:border-slate-400 hover:text-white" onclick="window.EconomicCalculator.toggleStatementExpandAll()">${expandAllLabel}</button>`
-                )}
-                ${buildTableCard(
-                    'Consolidated Statement',
-                    'Lists every revenue source and one consolidated cost row per county without repeating the detailed breakout shown above.',
-                    tableHeader('Consolidated Item'),
-                    consolidatedBody
-                )}
-            </div>
-        `;
+        if (hostSubtitleEl)
+        {
+            hostSubtitleEl.textContent = isAllenCountySelection
+                ? 'Shows the direct revenue to Fort Wayne and Allen County government against the selected county’s direct modeled costs.'
+                : 'Host-government distributions are only applicable when Allen County is selected.';
+        }
+        if (regionalExpandAllEl)
+        {
+            regionalExpandAllEl.textContent = expandAllLabel;
+            regionalExpandAllEl.classList.toggle('is-active', statementExpandAll);
+            regionalExpandAllEl.setAttribute('aria-pressed', statementExpandAll ? 'true' : 'false');
+            regionalExpandAllEl.onclick = () => window.EconomicCalculator.toggleStatementExpandAll();
+        }
+
+        hostContainer.innerHTML = `<table class="w-full table-fixed text-sm leading-relaxed">${tableHeader('Host Fiscal Item')}${hostBody}</table>`;
+        regionalContainer.innerHTML = `<table class="w-full table-fixed text-sm leading-relaxed">${tableHeader('Regional Item')}${regionalBody}</table>`;
+        consolidatedContainer.innerHTML = `<table class="w-full table-fixed text-sm leading-relaxed">${tableHeader('Consolidated Item')}${consolidatedBody}</table>`;
 
         if (otherCountiesToggleEl) otherCountiesToggleEl.remove();
         otherCountiesToggleEl = null;
