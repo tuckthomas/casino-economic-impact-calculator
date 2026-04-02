@@ -15,6 +15,10 @@ window.EconomicCalculator = (function ()
     let activeNetChartMode = 'county';
     let activeSensitivitySeriesMode = 'county';
     let lastChartModel = null;
+    let lastNetImpactTableModel = null;
+    let statementExpandAll = false;
+    let statementExpandedCounties = Object.create(null);
+    let statementExpandedGroups = Object.create(null);
 
     function escapeHtml(input)
     {
@@ -1473,9 +1477,9 @@ window.EconomicCalculator = (function ()
             ...(isAllenCountySelection ? [{
                 key: 'host_local_revenue_sub',
                 kind: 'subtotal',
-                label: 'Subtotal: Allen County + Fort Wayne Revenue',
+                label: 'Subtotal: Host Government Revenue',
                 labelClass: '',
-                tooltip: 'Combined direct public revenue flowing to the City of Fort Wayne and Allen County in the base-case Fort Wayne city-site model.',
+                tooltip: 'Combined direct public revenue flowing to the two host governments: the City of Fort Wayne and Allen County.',
                 revenue: hostLocalRevenue,
                 countyCost: 0,
                 countyBalance: hostLocalRevenue,
@@ -1614,9 +1618,9 @@ window.EconomicCalculator = (function ()
             ...(isAllenCountySelection ? [{
                 key: 'host_local_total',
                 kind: 'total',
-                label: 'Net Impact: Allen County + Fort Wayne',
+                label: 'Net Impact: Host Governments',
                 labelClass: 'text-white',
-                tooltip: 'Combined Fort Wayne and Allen County direct revenue, less total modeled host-local social and private-sector costs.',
+                tooltip: 'Combined revenue to the City of Fort Wayne and Allen County government, less total modeled direct and private-sector costs.',
                 revenue: hostLocalRevenue,
                 countyCost: totalCost,
                 countyBalance: hostLocalNetBalance,
@@ -2079,6 +2083,7 @@ window.EconomicCalculator = (function ()
     window.renderNetEconomicImpactTable = renderNetEconomicImpactTable;
     function renderNetEconomicImpactTable(model)
     {
+        lastNetImpactTableModel = model || null;
         const container = document.getElementById('net-impact-table');
         if (!container) return;
 
@@ -2086,7 +2091,6 @@ window.EconomicCalculator = (function ()
 
         const rows = (model && Array.isArray(model.rows)) ? model.rows : [];
         const otherCounties = (model && Array.isArray(model.otherCounties)) ? model.otherCounties : [];
-        const expanded = !!(model && model.expanded && otherCounties.length > 0);
         const baselineRate = Number(model && model.baselineRate);
         const baselineRateDisplay = Number.isFinite(baselineRate) ? baselineRate.toFixed(1) : "—";
 
@@ -2094,15 +2098,6 @@ window.EconomicCalculator = (function ()
         const subjectCountyFips = String((model && model.subjectCountyFips) || "").trim();
         const subjectStateName = String((model && model.subjectStateName) || "").trim();
         const isAllenCountySelection = subjectCountyFips === "18003";
-        const countyRevenueHeaderText = 'Host Local<br>Revenue';
-        const countyHeaderText = subjectCountyName
-            ? `${escapeHtml(subjectCountyName)} + Fort Wayne<br>Direct Cost`
-            : 'Host Local<br>Direct Cost';
-        const countyNetHeaderText = 'Host Local<br>Net';
-        const stateNetHeaderText = subjectStateName ? `${escapeHtml(subjectStateName)}<br>Total Net` : 'Statewide<br>Total Net';
-        const otherHeaderText = otherCounties.length
-            ? `Other Included<br>Counties<br>Cost (${otherCounties.length})`
-            : 'Other Included<br>Counties<br>Cost';
 
         if (!rows.length)
         {
@@ -2114,159 +2109,349 @@ window.EconomicCalculator = (function ()
             return;
         }
 
-        const headerExtra = expanded
-            ? otherCounties.map(c => `<th class="px-2 py-2 text-right text-slate-200 whitespace-normal leading-tight w-[6.5rem] min-w-[6.5rem]">${escapeHtml(c.name)}</th>`).join('')
-            : '';
+        const rowMap = new Map(rows.map(row => [String(row.key || ''), row]));
+        const escapeText = value => escapeHtml(String(value || '').trim());
 
-        const thead = `
-			            <thead>
-			                <tr class="border-b border-slate-700 bg-slate-950/90 text-[10px] uppercase tracking-[0.18em] text-slate-500">
-			                    <th class="px-3 py-2 text-left sticky left-0 bg-slate-950/95 backdrop-blur border-r border-slate-800/80 min-w-[17rem]">Section</th>
-			                    <th class="px-3 py-2 text-center border-r border-slate-800/80" colspan="3">Host Local View</th>
-			                    <th class="px-3 py-2 text-center border-r border-slate-800/80" colspan="${expanded ? otherCounties.length + 1 : 1}">Spillover View</th>
-			                    <th class="px-3 py-2 text-center sticky right-0 bg-slate-950/95 backdrop-blur">Statewide View</th>
-			                </tr>
-			                <tr class="border-b border-slate-700 bg-slate-900/60 text-slate-200">
-			                    <th class="px-3 py-3 text-left sticky left-0 bg-slate-950/95 backdrop-blur border-r border-slate-800/80 min-w-[17rem]" data-col="group">Category</th>
-			                    <th class="px-3 py-3 text-right whitespace-normal leading-tight w-[8.75rem] min-w-[8.75rem] border-r border-slate-800/80">${countyRevenueHeaderText}</th>
-			                    <th class="px-3 py-3 text-right whitespace-normal leading-tight w-[8.75rem] min-w-[8.75rem] border-r border-slate-800/80">${countyHeaderText}</th>
-			                    <th class="px-3 py-3 text-right whitespace-normal leading-tight w-[8.75rem] min-w-[8.75rem] border-r border-slate-800/80">${countyNetHeaderText}</th>
-			                    <th class="px-3 py-3 text-right whitespace-normal leading-tight w-[8.75rem] min-w-[8.75rem] border-r border-slate-700 relative group" data-col="other-cost">${otherHeaderText}</th>
-			                    ${headerExtra}
-			                    <th class="px-3 py-3 text-right whitespace-normal leading-tight sticky right-0 bg-slate-950/95 backdrop-blur w-[8.75rem] min-w-[8.75rem]">${stateNetHeaderText}</th>
-			                </tr>
-			            </thead>
-			        `;
+        const subjectPublicCost = Number((rowMap.get('gen_sub') || {}).countyCost || 0);
+        const subjectPrivateCost = Number((rowMap.get('private_sub') || {}).countyCost || 0);
+        const subjectTotalCost = subjectPublicCost + subjectPrivateCost;
+        const subjectCountyLabel = subjectCountyName || 'Selected County';
+        const cityRevenueRow = rowMap.get('city_revenue') || null;
+        const countyRevenueRow = rowMap.get('county_revenue') || null;
+        const hostRevenueRow = rowMap.get('host_local_revenue_sub') || null;
+        const hostNetRow = rowMap.get('host_local_total') || null;
+        const stateRevenueRow = rowMap.get('state_revenue') || null;
+        const rdaRevenueRow = rowMap.get('rda_revenue') || null;
+        const totalRevenueRow = rowMap.get('total_revenue') || null;
+        const statewideTotalRow = rowMap.get('total') || null;
+        const spilloverTotalCost = otherCounties.reduce((sum, county) => sum + Number(county && county.costs && county.costs.total || 0), 0);
+        const regionalNetAfterSpillover = Number(rdaRevenueRow && rdaRevenueRow.revenue || 0) - spilloverTotalCost;
+        const statewideNet = Number(statewideTotalRow && statewideTotalRow.countyBalance || 0) - Number(statewideTotalRow && statewideTotalRow.otherCost || 0);
 
-        let tbody = '<tbody>';
-        for (const row of rows)
+        const headerMoneyCellClass = 'w-[8.5rem]';
+        const moneyCell = (value, formatter = fmtM, forceClass = 'text-slate-100') =>
         {
-            const kind = String(row.kind || 'detail');
-            const rowKey = String(row.key || "");
+            const numeric = Number(value || 0);
+            return `<td class="px-3 py-2 text-right font-mono whitespace-nowrap ${headerMoneyCellClass} ${forceClass}">${formatter(numeric)}</td>`;
+        };
+        const netCell = value =>
+        {
+            const numeric = Number(value || 0);
+            const netClass = numeric > 0 ? 'text-emerald-400' : (numeric < 0 ? 'text-red-500' : 'text-slate-100');
+            return moneyCell(numeric, fmtDiffM, netClass);
+        };
+        const tableHeader = title => `
+            <thead>
+                <tr class="border-b border-slate-700 bg-slate-950/90 text-sm uppercase tracking-[0.12em] text-slate-400">
+                    <th class="px-3 py-2 text-left">${title}</th>
+                    <th class="px-3 py-2 text-right ${headerMoneyCellClass}">$</th>
+                </tr>
+            </thead>
+        `;
+        const sectionRow = label => `
+            <tr class="border-t border-slate-700 bg-slate-950/80">
+                <td class="px-3 py-2 text-slate-300 font-bold uppercase tracking-[0.12em] text-sm">${escapeText(label)}</td>
+                <td class="px-3 py-2 ${headerMoneyCellClass}"></td>
+            </tr>
+        `;
+        const rowAttrs = (baseBg, hoverBg, borderClass) => `class="${borderClass} transition-colors" style="background-color:${baseBg}" onmouseenter="this.style.backgroundColor='${hoverBg}'" onmouseleave="this.style.backgroundColor='${baseBg}'"`;
+        const stripedRowAttrs = index => rowAttrs(
+            index % 2 === 0 ? 'rgba(15, 23, 42, 0.18)' : 'rgba(30, 41, 59, 0.34)',
+            'rgba(51, 65, 85, 0.72)',
+            'border-t border-slate-800/60'
+        );
+        const countyBlockPalette = index => index % 2 === 0
+            ? {
+                detail: 'rgba(15, 23, 42, 0.18)',
+                subtotal: 'rgba(30, 41, 59, 0.42)',
+                summary: 'rgba(30, 41, 59, 0.52)',
+                hover: 'rgba(51, 65, 85, 0.76)'
+            }
+            : {
+                detail: 'rgba(30, 41, 59, 0.28)',
+                subtotal: 'rgba(51, 65, 85, 0.46)',
+                summary: 'rgba(51, 65, 85, 0.56)',
+                hover: 'rgba(71, 85, 105, 0.82)'
+            };
+        const countyBlockRowAttrs = (index, variant = 'detail') =>
+        {
+            const palette = countyBlockPalette(index);
+            const baseBg = palette[variant] || palette.detail;
+            const borderClass = variant === 'detail' ? 'border-t border-slate-800/60' : 'border-t border-slate-700';
+            return rowAttrs(baseBg, palette.hover, borderClass);
+        };
+        const subtotalRowAttrs = rowAttrs('rgba(30, 41, 59, 0.52)', 'rgba(51, 65, 85, 0.78)', 'border-t border-slate-700');
+        const summaryRowAttrs = rowAttrs('rgba(30, 41, 59, 0.62)', 'rgba(51, 65, 85, 0.82)', 'border-t border-slate-700');
+        const totalRowAttrs = rowAttrs('rgba(51, 65, 85, 0.78)', 'rgba(71, 85, 105, 0.92)', 'border-t-2 border-slate-500');
 
-            const rowRevenue = Number(row.revenue || 0);
-            const rowCountyCost = Number(row.countyCost || 0);
-            const rowOtherCost = Number(row.otherCost || 0);
-            const rowCountyBalance = Number(row.countyBalance || (rowRevenue - rowCountyCost));
-            const rowTotalBalance = rowCountyBalance - rowOtherCost;
+        const buildTableCard = (title, subtitle, headerHtml, bodyHtml, actionsHtml = '') => `
+            <section class="mx-auto max-w-4xl rounded-2xl border border-slate-800 bg-slate-950/70 shadow-[0_20px_50px_rgba(2,6,23,0.24)] overflow-hidden">
+                <div class="border-b border-slate-800 px-4 py-3">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <h4 class="text-base font-semibold text-slate-100">${title}</h4>
+                            <p class="mt-1 text-sm leading-relaxed text-slate-400">${subtitle}</p>
+                        </div>
+                        ${actionsHtml}
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-fixed text-sm leading-relaxed">
+                        ${headerHtml}
+                        ${bodyHtml}
+                    </table>
+                </div>
+            </section>
+        `;
 
-            const revenueClass = rowRevenue > 0 ? 'text-emerald-400' : (rowRevenue < 0 ? 'text-red-500' : 'text-slate-200');
-            const countyCostClass = rowCountyCost !== 0 ? 'text-red-400' : 'text-slate-200';
-            const countyBalanceClass = rowCountyBalance > 0 ? 'text-emerald-400' : (rowCountyBalance < 0 ? 'text-red-500' : 'text-slate-200');
-            const otherCostClass = rowOtherCost !== 0 ? 'text-red-400' : 'text-slate-200';
-            const totalBalanceClass = rowTotalBalance > 0 ? 'text-emerald-400' : (rowTotalBalance < 0 ? 'text-red-500' : 'text-slate-200');
+        const expansionKey = (...parts) => parts.map(part => String(part || '')).join('::');
+        const isCountyExpanded = (tableKey, countyKey) => statementExpandAll || !!statementExpandedCounties[expansionKey(tableKey, countyKey)];
+        const isGroupExpanded = (tableKey, countyKey, groupKey) => statementExpandAll || !!statementExpandedGroups[expansionKey(tableKey, countyKey, groupKey)];
+        const toggleButton = (handler, expanded, label) => `
+            <button type="button" class="mr-2 inline-flex h-5 w-5 items-center justify-center rounded border border-slate-600 bg-slate-900 text-sm font-bold text-slate-200 hover:border-slate-400 hover:text-white" onclick="${handler}">${expanded ? '−' : '+'}</button>
+            <span>${escapeText(label)}</span>
+        `;
+        const nestedBranch = (depth = 1) => `
+            <span class="relative mr-2 ${depth === 1 ? 'w-12' : 'w-28'} shrink-0 self-stretch">
+                ${depth === 2 ? '<span class="absolute left-6 top-0 bottom-0 w-px bg-slate-700"></span>' : ''}
+                <span class="absolute ${depth === 1 ? 'left-8' : 'left-24'} top-0 bottom-0 w-px bg-slate-600"></span>
+            </span>
+        `;
+        const nestedToggleRow = (handler, expanded, label, depth = 1) => `
+            <div class="flex items-center">
+                ${nestedBranch(depth)}
+                <button type="button" class="mr-2 inline-flex h-5 w-5 items-center justify-center rounded border border-slate-600 bg-slate-900 text-sm font-bold text-slate-200 hover:border-slate-400 hover:text-white" onclick="${handler}">${expanded ? '−' : '+'}</button>
+                <span>${escapeText(label)}</span>
+            </div>
+        `;
+        const nestedDetailLabel = (label, depth = 2) => `
+            <div class="flex items-center">
+                ${nestedBranch(depth)}
+                <span>${escapeText(label)}</span>
+            </div>
+        `;
 
-            const fmtVal = (val, fmtFn) => (Math.abs(val) < 0.01) ? '-' : fmtFn(val);
+        const renderStaticCostGroupRows = (label, subtotal, details) => `
+            ${details.map((detail, index) => `
+                <tr ${stripedRowAttrs(index)}>
+                    <td class="px-3 py-2 text-slate-100">${escapeText(detail.label)}</td>
+                    ${moneyCell(Number(detail.amount || 0), fmtM, 'text-red-400')}
+                </tr>
+            `).join('')}
+            <tr ${subtotalRowAttrs}>
+                <td class="px-3 py-2 pl-6 text-slate-100 font-bold uppercase tracking-wider">Subtotal: ${escapeText(label)}</td>
+                ${moneyCell(subtotal, fmtM, 'text-red-400')}
+            </tr>
+        `;
 
-            const rowBgClass = kind === 'total'
-                ? 'bg-slate-800/60 border-t-2 border-slate-500'
-                : kind === 'revenue_total'
-                    ? 'bg-slate-950/90 border-t-2 border-slate-700'
-                    : kind === 'subtotal'
-                        ? 'bg-slate-800/30 border-t border-slate-600'
-                        : 'border-t border-slate-800/60';
-
-            const rowFontClass = kind === 'total' || kind === 'revenue_total'
-                ? 'font-black'
-                : kind === 'subtotal'
-                    ? 'font-bold'
-                    : 'font-semibold';
-
-            const stickyCellBgClass = kind === 'revenue_total'
-                ? 'bg-slate-950/90'
-                : 'bg-slate-950/95';
-
-            const tooltip = row.tooltip
-                ? `
-		                    <div class="flex items-center">
-		                        <span class="material-symbols-outlined text-slate-400 text-[14px] cursor-help hover:text-slate-200 transition-colors" 
-                                      onmouseenter="window.EconomicCalculator && window.EconomicCalculator.showTooltip(event, '${escapeHtml(row.tooltip).replace(/'/g, "\\'")}')" 
-                                      onmouseleave="window.EconomicCalculator && window.EconomicCalculator.hideTooltip()"
-                                      onmousemove="window.EconomicCalculator && window.EconomicCalculator.moveTooltip(event)">info</span>
-		                    </div>
-		                `
+        const renderCostGroupRows = (tableKey, countyKey, groupKey, label, subtotal, details, countyIndex = 0) =>
+        {
+            const expanded = isGroupExpanded(tableKey, countyKey, groupKey);
+            const detailRows = expanded
+                ? details.map(detail => `
+                    <tr ${countyBlockRowAttrs(countyIndex, 'detail')}>
+                        <td class="px-3 py-2 text-slate-100">${nestedDetailLabel(detail.label, 2)}</td>
+                        ${moneyCell(Number(detail.amount || 0), fmtM, 'text-red-400')}
+                    </tr>
+                `).join('')
                 : '';
 
-            const labelHtml = (kind === 'total' || kind === 'subtotal' || kind === 'revenue_total')
-                ? `<div class="uppercase tracking-wider ${kind === 'subtotal' ? 'pl-4' : ''}">${escapeHtml(row.label || '')}</div>`
-                : escapeHtml(row.label || '');
+            return `
+                <tr ${countyBlockRowAttrs(countyIndex, 'subtotal')}>
+                    <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">
+                        ${nestedToggleRow(`window.EconomicCalculator.toggleStatementGroup('${escapeHtml(tableKey)}','${escapeHtml(countyKey)}','${escapeHtml(groupKey)}')`, expanded, `Subtotal: ${label}`, 1)}
+                    </td>
+                    ${moneyCell(subtotal, fmtM, 'text-red-400')}
+                </tr>
+                ${detailRows}
+            `;
+        };
 
-            const labelCell = `
-		                <td class="px-3 py-2 sticky left-0 bg-slate-950/90 backdrop-blur text-slate-200 ${rowFontClass} ${row.labelClass || ''} border-r border-slate-800/80 min-w-[17rem]">
-		                    <div class="flex items-center gap-1">
-		                        <span>${labelHtml}</span>
-		                        ${tooltip}
-		                    </div>
-		                </td>
-		            `;
+        const renderCountyCostSection = (tableKey, countyKey, countyLabel, costs, rowIndex = 0) =>
+        {
+            const safeCosts = costs || {};
+            const expanded = isCountyExpanded(tableKey, countyKey);
+            const generalSubtotal = Number(safeCosts.public || 0);
+            const privateSubtotal = Number(safeCosts.private || 0);
+            const totalCost = Number(safeCosts.total || (generalSubtotal + privateSubtotal));
+            const generalRows = [
+                { label: 'Public Health / Treatment', amount: Number(safeCosts.health || 0) },
+                { label: 'Law Enforcement', amount: Number(safeCosts.crime || 0) },
+                { label: 'Social Services', amount: Number(safeCosts.social || 0) },
+                { label: 'Civil Legal', amount: Number(safeCosts.legal || 0) }
+            ];
+            const privateRows = [
+                { label: 'Abused Dollars', amount: Number(safeCosts.abused || 0) },
+                { label: 'Lost Employment', amount: Number(safeCosts.employment || 0) }
+            ];
 
-            const otherExtraCells = expanded
-                ? otherCounties.map(c =>
-                {
-                    const val = getOtherCountyCostForRow(rowKey, c.costs);
-                    const cellClass = val !== 0 ? 'text-red-400' : 'text-slate-200';
-                    return `<td class="px-2 py-2 text-right font-mono whitespace-nowrap w-[6.5rem] min-w-[6.5rem] ${cellClass}">${fmtVal(val, fmtM)}</td>`;
-                }).join('')
-                : '';
+            return `
+                <tr ${countyBlockRowAttrs(rowIndex, 'summary')}>
+                    <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">
+                        ${toggleButton(`window.EconomicCalculator.toggleStatementCounty('${escapeHtml(tableKey)}','${escapeHtml(countyKey)}')`, expanded, countyLabel)}
+                    </td>
+                    ${moneyCell(totalCost, fmtM, 'text-red-400')}
+                </tr>
+                ${expanded ? renderCostGroupRows(tableKey, countyKey, 'general', 'General Taxpayer Services Costs', generalSubtotal, generalRows, rowIndex) : ''}
+                ${expanded ? renderCostGroupRows(tableKey, countyKey, 'private', 'Private Sector Costs', privateSubtotal, privateRows, rowIndex) : ''}
+            `;
+        };
 
-            tbody += `
-			                <tr class="${rowBgClass}">
-			                    ${labelCell}
-			                    <td class="px-3 py-2 text-right font-mono whitespace-nowrap ${revenueClass} border-r border-slate-800/80">${fmtVal(rowRevenue, fmtM)}</td>
-			                    <td class="px-3 py-2 text-right font-mono whitespace-nowrap ${countyCostClass} border-r border-slate-800/80">${fmtVal(rowCountyCost, fmtM)}</td>
-			                    <td class="px-3 py-2 text-right font-mono whitespace-nowrap ${rowFontClass} ${countyBalanceClass} border-r border-slate-800/80">${fmtVal(rowCountyBalance, fmtDiffM)}</td>
-			                    <td class="px-3 py-2 text-right font-mono whitespace-nowrap ${otherCostClass} border-r border-slate-700">${fmtVal(rowOtherCost, fmtM)}</td>
-			                    ${otherExtraCells}
-			                    <td class="px-3 py-2 text-right font-mono whitespace-nowrap sticky right-0 ${stickyCellBgClass} backdrop-blur ${rowFontClass} ${totalBalanceClass}">${fmtVal(rowTotalBalance, fmtDiffM)}</td>
-			                </tr>
-			            `;
-        }
-        tbody += '</tbody>';
+        const hostCostBreakout = renderStaticCostGroupRows(
+            'General Taxpayer Services Costs',
+            subjectPublicCost,
+            [
+                { label: 'Public Health / Treatment', amount: Number((rowMap.get('health_local') || {}).countyCost || 0) },
+                { label: 'Law Enforcement', amount: Number((rowMap.get('crime') || {}).countyCost || 0) },
+                { label: 'Social Services', amount: Number((rowMap.get('social') || {}).countyCost || 0) },
+                { label: 'Civil Legal', amount: Number((rowMap.get('legal') || {}).countyCost || 0) }
+            ]
+        ) + renderStaticCostGroupRows(
+            'Private Sector Costs',
+            subjectPrivateCost,
+            [
+                { label: 'Abused Dollars', amount: Number((rowMap.get('abused') || {}).countyCost || 0) },
+                { label: 'Lost Employment', amount: Number((rowMap.get('employment') || {}).countyCost || 0) }
+            ]
+        );
+
+        const hostBody = isAllenCountySelection
+            ? `<tbody>
+                ${sectionRow('Revenue')}
+                <tr ${stripedRowAttrs(0)}>
+                    <td class="px-3 py-2 text-slate-100 font-semibold">City of Fort Wayne Revenue</td>
+                    ${moneyCell(Number(cityRevenueRow && cityRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+                </tr>
+                <tr ${stripedRowAttrs(1)}>
+                    <td class="px-3 py-2 text-slate-100 font-semibold">Allen County Revenue</td>
+                    ${moneyCell(Number(countyRevenueRow && countyRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+                </tr>
+                <tr ${summaryRowAttrs}>
+                    <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Subtotal: Host Government Revenue</td>
+                    ${moneyCell(Number(hostRevenueRow && hostRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+                </tr>
+                ${sectionRow('Expenses')}
+                ${hostCostBreakout}
+                <tr ${totalRowAttrs}>
+                    <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Net Impact: Host Governments</td>
+                    ${netCell(Number(hostNetRow && hostNetRow.countyBalance || 0))}
+                </tr>
+            </tbody>`
+            : `<tbody>
+                <tr class="border-t border-slate-800/60">
+                    <td colspan="2" class="px-3 py-4 text-base text-slate-400 italic">Host-government revenue applies only when the selected county is Allen County, because the Fort Wayne city-site distributions flow to Fort Wayne and Allen County.</td>
+                </tr>
+            </tbody>`;
+
+        const regionalBody = `<tbody>
+            ${sectionRow('Revenue')}
+            <tr ${stripedRowAttrs(0)}>
+                <td class="px-3 py-2 text-slate-100 font-semibold">Northeast Indiana RDA Revenue</td>
+                ${moneyCell(Number(rdaRevenueRow && rdaRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+            </tr>
+            ${sectionRow('Expenses')}
+            ${otherCounties.map((county, index) =>
+            {
+                const countyName = String(county && county.name || county && county.fips || 'County');
+                const countyKey = String(county && county.fips || countyName);
+                const costs = county && county.costs ? county.costs : {};
+                return renderCountyCostSection('regional', countyKey, countyName, costs, index);
+            }).join('')}
+            <tr ${summaryRowAttrs}>
+                <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Subtotal: Regional Spillover Costs</td>
+                ${moneyCell(spilloverTotalCost, fmtM, 'text-red-400')}
+            </tr>
+            <tr ${totalRowAttrs}>
+                <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Net Impact: Regional Revenue Less Spillover Costs</td>
+                ${netCell(regionalNetAfterSpillover)}
+            </tr>
+        </tbody>`;
+
+        const consolidatedBody = `<tbody>
+            ${sectionRow('Revenue')}
+            <tr ${stripedRowAttrs(0)}>
+                <td class="px-3 py-2 text-slate-100 font-semibold">City of Fort Wayne Revenue</td>
+                ${moneyCell(Number(cityRevenueRow && cityRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+            </tr>
+            <tr ${stripedRowAttrs(1)}>
+                <td class="px-3 py-2 text-slate-100 font-semibold">Allen County Revenue</td>
+                ${moneyCell(Number(countyRevenueRow && countyRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+            </tr>
+            <tr ${stripedRowAttrs(2)}>
+                <td class="px-3 py-2 text-slate-100 font-semibold">State of ${escapeText(subjectStateName || 'Indiana')} Revenue</td>
+                ${moneyCell(Number(stateRevenueRow && stateRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+            </tr>
+            <tr ${stripedRowAttrs(3)}>
+                <td class="px-3 py-2 text-slate-100 font-semibold">Northeast Indiana RDA Revenue</td>
+                ${moneyCell(Number(rdaRevenueRow && rdaRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+            </tr>
+            <tr ${summaryRowAttrs}>
+                <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Total Tax Revenue</td>
+                ${moneyCell(Number(totalRevenueRow && totalRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+            </tr>
+            ${sectionRow('Expenses')}
+            <tr ${stripedRowAttrs(0)}>
+                <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">${escapeText(subjectCountyLabel)}</td>
+                ${moneyCell(subjectTotalCost, fmtM, 'text-red-400')}
+            </tr>
+            ${otherCounties.map((county, index) =>
+            {
+                const countyName = String(county && county.name || county && county.fips || 'County');
+                const costs = county && county.costs ? county.costs : {};
+                return `
+                    <tr ${stripedRowAttrs(index + 1)}>
+                        <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">${escapeText(countyName)}</td>
+                        ${moneyCell(Number(costs.total || 0), fmtM, 'text-red-400')}
+                    </tr>
+                `;
+            }).join('')}
+            <tr ${summaryRowAttrs}>
+                <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Total Social Costs</td>
+                ${moneyCell(subjectTotalCost + spilloverTotalCost, fmtM, 'text-red-400')}
+            </tr>
+            <tr ${totalRowAttrs}>
+                <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Consolidated Net Impact</td>
+                ${netCell(statewideNet)}
+            </tr>
+        </tbody>`;
+
+        const expandAllLabel = statementExpandAll ? 'Collapse All Regional Rows' : 'Expand All Regional Rows';
 
         container.innerHTML = `
-                    <div class="border-b border-slate-800 bg-slate-950/70 px-4 py-3 text-[11px] leading-relaxed text-slate-400">
-                        Read left to right: <span class="text-slate-200">host-local revenue</span>, <span class="text-slate-200">host-local cost</span>, <span class="text-slate-200">host-local net</span>, <span class="text-slate-200">spillover cost in other counties</span>, then <span class="text-slate-200">statewide net</span>. Within the cost rows, the revenue figures are a <span class="text-slate-200">modeled offset allocation</span>, not a literal statutory earmark.
-                    </div>
-		            <table class="w-full text-xs">
-		                ${thead}
-		                ${tbody}
-		            </table>
-		        `;
+            <div class="space-y-5 min-w-0">
+                ${buildTableCard(
+                    'Host Government Fiscal View',
+                    isAllenCountySelection
+                        ? 'Shows the direct revenue to Fort Wayne and Allen County government against the selected county’s direct modeled costs.'
+                        : 'Host-government distributions are only applicable when Allen County is selected.',
+                    tableHeader('Host Fiscal Item'),
+                    hostBody
+                )}
+                ${buildTableCard(
+                    'Regional Revenue vs County Costs',
+                    'Shows only regional revenue, then expandable county cost sections.',
+                    tableHeader('Regional Item'),
+                    regionalBody,
+                    `<button type="button" class="shrink-0 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-200 hover:border-slate-400 hover:text-white" onclick="window.EconomicCalculator.toggleStatementExpandAll()">${expandAllLabel}</button>`
+                )}
+                ${buildTableCard(
+                    'Consolidated Statement',
+                    'Lists every revenue source and one consolidated cost row per county without repeating the detailed breakout shown above.',
+                    tableHeader('Consolidated Item'),
+                    consolidatedBody
+                )}
+            </div>
+        `;
 
-        otherCountiesToggleState = { container, count: otherCounties.length, expanded };
-        try
-        {
-            positionOtherCountiesToggle();
-        }
-        catch (error)
-        {
-            console.error('[Calculator] Failed to position other-counties toggle.', error);
-        }
-        if (!otherCountiesToggleResizeBound)
-        {
-            const reposition = () =>
-            {
-                try
-                {
-                    positionOtherCountiesToggle();
-                }
-                catch (error)
-                {
-                    console.error('[Calculator] Failed to reposition other-counties toggle.', error);
-                }
-            };
-            window.addEventListener('resize', reposition);
-            const scrollParent = container.closest('.overflow-x-auto');
-            if (scrollParent) scrollParent.addEventListener('scroll', reposition);
-            window.addEventListener('scroll', reposition, true);
-            otherCountiesToggleResizeBound = true;
-        }
+        if (otherCountiesToggleEl) otherCountiesToggleEl.remove();
+        otherCountiesToggleEl = null;
+        otherCountiesToggleState = null;
 
         if (noteEl)
         {
             noteEl.textContent = isAllenCountySelection
-                ? `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Allen County receives only its 45% share of the supplemental wagering tax for a Fort Wayne city-site, while Fort Wayne receives the local share of the regular graduated wagering tax. Because the selected county is Allen, the table shows a local subtotal for Fort Wayne + Allen County and a separate subtotal for State + Regional Revenue. Other Counties Costs totals same-state spillover within 50 miles.`
-                : `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Because the selected county is not Allen, the table omits the Fort Wayne + Allen County subtotal rows and separately shows State + Regional Revenue against the selected county's direct costs and same-state spillover.`;
+                ? `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Allen County receives only its 45% share of the supplemental wagering tax for a Fort Wayne city-site, while Fort Wayne receives the local share of the regular graduated wagering tax. "Host Governments" refers to the two recipient governments, not geographic double counting.`
+                : `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Because the selected county is not Allen, the host-government table is informational only, the regional table isolates RDA revenue versus spillover county costs, and the consolidated table carries the full statewide comparison.`;
         }
     }
 
@@ -2387,6 +2572,42 @@ window.EconomicCalculator = (function ()
         hideTooltip();
         otherCountiesExpanded = !otherCountiesExpanded;
         calculate();
+    }
+
+    function toggleStatementExpandAll()
+    {
+        hideTooltip();
+        statementExpandAll = !statementExpandAll;
+        if (lastNetImpactTableModel)
+        {
+            renderNetEconomicImpactTable(lastNetImpactTableModel);
+        }
+    }
+
+    function toggleStatementCounty(tableKey, countyKey)
+    {
+        hideTooltip();
+        if (statementExpandAll) statementExpandAll = false;
+        const key = [tableKey, countyKey].map(part => String(part || '')).join('::');
+        statementExpandedCounties[key] = !statementExpandedCounties[key];
+        if (lastNetImpactTableModel)
+        {
+            renderNetEconomicImpactTable(lastNetImpactTableModel);
+        }
+    }
+
+    function toggleStatementGroup(tableKey, countyKey, groupKey)
+    {
+        hideTooltip();
+        if (statementExpandAll) statementExpandAll = false;
+        const countyStateKey = [tableKey, countyKey].map(part => String(part || '')).join('::');
+        const groupStateKey = [tableKey, countyKey, groupKey].map(part => String(part || '')).join('::');
+        statementExpandedCounties[countyStateKey] = true;
+        statementExpandedGroups[groupStateKey] = !statementExpandedGroups[groupStateKey];
+        if (lastNetImpactTableModel)
+        {
+            renderNetEconomicImpactTable(lastNetImpactTableModel);
+        }
     }
 
     let globalTooltip = null;
@@ -2531,6 +2752,9 @@ window.EconomicCalculator = (function ()
         selectCounty: selectCounty,
         updateCounties: updateCounties,
         toggleOtherCounties: toggleOtherCounties,
+        toggleStatementExpandAll: toggleStatementExpandAll,
+        toggleStatementCounty: toggleStatementCounty,
+        toggleStatementGroup: toggleStatementGroup,
         showTooltip: showTooltip,
         hideTooltip: hideTooltip,
         moveTooltip: moveTooltip,
