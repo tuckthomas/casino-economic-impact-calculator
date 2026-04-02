@@ -19,6 +19,377 @@ window.EconomicCalculator = (function ()
     let statementExpandAll = false;
     let statementExpandedCounties = Object.create(null);
     let statementExpandedGroups = Object.create(null);
+    const MUNICIPAL_HOST_COUNTIES = new Set(['18003', '18033', '18151']);
+    let lastMunicipalityLookupKey = '';
+    let lastMunicipalityLookupValue = null;
+    let municipalityLookupSeq = 0;
+    const TAX_ALLOCATION_SCENARIO_CUSTOM_ID = 'custom';
+    const TAX_ALLOCATION_COMPONENTS = ['regular', 'supplemental'];
+    const TAX_ALLOCATION_BRANCHES = ['municipal', 'fallback'];
+    const TAX_ALLOCATION_RECIPIENTS = ['state', 'county', 'municipality', 'regional'];
+    const TAX_ALLOCATION_SCENARIOS = [
+        {
+            id: 'ne-indiana-casino',
+            label: 'NE Indiana Casino',
+            sortOrder: 1,
+            billName: 'HB 1038',
+            publicName: 'NE Indiana Casino',
+            recipients: {
+                state: 'State of Indiana',
+                county: 'Host County',
+                municipality: 'Host Municipality',
+                regional: 'Northeast Indiana RDA'
+            },
+            municipality: {
+                enabled: true,
+                requiresContainment: true,
+                fallbackToCounty: true,
+                eligibleCountyFips: ['18003', '18033', '18151']
+            },
+            rules: {
+                regular: {
+                    municipal: { state: 75, county: 0, municipality: 25, regional: 0 },
+                    fallback: { state: 75, county: 25, municipality: 0, regional: 0 }
+                },
+                supplemental: {
+                    municipal: { state: 0, county: 45, municipality: 45, regional: 10 },
+                    fallback: { state: 0, county: 90, municipality: 0, regional: 10 }
+                }
+            }
+        }
+    ];
+    let selectedTaxScenarioId = 'ne-indiana-casino';
+    let customTaxScenarioDraft = null;
+    let lastValidCustomTaxScenario = null;
+
+    function cloneScenario(value)
+    {
+        return JSON.parse(JSON.stringify(value));
+    }
+
+    function getPresetTaxScenarios()
+    {
+        return [...TAX_ALLOCATION_SCENARIOS].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+    }
+
+    function getScenarioById(id)
+    {
+        return getPresetTaxScenarios().find(scenario => String(scenario.id) === String(id)) || null;
+    }
+
+    function getDefaultTaxScenario()
+    {
+        return getScenarioById('ne-indiana-casino') || getPresetTaxScenarios()[0] || null;
+    }
+
+    function validateTaxAllocationScenario(scenario)
+    {
+        const errors = [];
+        const branchSummaries = [];
+
+        if (!scenario || !scenario.rules)
+        {
+            errors.push('Tax allocation scenario is missing rule definitions.');
+            return { valid: false, errors, branchSummaries };
+        }
+
+        TAX_ALLOCATION_COMPONENTS.forEach(component =>
+        {
+            TAX_ALLOCATION_BRANCHES.forEach(branch =>
+            {
+                const rules = scenario.rules?.[component]?.[branch] || {};
+                const values = TAX_ALLOCATION_RECIPIENTS.map(recipient => Number(rules?.[recipient] || 0));
+                const hasNegative = values.some(value => value < 0);
+                const total = values.reduce((sum, value) => sum + value, 0);
+
+                branchSummaries.push({ component, branch, total, hasNegative });
+
+                if (hasNegative)
+                {
+                    errors.push(`${component} / ${branch} contains a negative allocation.`);
+                }
+
+                if (Math.abs(total - 100) > 0.001)
+                {
+                    errors.push(`${component} / ${branch} must total 100%.`);
+                }
+            });
+        });
+
+        return { valid: errors.length === 0, errors, branchSummaries };
+    }
+
+    function seedCustomScenarioFrom(sourceScenario)
+    {
+        const baseScenario = cloneScenario(sourceScenario || getDefaultTaxScenario());
+        baseScenario.id = TAX_ALLOCATION_SCENARIO_CUSTOM_ID;
+        baseScenario.label = 'Custom';
+        baseScenario.publicName = 'Custom';
+        baseScenario.billName = '';
+        customTaxScenarioDraft = baseScenario;
+
+        const validation = validateTaxAllocationScenario(baseScenario);
+        if (validation.valid)
+        {
+            lastValidCustomTaxScenario = cloneScenario(baseScenario);
+        }
+    }
+
+    function ensureCustomScenarioSeeded()
+    {
+        if (customTaxScenarioDraft)
+        {
+            return;
+        }
+
+        const presetSource = selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID
+            ? (lastValidCustomTaxScenario || getDefaultTaxScenario())
+            : (getScenarioById(selectedTaxScenarioId) || getDefaultTaxScenario());
+
+        seedCustomScenarioFrom(presetSource);
+    }
+
+    function getDisplayedTaxScenario()
+    {
+        if (selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID)
+        {
+            ensureCustomScenarioSeeded();
+            return customTaxScenarioDraft || lastValidCustomTaxScenario || getDefaultTaxScenario();
+        }
+
+        return getScenarioById(selectedTaxScenarioId) || getDefaultTaxScenario();
+    }
+
+    function getActiveTaxScenario()
+    {
+        if (selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID)
+        {
+            ensureCustomScenarioSeeded();
+            const validation = validateTaxAllocationScenario(customTaxScenarioDraft);
+            if (validation.valid)
+            {
+                lastValidCustomTaxScenario = cloneScenario(customTaxScenarioDraft);
+                return customTaxScenarioDraft;
+            }
+
+            return lastValidCustomTaxScenario || customTaxScenarioDraft || getDefaultTaxScenario();
+        }
+
+        return getScenarioById(selectedTaxScenarioId) || getDefaultTaxScenario();
+    }
+
+    function scenarioAllowsHostCounty(scenario, countyFips)
+    {
+        const eligibleCountyFips = Array.isArray(scenario?.municipality?.eligibleCountyFips)
+            ? scenario.municipality.eligibleCountyFips.map(value => String(value))
+            : [];
+
+        if (!eligibleCountyFips.length)
+        {
+            return true;
+        }
+
+        return eligibleCountyFips.includes(String(countyFips || '').trim());
+    }
+
+    function resolveTaxAllocationLabels(scenario, context = {})
+    {
+        const subjectStateName = String(context.subjectStateName || '').trim();
+        const hostCountyName = String(context.hostCountyName || '').trim();
+        const municipalityName = String(context.municipalityName || '').trim();
+        const stateRecipient = String(scenario?.recipients?.state || (subjectStateName ? `State of ${subjectStateName}` : 'State Recipient')).trim();
+        const regionalRecipient = String(scenario?.recipients?.regional || 'Regional Recipient').trim();
+        const countyRecipient = hostCountyName ? `${hostCountyName} County` : String(scenario?.recipients?.county || 'Host County').trim();
+        const municipalityRecipient = municipalityName || String(scenario?.recipients?.municipality || 'Host Municipality').trim();
+
+        return {
+            stateRecipient,
+            regionalRecipient,
+            countyRecipient,
+            municipalityRecipient,
+            stateRevenue: `${stateRecipient} Revenue`,
+            regionalRevenue: `${regionalRecipient} Revenue`,
+            countyRevenue: `${countyRecipient} Revenue`,
+            municipalityRevenue: `${municipalityRecipient} Revenue`
+        };
+    }
+
+    function getTaxAllocationSummaryText()
+    {
+        const displayedScenario = getDisplayedTaxScenario();
+        const validation = displayedScenario ? validateTaxAllocationScenario(displayedScenario) : { valid: false, errors: [] };
+
+        if (!displayedScenario)
+        {
+            return 'Tax-allocation scenario unavailable.';
+        }
+
+        if (selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID)
+        {
+            return validation.valid
+                ? 'Custom is active. Edit the branch percentages below to model a different tax-allocation regime without changing the social-cost assumptions.'
+                : 'Custom inputs must keep every tax branch at 100%. Until the draft is valid again, the tables keep showing the last valid custom allocation.';
+        }
+
+        const billName = displayedScenario.billName ? ` (${displayedScenario.billName})` : '';
+        return `${displayedScenario.label}${billName} is active. This changes only the public-revenue allocation model; the social-cost model stays the same.`;
+    }
+
+    function renderTaxAllocationScenarioControls()
+    {
+        const scenarioSelect = document.getElementById('tax-allocation-scenario-select');
+        const scenarioSummary = document.getElementById('tax-allocation-scenario-summary');
+        const validationEl = document.getElementById('tax-allocation-validation');
+        const editor = document.getElementById('tax-allocation-custom-editor');
+
+        if (!scenarioSelect || !scenarioSummary || !editor || !validationEl)
+        {
+            return;
+        }
+
+        const options = [
+            ...getPresetTaxScenarios().map(scenario => ({
+                id: scenario.id,
+                label: scenario.billName ? `${scenario.label} (${scenario.billName})` : scenario.label
+            })),
+            { id: TAX_ALLOCATION_SCENARIO_CUSTOM_ID, label: 'Custom' }
+        ];
+
+        scenarioSelect.innerHTML = options.map(option =>
+            `<option value="${escapeHtml(option.id)}">${escapeHtml(option.label)}</option>`
+        ).join('');
+        scenarioSelect.value = selectedTaxScenarioId;
+
+        const displayedScenario = getDisplayedTaxScenario();
+        const isCustom = selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID;
+        const validation = displayedScenario ? validateTaxAllocationScenario(displayedScenario) : { valid: false, errors: ['Scenario unavailable.'] };
+        const inputClass = isCustom
+            ? 'w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white outline-none transition focus:border-blue-400'
+            : 'w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-300 outline-none';
+
+        scenarioSummary.textContent = getTaxAllocationSummaryText();
+
+        if (isCustom && !validation.valid)
+        {
+            validationEl.className = 'mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100';
+            validationEl.textContent = validation.errors.join(' ');
+            validationEl.classList.remove('hidden');
+        }
+        else
+        {
+            validationEl.className = 'hidden';
+            validationEl.textContent = '';
+        }
+
+        const sectionConfig = [
+            { component: 'regular', title: 'Regular Wagering Tax', description: 'Applied to total estimated tax revenue after subtracting the 3.5% supplemental component.' },
+            { component: 'supplemental', title: 'Supplemental Wagering Tax', description: 'Applied only to the 3.5% supplemental wagering tax component.' }
+        ];
+        const branchConfig = [
+            { branch: 'municipal', title: 'Municipal Site Branch', description: 'Used only when the active scenario recognizes a municipal carve-out and the site falls inside an incorporated PLACE.' },
+            { branch: 'fallback', title: 'Unincorporated Fallback Branch', description: 'Used when no municipal carve-out is triggered for the selected site.' }
+        ];
+        const recipientLabels = [
+            { recipient: 'state', label: displayedScenario?.recipients?.state || 'State Recipient' },
+            { recipient: 'county', label: displayedScenario?.recipients?.county || 'County Recipient' },
+            { recipient: 'municipality', label: displayedScenario?.recipients?.municipality || 'Municipality Recipient' },
+            { recipient: 'regional', label: displayedScenario?.recipients?.regional || 'Regional Recipient' }
+        ];
+
+        editor.innerHTML = sectionConfig.map(section => `
+            <div class="rounded-2xl border border-slate-700 bg-slate-950/35 p-4 md:p-5">
+                <div class="mb-4">
+                    <h5 class="text-base font-bold text-white">${escapeHtml(section.title)}</h5>
+                    <p class="mt-1 text-sm leading-relaxed text-slate-400">${escapeHtml(section.description)}</p>
+                </div>
+                <div class="grid gap-4 xl:grid-cols-2">
+                    ${branchConfig.map(branchMeta =>
+                        {
+                            const branchRules = displayedScenario?.rules?.[section.component]?.[branchMeta.branch] || {};
+                            const branchTotal = recipientLabels.reduce((sum, recipient) => sum + Number(branchRules?.[recipient.recipient] || 0), 0);
+                            return `
+                                <div class="rounded-xl border border-slate-700/80 bg-slate-900/60 p-4">
+                                    <div class="mb-3">
+                                        <div class="text-sm font-bold uppercase tracking-wide text-slate-200">${escapeHtml(branchMeta.title)}</div>
+                                        <p class="mt-1 text-sm leading-relaxed text-slate-400">${escapeHtml(branchMeta.description)}</p>
+                                        <div class="mt-2 text-sm font-semibold ${Math.abs(branchTotal - 100) <= 0.001 ? 'text-emerald-300' : 'text-amber-300'}">Branch Total: ${branchTotal.toFixed(1)}%</div>
+                                    </div>
+                                    <div class="grid gap-3 sm:grid-cols-2">
+                                        ${recipientLabels.map(({ recipient, label }) => `
+                                            <label class="block">
+                                                <span class="mb-1 block text-sm font-semibold text-slate-200">${escapeHtml(label)}</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.1"
+                                                    data-component="${escapeHtml(section.component)}"
+                                                    data-branch="${escapeHtml(branchMeta.branch)}"
+                                                    data-recipient="${escapeHtml(recipient)}"
+                                                    value="${Number(branchRules?.[recipient] || 0).toFixed(1)}"
+                                                    ${isCustom ? '' : 'readonly'}
+                                                    onchange="window.EconomicCalculator.updateTaxScenarioField(this.dataset.component, this.dataset.branch, this.dataset.recipient, this.value)"
+                                                    class="${inputClass}"
+                                                />
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function selectTaxScenario(nextScenarioId)
+    {
+        const normalizedId = String(nextScenarioId || getDefaultTaxScenario()?.id || '').trim();
+        if (!normalizedId)
+        {
+            return;
+        }
+
+        if (normalizedId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID)
+        {
+            const seedSource = selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID
+                ? (lastValidCustomTaxScenario || customTaxScenarioDraft || getDefaultTaxScenario())
+                : (getScenarioById(selectedTaxScenarioId) || getDefaultTaxScenario());
+            seedCustomScenarioFrom(seedSource);
+        }
+
+        selectedTaxScenarioId = normalizedId;
+        renderTaxAllocationScenarioControls();
+        calculate();
+    }
+
+    function updateTaxScenarioField(component, branch, recipient, rawValue)
+    {
+        if (selectedTaxScenarioId !== TAX_ALLOCATION_SCENARIO_CUSTOM_ID)
+        {
+            return;
+        }
+
+        ensureCustomScenarioSeeded();
+
+        if (!customTaxScenarioDraft?.rules?.[component]?.[branch] || !TAX_ALLOCATION_RECIPIENTS.includes(String(recipient || '')))
+        {
+            return;
+        }
+
+        const parsedValue = Number(rawValue);
+        customTaxScenarioDraft.rules[component][branch][recipient] = Number.isFinite(parsedValue)
+            ? Math.max(0, parsedValue)
+            : 0;
+
+        const validation = validateTaxAllocationScenario(customTaxScenarioDraft);
+        if (validation.valid)
+        {
+            lastValidCustomTaxScenario = cloneScenario(customTaxScenarioDraft);
+        }
+
+        renderTaxAllocationScenarioControls();
+        calculate();
+    }
 
     function escapeHtml(input)
     {
@@ -64,6 +435,83 @@ window.EconomicCalculator = (function ()
     {
         const v = Number(value) || 0;
         return v > 0 ? 'positive' : (v < 0 ? 'negative' : '');
+    }
+
+    function isMunicipalHostCountyFips(countyFips)
+    {
+        return MUNICIPAL_HOST_COUNTIES.has(String(countyFips || '').trim());
+    }
+
+    async function hydrateMunicipalityContext(impactDetail)
+    {
+        if (!impactDetail)
+        {
+            return null;
+        }
+
+        const countyFips = String(impactDetail.countyFips || '').trim();
+        const lat = Number(impactDetail.markerLat);
+        const lng = Number(impactDetail.markerLng);
+        const activeScenario = getActiveTaxScenario();
+        const isEligibleCounty = scenarioAllowsHostCounty(activeScenario, countyFips);
+
+        const fallback = {
+            countyFips,
+            isEligibleCounty,
+            isMunicipalSite: false,
+            cityRevenueApplies: false,
+            municipalityName: null,
+            municipalityGeoid: null
+        };
+
+        if (!isEligibleCounty || !Number.isFinite(lat) || !Number.isFinite(lng))
+        {
+            impactDetail.municipality = fallback;
+            return fallback;
+        }
+
+        const lookupKey = `${countyFips}:${lat.toFixed(6)}:${lng.toFixed(6)}`;
+        if (lookupKey === lastMunicipalityLookupKey && lastMunicipalityLookupValue)
+        {
+            impactDetail.municipality = { ...lastMunicipalityLookupValue };
+            return impactDetail.municipality;
+        }
+
+        const seq = ++municipalityLookupSeq;
+
+        try
+        {
+            const res = await fetch(`/api/census/municipality-at?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&countyFips=${encodeURIComponent(countyFips)}`);
+            if (!res.ok)
+            {
+                throw new Error(`Municipality lookup failed: ${res.status}`);
+            }
+
+            const data = await res.json();
+            if (seq !== municipalityLookupSeq)
+            {
+                return impactDetail.municipality || null;
+            }
+
+            lastMunicipalityLookupKey = lookupKey;
+            lastMunicipalityLookupValue = data;
+            impactDetail.municipality = { ...data };
+            return impactDetail.municipality;
+        }
+        catch (err)
+        {
+            console.warn('[Calculator] Municipality lookup failed:', err);
+
+            if (seq !== municipalityLookupSeq)
+            {
+                return impactDetail.municipality || null;
+            }
+
+            lastMunicipalityLookupKey = lookupKey;
+            lastMunicipalityLookupValue = fallback;
+            impactDetail.municipality = { ...fallback };
+            return impactDetail.municipality;
+        }
     }
 
     // DOM element references - populated by init()
@@ -1330,10 +1778,39 @@ window.EconomicCalculator = (function ()
         const agrTotal = agrM * 1000000;
         const supplementalTax = agrTotal * 0.035;
         const regularTax = Math.max(0, totalRevenue - supplementalTax);
-        const revenueState = regularTax * 0.75;
-        const revenueCity = (regularTax * 0.25) + (supplementalTax * 0.45);
-        const revenueCounty = supplementalTax * 0.45;
-        const revenueRda = supplementalTax * 0.10;
+        const subjectCountyFipsSelected = String((lastImpactBreakdown && lastImpactBreakdown.countyFips) || (els.inCounty && els.inCounty.value) || "");
+        const municipalityContext = (lastImpactBreakdown && lastImpactBreakdown.municipality) ? lastImpactBreakdown.municipality : null;
+        const activeTaxScenario = getActiveTaxScenario();
+        const displayedTaxScenario = getDisplayedTaxScenario();
+        const activeTaxScenarioValidation = validateTaxAllocationScenario(displayedTaxScenario);
+        const hostCountyName = (lastImpactBreakdown && lastImpactBreakdown.countyName) || countyIndex.get(subjectCountyFipsSelected) || "Host County";
+        const scenarioLabels = resolveTaxAllocationLabels(activeTaxScenario, {
+            subjectStateName: (lastImpactBreakdown && lastImpactBreakdown.stateName) || '',
+            hostCountyName,
+            municipalityName: municipalityContext && municipalityContext.municipalityName
+        });
+        const isHostCountySelection = scenarioAllowsHostCounty(activeTaxScenario, subjectCountyFipsSelected);
+        const hasMunicipalContainment = !!(municipalityContext && municipalityContext.cityRevenueApplies);
+        const municipalityEnabled = !!(activeTaxScenario && activeTaxScenario.municipality && activeTaxScenario.municipality.enabled);
+        const municipalityRequiresContainment = municipalityEnabled && !!activeTaxScenario.municipality.requiresContainment;
+        const cityRevenueApplies = isHostCountySelection
+            && municipalityEnabled
+            && (municipalityRequiresContainment ? hasMunicipalContainment : true)
+            && Number(activeTaxScenario?.rules?.regular?.municipal?.municipality || 0) + Number(activeTaxScenario?.rules?.supplemental?.municipal?.municipality || 0) > 0;
+        const municipalityName = String((municipalityContext && municipalityContext.municipalityName) || '').trim();
+        const hostMunicipalityLabel = scenarioLabels.municipalityRevenue;
+        const hostCountyRevenueLabel = scenarioLabels.countyRevenue;
+        const allocationBranch = cityRevenueApplies ? 'municipal' : 'fallback';
+        const regularRules = activeTaxScenario?.rules?.regular?.[allocationBranch] || {};
+        const supplementalRules = activeTaxScenario?.rules?.supplemental?.[allocationBranch] || {};
+        const revenueState = regularTax * (Number(regularRules.state || 0) / 100) + supplementalTax * (Number(supplementalRules.state || 0) / 100);
+        const revenueCounty = isHostCountySelection
+            ? (regularTax * (Number(regularRules.county || 0) / 100) + supplementalTax * (Number(supplementalRules.county || 0) / 100))
+            : 0;
+        const revenueCity = cityRevenueApplies
+            ? (regularTax * (Number(regularRules.municipality || 0) / 100) + supplementalTax * (Number(supplementalRules.municipality || 0) / 100))
+            : 0;
+        const revenueRda = regularTax * (Number(regularRules.regional || 0) / 100) + supplementalTax * (Number(supplementalRules.regional || 0) / 100);
 
         // --- BURDEN-BASED PUBLIC REVENUE ALLOCATION ---
         const totalPublicBurden = totalCostHealth + totalCostCrime + totalCostSocial + totalCostLegal;
@@ -1448,38 +1925,39 @@ window.EconomicCalculator = (function ()
         setTxt('calc-total-cost-per', fmt(costPer));
         setTxt('calc-total-cost-combined', fmtM(totalCost));
 
-        const selectedCountyFips = String((lastImpactBreakdown && lastImpactBreakdown.countyFips) || (els.inCounty && els.inCounty.value) || "");
-        const isAllenCountySelection = selectedCountyFips === "18003";
-
         const netImpactRows = [
-            {
-                key: 'city_revenue',
-                kind: 'revenue',
-                label: 'City of Fort Wayne Revenue',
-                labelClass: '',
-                tooltip: 'City share of the supplemental wagering tax plus the city’s local share of the regular graduated wagering tax for a Fort Wayne city-site.',
-                revenue: revenueCity,
-                countyCost: 0,
-                countyBalance: revenueCity,
-                otherCost: 0
-            },
             {
                 key: 'county_revenue',
                 kind: 'revenue',
-                label: 'Allen County Revenue',
+                label: hostCountyRevenueLabel,
                 labelClass: '',
-                tooltip: 'County share of the 3.5% supplemental wagering tax only in the base-case Fort Wayne city-site model.',
+                tooltip: cityRevenueApplies
+                    ? `County share of the 3.5% supplemental wagering tax for a municipal site in ${hostCountyName} County.`
+                    : `For an unincorporated site in ${hostCountyName} County, the county retains the local regular wagering-tax share plus the non-RDA supplemental local share.`,
                 revenue: revenueCounty,
                 countyCost: 0,
                 countyBalance: revenueCounty,
                 otherCost: 0
             },
-            ...(isAllenCountySelection ? [{
+            ...(cityRevenueApplies ? [{
+                key: 'city_revenue',
+                kind: 'revenue',
+                label: hostMunicipalityLabel,
+                labelClass: '',
+                tooltip: `Municipal share triggered because the site falls inside the incorporated-place boundary for ${municipalityName}.`,
+                revenue: revenueCity,
+                countyCost: 0,
+                countyBalance: revenueCity,
+                otherCost: 0
+            }] : []),
+            ...(isHostCountySelection ? [{
                 key: 'host_local_revenue_sub',
                 kind: 'subtotal',
-                label: 'Subtotal: Host Government Revenue',
+                label: 'Total Host Tax Revenue',
                 labelClass: '',
-                tooltip: 'Combined direct public revenue flowing to the two host governments: the City of Fort Wayne and Allen County.',
+                tooltip: cityRevenueApplies
+                    ? `Combined direct public revenue flowing to ${municipalityName} and ${hostCountyName} County for this municipal site.`
+                    : `Combined direct public revenue flowing to ${hostCountyName} County for this unincorporated county site.`,
                 revenue: hostLocalRevenue,
                 countyCost: 0,
                 countyBalance: hostLocalRevenue,
@@ -1488,9 +1966,9 @@ window.EconomicCalculator = (function ()
             {
                 key: 'state_revenue',
                 kind: 'revenue',
-                label: 'State of Indiana Revenue',
+                label: scenarioLabels.stateRevenue,
                 labelClass: '',
-                tooltip: 'State share of the regular graduated wagering tax in the base-case HB 1038 city-site model.',
+                tooltip: `${scenarioLabels.stateRecipient} share under the active tax-allocation scenario.`,
                 revenue: revenueState,
                 countyCost: 0,
                 countyBalance: revenueState,
@@ -1499,9 +1977,9 @@ window.EconomicCalculator = (function ()
             {
                 key: 'rda_revenue',
                 kind: 'revenue',
-                label: 'Northeast Indiana RDA Revenue',
+                label: scenarioLabels.regionalRevenue,
                 labelClass: '',
-                tooltip: 'Regional Development Authority share of the 3.5% supplemental wagering tax under final HB 1038.',
+                tooltip: `${scenarioLabels.regionalRecipient} share under the active tax-allocation scenario.`,
                 revenue: revenueRda,
                 countyCost: 0,
                 countyBalance: revenueRda,
@@ -1510,9 +1988,9 @@ window.EconomicCalculator = (function ()
             {
                 key: 'regional_state_revenue_sub',
                 kind: 'subtotal',
-                label: 'Subtotal: State + Regional Revenue',
+                label: `Subtotal: ${scenarioLabels.stateRecipient} + ${scenarioLabels.regionalRecipient}`,
                 labelClass: '',
-                tooltip: 'Combined State of Indiana revenue plus Regional Development Authority revenue before applying social and economic costs.',
+                tooltip: `Combined ${scenarioLabels.stateRecipient} and ${scenarioLabels.regionalRecipient} revenue before applying social and economic costs.`,
                 revenue: revenueState + revenueRda,
                 countyCost: 0,
                 countyBalance: revenueState + revenueRda,
@@ -1615,12 +2093,14 @@ window.EconomicCalculator = (function ()
                 countyBalance: -totalCostPrivate,
                 otherCost: otherTotals.private
             },
-            ...(isAllenCountySelection ? [{
+            ...(isHostCountySelection ? [{
                 key: 'host_local_total',
                 kind: 'total',
                 label: 'Net Impact: Host Governments',
                 labelClass: 'text-white',
-                tooltip: 'Combined revenue to the City of Fort Wayne and Allen County government, less total modeled direct and private-sector costs.',
+                tooltip: cityRevenueApplies
+                    ? `Combined revenue to ${municipalityName} and ${hostCountyName} County government, less total modeled direct and private-sector costs.`
+                    : `County-host revenue for ${hostCountyName} County, less total modeled direct and private-sector costs for an unincorporated site.`,
                 revenue: hostLocalRevenue,
                 countyCost: totalCost,
                 countyBalance: hostLocalNetBalance,
@@ -1644,6 +2124,10 @@ window.EconomicCalculator = (function ()
             subjectCountyName,
             subjectCountyFips,
             subjectStateName,
+            municipality: municipalityContext,
+            taxScenario: activeTaxScenario,
+            displayedTaxScenario,
+            taxScenarioValidation: activeTaxScenarioValidation,
             baselineRate: rate,
             rows: hasImpact ? netImpactRows : [],
             otherCounties: hasImpact && otherCosts ? otherCosts.counties : [],
@@ -1776,6 +2260,16 @@ window.EconomicCalculator = (function ()
             const otherTotalCost = Number(otherTotals.total || 0);
             const stateWideSocialCost = totalCost + otherTotalCost;
             const stateWideNetBalance = totalRevenue - stateWideSocialCost;
+            const scenarioDisplayName = selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID
+                ? 'Custom'
+                : String((activeTaxScenario && (activeTaxScenario.publicName || activeTaxScenario.label)) || 'Active Scenario').trim();
+            const scenarioBillName = String((activeTaxScenario && activeTaxScenario.billName) || '').trim();
+            const scenarioNameWithBill = scenarioBillName ? `${scenarioDisplayName} (${scenarioBillName})` : scenarioDisplayName;
+            const scenarioRecipients = resolveTaxAllocationLabels(activeTaxScenario, {
+                subjectStateName,
+                hostCountyName,
+                municipalityName
+            });
 
             let analysisHTML = '';
 
@@ -1816,7 +2310,8 @@ window.EconomicCalculator = (function ()
             // 2. Assumptions (Sub-header + Bullets)
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Assumptions</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
-            analysisHTML += `<li><strong>Base Case:</strong> This model uses final HB 1038 statutory distributions only. No separate public-health earmark is assumed outside those enacted revenue streams.</li>`;
+            analysisHTML += `<li><strong>Tax Allocation Scenario:</strong> This run uses the ${escapeHtml(scenarioNameWithBill)} tax-allocation scenario. It changes only how public revenue is distributed after total tax revenue is estimated; the social-cost model and victim-rate assumptions stay the same.</li>`;
+            analysisHTML += `<li><strong>Custom Mode:</strong> When the scenario selector is switched to Custom, users can edit the revenue splits directly. Each regular-tax and supplemental-tax branch must balance to 100% before the custom allocation is applied.</li>`;
             analysisHTML += `<li><strong>Private Sector Burden:</strong> The Local Economy category represents private sector losses (productivity, debt) borne directly by households and businesses.</li>`;
             analysisHTML += `</ul>`;
 
@@ -1824,7 +2319,7 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Geographic Analysis</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
             analysisHTML += `<li><strong>Geospatial Data:</strong> Population data is sourced directly from the <a href="https://www.census.gov/data/developers/data-sets/decennial-census.html" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">U.S. Census Bureau's 2020 Decennial Census API</a>, seeded into the SaveFW database in January 2026. Geographic boundaries utilize high-precision 2020 TIGER/Line Shapefiles processed via PostGIS.</li>`;
-            analysisHTML += `<li><strong>Scope of Analysis:</strong> The primary balance-sheet results model fiscal exposure for the assessed county. The Net Economic Impact table also includes an Other Counties Costs column estimating how same-state impacts may distribute within a 50-mile radius (out-of-state excluded); use Expand to view the county-by-county breakout.</li>`;
+            analysisHTML += `<li><strong>Scope of Analysis:</strong> The primary balance-sheet results model fiscal exposure for the assessed county. The regional table separately estimates how same-state spillover costs distribute within a 50-mile radius (out-of-state excluded); expand the county sections there to view the detailed breakout.</li>`;
             if (populationProjection)
             {
                 if (projectionUsesProjectedAdults)
@@ -1879,8 +2374,13 @@ window.EconomicCalculator = (function ()
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
             analysisHTML += `<li><strong>Adjusted Gross Revenue (AGR):</strong> The projected base of ${fmtM(agrM * 1000000)} represent the total wealth extracted from gamblers. Unlike standard sales or property taxes, gambling revenue is subject to a unique progressive structure in Indiana, utilizing a 3.5% supplemental tax and tiered brackets that scale based on volume.</li>`;
             analysisHTML += `<li><strong>Effective Tax Rate:</strong> For this scenario, the calculated effective tax rate is ${taxEffRate.toFixed(2)}%, resulting in ${fmtM(totalRevenue)} in estimated public tax revenue.</li>`;
-            analysisHTML += `<li><strong>Statutory Distribution:</strong> In the Fort Wayne city-site base case, the 3.5% supplemental wagering tax is split 45% to Allen County, 45% to the City of Fort Wayne, and 10% to the Northeast Indiana RDA. The city also receives the local share of the regular graduated wagering tax, while the state retains the remaining regular tax share.</li>`;
-            analysisHTML += `<li><strong>Recipient Totals:</strong> This run yields approximately ${fmtM(revenueState)} to the State of Indiana, ${fmtM(revenueCity)} to the City of Fort Wayne, ${fmtM(revenueCounty)} to Allen County, and ${fmtM(revenueRda)} to the Northeast Indiana RDA.</li>`;
+            analysisHTML += cityRevenueApplies
+                ? `<li><strong>Allocation Branch:</strong> Because the site falls inside the incorporated-place boundary for ${municipalityName}, this run uses the municipal-site branch of the active scenario. That sends revenue to ${scenarioRecipients.municipalityRecipient}, ${scenarioRecipients.countyRecipient}, ${scenarioRecipients.regionalRecipient}, and ${scenarioRecipients.stateRecipient} according to the configured percentages.</li>`
+                : isHostCountySelection
+                    ? `<li><strong>Allocation Branch:</strong> Because the site is outside any incorporated-place boundary in ${hostCountyName} County, this run uses the unincorporated fallback branch of the active scenario. The county fallback applies, while any municipality-only carve-out remains inactive.</li>`
+                    : `<li><strong>Allocation Branch:</strong> The selected county is outside the active scenario's host-county eligibility area, so host-local allocations stay off and the scenario routes revenue only to the non-local recipients it defines.</li>`;
+            analysisHTML += `<li><strong>Municipal Trigger:</strong> Municipality-directed allocations depend on actual incorporated-place containment from TIGER PLACE boundaries, not just county selection.</li>`;
+            analysisHTML += `<li><strong>Recipient Totals:</strong> This run yields approximately ${fmtM(revenueState)} to ${scenarioRecipients.stateRecipient}, ${fmtM(revenueCounty)} to ${scenarioRecipients.countyRecipient}, ${fmtM(revenueCity)} to ${cityRevenueApplies ? scenarioRecipients.municipalityRecipient : 'the municipality branch recipient'}, and ${fmtM(revenueRda)} to ${scenarioRecipients.regionalRecipient}.</li>`;
             analysisHTML += '</ul>';
 
             // B. SOCIAL COSTS
@@ -2101,7 +2601,21 @@ window.EconomicCalculator = (function ()
         const subjectCountyName = String((model && model.subjectCountyName) || "").trim();
         const subjectCountyFips = String((model && model.subjectCountyFips) || "").trim();
         const subjectStateName = String((model && model.subjectStateName) || "").trim();
-        const isAllenCountySelection = subjectCountyFips === "18003";
+        const municipalityContext = (model && model.municipality) ? model.municipality : null;
+        const activeTaxScenario = (model && model.taxScenario) ? model.taxScenario : getActiveTaxScenario();
+        const displayedTaxScenario = (model && model.displayedTaxScenario) ? model.displayedTaxScenario : getDisplayedTaxScenario();
+        const taxScenarioValidation = (model && model.taxScenarioValidation) ? model.taxScenarioValidation : validateTaxAllocationScenario(displayedTaxScenario);
+        const isHostCountySelection = scenarioAllowsHostCounty(activeTaxScenario, subjectCountyFips);
+        const cityRevenueApplies = !!(municipalityContext && municipalityContext.cityRevenueApplies);
+        const municipalityName = String((municipalityContext && municipalityContext.municipalityName) || '').trim();
+        const scenarioDisplayName = selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID
+            ? 'Custom'
+            : String((displayedTaxScenario && (displayedTaxScenario.publicName || displayedTaxScenario.label)) || 'Active Scenario').trim();
+        const scenarioLabels = resolveTaxAllocationLabels(activeTaxScenario, {
+            subjectStateName,
+            hostCountyName: subjectCountyName,
+            municipalityName
+        });
 
         if (!rows.length)
         {
@@ -2110,7 +2624,7 @@ window.EconomicCalculator = (function ()
             consolidatedContainer.innerHTML = '';
             if (hostSubtitleEl)
             {
-                hostSubtitleEl.textContent = 'Shows the direct revenue to Fort Wayne and Allen County government against the selected county’s direct modeled costs.';
+                hostSubtitleEl.textContent = 'Shows host-local revenue against the selected county’s direct modeled costs.';
             }
             if (regionalExpandAllEl)
             {
@@ -2313,15 +2827,22 @@ window.EconomicCalculator = (function ()
             ]
         );
 
-        const hostBody = isAllenCountySelection
+        const hostMunicipalityRowMarkup = cityRevenueRow
+            ? `
+                <tr ${stripedRowAttrs(0)}>
+                    <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(cityRevenueRow.label || 'Municipal Revenue'))}</td>
+                    ${moneyCell(Number(cityRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+                </tr>
+            `
+            : '';
+        const hostCountyRowIndex = cityRevenueRow ? 1 : 0;
+
+        const hostBody = isHostCountySelection
             ? `<tbody>
                 ${sectionRow('Revenue')}
-                <tr ${stripedRowAttrs(0)}>
-                    <td class="px-3 py-2 text-slate-100 font-semibold">City of Fort Wayne Revenue</td>
-                    ${moneyCell(Number(cityRevenueRow && cityRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
-                </tr>
-                <tr ${stripedRowAttrs(1)}>
-                    <td class="px-3 py-2 text-slate-100 font-semibold">Allen County Revenue</td>
+                ${hostMunicipalityRowMarkup}
+                <tr ${stripedRowAttrs(hostCountyRowIndex)}>
+                    <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(countyRevenueRow && countyRevenueRow.label || `${subjectCountyLabel} County Revenue`))}</td>
                     ${moneyCell(Number(countyRevenueRow && countyRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
                 </tr>
                 <tr ${headerToneRowAttrs}>
@@ -2337,14 +2858,14 @@ window.EconomicCalculator = (function ()
             </tbody>`
             : `<tbody>
                 <tr class="border-t border-slate-800/60">
-                    <td colspan="2" class="px-3 py-4 text-base text-slate-400 italic">Host-government revenue applies only when the selected county is Allen County, because the Fort Wayne city-site distributions flow to Fort Wayne and Allen County.</td>
+                    <td colspan="2" class="px-3 py-4 text-base text-slate-400 italic">${escapeText(`${scenarioDisplayName} does not apply a host-government allocation to the selected county.`)}</td>
                 </tr>
             </tbody>`;
 
         const regionalBody = `<tbody>
             ${sectionRow('Revenue')}
             <tr ${stripedRowAttrs(0)}>
-                <td class="px-3 py-2 text-slate-100 font-semibold">Northeast Indiana RDA Revenue</td>
+                <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(rdaRevenueRow && rdaRevenueRow.label || scenarioLabels.regionalRevenue))}</td>
                 ${moneyCell(Number(rdaRevenueRow && rdaRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
             </tr>
             ${sectionRow('Expenses')}
@@ -2367,20 +2888,21 @@ window.EconomicCalculator = (function ()
 
         const consolidatedBody = `<tbody>
             ${sectionRow('Revenue')}
+            ${cityRevenueRow ? `
             <tr ${stripedRowAttrs(0)}>
-                <td class="px-3 py-2 text-slate-100 font-semibold">City of Fort Wayne Revenue</td>
-                ${moneyCell(Number(cityRevenueRow && cityRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
-            </tr>
-            <tr ${stripedRowAttrs(1)}>
-                <td class="px-3 py-2 text-slate-100 font-semibold">Allen County Revenue</td>
+                <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(cityRevenueRow.label || 'Municipal Revenue'))}</td>
+                ${moneyCell(Number(cityRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
+            </tr>` : ''}
+            <tr ${stripedRowAttrs(cityRevenueRow ? 1 : 0)}>
+                <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(countyRevenueRow && countyRevenueRow.label || `${subjectCountyLabel} County Revenue`))}</td>
                 ${moneyCell(Number(countyRevenueRow && countyRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
             </tr>
-            <tr ${stripedRowAttrs(2)}>
-                <td class="px-3 py-2 text-slate-100 font-semibold">State of ${escapeText(subjectStateName || 'Indiana')} Revenue</td>
+            <tr ${stripedRowAttrs(cityRevenueRow ? 2 : 1)}>
+                <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(stateRevenueRow && stateRevenueRow.label || scenarioLabels.stateRevenue))}</td>
                 ${moneyCell(Number(stateRevenueRow && stateRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
             </tr>
-            <tr ${stripedRowAttrs(3)}>
-                <td class="px-3 py-2 text-slate-100 font-semibold">Northeast Indiana RDA Revenue</td>
+            <tr ${stripedRowAttrs(cityRevenueRow ? 3 : 2)}>
+                <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(rdaRevenueRow && rdaRevenueRow.label || scenarioLabels.regionalRevenue))}</td>
                 ${moneyCell(Number(rdaRevenueRow && rdaRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
             </tr>
             <tr ${headerToneRowAttrs}>
@@ -2417,9 +2939,11 @@ window.EconomicCalculator = (function ()
 
         if (hostSubtitleEl)
         {
-            hostSubtitleEl.textContent = isAllenCountySelection
-                ? 'Shows the direct revenue to Fort Wayne and Allen County government against the selected county’s direct modeled costs.'
-                : 'Host-government distributions are only applicable when Allen County is selected.';
+            hostSubtitleEl.textContent = !isHostCountySelection
+                ? `${scenarioDisplayName} is configured for a different host-county eligibility area, so the host-government table is inactive for this county.`
+                : cityRevenueApplies
+                    ? `Shows direct revenue to ${municipalityName} and ${subjectCountyLabel} County government under the ${scenarioDisplayName} allocation scenario.`
+                    : `Shows the unincorporated fallback branch of the ${scenarioDisplayName} allocation scenario against ${subjectCountyLabel} County’s direct modeled costs.`;
         }
         if (regionalExpandAllEl)
         {
@@ -2439,9 +2963,13 @@ window.EconomicCalculator = (function ()
 
         if (noteEl)
         {
-            noteEl.textContent = isAllenCountySelection
-                ? `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Allen County receives only its 45% share of the supplemental wagering tax for a Fort Wayne city-site, while Fort Wayne receives the local share of the regular graduated wagering tax. "Host Governments" refers to the two recipient governments, not geographic double counting.`
-                : `Baseline rate: ${baselineRateDisplay}%. Base case reflects final HB 1038 statutory distributions only. Because the selected county is not Allen, the host-government table is informational only, the regional table isolates RDA revenue versus spillover county costs, and the consolidated table carries the full statewide comparison.`;
+            noteEl.textContent = !isHostCountySelection
+                ? `Baseline rate: ${baselineRateDisplay}%. Active tax-allocation scenario: ${scenarioDisplayName}. The selected county is outside this scenario's host-county eligibility area, so only the non-local recipients remain active.`
+                : selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID && !taxScenarioValidation.valid
+                    ? `Baseline rate: ${baselineRateDisplay}%. Custom tax-allocation inputs are currently invalid, so the statements continue showing the last valid custom allocation until every branch totals 100%. Municipality-directed allocations still depend on incorporated PLACE containment.`
+                : cityRevenueApplies
+                    ? `Baseline rate: ${baselineRateDisplay}%. Active tax-allocation scenario: ${scenarioDisplayName}. Because the site falls inside the incorporated-place boundary for ${municipalityName}, the municipal branch is active. Municipality-directed allocations depend on actual PLACE containment, not just county selection.`
+                    : `Baseline rate: ${baselineRateDisplay}%. Active tax-allocation scenario: ${scenarioDisplayName}. Because the site is outside any incorporated-place boundary in ${subjectCountyLabel} County, the unincorporated fallback branch is active and no municipality carve-out is applied.`;
         }
     }
 
@@ -2458,6 +2986,15 @@ window.EconomicCalculator = (function ()
         {
             if (input) input.addEventListener('input', calculate);
         });
+
+        const scenarioSelect = document.getElementById('tax-allocation-scenario-select');
+        if (scenarioSelect)
+        {
+            scenarioSelect.onchange = (e) =>
+            {
+                selectTaxScenario(e && e.target ? e.target.value : '');
+            };
+        }
 
         document.querySelectorAll('[data-net-chart-mode]').forEach(button =>
         {
@@ -2494,11 +3031,12 @@ window.EconomicCalculator = (function ()
         });
 
         // Listen for map updates (replaces old county select logic)
-        window.addEventListener('impact-breakdown-updated', (e) =>
+        window.addEventListener('impact-breakdown-updated', async (e) =>
         {
             if (e.detail)
             {
                 console.log('[Calculator] Received impact-breakdown-updated event, victims:', e.detail.county?.victims?.total);
+                await hydrateMunicipalityContext(e.detail);
                 lastImpactBreakdown = e.detail;
 
                 // Update local state if needed
@@ -2538,6 +3076,7 @@ window.EconomicCalculator = (function ()
         initElements();
         syncNetImpactModeButtons();
         syncSensitivitySeriesButtons();
+        renderTaxAllocationScenarioControls();
 
         // Set up event listeners
         initListeners();
@@ -2741,6 +3280,8 @@ window.EconomicCalculator = (function ()
         calculate: calculate,
         selectCounty: selectCounty,
         updateCounties: updateCounties,
+        selectTaxScenario: selectTaxScenario,
+        updateTaxScenarioField: updateTaxScenarioField,
         toggleOtherCounties: toggleOtherCounties,
         toggleStatementExpandAll: toggleStatementExpandAll,
         toggleStatementCounty: toggleStatementCounty,
@@ -2748,7 +3289,8 @@ window.EconomicCalculator = (function ()
         showTooltip: showTooltip,
         hideTooltip: hideTooltip,
         moveTooltip: moveTooltip,
-        getLastCalculationData: () => lastCalculationResult
+        getLastCalculationData: () => lastCalculationResult,
+        renderTaxAllocationScenarioControls: renderTaxAllocationScenarioControls
     };
 })();
 

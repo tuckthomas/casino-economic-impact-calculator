@@ -46,37 +46,64 @@ namespace SaveFW.Server.Data
             }
 
             // 2. Check if Counties exist
-            using (var cmd = conn.CreateCommand())
+            var countyCount = await GetRowCountAsync(conn, "tiger_counties");
+            if (countyCount < 3000) // US has ~3143 counties
             {
-                cmd.CommandText = "SELECT COUNT(*) FROM tiger_counties";
-                var count = Convert.ToInt32(await cmd.ExecuteScalarAsync() ?? 0);
-                if (count < 3000) // US has ~3143 counties
+                _logger.LogInformation($"TigerSeeder: Found {countyCount} counties. Seeding/Updating National Counties...");
+                await _ingestionService.IngestNationalCounties();
+            }
+            else
+            {
+                _logger.LogInformation("TigerSeeder: Counties already seeded (count >= 3000).");
+            }
+
+            // 2b. Check if Places exist for each state/territory
+            _logger.LogInformation("TigerSeeder: Checking place data for all states/territories...");
+            var hasPlacesTable = await TableExists(conn, "tiger_places");
+            foreach (var fips in BlockGroupStateFips)
+            {
+                object? stateHasPlaces = null;
+                if (hasPlacesTable)
                 {
-                    _logger.LogInformation($"TigerSeeder: Found {count} counties. Seeding/Updating National Counties...");
-                    await _ingestionService.IngestNationalCounties();
+                    using var cmdState = conn.CreateCommand();
+                    cmdState.CommandText = "SELECT 1 FROM tiger_places WHERE state_fp = @fips LIMIT 1;";
+                    var p = cmdState.CreateParameter();
+                    p.ParameterName = "fips";
+                    p.Value = fips;
+                    cmdState.Parameters.Add(p);
+                    stateHasPlaces = await cmdState.ExecuteScalarAsync();
                 }
-                else
+
+                if (stateHasPlaces == null)
                 {
-                    _logger.LogInformation("TigerSeeder: Counties already seeded (count > 3000).");
+                    _logger.LogInformation($"TigerSeeder: No places found for state {fips}. Ingesting...");
+                    await _ingestionService.IngestPlacesForState(fips);
+                    hasPlacesTable = true;
                 }
             }
 
             // 3. Check if Block Groups exist for each state
             _logger.LogInformation("TigerSeeder: Checking block group data for all states/territories...");
+            var hasBlockGroupTable = await TableExists(conn, "census_block_groups");
             foreach (var fips in BlockGroupStateFips)
             {
-                using var cmdState = conn.CreateCommand();
-                cmdState.CommandText = "SELECT 1 FROM census_block_groups WHERE substring(geoid, 1, 2) = @fips LIMIT 1;";
-                var p = cmdState.CreateParameter();
-                p.ParameterName = "fips";
-                p.Value = fips;
-                cmdState.Parameters.Add(p);
+                object? stateHasData = null;
+                if (hasBlockGroupTable)
+                {
+                    using var cmdState = conn.CreateCommand();
+                    cmdState.CommandText = "SELECT 1 FROM census_block_groups WHERE substring(geoid, 1, 2) = @fips LIMIT 1;";
+                    var p = cmdState.CreateParameter();
+                    p.ParameterName = "fips";
+                    p.Value = fips;
+                    cmdState.Parameters.Add(p);
+                    stateHasData = await cmdState.ExecuteScalarAsync();
+                }
 
-                var stateHasData = await cmdState.ExecuteScalarAsync();
                 if (stateHasData == null)
                 {
                     _logger.LogInformation($"TigerSeeder: No block groups found for state {fips}. Ingesting...");
                     await _ingestionService.IngestState(fips);
+                    hasBlockGroupTable = true;
                 }
 
                 // Check/Ingest Address Ranges
@@ -108,9 +135,7 @@ namespace SaveFW.Server.Data
         private async Task<bool> HasData(NpgsqlConnection conn, string tableName)
         {
             // First check if table exists to avoid exception
-            using var cmdExists = conn.CreateCommand();
-            cmdExists.CommandText = $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{tableName}');";
-            var exists = (bool?)await cmdExists.ExecuteScalarAsync();
+            var exists = await TableExists(conn, tableName);
             if (exists != true) return false;
 
             // Check if rows exist
@@ -120,10 +145,37 @@ namespace SaveFW.Server.Data
             return res != null;
         }
 
+        private async Task<bool> TableExists(NpgsqlConnection conn, string tableName)
+        {
+            using var cmdExists = conn.CreateCommand();
+            cmdExists.CommandText = @"
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = @tableName
+                );
+            ";
+            cmdExists.Parameters.AddWithValue("tableName", tableName);
+            return (bool?)await cmdExists.ExecuteScalarAsync() == true;
+        }
+
+        private async Task<int> GetRowCountAsync(NpgsqlConnection conn, string tableName)
+        {
+            if (!await TableExists(conn, tableName))
+            {
+                return 0;
+            }
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"SELECT COUNT(*) FROM {tableName};";
+            return Convert.ToInt32(await cmd.ExecuteScalarAsync() ?? 0);
+        }
+
         private async Task EnsureSimplifiedGeometriesAsync(NpgsqlConnection conn)
         {
             await EnsureSimplifiedForTable(conn, "tiger_states", 100, 10000);
             await EnsureSimplifiedForTable(conn, "tiger_counties", 100, 10000);
+            await EnsureSimplifiedForTable(conn, "tiger_places", 25, 5000);
             await EnsureSimplifiedForTable(conn, "census_block_groups", 10, 5000);
         }
 

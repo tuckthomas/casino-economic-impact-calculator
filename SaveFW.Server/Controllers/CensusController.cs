@@ -66,6 +66,85 @@ namespace SaveFW.Server.Controllers
             });
         }
 
+        [HttpGet("municipality-at")]
+        public async Task<IActionResult> GetMunicipalityAt(double lat, double lon, string countyFips)
+        {
+            try
+            {
+                Console.WriteLine($"[CensusController] Municipality lookup request lat={lat}, lon={lon}, countyFips={countyFips ?? "<null>"}");
+
+                var normalizedCountyFips = string.Concat((countyFips ?? string.Empty).Where(char.IsDigit));
+                var isEligibleCounty =
+                    normalizedCountyFips == "18003" ||
+                    normalizedCountyFips == "18033" ||
+                    normalizedCountyFips == "18151";
+
+                if (!isEligibleCounty)
+                {
+                    return Ok(new
+                    {
+                        countyFips = normalizedCountyFips,
+                        isEligibleCounty = false,
+                        isMunicipalSite = false,
+                        cityRevenueApplies = false,
+                        municipalityName = (string?)null,
+                        municipalityGeoid = (string?)null
+                    });
+                }
+
+                var connString = _db.Database.GetConnectionString();
+                if (string.IsNullOrWhiteSpace(connString))
+                {
+                    return StatusCode(500, new { error = "DefaultConnection is not configured." });
+                }
+
+                await using var conn = new NpgsqlConnection(connString);
+                await conn.OpenAsync();
+
+                await using var cmd = new NpgsqlCommand(@"
+                    SELECT geoid, name
+                    FROM tiger_places
+                    WHERE state_fp = '18'
+                      AND funcstat = 'A'
+                      AND ST_Covers(geom, ST_SetSRID(ST_Point(@lon, @lat), 4326))
+                    ORDER BY COALESCE(aland, 0) ASC, geoid
+                    LIMIT 1;
+                ", conn);
+
+                cmd.Parameters.AddWithValue("lat", lat);
+                cmd.Parameters.AddWithValue("lon", lon);
+
+                await using var reader = await cmd.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    return Ok(new
+                    {
+                        countyFips = normalizedCountyFips,
+                        isEligibleCounty = true,
+                        isMunicipalSite = true,
+                        cityRevenueApplies = true,
+                        municipalityName = reader.GetString(1),
+                        municipalityGeoid = reader.GetString(0)
+                    });
+                }
+
+                return Ok(new
+                {
+                    countyFips = normalizedCountyFips,
+                    isEligibleCounty = true,
+                    isMunicipalSite = false,
+                    cityRevenueApplies = false,
+                    municipalityName = (string?)null,
+                    municipalityGeoid = (string?)null
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[CensusController] Municipality lookup failed: {ex}");
+                return StatusCode(500, new { error = ex.ToString() });
+            }
+        }
+
         [HttpGet("states")]
         public async Task<IActionResult> GetStates()
         {

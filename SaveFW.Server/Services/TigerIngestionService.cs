@@ -64,6 +64,22 @@ namespace SaveFW.Server.Services
             await ProcessTigerFile(url, fileName, "tiger_states", null);
         }
 
+        public async Task IngestPlacesForState(string stateFips)
+        {
+            stateFips = stateFips.PadLeft(2, '0');
+            var fileName = $"tl_{TigerYear}_{stateFips}_place.zip";
+            var localZipPath = Path.Combine("/root", fileName);
+            if (File.Exists(localZipPath))
+            {
+                _logger.LogInformation($"Using local place zip: {localZipPath}");
+                await ProcessLocalZip(localZipPath, fileName, "tiger_places");
+                return;
+            }
+
+            var url = $"{BaseTigerUrl}/PLACE/{fileName}";
+            await ProcessTigerFile(url, fileName, "tiger_places", null);
+        }
+
         public async Task IngestAddressRanges(string stateFips)
         {
             stateFips = stateFips.PadLeft(2, '0');
@@ -321,6 +337,41 @@ namespace SaveFW.Server.Services
                 cmd.Parameters.Add(new NpgsqlParameter("stusps", NpgsqlTypes.NpgsqlDbType.Text));
                 cmd.Parameters.Add(new NpgsqlParameter("geom", NpgsqlTypes.NpgsqlDbType.Geometry));
             }
+            else if (tableName == "tiger_places")
+            {
+                cmd.CommandText = @"
+                    INSERT INTO tiger_places (geoid, name, state_fp, place_fp, funcstat, lsad, aland, awater, geom)
+                    VALUES (
+                        @geoid,
+                        @name,
+                        @state_fp,
+                        @place_fp,
+                        @funcstat,
+                        @lsad,
+                        @aland,
+                        @awater,
+                        ST_Multi(ST_Transform(@geom, 4326))
+                    )
+                    ON CONFLICT (geoid) DO UPDATE
+                    SET name = EXCLUDED.name,
+                        state_fp = EXCLUDED.state_fp,
+                        place_fp = EXCLUDED.place_fp,
+                        funcstat = EXCLUDED.funcstat,
+                        lsad = EXCLUDED.lsad,
+                        aland = EXCLUDED.aland,
+                        awater = EXCLUDED.awater,
+                        geom = EXCLUDED.geom;
+                ";
+                cmd.Parameters.Add(new NpgsqlParameter("geoid", NpgsqlTypes.NpgsqlDbType.Text));
+                cmd.Parameters.Add(new NpgsqlParameter("name", NpgsqlTypes.NpgsqlDbType.Text));
+                cmd.Parameters.Add(new NpgsqlParameter("state_fp", NpgsqlTypes.NpgsqlDbType.Text));
+                cmd.Parameters.Add(new NpgsqlParameter("place_fp", NpgsqlTypes.NpgsqlDbType.Text));
+                cmd.Parameters.Add(new NpgsqlParameter("funcstat", NpgsqlTypes.NpgsqlDbType.Text));
+                cmd.Parameters.Add(new NpgsqlParameter("lsad", NpgsqlTypes.NpgsqlDbType.Text));
+                cmd.Parameters.Add(new NpgsqlParameter("aland", NpgsqlTypes.NpgsqlDbType.Bigint));
+                cmd.Parameters.Add(new NpgsqlParameter("awater", NpgsqlTypes.NpgsqlDbType.Bigint));
+                cmd.Parameters.Add(new NpgsqlParameter("geom", NpgsqlTypes.NpgsqlDbType.Geometry));
+            }
             else if (tableName == "census_block_groups")
             {
                  // We only update geometry here, assuming population data comes from a different ingestion process (Census API)
@@ -381,6 +432,18 @@ namespace SaveFW.Server.Services
                     cmd.Parameters["geoid"].Value = reader["GEOID"];
                     cmd.Parameters["name"].Value = reader["NAME"];
                     cmd.Parameters["stusps"].Value = reader["STUSPS"];
+                    cmd.Parameters["geom"].Value = geometry;
+                }
+                else if (tableName == "tiger_places")
+                {
+                    cmd.Parameters["geoid"].Value = reader["GEOID"];
+                    cmd.Parameters["name"].Value = reader["NAME"];
+                    cmd.Parameters["state_fp"].Value = reader["STATEFP"];
+                    cmd.Parameters["place_fp"].Value = reader["PLACEFP"];
+                    cmd.Parameters["funcstat"].Value = reader["FUNCSTAT"];
+                    cmd.Parameters["lsad"].Value = reader["LSAD"] == DBNull.Value ? DBNull.Value : reader["LSAD"];
+                    cmd.Parameters["aland"].Value = reader["ALAND"] == DBNull.Value ? DBNull.Value : reader["ALAND"];
+                    cmd.Parameters["awater"].Value = reader["AWATER"] == DBNull.Value ? DBNull.Value : reader["AWATER"];
                     cmd.Parameters["geom"].Value = geometry;
                 }
                 else if (tableName == "census_block_groups")
@@ -469,6 +532,26 @@ namespace SaveFW.Server.Services
                         geom geometry(MultiPolygon, 4326)
                     );
                     CREATE INDEX IF NOT EXISTS idx_tiger_states_geom ON tiger_states USING GIST (geom);
+                ";
+            }
+            else if (tableName == "tiger_places")
+            {
+                cmd.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS tiger_places (
+                        geoid text PRIMARY KEY,
+                        name text NOT NULL,
+                        state_fp text NOT NULL,
+                        place_fp text NOT NULL,
+                        funcstat text,
+                        lsad text,
+                        aland bigint,
+                        awater bigint,
+                        geom geometry(MultiPolygon, 4326)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_tiger_places_geom ON tiger_places USING GIST (geom);
+                    CREATE INDEX IF NOT EXISTS idx_tiger_places_state_fp ON tiger_places (state_fp);
+                    CREATE INDEX IF NOT EXISTS idx_tiger_places_funcstat ON tiger_places (funcstat);
+                    CREATE INDEX IF NOT EXISTS idx_tiger_places_name ON tiger_places (name);
                 ";
             }
             // census_block_groups likely already exists from previous migrations, 

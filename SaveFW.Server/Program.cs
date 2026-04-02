@@ -98,12 +98,12 @@ using (var scope = app.Services.CreateScope())
 _ = Task.Run(async () =>
 {
     using var scope = app.Services.CreateScope();
-    // var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
+    var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
     try
     {
-        // Console.WriteLine("Starting TIGER Data Seeding Check...");
-        // await seeder.EnsureSeededAsync();
-        // Console.WriteLine("TIGER Data Seeding Check Complete.");
+        Console.WriteLine("Starting TIGER Data Seeding Check...");
+        await seeder.EnsureSeededAsync();
+        Console.WriteLine("TIGER Data Seeding Check Complete.");
 
         await WarmStateCacheAsync(scope.ServiceProvider);
         await WarmMvtTilesAsync(scope.ServiceProvider);

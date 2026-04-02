@@ -136,9 +136,9 @@
                         </div>
 
                         <div class="pt-6 mt-10 rounded-xl border border-slate-700 bg-slate-900/60 p-4">
-                            <label class="text-base font-bold text-white block mb-2">Base-Case Revenue Distribution</label>
+                            <label class="text-base font-bold text-white block mb-2">Revenue Allocation Model</label>
                             <p class="text-sm text-slate-400 italic">
-                                Base case reflects final HB 1038 statutory distributions for a casino located inside Fort Wayne city limits. The city receives the regular local share, while the supplemental wagering tax is split among Fort Wayne, Allen County, and the Northeast Indiana RDA.
+                                Use the Tax Allocation Scenario controls below to choose which public-revenue split is applied after total tax revenue is estimated. Municipality-directed allocations depend on incorporated PLACE containment, not just county selection.
                             </p>
                             <input type="hidden" value="0" id="input-allocation" aria-hidden="true">
                         </div>
@@ -793,10 +793,7 @@
                             </div>
 
                             <p class="text-sm text-slate-400 leading-relaxed mb-6 px-4 text-left">
-                                Base case reflects final HB 1038 statutory distributions only. For a casino inside Fort Wayne city limits,
-                                the City of Fort Wayne receives the local share of the regular graduated wagering tax, while the 3.5%
-                                supplemental wagering tax is split between the city, Allen County, and the Northeast Indiana RDA.
-                                Public-health and other host-area burdens are shown where they are incurred, and same-state spillover costs are shown separately.
+                                The statements below use the active tax-allocation scenario to distribute public revenue, while the social-cost model stays fixed. Public-health and other host-area burdens are shown where they are incurred, and same-state spillover costs are shown separately.
                             </p>
 
                             <div class="economic-chart-card mb-8">
@@ -829,13 +826,38 @@
 
                             <div class="economic-chart-card">
                                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                    <div class="max-w-3xl">
+                                        <h4 class="flex items-center gap-2 text-lg font-bold text-white">
+                                            <span class="material-symbols-outlined text-cyan-400">account_balance</span>
+                                            Tax Allocation Scenario
+                                        </h4>
+                                        <p class="mt-2 text-sm leading-relaxed text-slate-400">
+                                            Choose the tax-allocation regime that determines how public revenue is distributed. This changes only the revenue split logic, not the social-cost model.
+                                        </p>
+                                    </div>
+                                    <div class="w-full max-w-sm">
+                                        <label for="tax-allocation-scenario-select" class="mb-2 block text-sm font-bold uppercase tracking-wide text-slate-300">
+                                            Active Scenario
+                                        </label>
+                                        <select id="tax-allocation-scenario-select"
+                                            class="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-base font-semibold text-white outline-none transition focus:border-blue-400">
+                                        </select>
+                                    </div>
+                                </div>
+                                <p id="tax-allocation-scenario-summary" class="mt-4 text-sm leading-relaxed text-slate-400"></p>
+                                <div id="tax-allocation-validation" class="hidden"></div>
+                                <div id="tax-allocation-custom-editor" class="mt-6 grid gap-4"></div>
+                            </div>
+
+                            <div class="economic-chart-card mt-5">
+                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                     <div class="max-w-2xl">
                                         <h4 class="flex items-center gap-2 text-lg font-bold text-white">
                                             <span class="material-symbols-outlined text-emerald-400">location_city</span>
                                             Host Government Fiscal View
                                         </h4>
                                         <p id="net-impact-host-subtitle" class="mt-2 text-sm leading-relaxed text-slate-400">
-                                            Shows the direct revenue to Fort Wayne and Allen County government against the selected county’s direct modeled costs.
+                                            Shows host-local revenue against the selected county’s direct modeled costs.
                                         </p>
                                     </div>
                                 </div>

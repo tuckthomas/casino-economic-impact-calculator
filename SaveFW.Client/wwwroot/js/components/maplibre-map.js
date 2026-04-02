@@ -1023,6 +1023,8 @@ window.MapLibreImpactMap = (function ()
                 stateFips,
                 stateName,
                 countyName: countyNamesCache[currentCountyFips] || '',
+                markerLat: centerLat,
+                markerLng: centerLng,
                 baselineRate,
                 populationProjection: adultPopulationProjection,
                 county: {
