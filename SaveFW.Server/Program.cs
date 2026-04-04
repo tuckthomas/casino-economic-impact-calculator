@@ -131,11 +131,11 @@ if (app.Environment.IsDevelopment())
 
         await next();
     });
-    app.UseBlazorFrameworkFiles();
-    app.UseStaticFiles();
     app.MapOpenApi();
 }
 
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
 app.UseRouting();
 
 // API Endpoints
@@ -147,7 +147,6 @@ app.MapGet("/api/impacts", async (AppDbContext db) =>
 
 app.MapRazorPages();
 app.MapControllers();
-app.MapStaticAssets();
 app.MapFallbackToPage("/Index");
 
 app.Run();

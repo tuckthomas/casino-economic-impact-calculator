@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y curl \
 
 # Copy solution and project files
 COPY ["SaveFW.sln", "./"]
+COPY ["global.json", "./"]
 COPY ["SaveFW.Server/SaveFW.Server.csproj", "SaveFW.Server/"]
 COPY ["SaveFW.Client/SaveFW.Client.csproj", "SaveFW.Client/"]
 COPY ["SaveFW.Shared/SaveFW.Shared.csproj", "SaveFW.Shared/"]

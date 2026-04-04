@@ -2471,15 +2471,15 @@ window.EconomicCalculator = (function ()
 
             analysisHTML += `<li><strong>Impact Distribution:</strong> This distribution models the increased statistical likelihood of residents developing problem gambling behaviors (Gambling Disorder) based on their geographic proximity to the casino site.
                                             <ul class="list-[circle] pl-8 mt-2 space-y-2">
-                                                <li><strong>High Risk Zone (0-10 miles):</strong> ${t1Pop} county residents are subject to a ${t1Rate} prevalence rate due to immediate proximity.</li>
-                                                <li><strong>Elevated Risk Zone (10-20 miles):</strong> ${t2Pop} county residents are subject to a ${t2Rate} prevalence rate.</li>`;
+                                                <li><strong>High Risk Zone (0-10 miles):</strong> A total of ${t1Pop} county residents are subject to a ${t1Rate} prevalence rate due to immediate proximity.</li>
+                                                <li><strong>Elevated Risk Zone (10-20 miles):</strong> A total of ${t2Pop} county residents are subject to a ${t2Rate} prevalence rate.</li>`;
 
             if (Math.round(t3AdultsCounty) <= 0)
             {
                 analysisHTML += `<li><strong>Baseline Risk Zone (20-50 miles):</strong> The county has effectively zero residents in the baseline band under the 50-mile model cutoff.</li>`;
             } else
             {
-                analysisHTML += `<li><strong>Baseline Risk Zone (20-50 miles):</strong> ${t3Pop} county residents are subject to the baseline ${t3Rate} rate.</li>`;
+                analysisHTML += `<li><strong>Baseline Risk Zone (20-50 miles):</strong> A total of ${t3Pop} county residents are subject to the baseline ${t3Rate} rate.</li>`;
             }
             analysisHTML += `</ul></li>`;
             // Updated conclusion to be clearer
@@ -2509,7 +2509,7 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<li><strong>Selected County Cost Stack:</strong> The selected county carries ${fmtM(subjectTotalCost)} in modeled social costs, split between ${fmtM(subjectPublicCost)} in General Taxpayer Services Costs and ${fmtM(subjectPrivateCost)} in Private Sector Costs.</li>`;
             analysisHTML += `<li><strong>Selected County Cost Breakout:</strong> Within the selected county, Public Health / Treatment accounts for ${fmtM(totalCostHealth)}, Law Enforcement ${fmtM(totalCostCrime)}, Social Services ${fmtM(totalCostSocial)}, Civil Legal ${fmtM(totalCostLegal)}, Abused Dollars ${fmtM(totalCostAbused)}, and Lost Employment ${fmtM(totalCostEmployment)}.</li>`;
             analysisHTML += otherCountiesCount > 0
-                ? `<li><strong>Regional Spillover Costs:</strong> ${otherCountiesCount} additional same-state counties inside the 50-mile footprint carry a combined ${fmtM(otherTotalCost)} in spillover social costs, split between ${fmtM(otherTotals.public)} in General Taxpayer Services Costs and ${fmtM(otherTotals.private)} in Private Sector Costs. Those detailed breakouts appear only in the regional statement.</li>`
+                ? `<li><strong>Regional Spillover Costs:</strong> A total of ${otherCountiesCount} additional same-state counties inside the 50-mile footprint carry a combined ${fmtM(otherTotalCost)} in spillover social costs, split between ${fmtM(otherTotals.public)} in General Taxpayer Services Costs and ${fmtM(otherTotals.private)} in Private Sector Costs. Those detailed breakouts appear only in the regional statement.</li>`
                 : `<li><strong>Regional Spillover Costs:</strong> No additional same-state counties currently register modeled spillover costs inside the 50-mile footprint, so the regional statement has no spillover burden to offset.</li>`;
             analysisHTML += `<li><strong>Consolidated Social Cost Total:</strong> Combining the selected county with all same-state spillover counties produces ${fmtM(stateWideSocialCost)} in total modeled social costs.</li>`;
 
