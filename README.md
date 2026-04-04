@@ -81,7 +81,7 @@ Moving beyond "AI estimates" or "black box" consulting studies, SaveFW employs a
 ## Economic Impact Simulator
 For users who want to explore "What If" scenarios, the Simulator provides a guided wizard. It allows users to rapidly toggle between the State's conservative revenue estimates ($43M-$112M) and the Developer's sales pitch ($330M), applying varying degrees of social cost sensitivity to see if *any* scenario results in a net positive for the taxpayer. This helps demonstrate that the "economic engine" promised by promoters is often a mathematical impossibility when accounting for the predictable rise in local social expenditures.
 <br /><br />
-<img src="docs/examples/Economic-Impact-Simulator-Example-NEW.png" alt="Simulator Interface" width="600" />
+<img src="docs/examples/Economic-Impact-Simulator-Example.png" alt="Simulator Interface" width="600" />
 <br /><br />
 
 ## Interactive Slot Machine
