@@ -49,23 +49,21 @@ Save Fort Wayne is an interactive open-source platform designed to educate citiz
 
 ```text
 📁 SaveFW
-├── 📁 infra              # Infrastructure Configuration
-│   └── 📁 valhalla       # Valhalla Routing Engine Config & Tiles
-├── 📁 SaveFW.Client      # Blazor WebAssembly Frontend
-│   ├── 📁 Pages          # Razor Components (Hero, Map, Calculator)
-│   └── 📁 wwwroot        # Static assets and modular JS files
-├── 📁 SaveFW.Server      # .NET 10 Web API Backend
-│   ├── 📁 Data           # DbContext and PostgreSQL Seeding Logic
-│   └── 📄 Program.cs     # API Routing and Blazor Hosting
-├── 📁 SaveFW.Shared      # Shared C# Class Library
-│   └── 📄 Legislator.cs  # Shared Data Models
-├── 📁 SaveFW.Worker      # Background Service (Batch Scoring)
-│   └── 📄 Worker.cs      # Grid Generation & Valhalla Integration
-├── 📁 docs               # Documentation Assets
-│   └── 📄 logo.svg       # Project Logo
-├── 📄 docker-compose.yml # Orchestration (App, DB, Valhalla, CloudBeaver)
-├── 📄 Dockerfile         # Multi-stage build for .NET 10
-└── 📄 SaveFW.sln         # Visual Studio Solution
+├── 📁 SaveFW.Client        # Blazor WebAssembly UI
+│   ├── 📁 Pages            # Razor Components (Hero, Map, EconomicImpact, etc.)
+│   └── 📁 wwwroot          # Static assets and modular JavaScript
+├── 📁 SaveFW.Server        # ASP.NET Core host + API
+│   ├── 📁 Controllers      # Census, map, PDF, and policy endpoints
+│   ├── 📁 Data             # DbContext, migrations, seed/init logic
+│   ├── 📁 Services         # TIGER ingestion, Valhalla integration, modeling services
+│   └── 📄 Program.cs       # Runtime pipeline and app wiring
+├── 📁 SaveFW.Shared        # Shared contracts/models
+├── 📁 dev                  # Local dev watcher scripts
+├── 📁 docs                 # Plans, runbooks, methodology, examples
+├── 📁 infra/valhalla       # Valhalla config + tile inputs
+├── 📄 docker-compose.yml   # Production stack (app, db, valhalla, cloudbeaver)
+├── 📄 Dockerfile           # Production image build
+└── 📄 SaveFW.sln           # Solution entry point
 ```
 
 ---
@@ -83,7 +81,7 @@ Moving beyond "AI estimates" or "black box" consulting studies, SaveFW employs a
 ## Economic Impact Simulator
 For users who want to explore "What If" scenarios, the Simulator provides a guided wizard. It allows users to rapidly toggle between the State's conservative revenue estimates ($43M-$112M) and the Developer's sales pitch ($330M), applying varying degrees of social cost sensitivity to see if *any* scenario results in a net positive for the taxpayer. This helps demonstrate that the "economic engine" promised by promoters is often a mathematical impossibility when accounting for the predictable rise in local social expenditures.
 <br /><br />
-<img src="docs/examples/Economic-Impact-Simulator-Example.png" alt="Simulator Interface" width="600" />
+<img src="docs/examples/Economic-Impact-Simulator-Example-NEW.png" alt="Simulator Interface" width="600" />
 <br /><br />
 
 ## Interactive Slot Machine
@@ -91,9 +89,9 @@ A visual metaphor for the marketing strategies used to sell the casino project. 
 <br /><br />
 
 ## Impact Zone Visualizer
-This MapLibre GL JS-based geospatial tool visualizes the geographic scope of problem gambling using standard radius zones (0-10 miles for high risk, 10-20 miles for elevated risk). Work is underway to integrate **Valhalla** to generate precise drive-time polygons (isochrones). Future updates will transition to a **1-hour drive time** impact zone, widely cited in academic literature (Grinols, 2011 & 2016) as the primary catchment area for local problem gambling prevalence.
+This MapLibre GL JS-based geospatial tool visualizes the geographic scope of problem gambling with both radius bands and Valhalla-powered drive-time logic. The Valhalla integration is active in the application and the project supports precomputed isochrone coverage through seeded grid points. Current seeded coverage is intentionally limited while additional county/state grid points are prepared.
 <br /><br />
-<img src="docs/examples/Casino-Impact-Zone-Visualizer-Example.png" alt="Map Visualizer" width="600" />
+<img src="docs/examples/Casino-Impact-Zone-Visualizer-Example-v2.png" alt="Map Visualizer" width="600" />
 <br /><br />
 
 ## Analyzing the Claims
@@ -109,7 +107,6 @@ The platform integrates granular population data for all 92 Indiana counties, al
 This project is built using a modern .NET 10 distributed architecture:
 
 *   **Backend:** .NET 10 Web API utilizing Entity Framework Core.
-*   **Worker:** Background service for heavy geospatial processing (grid generation, scoring).
 *   **Frontend:** Blazor WebAssembly styled with Tailwind CSS.
 *   **Database:** PostgreSQL 18 + PostGIS (Dockerized) with automated data seeding.
 *   **Routing:** Self-hosted Valhalla engine for offline isochrone generation.
@@ -187,7 +184,6 @@ The application is now running! Access the services at:
 | Service | URL | Description |
 | :--- | :--- | :--- |
 | **Production Web Application** | **http://localhost:80** | Main user interface |
-| **Development Web Application** | **http://localhost:5000** | Main user interface |
 | **CloudBeaver** | **http://localhost:8978** | Database GUI Management |
 | **Valhalla API** | **http://localhost:8002** | Isochrone & Routing API |
 
@@ -195,18 +191,26 @@ The application is now running! Access the services at:
 
 ## For Developers (Optional)
 
-If you wish to modify the C# code or run the application without Docker, you will need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and **Node.js/npm**.
+If you wish to modify code locally, run the app outside Docker, or use hot reload, you will need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and **Node.js/npm**.
 
 ```bash
-# 1. Ensure backend services are running
+# 1. Ensure shared backend services are running (db + valhalla)
 docker compose up -d savefw-db valhalla
 
-# 2. Start the dev server with hot reload (port 5000)
-cd SaveFW
+# 2. Start the local dev watcher (port 5000)
 npm run dev
 ```
 
-> **Note:** Frontend dependencies (`npm install`, Tailwind CSS build, library copying) are handled automatically by MSBuild pre-build targets — no separate build step is needed.
+Useful dev commands:
+
+```bash
+npm run dev:start
+npm run dev:status
+npm run dev:stop
+npm run dev:restart
+```
+
+> **Note:** Frontend dependency copy/build (`copy-libs`, Tailwind compile) is integrated into the project build/watch flow.
 
 ## Dependencies & Offline Support
 
