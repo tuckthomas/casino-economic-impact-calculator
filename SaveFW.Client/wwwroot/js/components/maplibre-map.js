@@ -75,8 +75,13 @@ window.MapLibreImpactMap = (function ()
     const cache = {
         states: null,
         counties: {},
-        context: {}
+        context: {},
+        municipalities: {}
     };
+
+    let municipalBoundaryRequestSeq = 0;
+    let taxAllocationScenarioConfigPromise = null;
+    const municipalOutlineEligibleCounties = new Set();
 
     // Layer visibility state
     const layersVisible = {
@@ -177,6 +182,58 @@ window.MapLibreImpactMap = (function ()
         const s = String(value == null ? "" : value).trim();
         if (!s) return "";
         return /^\d+$/.test(s) ? s.padStart(5, '0') : s;
+    }
+
+    async function ensureTaxAllocationScenarioConfigLoaded()
+    {
+        if (taxAllocationScenarioConfigPromise)
+        {
+            return taxAllocationScenarioConfigPromise;
+        }
+
+        taxAllocationScenarioConfigPromise = (async () =>
+        {
+            try
+            {
+                const res = await fetch('/api/census/tax-allocation-scenarios');
+                if (!res.ok)
+                {
+                    throw new Error(`Tax allocation scenarios request failed: ${res.status}`);
+                }
+
+                const data = await res.json();
+                municipalOutlineEligibleCounties.clear();
+
+                const scenarios = Array.isArray(data && data.scenarios) ? data.scenarios : [];
+                scenarios.forEach(scenario =>
+                {
+                    if (!scenario?.municipality?.enabled)
+                    {
+                        return;
+                    }
+
+                    const counties = Array.isArray(scenario.municipality.eligibleCountyFips)
+                        ? scenario.municipality.eligibleCountyFips
+                        : [];
+
+                    counties.forEach(countyFips =>
+                    {
+                        const normalized = normalizeCountyFips(countyFips);
+                        if (normalized)
+                        {
+                            municipalOutlineEligibleCounties.add(normalized);
+                        }
+                    });
+                });
+            }
+            catch (err)
+            {
+                console.error('[Map] Failed to load tax allocation scenarios:', err);
+                municipalOutlineEligibleCounties.clear();
+            }
+        })();
+
+        return taxAllocationScenarioConfigPromise;
     }
 
     function escapeHtml(input)
@@ -2656,6 +2713,9 @@ window.MapLibreImpactMap = (function ()
 
     // Flag to track if vector layer events are registered
     let vectorLayerEventsRegistered = false;
+    let municipalBoundaryHoverTimer = null;
+    let municipalBoundaryPopup = null;
+    let lastHoveredMunicipalityGeoid = null;
 
     // Named event handler functions (for removal)
     function onStatesMouseMove(e)
@@ -2745,6 +2805,95 @@ window.MapLibreImpactMap = (function ()
         if (map) map.getCanvas().style.cursor = '';
     }
 
+    function clearMunicipalBoundaryHover()
+    {
+        if (municipalBoundaryHoverTimer)
+        {
+            clearTimeout(municipalBoundaryHoverTimer);
+            municipalBoundaryHoverTimer = null;
+        }
+
+        lastHoveredMunicipalityGeoid = null;
+
+        if (municipalBoundaryPopup)
+        {
+            municipalBoundaryPopup.remove();
+            municipalBoundaryPopup = null;
+        }
+
+        if (map)
+        {
+            map.getCanvas().style.cursor = '';
+        }
+    }
+
+    function onMunicipalBoundariesMouseMove(e)
+    {
+        if (!map || !e.features || e.features.length === 0)
+        {
+            return;
+        }
+
+        const feature = e.features[0];
+        const props = feature.properties || {};
+        const geoid = String(props.geoid || '').trim();
+        const name = String(props.name || '').trim();
+
+        if (!geoid || !name)
+        {
+            clearMunicipalBoundaryHover();
+            return;
+        }
+
+        map.getCanvas().style.cursor = 'pointer';
+
+        if (lastHoveredMunicipalityGeoid === geoid && municipalBoundaryPopup)
+        {
+            municipalBoundaryPopup.setLngLat(e.lngLat);
+            return;
+        }
+
+        if (municipalBoundaryHoverTimer)
+        {
+            clearTimeout(municipalBoundaryHoverTimer);
+            municipalBoundaryHoverTimer = null;
+        }
+
+        if (municipalBoundaryPopup)
+        {
+            municipalBoundaryPopup.remove();
+            municipalBoundaryPopup = null;
+        }
+
+        lastHoveredMunicipalityGeoid = geoid;
+        const popupLngLat = e.lngLat;
+        municipalBoundaryHoverTimer = setTimeout(() =>
+        {
+            municipalBoundaryHoverTimer = null;
+
+            if (!map || lastHoveredMunicipalityGeoid !== geoid)
+            {
+                return;
+            }
+
+            municipalBoundaryPopup = new maplibregl.Popup({
+                closeButton: false,
+                closeOnClick: false,
+                closeOnMove: false,
+                offset: 14,
+                className: 'competitor-popup'
+            })
+                .setLngLat(popupLngLat)
+                .setHTML(`<div class="competitor-popup-inner" style="text-align:center;"><h3 class="competitor-popup-title" style="text-align:center;">${escapeHtml(name)} Limits</h3></div>`)
+                .addTo(map);
+        }, 250);
+    }
+
+    function onMunicipalBoundariesMouseLeave()
+    {
+        clearMunicipalBoundaryHover();
+    }
+
     function onCountiesClick(e)
     {
         if (e.features.length > 0)
@@ -2794,11 +2943,16 @@ window.MapLibreImpactMap = (function ()
                 map.off('mousemove', 'counties-fill', onCountiesMouseMove);
                 map.off('mouseleave', 'counties-fill', onCountiesMouseLeave);
                 map.off('click', 'counties-fill', onCountiesClick);
+                map.off('mousemove', 'municipal-boundaries-line', onMunicipalBoundariesMouseMove);
+                map.off('mouseleave', 'municipal-boundaries-line', onMunicipalBoundariesMouseLeave);
             } catch (e) { /* ignore */ }
             vectorLayerEventsRegistered = false;
         }
 
+        clearMunicipalBoundaryHover();
+
         const layersToRemove = [
+            'municipal-boundaries-line',
             'county-highlight-line', 'counties-line-hover', 'counties-line',
             'counties-hover', 'counties-fill',
             'states-line-hover', 'states-line', 'states-hover', 'states-fill'
@@ -2816,6 +2970,11 @@ window.MapLibreImpactMap = (function ()
         {
             try { map.removeSource('census-vector'); } catch (e) { /* ignore */ }
         }
+
+        if (map.getSource('municipal-boundaries'))
+        {
+            try { map.removeSource('municipal-boundaries'); } catch (e) { /* ignore */ }
+        }
     }
 
     // --- Vector Tile Setup ---
@@ -2830,12 +2989,15 @@ window.MapLibreImpactMap = (function ()
         removeVectorLayers();
 
         // Add the vector tile source
-        map.addSource('census-vector', {
-            type: 'vector',
-            tiles: [window.location.origin + '/api/census/tiles/{z}/{x}/{y}'],
-            minzoom: 0,
-            maxzoom: 14
-        });
+        if (!map.getSource('census-vector'))
+        {
+            map.addSource('census-vector', {
+                type: 'vector',
+                tiles: [window.location.origin + '/api/census/tiles/{z}/{x}/{y}'],
+                minzoom: 0,
+                maxzoom: 14
+            });
+        }
 
         console.log('[MVT] Added census-vector source');
 
@@ -2959,6 +3121,32 @@ window.MapLibreImpactMap = (function ()
             }
         });
 
+        if (!map.getSource('municipal-boundaries'))
+        {
+            map.addSource('municipal-boundaries', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+        }
+
+        if (!map.getLayer('municipal-boundaries-line'))
+        {
+            map.addLayer({
+                'id': 'municipal-boundaries-line',
+                'type': 'line',
+                'source': 'municipal-boundaries',
+                'minzoom': 0,
+                'layout': {
+                    'visibility': 'none'
+                },
+                'paint': {
+                    'line-color': '#0f172a',
+                    'line-width': 2.5,
+                    'line-opacity': 0.95
+                }
+            });
+        }
+
         // === EVENT LISTENERS ===
         // Register named handlers (allows removal via map.off)
         console.log('[MVT] Registering event handlers');
@@ -2969,6 +3157,8 @@ window.MapLibreImpactMap = (function ()
         map.on('mousemove', 'counties-fill', onCountiesMouseMove);
         map.on('mouseleave', 'counties-fill', onCountiesMouseLeave);
         map.on('click', 'counties-fill', onCountiesClick);
+        map.on('mousemove', 'municipal-boundaries-line', onMunicipalBoundariesMouseMove);
+        map.on('mouseleave', 'municipal-boundaries-line', onMunicipalBoundariesMouseLeave);
 
         vectorLayerEventsRegistered = true;
         console.log('[MVT] setupVectorLayers complete');
@@ -3045,6 +3235,71 @@ window.MapLibreImpactMap = (function ()
         if (map.getLayer('counties-line'))
         {
             map.setFilter('counties-line', filter);
+        }
+    }
+
+    function clearMunicipalBoundaries()
+    {
+        if (!map || !map.getSource('municipal-boundaries')) return;
+
+        clearMunicipalBoundaryHover();
+        map.getSource('municipal-boundaries').setData({ type: 'FeatureCollection', features: [] });
+        setLayerVisibility('municipal-boundaries-line', false);
+    }
+
+    async function loadMunicipalBoundaries(countyFips)
+    {
+        if (!map || !map.getSource('municipal-boundaries'))
+        {
+            return;
+        }
+
+        const normalizedCountyFips = String(countyFips || '').trim();
+        await ensureTaxAllocationScenarioConfigLoaded();
+
+        if (!municipalOutlineEligibleCounties.has(normalizedCountyFips))
+        {
+            clearMunicipalBoundaries();
+            return;
+        }
+
+        clearMunicipalBoundaries();
+
+        const cached = cache.municipalities[normalizedCountyFips];
+        if (cached)
+        {
+            map.getSource('municipal-boundaries').setData(cached);
+            setLayerVisibility('municipal-boundaries-line', !!(cached.features && cached.features.length));
+            return;
+        }
+
+        const seq = ++municipalBoundaryRequestSeq;
+
+        try
+        {
+            const res = await fetch(`/api/census/municipalities/${encodeURIComponent(normalizedCountyFips)}`);
+            if (!res.ok)
+            {
+                throw new Error(`Municipality boundaries request failed: ${res.status}`);
+            }
+
+            const geojson = await res.json();
+            if (seq !== municipalBoundaryRequestSeq || normalizedCountyFips !== String(currentCountyFips || '').trim())
+            {
+                return;
+            }
+
+            cache.municipalities[normalizedCountyFips] = geojson;
+            map.getSource('municipal-boundaries').setData(geojson);
+            setLayerVisibility('municipal-boundaries-line', !!(geojson.features && geojson.features.length));
+        }
+        catch (err)
+        {
+            console.warn('[MunicipalBoundaries] Failed to load boundaries:', err);
+            if (seq === municipalBoundaryRequestSeq)
+            {
+                clearMunicipalBoundaries();
+            }
         }
     }
 
@@ -3262,6 +3517,7 @@ window.MapLibreImpactMap = (function ()
     async function selectCounty(countyFips)
     {
         currentCountyFips = countyFips;
+        loadMunicipalBoundaries(countyFips);
 
         // CRITICAL: Prevent 'idle' event from previous state drill from hiding our overlay
         initialStateDrill = false;
@@ -3811,6 +4067,8 @@ window.MapLibreImpactMap = (function ()
             const container = document.getElementById(containerId);
             if (!container) { console.error('MapLibre: Container not found'); return; }
 
+            await ensureTaxAllocationScenarioConfigLoaded();
+
             els = {
                 t1: document.getElementById('val-t1'),
                 t2: document.getElementById('val-t2'),
@@ -4024,6 +4282,7 @@ window.MapLibreImpactMap = (function ()
                     map.setFilter('counties-line', ['==', 'state_fp', '']);
                 }
                 setLayerVisibility('county-highlight-line', false);
+                clearMunicipalBoundaries();
 
                 // Fly to nationwide view
                 map.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM });
@@ -4050,6 +4309,7 @@ window.MapLibreImpactMap = (function ()
 
                 // Clear county highlight
                 setLayerVisibility('county-highlight-line', false);
+                clearMunicipalBoundaries();
 
                 // Re-show county lines for state selection
                 setCountyFilter(currentStateFips);

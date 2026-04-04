@@ -13,13 +13,12 @@ window.EconomicCalculator = (function ()
     let netImpactBarChart = null;
     let netImpactSensitivityChart = null;
     let activeNetChartMode = 'county';
-    let activeSensitivitySeriesMode = 'county';
+    let activeSensitivitySeriesMode = 'host';
     let lastChartModel = null;
     let lastNetImpactTableModel = null;
     let statementExpandAll = false;
     let statementExpandedCounties = Object.create(null);
     let statementExpandedGroups = Object.create(null);
-    const MUNICIPAL_HOST_COUNTIES = new Set(['18003', '18033', '18151']);
     let lastMunicipalityLookupKey = '';
     let lastMunicipalityLookupValue = null;
     let municipalityLookupSeq = 0;
@@ -27,38 +26,10 @@ window.EconomicCalculator = (function ()
     const TAX_ALLOCATION_COMPONENTS = ['regular', 'supplemental'];
     const TAX_ALLOCATION_BRANCHES = ['municipal', 'fallback'];
     const TAX_ALLOCATION_RECIPIENTS = ['state', 'county', 'municipality', 'regional'];
-    const TAX_ALLOCATION_SCENARIOS = [
-        {
-            id: 'ne-indiana-casino',
-            label: 'NE Indiana Casino',
-            sortOrder: 1,
-            billName: 'HB 1038',
-            publicName: 'NE Indiana Casino',
-            recipients: {
-                state: 'State of Indiana',
-                county: 'Host County',
-                municipality: 'Host Municipality',
-                regional: 'Northeast Indiana RDA'
-            },
-            municipality: {
-                enabled: true,
-                requiresContainment: true,
-                fallbackToCounty: true,
-                eligibleCountyFips: ['18003', '18033', '18151']
-            },
-            rules: {
-                regular: {
-                    municipal: { state: 75, county: 0, municipality: 25, regional: 0 },
-                    fallback: { state: 75, county: 25, municipality: 0, regional: 0 }
-                },
-                supplemental: {
-                    municipal: { state: 0, county: 45, municipality: 45, regional: 10 },
-                    fallback: { state: 0, county: 90, municipality: 0, regional: 10 }
-                }
-            }
-        }
-    ];
-    let selectedTaxScenarioId = 'ne-indiana-casino';
+    let taxAllocationScenarios = [];
+    let taxAllocationDefaultScenarioId = '';
+    let taxAllocationScenarioConfigPromise = null;
+    let selectedTaxScenarioId = '';
     let customTaxScenarioDraft = null;
     let lastValidCustomTaxScenario = null;
 
@@ -69,7 +40,7 @@ window.EconomicCalculator = (function ()
 
     function getPresetTaxScenarios()
     {
-        return [...TAX_ALLOCATION_SCENARIOS].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+        return [...taxAllocationScenarios].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
     }
 
     function getScenarioById(id)
@@ -79,7 +50,51 @@ window.EconomicCalculator = (function ()
 
     function getDefaultTaxScenario()
     {
-        return getScenarioById('ne-indiana-casino') || getPresetTaxScenarios()[0] || null;
+        return getScenarioById(taxAllocationDefaultScenarioId) || getPresetTaxScenarios()[0] || null;
+    }
+
+    async function ensureTaxAllocationScenariosLoaded()
+    {
+        if (taxAllocationScenarioConfigPromise)
+        {
+            return taxAllocationScenarioConfigPromise;
+        }
+
+        taxAllocationScenarioConfigPromise = (async () =>
+        {
+            try
+            {
+                const res = await fetch('/api/census/tax-allocation-scenarios');
+                if (!res.ok)
+                {
+                    throw new Error(`Tax allocation scenarios request failed: ${res.status}`);
+                }
+
+                const data = await res.json();
+                taxAllocationScenarios = Array.isArray(data && data.scenarios) ? data.scenarios : [];
+                taxAllocationDefaultScenarioId = String((data && data.defaultScenarioId) || '').trim();
+
+                const defaultScenario = getDefaultTaxScenario();
+                if (!selectedTaxScenarioId || !getScenarioById(selectedTaxScenarioId))
+                {
+                    selectedTaxScenarioId = defaultScenario ? String(defaultScenario.id || '').trim() : '';
+                }
+
+                if (selectedTaxScenarioId !== TAX_ALLOCATION_SCENARIO_CUSTOM_ID)
+                {
+                    customTaxScenarioDraft = null;
+                }
+            }
+            catch (err)
+            {
+                console.error('[Calculator] Failed to load tax allocation scenarios:', err);
+                taxAllocationScenarios = [];
+                taxAllocationDefaultScenarioId = '';
+                selectedTaxScenarioId = '';
+            }
+        })();
+
+        return taxAllocationScenarioConfigPromise;
     }
 
     function validateTaxAllocationScenario(scenario)
@@ -263,6 +278,12 @@ window.EconomicCalculator = (function ()
         const displayedScenario = getDisplayedTaxScenario();
         const isCustom = selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID;
         const validation = displayedScenario ? validateTaxAllocationScenario(displayedScenario) : { valid: false, errors: ['Scenario unavailable.'] };
+        const subjectCountyFips = String((lastImpactBreakdown && lastImpactBreakdown.countyFips) || (els.inCounty && els.inCounty.value) || '').trim();
+        const municipalityContext = (lastImpactBreakdown && lastImpactBreakdown.municipality) ? lastImpactBreakdown.municipality : null;
+        const countyAllowsMunicipalBranch = !!(displayedScenario && scenarioAllowsHostCounty(displayedScenario, subjectCountyFips));
+        const activeBranchId = countyAllowsMunicipalBranch && municipalityContext && municipalityContext.cityRevenueApplies
+            ? 'municipal'
+            : 'fallback';
         const inputClass = isCustom
             ? 'w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white outline-none transition focus:border-blue-400'
             : 'w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-300 outline-none';
@@ -288,7 +309,7 @@ window.EconomicCalculator = (function ()
         const branchConfig = [
             { branch: 'municipal', title: 'Municipal Site Branch', description: 'Used only when the active scenario recognizes a municipal carve-out and the site falls inside an incorporated PLACE.' },
             { branch: 'fallback', title: 'Unincorporated Fallback Branch', description: 'Used when no municipal carve-out is triggered for the selected site.' }
-        ];
+        ].filter(branchMeta => branchMeta.branch === activeBranchId);
         const recipientLabels = [
             { recipient: 'state', label: displayedScenario?.recipients?.state || 'State Recipient' },
             { recipient: 'county', label: displayedScenario?.recipients?.county || 'County Recipient' },
@@ -301,6 +322,11 @@ window.EconomicCalculator = (function ()
                 <div class="mb-4">
                     <h5 class="text-base font-bold text-white">${escapeHtml(section.title)}</h5>
                     <p class="mt-1 text-sm leading-relaxed text-slate-400">${escapeHtml(section.description)}</p>
+                    <p class="mt-2 text-sm font-semibold text-slate-300">
+                        ${activeBranchId === 'municipal'
+                            ? 'Showing the municipal-site branch for the current placed location.'
+                            : 'Showing the unincorporated fallback branch for the current placed location.'}
+                    </p>
                 </div>
                 <div class="grid gap-4 xl:grid-cols-2">
                     ${branchConfig.map(branchMeta =>
@@ -435,11 +461,6 @@ window.EconomicCalculator = (function ()
     {
         const v = Number(value) || 0;
         return v > 0 ? 'positive' : (v < 0 ? 'negative' : '');
-    }
-
-    function isMunicipalHostCountyFips(countyFips)
-    {
-        return MUNICIPAL_HOST_COUNTIES.has(String(countyFips || '').trim());
     }
 
     async function hydrateMunicipalityContext(impactDetail)
@@ -1129,17 +1150,41 @@ window.EconomicCalculator = (function ()
         const currentAgrM = Number(model.currentAgrM || 0);
         const sliderMax = Math.max(Number(els.inAGR && els.inAGR.max || 0), currentAgrM, 100);
         const samples = 40;
-        const countyBreakEvenAgr = estimateBreakEvenAgr(model.totalCountyCost);
-        const stateBreakEvenAgr = estimateBreakEvenAgr(Number(model.totalCountyCost || 0) + Number(model.totalOtherCost || 0));
-        const countySeries = [];
-        const stateSeries = [];
+        const totalRevenueCurrent = Number(model.totalRevenue || 0);
+        const hostRevenueCurrent = Number(model.hostRevenue || 0);
+        const regionalRevenueCurrent = Number(model.regionalRevenue || 0);
+        const consolidatedRevenueShare = totalRevenueCurrent > 0 ? 1 : 0;
+        const hostRevenueShare = totalRevenueCurrent > 0 ? hostRevenueCurrent / totalRevenueCurrent : 0;
+        const regionalRevenueShare = totalRevenueCurrent > 0 ? regionalRevenueCurrent / totalRevenueCurrent : 0;
+        const hostSeries = [];
+        const regionalSeries = [];
+        const consolidatedSeries = [];
+
+        const estimateBreakEvenAgrForShare = (cost, revenueShare) =>
+        {
+            const numericCost = Number(cost || 0);
+            const numericShare = Number(revenueShare || 0);
+
+            if (numericCost <= 0)
+            {
+                return 0;
+            }
+
+            if (numericShare <= 0)
+            {
+                return null;
+            }
+
+            return calculateAGRFromTax(numericCost / numericShare) / 1000000;
+        };
 
         for (let index = 0; index <= samples; index++)
         {
             const agrM = (sliderMax * index) / samples;
             const revenue = calculateTax(agrM * 1000000).total;
-            countySeries.push({ x: agrM, y: revenue - Number(model.totalCountyCost || 0) });
-            stateSeries.push({ x: agrM, y: revenue - Number(model.totalCountyCost || 0) - Number(model.totalOtherCost || 0) });
+            hostSeries.push({ x: agrM, y: (revenue * hostRevenueShare) - Number(model.hostCost || 0) });
+            regionalSeries.push({ x: agrM, y: (revenue * regionalRevenueShare) - Number(model.regionalCost || 0) });
+            consolidatedSeries.push({ x: agrM, y: (revenue * consolidatedRevenueShare) - Number(model.consolidatedCost || 0) });
         }
 
         const sensitivityOverlayPlugin = {
@@ -1237,17 +1282,47 @@ window.EconomicCalculator = (function ()
             }
         };
 
-        const isCountyMode = activeSensitivitySeriesMode === 'county';
-        const activeSeries = isCountyMode ? countySeries : stateSeries;
-        const activeBreakEvenAgr = isCountyMode ? countyBreakEvenAgr : stateBreakEvenAgr;
-        const activeCurrentNet = isCountyMode ? Number(model.currentCountyNet || 0) : Number(model.currentStateNet || 0);
-        const activeLabel = isCountyMode ? 'County Net' : 'Indiana Net';
-        const activeColor = isCountyMode ? 'rgba(52, 211, 153, 1)' : 'rgba(96, 165, 250, 1)';
-        const activeFill = isCountyMode ? 'rgba(52, 211, 153, 0.18)' : 'rgba(96, 165, 250, 0.18)';
+        const sensitivityModes = {
+            host: {
+                series: hostSeries,
+                breakEvenAgr: estimateBreakEvenAgrForShare(model.hostCost, hostRevenueShare),
+                currentNet: Number(model.currentHostNet || 0),
+                label: 'Host Net',
+                summaryLabel: 'Host Governments',
+                color: 'rgba(52, 211, 153, 1)',
+                fill: 'rgba(52, 211, 153, 0.18)'
+            },
+            regional: {
+                series: regionalSeries,
+                breakEvenAgr: estimateBreakEvenAgrForShare(model.regionalCost, regionalRevenueShare),
+                currentNet: Number(model.currentRegionalNet || 0),
+                label: 'Regional Net',
+                summaryLabel: 'Regional',
+                color: 'rgba(96, 165, 250, 1)',
+                fill: 'rgba(96, 165, 250, 0.18)'
+            },
+            consolidated: {
+                series: consolidatedSeries,
+                breakEvenAgr: estimateBreakEvenAgrForShare(model.consolidatedCost, consolidatedRevenueShare),
+                currentNet: Number(model.currentConsolidatedNet || 0),
+                label: 'Consolidated Net',
+                summaryLabel: 'Consolidated',
+                color: 'rgba(251, 191, 36, 1)',
+                fill: 'rgba(251, 191, 36, 0.18)'
+            }
+        };
+
+        const activeMode = sensitivityModes[activeSensitivitySeriesMode] || sensitivityModes.host;
+        const activeSeries = activeMode.series;
+        const activeBreakEvenAgr = activeMode.breakEvenAgr;
+        const activeCurrentNet = activeMode.currentNet;
+        const activeLabel = activeMode.label;
+        const activeColor = activeMode.color;
+        const activeFill = activeMode.fill;
         const currentMarkerLabel = `${activeLabel} @ $${currentAgrM.toFixed(1)}M`;
         const activeOverlay = activeBreakEvenAgr === null ? null : {
             agr: Number(activeBreakEvenAgr),
-            label: `${isCountyMode ? 'County' : 'Indiana'} breakeven: $${Number(activeBreakEvenAgr).toFixed(1)}M`,
+            label: `${activeMode.summaryLabel} breakeven: $${Number(activeBreakEvenAgr).toFixed(1)}M`,
             lineColor: activeColor
         };
 
@@ -1387,7 +1462,7 @@ window.EconomicCalculator = (function ()
                 valueClassValue: activeCurrentNet
             },
             {
-                label: `${isCountyMode ? 'County' : 'Indiana'} Breakeven`,
+                label: `${activeMode.summaryLabel} Breakeven`,
                 value: activeBreakEvenAgr === null ? 'Above current range' : '$' + Number(activeBreakEvenAgr).toFixed(1) + 'M',
                 valueClassValue: 0
             },
@@ -1846,6 +1921,9 @@ window.EconomicCalculator = (function ()
         const subGeneralNet = netHealth + netCrime + netSocial + netLegal;
 
         const totalCostPrivate = totalCostAbused + totalCostEmployment;
+        const subjectPublicCost = subGeneralCost;
+        const subjectPrivateCost = totalCostPrivate;
+        const subjectTotalCost = totalCost;
         const netTotalBalance = totalRevenue - totalCost;
         const hostLocalRevenue = revenueCity + revenueCounty;
         const hostLocalNetBalance = hostLocalRevenue - totalCost;
@@ -1892,6 +1970,9 @@ window.EconomicCalculator = (function ()
         const otherAdults = Math.round(Number(o.adults || 0));
         const otherVictims = Math.round(Number(o.victims || 0));
         const otherRate = otherAdults > 0 ? (otherVictims / otherAdults) * 100 : 0;
+        const spilloverTotalCost = Number(otherTotals.total || 0);
+        const regionalNetAfterSpillover = revenueRda - spilloverTotalCost;
+        const statewideNet = totalRevenue - totalCost - spilloverTotalCost;
         const fmtVictims = Math.round(victims).toLocaleString();
         setTxt('calc-pop', Math.round(currentPop).toLocaleString());
         setTxt('calc-rate', gamblerGrowthRate.toFixed(2) + '%');
@@ -2140,10 +2221,15 @@ window.EconomicCalculator = (function ()
             subjectCountyName,
             subjectStateName,
             currentAgrM: agrM,
-            totalCountyCost: totalCost,
-            totalOtherCost: otherTotals.total,
-            currentCountyNet: netTotalBalance,
-            currentStateNet: netTotalBalance - otherTotals.total
+            totalRevenue,
+            hostRevenue: hostLocalRevenue,
+            regionalRevenue: revenueRda,
+            hostCost: totalCost,
+            regionalCost: spilloverTotalCost,
+            consolidatedCost: totalCost + otherTotals.total,
+            currentHostNet: hostLocalNetBalance,
+            currentRegionalNet: regionalNetAfterSpillover,
+            currentConsolidatedNet: statewideNet
         });
 
         if (hasImpact)
@@ -2270,6 +2356,35 @@ window.EconomicCalculator = (function ()
                 hostCountyName,
                 municipalityName
             });
+            const appliedRegularShares = {
+                state: Number(regularRules.state || 0),
+                county: isHostCountySelection ? Number(regularRules.county || 0) : 0,
+                municipality: cityRevenueApplies ? Number(regularRules.municipality || 0) : 0,
+                regional: Number(regularRules.regional || 0)
+            };
+            const appliedSupplementalShares = {
+                state: Number(supplementalRules.state || 0),
+                county: isHostCountySelection ? Number(supplementalRules.county || 0) : 0,
+                municipality: cityRevenueApplies ? Number(supplementalRules.municipality || 0) : 0,
+                regional: Number(supplementalRules.regional || 0)
+            };
+            const allocationBreakoutSummary = [
+                `${scenarioRecipients.stateRecipient}: regular ${appliedRegularShares.state.toFixed(1)}% / supplemental ${appliedSupplementalShares.state.toFixed(1)}% = ${fmtM(revenueState)}`,
+                `${scenarioRecipients.countyRecipient}: regular ${appliedRegularShares.county.toFixed(1)}% / supplemental ${appliedSupplementalShares.county.toFixed(1)}% = ${fmtM(revenueCounty)}`,
+                `${scenarioRecipients.municipalityRecipient}: regular ${appliedRegularShares.municipality.toFixed(1)}% / supplemental ${appliedSupplementalShares.municipality.toFixed(1)}% = ${fmtM(revenueCity)}`,
+                `${scenarioRecipients.regionalRecipient}: regular ${appliedRegularShares.regional.toFixed(1)}% / supplemental ${appliedSupplementalShares.regional.toFixed(1)}% = ${fmtM(revenueRda)}`
+            ].join('; ');
+            const scenarioModeLabel = selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID
+                ? 'custom'
+                : 'preset';
+            const branchResultSummary = cityRevenueApplies
+                ? `The site falls inside the incorporated PLACE boundary for ${municipalityName}, so the municipal-site branch is active and the municipality-directed allocation is activated in this analysis.`
+                : isHostCountySelection
+                    ? `The site is outside any incorporated municipal PLACE boundary in ${hostCountyName} County, so the fallback branch is active and the municipality-directed allocation is 0.0% / ${fmtM(revenueCity)} in this analysis.`
+                    : `The selected county is outside the active scenario's host-county eligibility area, so host-local allocation rows are inactive and only the non-local recipients remain funded in this analysis.`;
+            const statementConstructionSummary = isHostCountySelection
+                ? `Host statement: ${fmtM(hostLocalRevenue)} revenue minus ${fmtM(subjectTotalCost)} selected-county social costs. Regional statement: ${fmtM(revenueRda)} revenue minus ${fmtM(spilloverTotalCost)} spillover social costs. Consolidated statement: ${fmtM(totalRevenue)} revenue minus ${fmtM(stateWideSocialCost)} total social costs.`
+                : `Host statement: inactive for this county under the active scenario. Regional statement: ${fmtM(revenueRda)} revenue minus ${fmtM(spilloverTotalCost)} spillover social costs. Consolidated statement: ${fmtM(totalRevenue)} revenue minus ${fmtM(stateWideSocialCost)} total social costs.`;
 
             let analysisHTML = '';
 
@@ -2297,11 +2412,12 @@ window.EconomicCalculator = (function ()
                                                 <li><strong>Net Fiscal Impact:</strong> The necessity of balancing indirect tax revenue against local expenditure substitution. Systematic reviews such as <a href="https://www.greo.ca/Modules/EvidenceCentre/Details/social-and-economic-impacts-gambling" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">The Social and Economic Impacts of Gambling (2011)</a> and <a href="https://www.researchgate.net/publication/343114919_Does_Gambling_Harm_or_Benefit_Other_Industries_A_Systematic_Review" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">"Does Gambling Harm or Benefit Other Industries? A Systematic Review"</a> conclude that while destination gambling can be beneficial, "convenience" gambling often substitutes for other local industries (retail and merchandise) rather than introducing new capital into the market.</li>
                                             </ul>
                                         </li>`;
-            analysisHTML += `<li><strong>Programmatic Determinism:</strong> This tool provides a programmatic economic analysis based on deterministic, rule-based logic and peer-reviewed data, rather than an artificial intelligence (AI) model or probabilistic algorithm. Unlike AI, which can be unpredictable, this programmatic approach ensures that all results are derived from fixed, transparent formulas. Common usecases for deterministic analyses occur in highly regulated fields, such as banking. At a future date, SaveFW may include functionality to generate automated analyses utilizing more than the programmatic (deterministic) approach, as well as a blended approach which mitigates weaknesses of each. To provide clarity regarding the differences between the key methodologies in the pipeline, SaveFW has outlined the key distinctions below:
+            analysisHTML += `<li><strong>Revenue Forecasting Methodology:</strong> A future version of the model may incorporate an optional gravity-model layer to estimate casino demand and Gross Gaming Revenue (GGR) before converting that forecast into the taxable revenue base used in the tax calculation. That forecasting layer is intended to remain optional. Users may continue to input AGR directly when relying on a third-party market-feasibility study or another external revenue estimate rather than SaveFW's internal forecasting method.</li>`;
+            analysisHTML += `<li><strong>Deterministic Methodology:</strong> This analysis is generated from deterministic, rule-based calculations and cited data sources rather than an artificial intelligence (AI) model or probabilistic simulation. The output is therefore reproducible: identical inputs produce identical results. Comparable deterministic methods are commonly used in regulated analytical contexts, including finance, taxation, and compliance modeling. A future version of SaveFW may add supplementary probabilistic or AI-assisted layers, but the present analysis remains formula-driven. To distinguish the methodologies currently contemplated in the development pipeline, SaveFW outlines them below:
                                             <ul class="list-[circle] pl-8 mt-2 space-y-3">
-                                                <li><strong>Programmatic (Deterministic) Analysis:</strong> This methodology operates on fixed-logic inputs and rigid mathematical formulas where the relationship between variables is constant. Given a specific set of parameters, the model generates an identical output in every iteration. It is used to produce exact, reproducible figures based on predefined causal relationships (e.g., $Revenue = P \times Q$).</li>
-                                                <li><strong>Probabilistic (Stochastic) Analysis:</strong> This approach treats variables as probability distributions rather than static integers to account for market volatility. By employing random sampling and statistical techniques like Monte Carlo simulations, the model calculates a range of potential outcomes and the statistical likelihood of each, typically expressed as a confidence interval.</li>
-                                                <li><strong>AI (Machine Learning) Analysis:</strong> This paradigm utilizes algorithms that identify non-linear correlations within high-dimensional datasets by developing internal weightings through training. Unlike rule-based systems, the logic is derived from statistical pattern recognition rather than human-coded formulas, allowing the model to adapt its predictive weightings as it processes new information.</li>
+                                                <li><strong>Programmatic (Deterministic) Analysis:</strong> This methodology operates on fixed inputs and explicit mathematical formulas in which the relationship between variables is constant. Given a specific set of parameters, the model produces the same result in every iteration. It is used to derive exact, reproducible figures from predefined causal relationships.</li>
+                                                <li><strong>Probabilistic (Stochastic) Analysis:</strong> This methodology treats variables as probability distributions rather than fixed point estimates in order to account for uncertainty and market volatility. Through random sampling techniques such as Monte Carlo simulation, it estimates a range of outcomes and their associated likelihoods, typically expressed as confidence intervals or percentile bands.</li>
+                                                <li><strong>AI (Machine Learning) Analysis:</strong> This methodology uses algorithms that infer non-linear relationships within higher-dimensional datasets by training internal weights on observed data. Unlike rule-based systems, the logic is derived from statistical pattern recognition rather than explicit hand-coded formulas, allowing the model to update its predictive weighting as additional data becomes available.</li>
                                             </ul>
                                         </li>`;
             analysisHTML += `<li><strong>Model Responsibility:</strong> Individuals and entities should recognize that all economic models are projections subject to data limitations and inherent variability. The responsibility for any actions or decisions made based on this analysis rests solely with the individual or entity, and SaveFW assumes no liability for the application or interpretation of these results.</li>`;
@@ -2310,8 +2426,11 @@ window.EconomicCalculator = (function ()
             // 2. Assumptions (Sub-header + Bullets)
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Assumptions</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
-            analysisHTML += `<li><strong>Tax Allocation Scenario:</strong> This run uses the ${escapeHtml(scenarioNameWithBill)} tax-allocation scenario. It changes only how public revenue is distributed after total tax revenue is estimated; the social-cost model and victim-rate assumptions stay the same.</li>`;
-            analysisHTML += `<li><strong>Custom Mode:</strong> When the scenario selector is switched to Custom, users can edit the revenue splits directly. Each regular-tax and supplemental-tax branch must balance to 100% before the custom allocation is applied.</li>`;
+            analysisHTML += `<li><strong>Tax Allocation Scenario:</strong> This analysis applies the ${escapeHtml(scenarioNameWithBill)} ${scenarioModeLabel} tax-allocation scenario. It changes only how modeled public revenue is distributed after total tax revenue is estimated; the social-cost model and victim-rate assumptions remain unchanged.</li>`;
+            analysisHTML += `<li><strong>Applied Revenue Breakout:</strong> Under the active ${allocationBranch === 'municipal' ? 'municipal-site' : 'fallback'} branch of ${escapeHtml(scenarioNameWithBill)}, the model applies the following recipient shares: ${escapeHtml(allocationBreakoutSummary)}.</li>`;
+            analysisHTML += selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID
+                ? `<li><strong>Custom Mode:</strong> Because this analysis uses the Custom scenario, the active branch percentages shown above are user-specified values, and each regular-tax and supplemental-tax branch must sum to 100% before those allocations are applied.</li>`
+                : `<li><strong>Preset Scenario Behavior:</strong> Because this analysis uses the preset ${escapeHtml(scenarioNameWithBill)} scenario, the active branch percentages shown above are preset allocation values rather than user-specified inputs.</li>`;
             analysisHTML += `<li><strong>Private Sector Burden:</strong> The Local Economy category represents private sector losses (productivity, debt) borne directly by households and businesses.</li>`;
             analysisHTML += `</ul>`;
 
@@ -2319,18 +2438,18 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Geographic Analysis</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
             analysisHTML += `<li><strong>Geospatial Data:</strong> Population data is sourced directly from the <a href="https://www.census.gov/data/developers/data-sets/decennial-census.html" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">U.S. Census Bureau's 2020 Decennial Census API</a>, seeded into the SaveFW database in January 2026. Geographic boundaries utilize high-precision 2020 TIGER/Line Shapefiles processed via PostGIS.</li>`;
-            analysisHTML += `<li><strong>Scope of Analysis:</strong> The primary balance-sheet results model fiscal exposure for the assessed county. The regional table separately estimates how same-state spillover costs distribute within a 50-mile radius (out-of-state excluded); expand the county sections there to view the detailed breakout.</li>`;
+            analysisHTML += `<li><strong>Statement Construction:</strong> ${escapeHtml(statementConstructionSummary)}</li>`;
             if (populationProjection)
             {
                 if (projectionUsesProjectedAdults)
                 {
-                    analysisHTML += `<li><strong>Adult Population Projection:</strong> Adult counts in this run are projected from the ${populationProjection.baseYear} census baseline to ${populationProjection.targetYear} using ${Number(populationProjection.annualGrowthRate || 0).toFixed(1)}% annual growth (${Number(populationProjection.multiplier || 1).toFixed(3)}x multiplier).</li>`;
+                    analysisHTML += `<li><strong>Adult Population Projection:</strong> Adult counts in this analysis are projected from the ${populationProjection.baseYear} census baseline to ${populationProjection.targetYear} using ${Number(populationProjection.annualGrowthRate || 0).toFixed(1)}% annual growth (${Number(populationProjection.multiplier || 1).toFixed(3)}x multiplier).</li>`;
                 } else if (projectionHasFutureYear)
                 {
-                    analysisHTML += `<li><strong>Adult Population Projection:</strong> Projection year ${populationProjection.targetYear} is selected, but the ${Number(populationProjection.annualGrowthRate || 0).toFixed(1)}% annual growth assumption leaves adult counts unchanged for this run.</li>`;
+                    analysisHTML += `<li><strong>Adult Population Projection:</strong> Projection year ${populationProjection.targetYear} is selected, but the ${Number(populationProjection.annualGrowthRate || 0).toFixed(1)}% annual growth assumption leaves adult counts unchanged in this analysis.</li>`;
                 } else
                 {
-                    analysisHTML += `<li><strong>Adult Population Projection:</strong> This run uses the current calculated adult population with no forward projection applied.</li>`;
+                    analysisHTML += `<li><strong>Adult Population Projection:</strong> This analysis uses the current calculated adult population with no forward projection applied.</li>`;
                 }
             }
 
@@ -2372,82 +2491,46 @@ window.EconomicCalculator = (function ()
             // A. TAX REVENUE
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Tax Revenue Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
-            analysisHTML += `<li><strong>Adjusted Gross Revenue (AGR):</strong> The projected base of ${fmtM(agrM * 1000000)} represent the total wealth extracted from gamblers. Unlike standard sales or property taxes, gambling revenue is subject to a unique progressive structure in Indiana, utilizing a 3.5% supplemental tax and tiered brackets that scale based on volume.</li>`;
-            analysisHTML += `<li><strong>Effective Tax Rate:</strong> For this scenario, the calculated effective tax rate is ${taxEffRate.toFixed(2)}%, resulting in ${fmtM(totalRevenue)} in estimated public tax revenue.</li>`;
-            analysisHTML += cityRevenueApplies
-                ? `<li><strong>Allocation Branch:</strong> Because the site falls inside the incorporated-place boundary for ${municipalityName}, this run uses the municipal-site branch of the active scenario. That sends revenue to ${scenarioRecipients.municipalityRecipient}, ${scenarioRecipients.countyRecipient}, ${scenarioRecipients.regionalRecipient}, and ${scenarioRecipients.stateRecipient} according to the configured percentages.</li>`
-                : isHostCountySelection
-                    ? `<li><strong>Allocation Branch:</strong> Because the site is outside any incorporated-place boundary in ${hostCountyName} County, this run uses the unincorporated fallback branch of the active scenario. The county fallback applies, while any municipality-only carve-out remains inactive.</li>`
-                    : `<li><strong>Allocation Branch:</strong> The selected county is outside the active scenario's host-county eligibility area, so host-local allocations stay off and the scenario routes revenue only to the non-local recipients it defines.</li>`;
-            analysisHTML += `<li><strong>Municipal Trigger:</strong> Municipality-directed allocations depend on actual incorporated-place containment from TIGER PLACE boundaries, not just county selection.</li>`;
-            analysisHTML += `<li><strong>Recipient Totals:</strong> This run yields approximately ${fmtM(revenueState)} to ${scenarioRecipients.stateRecipient}, ${fmtM(revenueCounty)} to ${scenarioRecipients.countyRecipient}, ${fmtM(revenueCity)} to ${cityRevenueApplies ? scenarioRecipients.municipalityRecipient : 'the municipality branch recipient'}, and ${fmtM(revenueRda)} to ${scenarioRecipients.regionalRecipient}.</li>`;
+            analysisHTML += `<li><strong>Revenue Base Terms:</strong> Casino tax discussions often refer to Gross Gaming Revenue (GGR) or Adjusted Gross Revenue (AGR). In this model, AGR is the taxable revenue base used to compute the modeled public tax liability. For this analysis, the AGR input is ${fmtM(agrM * 1000000)}.</li>`;
+            analysisHTML += `<li><strong>Current State Tax Model:</strong> SaveFW currently applies Indiana's commercial-casino tax structure. Under the current model specification, AGR first receives a 3.5% supplemental tax off the top, then the first $7.0MM is exempted before the regular wagering-tax brackets are applied.</li>`;
+            analysisHTML += `<li><strong>Indiana Bracket Logic:</strong> After the supplemental tax and the $7.0MM deduction, the regular wagering-tax schedule applies tiered rates. In the current model, the first $25.0MM bracket is taxed at 5% when AGR stays below $75.0MM and at 15% once AGR reaches $75.0MM or more; higher brackets then step through 20%, 25%, 30%, 35%, and 40% as AGR rises.</li>`;
+            analysisHTML += `<li><strong>Computed Tax Result:</strong> Applying that Indiana tax structure to ${fmtM(agrM * 1000000)} of AGR produces ${fmtM(supplementalTax)} in supplemental tax, ${fmtM(regularTax)} in regular wagering tax, and ${fmtM(totalRevenue)} in total modeled public tax revenue. That implies an effective tax rate of ${taxEffRate.toFixed(2)}% on AGR.</li>`;
+            analysisHTML += `<li><strong>Branch Trigger Result:</strong> ${escapeHtml(branchResultSummary)}</li>`;
+            analysisHTML += `<li><strong>Scenario Results:</strong> Under the active ${escapeHtml(scenarioNameWithBill)} allocation scenario, this run yields approximately ${fmtM(revenueState)} to ${scenarioRecipients.stateRecipient}, ${fmtM(revenueCounty)} to ${scenarioRecipients.countyRecipient}, ${fmtM(revenueCity)} to ${cityRevenueApplies ? scenarioRecipients.municipalityRecipient : 'the municipality branch recipient'}, and ${fmtM(revenueRda)} to ${scenarioRecipients.regionalRecipient}.</li>`;
+            analysisHTML += isHostCountySelection
+                ? `<li><strong>Statement Revenue Rows:</strong> The Host Government Fiscal View reports ${fmtM(hostLocalRevenue)} in direct host tax revenue, the Regional Revenue vs County Costs view reports ${fmtM(revenueRda)} in regional revenue, and the Consolidated Statement reports ${fmtM(totalRevenue)} in total tax revenue.</li>`
+                : `<li><strong>Statement Revenue Rows:</strong> The Host Government Fiscal View is inactive for this county under the active scenario. The Regional Revenue vs County Costs view reports ${fmtM(revenueRda)} in regional revenue, and the Consolidated Statement reports ${fmtM(totalRevenue)} in total tax revenue.</li>`;
             analysisHTML += '</ul>';
 
             // B. SOCIAL COSTS
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Social Cost Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
             analysisHTML += `<li><strong>Data Source:</strong> Baseline social cost valuations are derived from peer-reviewed research by <a href="https://www.senate.ga.gov/committees/Documents/HiddenCostsofGam.pdf" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">Grinols</a> (2011), with values adjusted for 2025 inflation to reflect current economic conditions.</li>`;
-            // Public Health
-            analysisHTML += `<li><strong>Public Health:</strong> Public health and treatment costs are treated as real host-local and broader statewide burdens that must be covered from actual statutory revenue streams or other public resources.</li>`;
-            // General Taxpayer Services Analysis (Dollar Amounts)
-
-            // Law Enforcement
-            const gapCrime = totalCostCrime - revCrime;
-            if (gapCrime > 0)
-            {
-                analysisHTML += `<li><strong>Law Enforcement:</strong> The department faces a projected deficit of ${fmtM(gapCrime)}, necessitating a reduction in operational throughput. This budgetary deficit is projected to result in increased response latencies, diminished clearance rates for property crimes, and a reduced capacity to manage the anticipated surge in domestic disturbance calls.</li>`;
-            } else
-            {
-                analysisHTML += `<li><strong>Law Enforcement:</strong> The department projects a budget surplus of ${fmtM(Math.abs(gapCrime))}, positioning it to maintain high operational readiness. This additional capacity enables the implementation of enhanced community policing initiatives and the establishment of specialized units dedicated to investigating complex financial crimes.</li>`;
-            }
-
-            // Social Services
-            const gapSocial = totalCostSocial - revSocial;
-            if (gapSocial > 0)
-            {
-                analysisHTML += `<li><strong>Social Services:</strong> This sector faces a projected deficit of ${fmtM(gapSocial)}, diminishing the programmatic efficacy of the regional social safety net. A deficit of this magnitude risks exceeding the throughput capacity of the foster care system and restricts the availability of essential support resources for households experiencing displacement or foreclosure.</li>`;
-            } else
-            {
-                analysisHTML += `<li><strong>Social Services:</strong> With a projected surplus of ${fmtM(Math.abs(gapSocial))}, the county can maintain a robust and stable safety net. This financial stability facilitates the expansion of proactive family stabilization programs and ensures adequate resource availability for food banks and emergency housing assistance.</li>`;
-            }
-
-            // Courts (Civil Legal)
-            const gapLegal = totalCostLegal - revLegal;
-            if (gapLegal > 0)
-            {
-                analysisHTML += `<li><strong>Civil Legal (Courts):</strong> The judicial system faces a projected deficit of ${fmtM(gapLegal)}, resulting in systemic administrative bottlenecks. This budgetary deficit is anticipated to generate substantial backlogs in bankruptcy proceedings, extended processing delays for divorce and custody hearings, and an inability to manage the projected volume of eviction cases efficiently.</li>`;
-            } else
-            {
-                analysisHTML += `<li><strong>Civil Legal (Courts):</strong> The system projects a budget surplus of ${fmtM(Math.abs(gapLegal))}, equipping it to maintain operational efficiency despite increased caseloads. This financial capacity facilitates the timely processing of civil matters and provides necessary funding for mediation services and diversion programs.</li>`;
-            }
-
-            // Private Sector (Local Economy) Breakout
-            analysisHTML += `<li><strong>Abused Dollars:</strong> The private sector faces a projected unmitigated loss of ${fmtM(totalCostAbused)}. This represents direct wealth extraction from households where financial resources are diverted from essential needs and savings to service gambling debts, reducing overall local purchasing power.</li>`;
-
-            analysisHTML += `<li><strong>Lost Employment:</strong> The local economy is projected to incur ${fmtM(totalCostEmployment)} in losses due to reduced workforce productivity. This includes costs associated with absenteeism, termination of problem gamblers, and the friction costs of rehiring and retraining, effectively operating as a hidden tax on local employers.</li>`;
-
-            // Regional Spillover Summary
-            analysisHTML += `<li><strong>Regional Spillover:</strong> Adjacent counties within ${subjectStateName} face a combined social cost liability of ${fmtM(otherTotalCost)}. These regional costs receive zero direct revenue offsets from the subject county's tax receipts, representing a net fiscal export of social burden.</li>`;
+            analysisHTML += `<li><strong>Selected County Cost Stack:</strong> The selected county carries ${fmtM(subjectTotalCost)} in modeled social costs, split between ${fmtM(subjectPublicCost)} in General Taxpayer Services Costs and ${fmtM(subjectPrivateCost)} in Private Sector Costs.</li>`;
+            analysisHTML += `<li><strong>Selected County Cost Breakout:</strong> Within the selected county, Public Health / Treatment accounts for ${fmtM(totalCostHealth)}, Law Enforcement ${fmtM(totalCostCrime)}, Social Services ${fmtM(totalCostSocial)}, Civil Legal ${fmtM(totalCostLegal)}, Abused Dollars ${fmtM(totalCostAbused)}, and Lost Employment ${fmtM(totalCostEmployment)}.</li>`;
+            analysisHTML += otherCountiesCount > 0
+                ? `<li><strong>Regional Spillover Costs:</strong> ${otherCountiesCount} additional same-state counties inside the 50-mile footprint carry a combined ${fmtM(otherTotalCost)} in spillover social costs, split between ${fmtM(otherTotals.public)} in General Taxpayer Services Costs and ${fmtM(otherTotals.private)} in Private Sector Costs. Those detailed breakouts appear only in the regional statement.</li>`
+                : `<li><strong>Regional Spillover Costs:</strong> No additional same-state counties currently register modeled spillover costs inside the 50-mile footprint, so the regional statement has no spillover burden to offset.</li>`;
+            analysisHTML += `<li><strong>Consolidated Social Cost Total:</strong> Combining the selected county with all same-state spillover counties produces ${fmtM(stateWideSocialCost)} in total modeled social costs.</li>`;
 
             analysisHTML += '</ul>';
 
             // C. NET ECONOMIC IMPACT
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Net Economic Impact Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 text-slate-300">';
-
-            analysisHTML += `<li><strong>Sector Comparison:</strong> The Public Sector (government departments) projected impact is a ${fmtM(Math.abs(subGeneralNet))} ${subGeneralNet >= 0 ? 'surplus' : 'deficit'}. In comparison, the Private Sector (Local Economy) faces an unmitigated loss of ${fmtM(totalCostPrivate)}.</li>`;
-
-            analysisHTML += `<li><strong>Subject County Fiscal Balance:</strong> When balancing tax revenue against direct social costs, ${subjectCountyName} County realizes a net impact of ${fmtDiffM(netTotalBalance)}.</li>`;
-
-            analysisHTML += `<li><strong>State-Wide Fiscal Balance:</strong> Considering the cumulative impact on ${subjectStateName} (the subject county plus regional spillover within 50 miles), the total net economic impact is ${fmtDiffM(stateWideNetBalance)}. This metric represents the comprehensive fiscal result for state taxpayers.</li>`;
+            analysisHTML += isHostCountySelection
+                ? `<li><strong>Host Government Fiscal View:</strong> The host statement compares ${fmtM(hostLocalRevenue)} in direct host tax revenue against ${fmtM(subjectTotalCost)} in selected-county social costs, producing a host net impact of ${fmtDiffM(hostLocalNetBalance)}.</li>`
+                : `<li><strong>Host Government Fiscal View:</strong> This statement is inactive for the selected county because the active tax-allocation scenario does not assign host-local revenue there.</li>`;
+            analysisHTML += `<li><strong>Regional Revenue vs County Costs:</strong> The regional statement offsets ${fmtM(revenueRda)} in regional revenue against ${fmtM(spilloverTotalCost)} in spillover social costs across ${otherCountiesCount} counties, producing a regional net impact of ${fmtDiffM(regionalNetAfterSpillover)}.</li>`;
+            analysisHTML += `<li><strong>Consolidated Statement:</strong> The consolidated statement offsets ${fmtM(totalRevenue)} in total tax revenue against ${fmtM(stateWideSocialCost)} in total modeled social costs, producing a consolidated net impact of ${fmtDiffM(stateWideNetBalance)}.</li>`;
 
             if (stateWideNetBalance < 0)
             {
-                analysisHTML += `<li><strong>Fiscal Conclusion:</strong> Under this configuration, the project creates a net fiscal deficit for the state. The cumulative social costs (${fmtM(stateWideSocialCost)}) exceed the total tax revenue (${fmtM(totalRevenue)}), resulting in a net economic loss. To achieve a fiscal break-even point, proponents would need to demonstrate that unmodeled economic multipliers can generate at least ${fmtM(Math.abs(stateWideNetBalance))} in additional, non-substitutive value.</li>`;
-                analysisHTML += `<li><strong>Cost-to-Benefit Ratio:</strong> For every $1 in tax revenue generated, the broader state economy is projected to incur $${(stateWideSocialCost / Math.max(1, totalRevenue)).toFixed(2)} in social costs (crime, bankruptcy, lost productivity).</li>`;
+                analysisHTML += `<li><strong>Fiscal Conclusion:</strong> Under this configuration, the consolidated statement remains in deficit. Total modeled social costs (${fmtM(stateWideSocialCost)}) exceed total tax revenue (${fmtM(totalRevenue)}) by ${fmtM(Math.abs(stateWideNetBalance))}, so any positive case for the project would need to rely on effects not presently included in the deterministic model.</li>`;
+                analysisHTML += `<li><strong>Cost-to-Revenue Ratio:</strong> For every $1 in tax revenue generated, the consolidated model projects $${(stateWideSocialCost / Math.max(1, totalRevenue)).toFixed(2)} in social costs.</li>`;
             } else
             {
-                analysisHTML += `<li><strong>Fiscal Conclusion:</strong> Under this specific configuration of variables, the casino generates a net fiscal surplus for the state. The projected revenue of ${fmtM(totalRevenue)} exceeds the estimated combined social cost liabilities of ${fmtM(stateWideSocialCost)}.</li>`;
+                analysisHTML += `<li><strong>Fiscal Conclusion:</strong> Under this configuration, the consolidated statement remains in surplus. Total modeled tax revenue (${fmtM(totalRevenue)}) exceeds total modeled social costs (${fmtM(stateWideSocialCost)}), leaving a positive consolidated balance of ${fmtM(Math.abs(stateWideNetBalance))}.</li>`;
             }
 
             analysisHTML += '</ul>';
@@ -2642,6 +2725,15 @@ window.EconomicCalculator = (function ()
 
         const rowMap = new Map(rows.map(row => [String(row.key || ''), row]));
         const escapeText = value => escapeHtml(String(value || '').trim());
+        const formatCountySocialCostLabel = countyName =>
+        {
+            const normalized = String(countyName || '')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, ' ');
+            const titleCased = normalized.replace(/\b([a-z])/g, char => char.toUpperCase());
+            return `${titleCased || 'County'} County Social Costs`;
+        };
 
         const subjectPublicCost = Number((rowMap.get('gen_sub') || {}).countyCost || 0);
         const subjectPrivateCost = Number((rowMap.get('private_sub') || {}).countyCost || 0);
@@ -2911,7 +3003,7 @@ window.EconomicCalculator = (function ()
             </tr>
             ${sectionRow('Expenses')}
             <tr ${stripedRowAttrs(0)}>
-                <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">${escapeText(subjectCountyLabel)}</td>
+                <td class="px-3 py-2 text-slate-100 font-bold">${escapeText(formatCountySocialCostLabel(subjectCountyLabel))}</td>
                 ${moneyCell(subjectTotalCost, fmtM, 'text-red-400')}
             </tr>
             ${otherCounties.map((county, index) =>
@@ -2920,7 +3012,7 @@ window.EconomicCalculator = (function ()
                 const costs = county && county.costs ? county.costs : {};
                 return `
                     <tr ${stripedRowAttrs(index + 1)}>
-                        <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">${escapeText(countyName)}</td>
+                        <td class="px-3 py-2 text-slate-100 font-bold">${escapeText(formatCountySocialCostLabel(countyName))}</td>
                         ${moneyCell(Number(costs.total || 0), fmtM, 'text-red-400')}
                     </tr>
                 `;
@@ -3057,7 +3149,7 @@ window.EconomicCalculator = (function ()
     }
 
     // Main init function - called by Blazor after component renders
-    function init()
+    async function init()
     {
         if (isInitialized && els.inAGR && document.body.contains(els.inAGR))
         {
@@ -3074,6 +3166,7 @@ window.EconomicCalculator = (function ()
 
         // Populate DOM references
         initElements();
+        await ensureTaxAllocationScenariosLoaded();
         syncNetImpactModeButtons();
         syncSensitivitySeriesButtons();
         renderTaxAllocationScenarioControls();

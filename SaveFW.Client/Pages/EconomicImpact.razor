@@ -72,6 +72,31 @@
                         <!-- Collapsible Manual Controls -->
                         <div id="manual-controls"
                             class="rounded-2xl px-4 sm:px-6 py-8 transition-all duration-500 ease-in-out @(_manualControlsExpanded ? "max-h-[8000px] opacity-100 overflow-visible" : "max-h-0 opacity-0 overflow-hidden")">
+
+                        <div class="economic-chart-card mb-8">
+                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="max-w-3xl">
+                                    <h4 class="flex items-center gap-2 text-lg font-bold text-white">
+                                        <span class="material-symbols-outlined text-cyan-400">account_balance</span>
+                                        Tax Allocation Scenario
+                                    </h4>
+                                    <p class="mt-2 text-sm leading-relaxed text-slate-400">
+                                        Choose the tax-allocation regime that determines how public revenue is distributed. This changes only the revenue split logic, not the social-cost model.
+                                    </p>
+                                </div>
+                                <div class="w-full max-w-sm">
+                                    <label for="tax-allocation-scenario-select" class="mb-2 block text-sm font-bold uppercase tracking-wide text-slate-300">
+                                        Active Scenario
+                                    </label>
+                                    <select id="tax-allocation-scenario-select"
+                                        class="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-base font-semibold text-white outline-none transition focus:border-blue-400">
+                                    </select>
+                                </div>
+                            </div>
+                            <p id="tax-allocation-scenario-summary" class="mt-4 text-sm leading-relaxed text-slate-400"></p>
+                            <div id="tax-allocation-validation" class="hidden"></div>
+                            <div id="tax-allocation-custom-editor" class="mt-6 grid gap-4"></div>
+                        </div>
                         
                         <!-- Revenue Potential Alert (Populated by JS) -->
                         <div id="revenue-potential-alert" class="hidden mb-6 p-4 rounded-xl border-l-4">
@@ -796,59 +821,6 @@
                                 The statements below use the active tax-allocation scenario to distribute public revenue, while the social-cost model stays fixed. Public-health and other host-area burdens are shown where they are incurred, and same-state spillover costs are shown separately.
                             </p>
 
-                            <div class="economic-chart-card mb-8">
-                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                    <div class="max-w-2xl">
-                                        <h4 class="flex items-center gap-2 text-lg font-bold text-white">
-                                            <span class="material-symbols-outlined text-emerald-400">bar_chart</span>
-                                            Live Net Balance by Category
-                                        </h4>
-                                        <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                                            Positive balances extend right. Negative balances extend left. Switch between the subject county only and the broader Indiana balance that includes same-state spillover costs.
-                                        </p>
-                                    </div>
-                                    <div class="economic-chart-toggle-group" role="tablist" aria-label="Net impact chart mode">
-                                        <button type="button" id="net-impact-mode-county" data-net-chart-mode="county"
-                                            class="economic-chart-toggle is-active" aria-pressed="true">
-                                            County Net Balance
-                                        </button>
-                                        <button type="button" id="net-impact-mode-state" data-net-chart-mode="state"
-                                            class="economic-chart-toggle" aria-pressed="false">
-                                            Indiana Net Balance
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="economic-chart-canvas-shell mt-6">
-                                    <canvas id="net-impact-balance-chart" aria-label="Net economic impact by category"></canvas>
-                                </div>
-                                <div id="net-impact-balance-summary" class="economic-chart-summary-grid mt-5"></div>
-                            </div>
-
-                            <div class="economic-chart-card">
-                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                    <div class="max-w-3xl">
-                                        <h4 class="flex items-center gap-2 text-lg font-bold text-white">
-                                            <span class="material-symbols-outlined text-cyan-400">account_balance</span>
-                                            Tax Allocation Scenario
-                                        </h4>
-                                        <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                                            Choose the tax-allocation regime that determines how public revenue is distributed. This changes only the revenue split logic, not the social-cost model.
-                                        </p>
-                                    </div>
-                                    <div class="w-full max-w-sm">
-                                        <label for="tax-allocation-scenario-select" class="mb-2 block text-sm font-bold uppercase tracking-wide text-slate-300">
-                                            Active Scenario
-                                        </label>
-                                        <select id="tax-allocation-scenario-select"
-                                            class="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-base font-semibold text-white outline-none transition focus:border-blue-400">
-                                        </select>
-                                    </div>
-                                </div>
-                                <p id="tax-allocation-scenario-summary" class="mt-4 text-sm leading-relaxed text-slate-400"></p>
-                                <div id="tax-allocation-validation" class="hidden"></div>
-                                <div id="tax-allocation-custom-editor" class="mt-6 grid gap-4"></div>
-                            </div>
-
                             <div class="economic-chart-card mt-5">
                                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                     <div class="max-w-2xl">
@@ -921,13 +893,17 @@
                                         </p>
                                     </div>
                                     <div class="economic-chart-toggle-group" role="tablist" aria-label="Sensitivity series mode">
-                                        <button type="button" id="sensitivity-series-mode-county" data-sensitivity-series-mode="county"
+                                        <button type="button" id="sensitivity-series-mode-host" data-sensitivity-series-mode="host"
                                             class="economic-chart-toggle is-active" aria-pressed="true">
-                                            County Net
+                                            Host Net
                                         </button>
-                                        <button type="button" id="sensitivity-series-mode-state" data-sensitivity-series-mode="state"
+                                        <button type="button" id="sensitivity-series-mode-regional" data-sensitivity-series-mode="regional"
                                             class="economic-chart-toggle" aria-pressed="false">
-                                            Indiana Net
+                                            Regional Net
+                                        </button>
+                                        <button type="button" id="sensitivity-series-mode-consolidated" data-sensitivity-series-mode="consolidated"
+                                            class="economic-chart-toggle" aria-pressed="false">
+                                            Consolidated Net
                                         </button>
                                     </div>
                                 </div>

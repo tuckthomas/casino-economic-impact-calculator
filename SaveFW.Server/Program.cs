@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using SaveFW.Server.Data;
+using SaveFW.Server.Configuration;
 using SaveFW.Shared;
 using QuestPDF.Infrastructure;
 
@@ -15,6 +17,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddRazorPages();
 builder.Services.AddOpenApi();
+builder.Services.Configure<TaxAllocationOptions>(builder.Configuration.GetSection("TaxAllocation"));
 
 // Register DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -106,6 +109,7 @@ _ = Task.Run(async () =>
         Console.WriteLine("TIGER Data Seeding Check Complete.");
 
         await WarmStateCacheAsync(scope.ServiceProvider);
+        await WarmMunicipalityBoundaryCacheAsync(scope.ServiceProvider);
         await WarmMvtTilesAsync(scope.ServiceProvider);
     }
     catch (Exception ex)
@@ -265,6 +269,101 @@ static async Task WarmStateCacheAsync(IServiceProvider services)
     catch (Exception ex)
     {
         Console.WriteLine($"State cache warm failed: {ex.Message}");
+    }
+}
+
+static async Task WarmMunicipalityBoundaryCacheAsync(IServiceProvider services)
+{
+    var cache = services.GetRequiredService<IMemoryCache>();
+    var db = services.GetRequiredService<AppDbContext>();
+    var taxAllocationOptions = services.GetRequiredService<IOptions<TaxAllocationOptions>>().Value;
+
+    try
+    {
+        Console.WriteLine("Warming municipality boundary caches...");
+        var conn = db.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+        {
+            await conn.OpenAsync();
+        }
+
+        var hostCountyFips = taxAllocationOptions.GetMunicipalEligibleCountyFips().OrderBy(value => value).ToArray();
+        if (hostCountyFips.Length == 0)
+        {
+            Console.WriteLine("Municipality boundary cache warm skipped (no eligible counties configured).");
+            return;
+        }
+        var warmed = 0;
+
+        foreach (var countyFips in hostCountyFips)
+        {
+            var cacheKey = $"tiger_municipalities_{countyFips}_geojson";
+            if (cache.TryGetValue(cacheKey, out string? cachedJson) && !string.IsNullOrEmpty(cachedJson))
+            {
+                warmed++;
+                continue;
+            }
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandTimeout = 120;
+            cmd.CommandText = @"
+                WITH county AS (
+                    SELECT geoid, state_fp, geom
+                    FROM tiger_counties
+                    WHERE geoid = @fips
+                ),
+                municipality_geoms AS (
+                    SELECT
+                        tp.geoid,
+                        tp.name,
+                        tp.state_fp,
+                        ST_Intersection(tp.geom, county.geom) AS geom
+                    FROM county
+                    JOIN tiger_places tp
+                      ON tp.state_fp = county.state_fp
+                    WHERE tp.funcstat = 'A'
+                      AND ST_Intersects(tp.geom, county.geom)
+                )
+                SELECT json_build_object(
+                    'type', 'FeatureCollection',
+                    'features', COALESCE(json_agg(
+                        json_build_object(
+                            'type', 'Feature',
+                            'geometry', ST_AsGeoJSON(geom)::json,
+                            'properties', json_build_object(
+                                'geoid', geoid,
+                                'name', name,
+                                'state_fp', state_fp
+                            )
+                        )
+                        ORDER BY name
+                    ), '[]'::json)
+                )::text
+                FROM municipality_geoms
+                WHERE geom IS NOT NULL
+                  AND NOT ST_IsEmpty(geom);
+            ";
+
+            var p = cmd.CreateParameter();
+            p.ParameterName = "fips";
+            p.Value = countyFips;
+            cmd.Parameters.Add(p);
+
+            var json = (string?)await cmd.ExecuteScalarAsync();
+            if (string.IsNullOrEmpty(json))
+            {
+                json = "{\"type\":\"FeatureCollection\",\"features\":[]}";
+            }
+
+            cache.Set(cacheKey, json, TimeSpan.FromHours(24));
+            warmed++;
+        }
+
+        Console.WriteLine($"Municipality boundary caches warmed: {warmed}/{hostCountyFips.Length} counties.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Municipality boundary cache warm failed: {ex.Message}");
     }
 }
 

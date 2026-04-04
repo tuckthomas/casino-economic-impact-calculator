@@ -2,7 +2,9 @@ using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Npgsql;
+using SaveFW.Server.Configuration;
 using SaveFW.Server.Data;
 using SaveFW.Server.Services;
 
@@ -15,12 +17,14 @@ namespace SaveFW.Server.Controllers
         private readonly AppDbContext _db;
         private readonly TigerSeeder _seeder;
         private readonly IMemoryCache _cache;
+        private readonly TaxAllocationOptions _taxAllocationOptions;
 
-        public CensusController(AppDbContext db, TigerSeeder seeder, IMemoryCache cache)
+        public CensusController(AppDbContext db, TigerSeeder seeder, IMemoryCache cache, IOptions<TaxAllocationOptions> taxAllocationOptions)
         {
             _db = db;
             _seeder = seeder;
             _cache = cache;
+            _taxAllocationOptions = taxAllocationOptions.Value;
         }
 
         [HttpGet("status")]
@@ -74,10 +78,7 @@ namespace SaveFW.Server.Controllers
                 Console.WriteLine($"[CensusController] Municipality lookup request lat={lat}, lon={lon}, countyFips={countyFips ?? "<null>"}");
 
                 var normalizedCountyFips = string.Concat((countyFips ?? string.Empty).Where(char.IsDigit));
-                var isEligibleCounty =
-                    normalizedCountyFips == "18003" ||
-                    normalizedCountyFips == "18033" ||
-                    normalizedCountyFips == "18151";
+                var isEligibleCounty = _taxAllocationOptions.GetMunicipalEligibleCountyFips().Contains(normalizedCountyFips);
 
                 if (!isEligibleCounty)
                 {
@@ -85,6 +86,22 @@ namespace SaveFW.Server.Controllers
                     {
                         countyFips = normalizedCountyFips,
                         isEligibleCounty = false,
+                        isMunicipalSite = false,
+                        cityRevenueApplies = false,
+                        municipalityName = (string?)null,
+                        municipalityGeoid = (string?)null
+                    });
+                }
+
+                var stateFips = normalizedCountyFips.Length >= 2
+                    ? normalizedCountyFips[..2]
+                    : string.Empty;
+                if (stateFips.Length != 2)
+                {
+                    return Ok(new
+                    {
+                        countyFips = normalizedCountyFips,
+                        isEligibleCounty = true,
                         isMunicipalSite = false,
                         cityRevenueApplies = false,
                         municipalityName = (string?)null,
@@ -104,7 +121,7 @@ namespace SaveFW.Server.Controllers
                 await using var cmd = new NpgsqlCommand(@"
                     SELECT geoid, name
                     FROM tiger_places
-                    WHERE state_fp = '18'
+                    WHERE state_fp = @stateFips
                       AND funcstat = 'A'
                       AND ST_Covers(geom, ST_SetSRID(ST_Point(@lon, @lat), 4326))
                     ORDER BY COALESCE(aland, 0) ASC, geoid
@@ -113,6 +130,7 @@ namespace SaveFW.Server.Controllers
 
                 cmd.Parameters.AddWithValue("lat", lat);
                 cmd.Parameters.AddWithValue("lon", lon);
+                cmd.Parameters.AddWithValue("stateFips", stateFips);
 
                 await using var reader = await cmd.ExecuteReaderAsync();
                 if (await reader.ReadAsync())
@@ -143,6 +161,16 @@ namespace SaveFW.Server.Controllers
                 Console.WriteLine($"[CensusController] Municipality lookup failed: {ex}");
                 return StatusCode(500, new { error = ex.ToString() });
             }
+        }
+
+        [HttpGet("tax-allocation-scenarios")]
+        public IActionResult GetTaxAllocationScenarios()
+        {
+            return Ok(new
+            {
+                defaultScenarioId = _taxAllocationOptions.DefaultScenarioId,
+                scenarios = _taxAllocationOptions.Scenarios
+            });
         }
 
         [HttpGet("states")]
@@ -253,6 +281,84 @@ namespace SaveFW.Server.Controllers
             catch (Exception ex)
             {
                  return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpGet("municipalities/{countyFips}")]
+        public async Task<IActionResult> GetMunicipalities(string countyFips)
+        {
+            var normalizedCountyFips = string.Concat((countyFips ?? string.Empty).Where(char.IsDigit));
+            if (normalizedCountyFips.Length != 5)
+            {
+                return BadRequest("County FIPS must be 5 digits");
+            }
+
+            var cacheKey = $"tiger_municipalities_{normalizedCountyFips}_geojson";
+            if (_cache.TryGetValue(cacheKey, out string? cachedJson) && !string.IsNullOrEmpty(cachedJson))
+            {
+                return Content(cachedJson, "application/json");
+            }
+
+            try
+            {
+                var conn = _db.Database.GetDbConnection();
+                await conn.OpenAsync();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    WITH county AS (
+                        SELECT geoid, state_fp, geom
+                        FROM tiger_counties
+                        WHERE geoid = @fips
+                    ),
+                    municipality_geoms AS (
+                        SELECT
+                            tp.geoid,
+                            tp.name,
+                            tp.state_fp,
+                            ST_Intersection(tp.geom, county.geom) AS geom
+                        FROM county
+                        JOIN tiger_places tp
+                          ON tp.state_fp = county.state_fp
+                        WHERE tp.funcstat = 'A'
+                          AND ST_Intersects(tp.geom, county.geom)
+                    )
+                    SELECT json_build_object(
+                        'type', 'FeatureCollection',
+                        'features', COALESCE(json_agg(
+                            json_build_object(
+                                'type', 'Feature',
+                                'geometry', ST_AsGeoJSON(geom)::json,
+                                'properties', json_build_object(
+                                    'geoid', geoid,
+                                    'name', name,
+                                    'state_fp', state_fp
+                                )
+                            )
+                            ORDER BY name
+                        ), '[]'::json)
+                    )::text
+                    FROM municipality_geoms
+                    WHERE geom IS NOT NULL
+                      AND NOT ST_IsEmpty(geom);
+                ";
+
+                var p = cmd.CreateParameter();
+                p.ParameterName = "fips";
+                p.Value = normalizedCountyFips;
+                cmd.Parameters.Add(p);
+
+                var json = (string?)await cmd.ExecuteScalarAsync();
+                if (string.IsNullOrEmpty(json))
+                {
+                    json = "{\"type\":\"FeatureCollection\",\"features\":[]}";
+                }
+
+                _cache.Set(cacheKey, json, TimeSpan.FromHours(24));
+                return Content(json, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
             }
         }
 
