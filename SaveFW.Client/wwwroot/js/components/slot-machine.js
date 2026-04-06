@@ -38,6 +38,12 @@ window.SlotMachine = (function ()
     let slotIsVisible = true;
     let slotVisibilityObserver = null;
     let lightLastFrameTime = 0;
+    let heroSwipeLayout = null;
+    let heroSwipeBound = false;
+    let heroTouchStartX = 0;
+    let heroTouchStartY = 0;
+    let heroTouchTracking = false;
+    let heroTouchHandled = false;
 
     function isMobileViewport(maxWidth = sequenceMobileMaxWidth)
     {
@@ -144,6 +150,120 @@ window.SlotMachine = (function ()
         });
 
         earlyGateObserver.observe(appRoot, { childList: true, subtree: true });
+    }
+
+    function onHeroSwipeTouchStart(e)
+    {
+        if (!isMobileViewport()) return;
+        if (!e || !e.touches || e.touches.length !== 1) return;
+        const layout = document.querySelector('#hero-section .hero-layout');
+        if (!layout) return;
+        if (!layout.contains(e.target)) return;
+
+        heroSwipeLayout = layout;
+        heroTouchStartX = e.touches[0].clientX;
+        heroTouchStartY = e.touches[0].clientY;
+        heroTouchTracking = true;
+        heroTouchHandled = false;
+    }
+
+    function navigateHeroBySwipe(layout, dx)
+    {
+        if (!layout) return false;
+
+        const panelWidth = Math.max(1, layout.clientWidth);
+        const panelCount = Math.max(1, layout.children.length);
+        const maxLeft = Math.max(0, (panelCount - 1) * panelWidth);
+        const currentLeft = Math.max(0, Math.min(layout.scrollLeft, maxLeft));
+        const isSwipeLeft = dx < 0;
+        let targetLeft = currentLeft;
+
+        if (isSwipeLeft && currentLeft < maxLeft - 8)
+        {
+            targetLeft = maxLeft;
+        } else if (!isSwipeLeft && currentLeft > 8)
+        {
+            targetLeft = 0;
+        }
+
+        if (Math.abs(targetLeft - currentLeft) < 1) return false;
+
+        layout.scrollTo({
+            left: targetLeft,
+            behavior: 'smooth'
+        });
+        return true;
+    }
+
+    function onHeroSwipeTouchMove(e)
+    {
+        if (!heroTouchTracking || !isMobileViewport()) return;
+        if (!e || !e.touches || e.touches.length === 0) return;
+
+        const moveTouch = e.touches[0];
+        const dx = moveTouch.clientX - heroTouchStartX;
+        const dy = moveTouch.clientY - heroTouchStartY;
+
+        // Defer until we are sure this is a horizontal gesture.
+        if (Math.abs(dx) < 28) return;
+        if (Math.abs(dx) <= Math.abs(dy) * 1.05) return;
+
+        const layout = heroSwipeLayout || document.querySelector('#hero-section .hero-layout');
+        if (!layout) return;
+
+        if (e.cancelable) e.preventDefault();
+
+        if (heroTouchHandled) return;
+        heroTouchHandled = navigateHeroBySwipe(layout, dx);
+        if (heroTouchHandled)
+        {
+            heroTouchTracking = false;
+            heroSwipeLayout = null;
+        }
+    }
+
+    function onHeroSwipeTouchEnd(e)
+    {
+        if (!heroTouchTracking || !isMobileViewport()) return;
+        heroTouchTracking = false;
+        if (heroTouchHandled)
+        {
+            heroTouchHandled = false;
+            heroSwipeLayout = null;
+            return;
+        }
+
+        if (!e || !e.changedTouches || e.changedTouches.length === 0) return;
+        const endTouch = e.changedTouches[0];
+        const dx = endTouch.clientX - heroTouchStartX;
+        const dy = endTouch.clientY - heroTouchStartY;
+
+        // Require a deliberate horizontal swipe; do not hijack vertical scrolling.
+        if (Math.abs(dx) < 42) return;
+        if (Math.abs(dx) < Math.abs(dy) * 1.1) return;
+
+        const layout = heroSwipeLayout || document.querySelector('#hero-section .hero-layout');
+        heroSwipeLayout = null;
+        if (!layout) return;
+
+        navigateHeroBySwipe(layout, dx);
+    }
+
+    function setupHeroSwipeNavigation()
+    {
+        if (heroSwipeBound) return;
+
+        // Capture at document level so swipe back from the slot panel cannot be swallowed by nested touch handlers.
+        document.addEventListener('touchstart', onHeroSwipeTouchStart, { passive: true, capture: true });
+        document.addEventListener('touchmove', onHeroSwipeTouchMove, { passive: false, capture: true });
+        document.addEventListener('touchend', onHeroSwipeTouchEnd, { passive: true, capture: true });
+        document.addEventListener('touchcancel', () =>
+        {
+            heroTouchTracking = false;
+            heroTouchHandled = false;
+            heroSwipeLayout = null;
+        }, { passive: true, capture: true });
+        heroSwipeBound = true;
     }
 
     function updateCreditDisplay()
@@ -924,6 +1044,7 @@ window.SlotMachine = (function ()
         const isMobile = isMobileViewport(mobileMaxWidth);
         mobileSequenceReady = false;
 
+        setupHeroSwipeNavigation();
         applyEarlyMobileGate();
 
         if (deferredInitTimer)

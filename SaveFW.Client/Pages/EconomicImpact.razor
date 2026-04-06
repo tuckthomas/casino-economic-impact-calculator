@@ -111,7 +111,7 @@
 
                         <!-- AGR Input -->
                         <div class="border-b border-slate-700 pb-8">
-                            <SliderInput Id="agr" Label="Adjusted Gross Revenue (AGR)" Value="204.3"
+                            <PresetInput Id="agr" Label="Adjusted Gross Revenue (AGR)" Value="204.3"
                                          MinValue="0" MaxValue="1000" Step="0.01"
                                          InputType="MoneyMM" DecimalPlaces="2"
                                          MajorTickInterval="200" MinorTickInterval="50"
@@ -151,7 +151,7 @@
 
                         <!-- Revenue Input -->
                         <div class="border-b border-slate-700 pb-8 mt-8">
-                            <SliderInput Id="revenue" Label="Tax Revenue" Value="61.21"
+                            <PresetInput Id="revenue" Label="Tax Revenue" Value="61.21"
                                          MinValue="0" MaxValue="400" Step="0.01"
                                          InputType="MoneyMM" DecimalPlaces="2"
                                          MajorTickInterval="100" MinorTickInterval="25"
@@ -183,42 +183,42 @@
                             </div>
 
                             <div class="space-y-12 pl-2">
-                                <SliderInput Id="cost-crime" Label="Crime Costs" Value="1625" 
+                                <PresetInput Id="cost-crime" Label="Crime Costs" Value="1625" 
                                              MinValue="0" MaxValue="10000" Step="1"
                                              InputType="Currency" DecimalPlaces="0"
                                              MajorTickInterval="2000" MinorTickInterval="500"
                                              Tooltip="Includes costs for police, adjudication, and incarceration related to gambling-induced crime." 
                                              Markers='@(new List<SliderMarker> { new() { Label="Default", Value=1625, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
 
-                                <SliderInput Id="cost-business" Label="Lost Employment" Value="4051" 
+                                <PresetInput Id="cost-business" Label="Lost Employment" Value="4051" 
                                              MinValue="0" MaxValue="10000" Step="1"
                                              InputType="Currency" DecimalPlaces="0"
                                              MajorTickInterval="2000" MinorTickInterval="500"
                                              Tooltip="Economic losses due to lost productivity, absenteeism, and unemployment." 
                                              Markers='@(new List<SliderMarker> { new() { Label="Default", Value=4051, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
 
-                                <SliderInput Id="cost-bankruptcy" Label="Bankruptcy" Value="431" 
+                                <PresetInput Id="cost-bankruptcy" Label="Bankruptcy" Value="431" 
                                              MinValue="0" MaxValue="10000" Step="1"
                                              InputType="Currency" DecimalPlaces="0"
                                              MajorTickInterval="2000" MinorTickInterval="500"
                                              Tooltip="Legal costs and resource drain associated with filings, debts, and civil proceedings." 
                                              Markers='@(new List<SliderMarker> { new() { Label="Default", Value=431, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
 
-                                <SliderInput Id="cost-illness" Label="Illness" Value="1328" 
+                                <PresetInput Id="cost-illness" Label="Illness" Value="1328" 
                                              MinValue="0" MaxValue="10000" Step="1"
                                              InputType="Currency" DecimalPlaces="0"
                                              MajorTickInterval="2000" MinorTickInterval="500"
                                              Tooltip="Healthcare costs for treating stress-related disorders, depression, and anxiety." 
                                              Markers='@(new List<SliderMarker> { new() { Label="Default", Value=1328, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
 
-                                <SliderInput Id="cost-services" Label="Social Services" Value="713" 
+                                <PresetInput Id="cost-services" Label="Social Services" Value="713" 
                                              MinValue="0" MaxValue="10000" Step="1"
                                              InputType="Currency" DecimalPlaces="0"
                                              MajorTickInterval="2000" MinorTickInterval="500"
                                              Tooltip="Public costs for unemployment benefits, welfare programs, and social safety nets." 
                                              Markers='@(new List<SliderMarker> { new() { Label="Default", Value=713, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
 
-                                <SliderInput Id="cost-abused" Label="Abused Dollars" Value="5055" 
+                                <PresetInput Id="cost-abused" Label="Abused Dollars" Value="5055" 
                                              MinValue="0" MaxValue="10000" Step="1"
                                              InputType="Currency" DecimalPlaces="0"
                                              MajorTickInterval="2000" MinorTickInterval="500"

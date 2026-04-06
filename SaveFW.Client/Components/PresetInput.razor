@@ -1,0 +1,324 @@
+@using SaveFW.Shared
+@using System.Globalization
+@inject IJSRuntime JSRuntime
+@namespace SaveFW.Client.Components
+
+<div class="space-y-3 mb-3 lg:mb-4">
+    <div class="flex items-center gap-1.5">
+        <label class="text-sm font-medium text-slate-400">@Label</label>
+        @if (!string.IsNullOrEmpty(Tooltip))
+        {
+            <div class="relative flex items-center">
+                <span class="material-symbols-outlined text-slate-400 text-[16px] cursor-help hover:text-blue-500 transition-colors"
+                      onmouseenter="TooltipPortal.show(this, '@Tooltip.Replace("'", "\\'").Replace("\"", "&quot;")')"
+                      onmouseleave="TooltipPortal.hide()">info</span>
+            </div>
+        }
+    </div>
+    @if (!string.IsNullOrEmpty(Description))
+    {
+        <p class="text-sm text-slate-500 italic -mt-1">@Description</p>
+    }
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-4">
+        <div class="lg:w-[14rem]">
+            <select id="preset-@Id" @ref="presetSelectRef"
+                    value="@selectedPresetValue"
+                    @onchange="HandleNativePresetChanged"
+                    aria-label="@($"{Label} preset")"
+                    class="sfw-modern-select block w-full px-3 py-2 text-sm font-semibold lg:hidden">
+                @foreach (var preset in PresetOptions)
+                {
+                    <option value="@preset.Value">@preset.Label</option>
+                }
+                <option value="@CustomPresetValue">Custom</option>
+            </select>
+            <div class="relative hidden lg:block">
+                <button type="button"
+                        id="preset-trigger-@Id"
+                        class="sfw-modern-select sfw-modern-select-trigger w-full px-3 py-2 text-sm font-semibold"
+                        aria-label="@($"{Label} preset")"
+                        aria-haspopup="listbox"
+                        aria-expanded="@desktopPresetMenuOpen"
+                        aria-controls="preset-menu-@Id"
+                        @onclick="ToggleDesktopPresetMenu">
+                    <span class="truncate">@SelectedPresetLabel</span>
+                    <span class="material-symbols-outlined text-[18px] transition-transform @(desktopPresetMenuOpen ? "rotate-180" : "")">expand_more</span>
+                </button>
+                @if (desktopPresetMenuOpen)
+                {
+                    <div id="preset-menu-@Id" role="listbox" class="sfw-custom-select-menu mt-2">
+                        @foreach (var preset in PresetOptions)
+                        {
+                            var isActive = string.Equals(selectedPresetValue, preset.Value, StringComparison.Ordinal);
+                            <button type="button"
+                                    class="sfw-custom-select-option @(isActive ? "is-active" : "")"
+                                    @onclick="(() => SelectDesktopPresetAsync(preset.Value))">
+                                @preset.Label
+                            </button>
+                        }
+                        <button type="button"
+                                class="sfw-custom-select-option @(string.Equals(selectedPresetValue, CustomPresetValue, StringComparison.Ordinal) ? "is-active" : "")"
+                                @onclick="(() => SelectDesktopPresetAsync(CustomPresetValue))">
+                            Custom
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="space-y-1 lg:w-[14rem] @(IsCustomSelected ? "" : "hidden lg:block lg:h-0 lg:overflow-hidden lg:opacity-0 lg:pointer-events-none")">
+            <label for="val-@Id" class="text-xs font-semibold uppercase tracking-wide text-slate-400">Value</label>
+            <div class="flex items-center gap-1">
+                @if (InputType == "Currency" || InputType == "MoneyMM")
+                {
+                    <span class="text-lg font-bold font-mono text-white">$</span>
+                }
+                <input @ref="textInputRef" type="text" id="val-@Id" inputmode="numeric" readonly
+                       class="sfw-slider-value-input sfw-value-readonly rounded-lg px-2 py-0.5 text-lg font-bold font-mono w-full text-right focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
+                       value="@FormattedCurrentValue">
+                @if (InputType == "Percent")
+                {
+                    <span class="text-lg font-bold font-mono text-white">%</span>
+                }
+                @if (InputType == "MoneyMM")
+                {
+                    <span class="text-lg font-bold font-mono text-white">MM</span>
+                }
+            </div>
+        </div>
+    </div>
+    <div aria-hidden="true" style="display: none;" @ref="containerRef">
+        <input @ref="rangeInputRef" type="range" id="input-@Id" min="@MinValue" max="@MaxValue" step="@Step" value="@currentValue" data-default="@Value"
+               style="display: none;">
+    </div>
+</div>
+
+@code {
+    private sealed class SliderPresetOption
+    {
+        public required string Value { get; init; }
+        public required string Label { get; init; }
+        public required double NumericValue { get; init; }
+    }
+
+    [Parameter] public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Tooltip { get; set; } = "";
+    [Parameter] public string Description { get; set; } = "";
+
+    [Parameter] public string InputType { get; set; } = "Number"; // Default: Numerical
+    [Parameter] public int DecimalPlaces { get; set; } = 2;       // Default: 2
+    [Parameter] public double MinValue { get; set; } = 0;         // Default: 0
+    [Parameter] public double MaxValue { get; set; } = 100;       // Default: 100
+    [Parameter] public List<SliderMarker> Markers { get; set; } = new();
+
+    // Tick Options
+    [Parameter] public double MajorTickInterval { get; set; } = 20; // Default for 0-100 range
+    [Parameter] public double MinorTickInterval { get; set; } = 5;  // Default for 0-100 range
+
+    // Preset/Input Logic Props
+    [Parameter] public double Step { get; set; } = 1;
+    [Parameter] public double Value { get; set; }
+    [Parameter] public string MarkerColor { get; set; } = "red"; // Default color
+
+    private const string CustomPresetValue = "__custom__";
+    private ElementReference containerRef;
+    private ElementReference rangeInputRef;
+    private ElementReference textInputRef;
+    private ElementReference presetSelectRef;
+    private string selectedPresetValue = CustomPresetValue;
+    private bool desktopPresetMenuOpen;
+    private bool presetSelectionInitialized;
+    private double currentValue;
+
+    private string FormattedCurrentValue => currentValue.ToString(InputType == "Percent" ? $"F{DecimalPlaces}" : $"N{DecimalPlaces}");
+    private string SelectedPresetLabel => ResolvePresetLabel(selectedPresetValue);
+    private bool IsCustomSelected => string.Equals(selectedPresetValue, CustomPresetValue, StringComparison.Ordinal);
+
+    private List<SliderPresetOption> PresetOptions
+    {
+        get
+        {
+            var valueMap = new Dictionary<string, SliderPresetOption>(StringComparer.Ordinal);
+            var epsilon = 0.0000001;
+
+            string KeyFor(double numericValue) => Math.Round(numericValue, 8).ToString("0.########", CultureInfo.InvariantCulture);
+
+            void AddOption(double numericValue, string? labelOverride = null)
+            {
+                if (double.IsNaN(numericValue) || double.IsInfinity(numericValue)) return;
+                if (numericValue < MinValue - epsilon || numericValue > MaxValue + epsilon) return;
+
+                var normalized = Math.Round(numericValue, 8);
+                var key = KeyFor(normalized);
+                var label = string.IsNullOrWhiteSpace(labelOverride) ? FormatValue(normalized) : labelOverride;
+                valueMap[key] = new SliderPresetOption
+                {
+                    Value = normalized.ToString("0.########", CultureInfo.InvariantCulture),
+                    NumericValue = normalized,
+                    Label = label
+                };
+            }
+
+            AddOption(MinValue);
+            AddOption(MaxValue);
+
+            if (MajorTickInterval > 0)
+            {
+                var start = Math.Ceiling(MinValue / MajorTickInterval) * MajorTickInterval;
+                for (var tick = start; tick <= MaxValue + epsilon; tick += MajorTickInterval)
+                {
+                    AddOption(Math.Round(tick, 8));
+                }
+            }
+
+            foreach (var marker in Markers)
+            {
+                var markerValue = marker?.Value ?? 0;
+                var formattedValue = FormatValue(markerValue);
+                var rawLabel = marker?.Label?.Trim() ?? string.Empty;
+                var markerLabel = string.IsNullOrWhiteSpace(rawLabel)
+                    ? formattedValue
+                    : (string.Equals(rawLabel, formattedValue, StringComparison.OrdinalIgnoreCase) ||
+                       rawLabel.EndsWith($"({formattedValue})", StringComparison.OrdinalIgnoreCase))
+                        ? rawLabel
+                        : $"{rawLabel} ({formattedValue})";
+
+                AddOption(markerValue, markerLabel);
+            }
+
+            return valueMap.Values
+                .OrderBy(option => option.NumericValue)
+                .Select(option =>
+                {
+                    var tolerance = Step > 0 ? Step / 2 : 0.000001;
+                    var isDefault = Math.Abs(option.NumericValue - Value) <= tolerance;
+                    var label = isDefault && !option.Label.EndsWith(" (Default)", StringComparison.OrdinalIgnoreCase)
+                        ? $"{option.Label} (Default)"
+                        : option.Label;
+
+                    return new SliderPresetOption
+                    {
+                        Value = option.Value,
+                        NumericValue = option.NumericValue,
+                        Label = label
+                    };
+                })
+                .ToList();
+        }
+    }
+
+    private string FormatValue(double numericValue)
+    {
+        var safeDecimals = Math.Max(0, DecimalPlaces);
+        return InputType switch
+        {
+            "Currency" => $"${numericValue.ToString("N0")}",
+            "MoneyMM" => $"${numericValue.ToString($"N{safeDecimals}")}MM",
+            "Percent" => $"{numericValue.ToString($"F{safeDecimals}")}%",
+            _ => numericValue.ToString($"F{safeDecimals}")
+        };
+    }
+
+    private string ResolvePresetLabel(string presetValue)
+    {
+        if (string.Equals(presetValue, CustomPresetValue, StringComparison.Ordinal))
+        {
+            return "Custom";
+        }
+
+        var match = PresetOptions.FirstOrDefault(option => string.Equals(option.Value, presetValue, StringComparison.Ordinal));
+        return match?.Label ?? "Custom";
+    }
+
+    private string ResolvePresetSelection(double numericValue)
+    {
+        var tolerance = Step > 0 ? Step / 2 : 0.000001;
+        var match = PresetOptions.FirstOrDefault(option => Math.Abs(option.NumericValue - numericValue) <= tolerance);
+        return match?.Value ?? CustomPresetValue;
+    }
+
+    private void HandleNativePresetChanged(ChangeEventArgs args)
+    {
+        selectedPresetValue = args?.Value?.ToString() ?? CustomPresetValue;
+        ApplyPresetToLocalValue(selectedPresetValue);
+        desktopPresetMenuOpen = false;
+    }
+
+    private Task ToggleDesktopPresetMenu()
+    {
+        desktopPresetMenuOpen = !desktopPresetMenuOpen;
+        return Task.CompletedTask;
+    }
+
+    private async Task SelectDesktopPresetAsync(string presetValue)
+    {
+        selectedPresetValue = presetValue;
+        ApplyPresetToLocalValue(selectedPresetValue);
+        desktopPresetMenuOpen = false;
+        await JSRuntime.InvokeVoidAsync("window.SliderInputLogic.setPresetValue", presetSelectRef, presetValue);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (!presetSelectionInitialized)
+        {
+            currentValue = Value;
+            selectedPresetValue = ResolvePresetSelection(currentValue);
+            presetSelectionInitialized = true;
+            return;
+        }
+
+        if (!PresetOptions.Any(option => string.Equals(option.Value, selectedPresetValue, StringComparison.Ordinal)) &&
+            !string.Equals(selectedPresetValue, CustomPresetValue, StringComparison.Ordinal))
+        {
+            selectedPresetValue = ResolvePresetSelection(currentValue);
+        }
+        else if (string.IsNullOrWhiteSpace(selectedPresetValue))
+        {
+            selectedPresetValue = ResolvePresetSelection(currentValue);
+        }
+    }
+
+    private void ApplyPresetToLocalValue(string presetValue)
+    {
+        if (string.Equals(presetValue, CustomPresetValue, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!double.TryParse(presetValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+        {
+            return;
+        }
+
+        currentValue = Math.Clamp(parsed, MinValue, MaxValue);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Always try to init. The JS logic handles idempotency via dataset checks.
+        // This ensures that if Blazor replaces the DOM element, we re-attach listeners.
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("window.SliderInputLogic.init", rangeInputRef, textInputRef, containerRef, presetSelectRef, new
+            {
+                min = MinValue,
+                max = MaxValue,
+                majorTickInterval = MajorTickInterval,
+                minorTickInterval = MinorTickInterval,
+                inputType = InputType,
+                decimalPlaces = DecimalPlaces,
+                markers = Markers,
+                markerColor = MarkerColor,
+                step = Step,
+                defaultValue = Value,
+                customOptionValue = CustomPresetValue,
+                presets = PresetOptions.Select(option => new { value = option.NumericValue, label = option.Label }).ToList()
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing SliderInput {Id}: {ex.Message}");
+        }
+    }
+}

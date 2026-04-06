@@ -27,6 +27,15 @@
                         <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 3.6s forwards;">Deserves Better.</span>
                     </span>
                 </h2>
+
+                <div class="hero-mobile-swipe-hint" aria-hidden="true">
+                    <span class="swipe-text">Swipe to Try our Community Outcome Slot Machine</span>
+                    <svg class="swipe-arrow-svg" viewBox="0 0 76 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 30C20 10 42 8 60 16" />
+                        <path d="M60 16L49 9" />
+                        <path d="M60 16L49 23" />
+                    </svg>
+                </div>
             </div>
             <p class="hero-tagline text-lg text-slate-200 font-medium leading-relaxed mb-10 max-w-xl">
                 <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.5s ease 2s both;">
@@ -36,6 +45,17 @@
                 safety.
                 </span>
             </p>
+
+            <div class="hero-mobile-scroll-hint">
+                <a href="#decoding-the-spin" class="hero-mobile-scroll-link" aria-label="Scroll to Decoding the Spin section">
+                    <span class="hero-mobile-scroll-text">Scroll to<br/>Learn More</span>
+                    <span class="hero-mobile-scroll-circle">
+                        <svg class="hero-mobile-scroll-chevron-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 7L10 13L16 7" />
+                        </svg>
+                    </span>
+                </a>
+            </div>
 
             <a href="#mayor-critique" class="hero-desktop-learn-more hidden lg:flex" aria-label="Learn more and continue to the next section">
                 <span class="hero-desktop-learn-more-text">Learn More</span>
@@ -139,12 +159,6 @@
                     </div>
 
                 </div>
-
-                <div class="hero-mobile-play-hint" aria-hidden="true">
-                    <span class="hint-arrow">v</span>
-                    <span class="hint-text">PUSH TO PLAY OR SCROLL DOWN TO LEARN MORE</span>
-                </div>
-
                 <!-- LEVER ARM (Layered In Front) -->
                 <div class="lever-container" style="z-index: 20; pointer-events: none;">
                     <div class="lever-arm" id="slot-lever" style="pointer-events: auto;" role="button" tabindex="0" aria-label="Spin by clicking or pulling the lever">
@@ -163,7 +177,7 @@
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("slotMachineSafeInit", 1023, 10000);
+            await JSRuntime.InvokeVoidAsync("slotMachineSafeInit", 1023, 0);
         }
     }
 
