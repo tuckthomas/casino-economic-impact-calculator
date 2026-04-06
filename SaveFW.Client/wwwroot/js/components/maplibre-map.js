@@ -3359,23 +3359,12 @@ window.MapLibreImpactMap = (function ()
                 map.fitBounds(bounds, { padding: 40 });
                 if (els.stateDisplay) els.stateDisplay.textContent = stateFeature.properties.NAME || stateFeature.properties.name;
 
-                // Notify Blazor to sync dropdown
-                if (window.notifyBlazorStateSelected)
-                {
-                    window.notifyBlazorStateSelected(stateFips, stateFeature.properties.NAME || stateFeature.properties.name);
-                }
             }
         }
         else
         {
             // Fallback: just update UI
             if (els.stateDisplay) els.stateDisplay.textContent = props.name || props.NAME;
-
-            // Notify Blazor to sync dropdown
-            if (window.notifyBlazorStateSelected)
-            {
-                window.notifyBlazorStateSelected(stateFips, props.name || props.NAME || '');
-            }
         }
 
         updateMapNavUI(2);
@@ -3654,12 +3643,6 @@ window.MapLibreImpactMap = (function ()
             const countyName = countyFeature?.properties?.name || countyFeature?.properties?.NAME || '';
             window.dispatchEvent(new CustomEvent('county-selected-map', { detail: { geoid: countyFips, name: countyName } }));
 
-            // Notify Blazor to sync dropdown
-            if (window.notifyBlazorCountySelected)
-            {
-                window.notifyBlazorCountySelected(countyFips, countyName);
-            }
-
             updateMapNavUI(3);
         }
         catch (err)
@@ -3787,12 +3770,6 @@ window.MapLibreImpactMap = (function ()
                     }));
                     const displayEl = document.getElementById('county-display');
                     if (displayEl) displayEl.textContent = countyName;
-
-                    // Notify Blazor to sync the Assessed County dropdown
-                    if (window.notifyBlazorCountySelected)
-                    {
-                        window.notifyBlazorCountySelected(newCountyFips, countyName);
-                    }
 
                     // In grid mode we update dynamically only when snapping at dragend
                     // In radius mode we update isochrones dynamically
@@ -4363,30 +4340,3 @@ window.toggleLayer = function (id)
 
 // Alias for backward compatibility
 window.ImpactMap = window.MapLibreImpactMap;
-
-// JS→Blazor interop for dropdown synchronization
-window._mapDropdownBlazorRef = null;
-
-window.registerMapDropdownSync = function (blazorRef)
-{
-    window._mapDropdownBlazorRef = blazorRef;
-    console.log('Map dropdown sync registered');
-};
-
-// Call this when map state is selected
-window.notifyBlazorStateSelected = function (stateFips, stateName)
-{
-    if (window._mapDropdownBlazorRef)
-    {
-        window._mapDropdownBlazorRef.invokeMethodAsync('OnMapStateSelected', stateFips, stateName || '');
-    }
-};
-
-// Call this when map county is selected
-window.notifyBlazorCountySelected = function (countyFips, countyName)
-{
-    if (window._mapDropdownBlazorRef)
-    {
-        window._mapDropdownBlazorRef.invokeMethodAsync('OnMapCountySelected', countyFips, countyName || '');
-    }
-};

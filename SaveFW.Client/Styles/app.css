@@ -144,6 +144,10 @@ body {
         justify-content: space-between;
         gap: 0.5rem;
         text-align: left;
+        background-image: none;
+        background-position: initial;
+        background-size: initial;
+        padding-right: 0.75rem;
     }
 
     .sfw-custom-select-menu {
@@ -1354,23 +1358,27 @@ input[type=number] {
     filter: drop-shadow(3px 5px 2px rgba(0, 0, 0, 0.4));
 }
 
-/* Button Depressed/Pressed Effect */
-.btn-depressed {
-    position: relative;
-    box-shadow: 0 4px 0 #991b1b, 0 6px 10px rgba(0, 0, 0, 0.3);
+/* Reusable raised/pressed button mechanics */
+.btn-raised {
+    box-shadow:
+        0 4px 0 rgba(15, 23, 42, 0.55),
+        0 8px 14px rgba(0, 0, 0, 0.32);
     transform: translateY(0);
     transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
-.btn-depressed:hover {
-    box-shadow: 0 4px 0 #7f1d1d, 0 6px 12px rgba(0, 0, 0, 0.35);
+.btn-raised:hover {
+    box-shadow:
+        0 4px 0 rgba(15, 23, 42, 0.6),
+        0 10px 16px rgba(0, 0, 0, 0.36);
 }
 
-.btn-depressed:active {
-    transform: translateY(4px);
-    box-shadow: 0 0 0 #991b1b, 0 2px 4px rgba(0, 0, 0, 0.2);
+.btn-raised:active {
+    transform: translateY(3px);
+    box-shadow:
+        0 1px 0 rgba(15, 23, 42, 0.5),
+        0 3px 6px rgba(0, 0, 0, 0.24);
 }
-
 @keyframes fadeInUp {
     from {
         opacity: 0;
