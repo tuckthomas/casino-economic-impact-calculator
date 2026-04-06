@@ -112,7 +112,38 @@
         <span class="dismiss">🗙</span>
     </div>
 
-    <script src="_framework/blazor.webassembly.js"></script>
+    <script>
+        window.slotMachineSafeInit = function (mobileMaxWidth, mobileRevealDelayMs)
+        {
+            let attempts = 0;
+            const maxAttempts = 120;
+            const delayMs = 50;
+
+            const tryInit = () =>
+            {
+                const api = window.SlotMachine;
+                if (api && typeof api.init === 'function')
+                {
+                    api.init(mobileMaxWidth, mobileRevealDelayMs);
+                    return true;
+                }
+                return false;
+            };
+
+            if (tryInit()) return;
+
+            const timer = setInterval(() =>
+            {
+                attempts++;
+                if (tryInit() || attempts >= maxAttempts)
+                {
+                    clearInterval(timer);
+                }
+            }, delayMs);
+        };
+    </script>
+
+    <script src="_framework/blazor.webassembly.js" asp-append-version="true"></script>
 
     <script src="js/lib/html2canvas.min.js" asp-append-version="true"></script>
     <script src="js/pdf-helper.js" asp-append-version="true"></script>

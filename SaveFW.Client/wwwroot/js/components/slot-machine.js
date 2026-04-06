@@ -29,6 +29,122 @@ window.SlotMachine = (function ()
     // Credit System
     let currentCredits = 2;
     let isAlarmActive = false;
+    let isInitialized = false;
+    let deferredInitTimer = null;
+    let resizeObserver = null;
+    let sequenceMobileMaxWidth = 1023;
+    let earlyGateObserver = null;
+    let mobileSequenceReady = false;
+    let slotIsVisible = true;
+    let slotVisibilityObserver = null;
+    let lightLastFrameTime = 0;
+
+    function isMobileViewport(maxWidth = sequenceMobileMaxWidth)
+    {
+        return window.matchMedia(`(max-width: ${maxWidth}px)`).matches;
+    }
+
+    function getLightFrameInterval()
+    {
+        if (!isMobileViewport()) return 16; // desktop ~60fps
+        if (isSirenActive || isSpinning) return 50; // mobile active states ~20fps
+        return 140; // mobile idle ~7fps
+    }
+
+    function canRenderLightFrame()
+    {
+        if (document.hidden) return false;
+        if (!slotIsVisible) return false;
+        return true;
+    }
+
+    function initSlotVisibilityTracking()
+    {
+        if (slotVisibilityObserver) return;
+
+        const slotShell = document.querySelector('#hero-section .hero-slot-shell');
+        if (!slotShell) return;
+
+        if (typeof IntersectionObserver === 'undefined')
+        {
+            slotIsVisible = true;
+            return;
+        }
+
+        slotVisibilityObserver = new IntersectionObserver((entries) =>
+        {
+            slotIsVisible = entries.some((entry) => entry.isIntersecting);
+        }, { threshold: 0.01 });
+
+        slotVisibilityObserver.observe(slotShell);
+    }
+
+    function getGateTargets()
+    {
+        const targets = new Set();
+        const selectors = [
+            '#hero-section .mobile-sequence-gated',
+            '#hero-section .hero-slot-shell'
+        ];
+
+        selectors.forEach((selector) =>
+        {
+            document.querySelectorAll(selector).forEach((element) => targets.add(element));
+        });
+
+        return Array.from(targets);
+    }
+
+    function setGatedVisibility(isVisible)
+    {
+        const heroSection = document.getElementById('hero-section');
+        if (!heroSection) return;
+
+        // Keep reveal class/CSS driven to avoid stale inline hidden states on mobile.
+        const copy = heroSection.querySelector('.hero-copy');
+        if (copy)
+        {
+            copy.style.opacity = '';
+            copy.style.pointerEvents = '';
+        }
+
+        const gatedElements = getGateTargets();
+        gatedElements.forEach((element) =>
+        {
+            element.style.opacity = '';
+            element.style.visibility = '';
+            element.style.pointerEvents = '';
+            element.style.display = '';
+            element.style.transform = '';
+            element.style.width = '';
+            element.style.maxWidth = '';
+            element.style.paddingTop = '';
+            element.style.marginTop = '';
+        });
+    }
+
+    function applyEarlyMobileGate()
+    {
+        if (!isMobileViewport() || mobileSequenceReady) return;
+        setGatedVisibility(false);
+    }
+
+    function initEarlyMobileGate()
+    {
+        if (earlyGateObserver) return;
+
+        applyEarlyMobileGate();
+
+        const appRoot = document.getElementById('app') || document.body;
+        if (!appRoot) return;
+
+        earlyGateObserver = new MutationObserver(() =>
+        {
+            applyEarlyMobileGate();
+        });
+
+        earlyGateObserver.observe(appRoot, { childList: true, subtree: true });
+    }
 
     function updateCreditDisplay()
     {
@@ -159,6 +275,7 @@ window.SlotMachine = (function ()
 
         // Stop existing animation loop to prevent duplicates/memory leaks
         if (lightAnimationId) cancelAnimationFrame(lightAnimationId);
+        lightLastFrameTime = 0;
 
         list.innerHTML = '';
 
@@ -277,8 +394,22 @@ window.SlotMachine = (function ()
         });
 
         // Single Animation Loop for High Performance
-        const animate = () =>
+        const animate = (timestamp = 0) =>
         {
+            if (!canRenderLightFrame())
+            {
+                lightAnimationId = requestAnimationFrame(animate);
+                return;
+            }
+
+            const frameInterval = getLightFrameInterval();
+            if (lightLastFrameTime !== 0 && (timestamp - lightLastFrameTime) < frameInterval)
+            {
+                lightAnimationId = requestAnimationFrame(animate);
+                return;
+            }
+            lightLastFrameTime = timestamp;
+
             const now = Date.now();
 
             if (isSirenActive)
@@ -400,7 +531,59 @@ window.SlotMachine = (function ()
             reel.style.transform = `translateZ(-${RADIUS}px) rotateX(0deg)`;
             reel.offsetHeight;
             reel.style.transition = '';
+
+            fitReelSlots(reel);
         });
+    }
+
+    function fitSlotText(slot)
+    {
+        if (!slot) return;
+
+        const mobile = isMobileViewport();
+        const preferredFontSize = mobile ? 12 : 16;
+        const minFontSize = mobile ? 9.5 : 13.5;
+        const widthPadding = 8;
+        const heightPadding = 6;
+
+        slot.style.fontSize = `${preferredFontSize}px`;
+        slot.style.lineHeight = '1.08';
+        slot.style.wordBreak = 'normal';
+        slot.style.overflowWrap = 'normal';
+        slot.style.hyphens = 'none';
+
+        let fontSize = preferredFontSize;
+        let guard = 0;
+
+        while (
+            (slot.scrollWidth > (slot.clientWidth - widthPadding) || slot.scrollHeight > (slot.clientHeight - heightPadding)) &&
+            fontSize > minFontSize &&
+            guard < 24
+        )
+        {
+            fontSize -= 0.5;
+            slot.style.fontSize = `${fontSize}px`;
+            guard++;
+        }
+    }
+
+    function fitReelSlots(reel)
+    {
+        if (!reel) return;
+        for (const child of reel.children)
+        {
+            if (child && child.classList && child.classList.contains('slot-item'))
+            {
+                fitSlotText(child);
+            }
+        }
+    }
+
+    function fitAllReelSlots()
+    {
+        fitReelSlots(document.getElementById('reel-1'));
+        fitReelSlots(document.getElementById('reel-2'));
+        fitReelSlots(document.getElementById('reel-3'));
     }
 
     function updateSlot(reelEl, index, text, type)
@@ -418,6 +601,8 @@ window.SlotMachine = (function ()
         {
             slot.classList.add('near-miss');
         }
+
+        fitSlotText(slot);
     }
 
     function performSpin(index, delay = 0)
@@ -458,6 +643,27 @@ window.SlotMachine = (function ()
     function spinReel(index)
     {
         if (isSpinning) return;
+
+        const reelIndex = Number(index);
+        if (isMobileViewport() && reelIndex === 1)
+        {
+            isSpinning = true;
+            resetSiren();
+            isAtFront = !isAtFront;
+
+            [0, 1, 2].forEach((i) =>
+            {
+                performSpin(i, i * 200);
+            });
+
+            setTimeout(() =>
+            {
+                isSpinning = false;
+                triggerSirenSequence();
+            }, 6500);
+            return;
+        }
+
         performSpin(index, 0);
     }
 
@@ -467,6 +673,22 @@ window.SlotMachine = (function ()
         const siren = document.getElementById('siren');
         if (siren) siren.classList.remove('siren-active');
         if (sirenTimeout) clearTimeout(sirenTimeout);
+    }
+
+    function triggerSirenSequence()
+    {
+        const siren = document.getElementById('siren');
+        if (!siren) return;
+
+        siren.classList.add('siren-active');
+        isSirenActive = true;
+
+        if (sirenTimeout) clearTimeout(sirenTimeout);
+        sirenTimeout = setTimeout(() =>
+        {
+            siren.classList.remove('siren-active');
+            isSirenActive = false;
+        }, 5000);
     }
 
     function spinTheTruth()
@@ -499,19 +721,7 @@ window.SlotMachine = (function ()
         setTimeout(() =>
         {
             isSpinning = false;
-
-            const siren = document.getElementById('siren');
-            if (siren)
-            {
-                siren.classList.add('siren-active');
-                isSirenActive = true;
-
-                sirenTimeout = setTimeout(() =>
-                {
-                    siren.classList.remove('siren-active');
-                    isSirenActive = false;
-                }, 5000);
-            }
+            triggerSirenSequence();
         }, 6500);
     }
 
@@ -524,6 +734,8 @@ window.SlotMachine = (function ()
 
         let isDragging = false;
         let startY = 0;
+        let dragMoved = false;
+        let suppressClickUntil = 0;
 
         function startDrag(e)
         {
@@ -531,6 +743,7 @@ window.SlotMachine = (function ()
             if (e.cancelable) e.preventDefault();
 
             isDragging = true;
+            dragMoved = false;
             startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
             lever.style.transition = 'none';
             knob.style.transition = 'none';
@@ -547,6 +760,7 @@ window.SlotMachine = (function ()
 
             const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
             const diff = currentY - startY;
+            if (Math.abs(diff) > 3) dragMoved = true;
 
             let deg = Math.min(70, Math.max(0, diff / 2.5));
 
@@ -578,14 +792,16 @@ window.SlotMachine = (function ()
 
             if (Math.abs(currentDeg) > 45)
             {
+                suppressClickUntil = Date.now() + 500;
                 spinTheTruth();
-            } else
+            } else if (!dragMoved && Math.abs(currentDeg) < 10)
             {
-                if (Math.abs(currentDeg) < 5 && e.type !== 'touchend')
-                {
-                    animateLeverPull();
-                }
+                // Treat tap/click on the knob as a full pull action.
+                suppressClickUntil = Date.now() + 500;
+                animateLeverPull();
             }
+
+            dragMoved = false;
         }
 
         function animateLeverPull()
@@ -601,6 +817,30 @@ window.SlotMachine = (function ()
             }, 600);
         }
 
+        function onLeverClick(e)
+        {
+            if (isSpinning || isDragging) return;
+            if (Date.now() < suppressClickUntil) return;
+            if (dragMoved)
+            {
+                dragMoved = false;
+                return;
+            }
+            if (e && e.cancelable) e.preventDefault();
+            animateLeverPull();
+        }
+
+        function onLeverKeyDown(e)
+        {
+            if (!e) return;
+            const key = String(e.key || '').toLowerCase();
+            if (key === 'enter' || key === ' ')
+            {
+                if (e.cancelable) e.preventDefault();
+                onLeverClick(e);
+            }
+        }
+
         lever.addEventListener('mousedown', startDrag);
         document.addEventListener('mousemove', moveDrag);
         document.addEventListener('mouseup', endDrag);
@@ -608,30 +848,116 @@ window.SlotMachine = (function ()
         lever.addEventListener('touchstart', startDrag, { passive: false });
         document.addEventListener('touchmove', moveDrag, { passive: false });
         document.addEventListener('touchend', endDrag);
+        lever.addEventListener('click', onLeverClick);
+        lever.addEventListener('keydown', onLeverKeyDown);
     }
 
-    function init()
+    function setMobileSequenceState(state)
     {
+        const heroSection = document.getElementById('hero-section');
+        if (!heroSection) return;
+
+        heroSection.classList.remove('mobile-sequence-pending');
+        heroSection.classList.remove('mobile-sequence-ready');
+
+        if (state === 'pending')
+        {
+            mobileSequenceReady = false;
+            heroSection.classList.add('mobile-sequence-pending');
+            setGatedVisibility(false);
+            return;
+        }
+
+        mobileSequenceReady = true;
+        heroSection.classList.add('mobile-sequence-ready');
+        setGatedVisibility(true);
+    }
+
+    function initializeMachine()
+    {
+        if (isInitialized) return;
+        isInitialized = true;
+
+        initSlotVisibilityTracking();
         initReels();
         initLights();
         initLever();
         updateCreditDisplay();
 
         const wrapper = document.querySelector('.slot-machine-wrapper');
-        if (wrapper)
+        if (wrapper && !resizeObserver)
         {
-            const ro = new ResizeObserver(entries =>
+            resizeObserver = new ResizeObserver(entries =>
             {
                 // Debounce re-layout
                 clearTimeout(window._slotResizeTimer);
-                window._slotResizeTimer = setTimeout(initLights, 50);
+                window._slotResizeTimer = setTimeout(() =>
+                {
+                    initLights();
+                    fitAllReelSlots();
+                }, 50);
             });
-            ro.observe(wrapper);
+            resizeObserver.observe(wrapper);
         }
 
         // Expose spinReel globally if needed by buttons outside
         window.spinReel = spinReel;
     }
+
+    function init(optionsOrMobileMaxWidth, mobileRevealDelayMsArg)
+    {
+        let mobileMaxWidth = 1023;
+        let mobileRevealDelayMs = 6200;
+
+        if (optionsOrMobileMaxWidth && typeof optionsOrMobileMaxWidth === 'object')
+        {
+            const opts = optionsOrMobileMaxWidth;
+            mobileMaxWidth = Number.isFinite(Number(opts.mobileMaxWidth)) ? Number(opts.mobileMaxWidth) : mobileMaxWidth;
+            mobileRevealDelayMs = Number.isFinite(Number(opts.mobileRevealDelayMs)) ? Number(opts.mobileRevealDelayMs) : mobileRevealDelayMs;
+        } else
+        {
+            mobileMaxWidth = Number.isFinite(Number(optionsOrMobileMaxWidth)) ? Number(optionsOrMobileMaxWidth) : mobileMaxWidth;
+            mobileRevealDelayMs = Number.isFinite(Number(mobileRevealDelayMsArg)) ? Number(mobileRevealDelayMsArg) : mobileRevealDelayMs;
+        }
+
+        sequenceMobileMaxWidth = mobileMaxWidth;
+        const isMobile = isMobileViewport(mobileMaxWidth);
+        mobileSequenceReady = false;
+
+        applyEarlyMobileGate();
+
+        if (deferredInitTimer)
+        {
+            clearTimeout(deferredInitTimer);
+            deferredInitTimer = null;
+        }
+
+        if (!isMobile)
+        {
+            setMobileSequenceState('ready');
+            initializeMachine();
+            return;
+        }
+
+        setMobileSequenceState('pending');
+
+        deferredInitTimer = setTimeout(() =>
+        {
+            try
+            {
+                initializeMachine();
+            } catch (error)
+            {
+                console.error('SlotMachine initialization failed; forcing mobile ready state.', error);
+            } finally
+            {
+                setMobileSequenceState('ready');
+                deferredInitTimer = null;
+            }
+        }, Math.max(0, mobileRevealDelayMs));
+    }
+
+    initEarlyMobileGate();
 
     return {
         init: init,

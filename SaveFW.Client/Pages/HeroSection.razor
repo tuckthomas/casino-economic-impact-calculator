@@ -1,31 +1,33 @@
 @inject IJSRuntime JSRuntime
 
-<section class="relative w-full overflow-hidden min-h-[100svh]">
-    <div class="mx-auto flex min-h-[100svh] w-full max-w-[96rem] flex-col items-center px-4 sm:px-6 lg:flex-row lg:px-8 xl:px-10">
+<section id="hero-section" class="relative w-full overflow-hidden min-h-[100svh] mobile-sequence-pending">
+    <div class="hero-layout mx-auto flex min-h-[100svh] w-full max-w-[96rem] flex-col items-center px-4 sm:px-6 lg:flex-row lg:px-8 xl:px-10">
         <!-- Text Content -->
         <div class="hero-copy flex-1 relative z-20 flex flex-col justify-center py-24 text-white lg:py-32 lg:pr-8 xl:pr-12">
-            <h1 class="hero-headline text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl mb-6">
-                <span class="hero-line">
-                    <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.2s ease 0.3s forwards;">DON'T LET THEM</span>
-                </span>
-                <span class="hero-line">
-                    <span class="hero-animate hero-line--accent text-accent underline decoration-4 decoration-accent/50 underline-offset-4" style="display: inline-block; opacity: 0; animation: fadeInUp 1.2s ease 0.7s forwards;">GAMBLE AWAY</span>
-                </span>
-                <span class="hero-line">
-                    <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.2s ease 1.1s forwards;">OUR CITY'S</span>
-                </span>
-                <span class="hero-line">
-                    <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.2s ease 1.5s forwards;">FUTURE.</span>
-                </span>
-            </h1>
-            <h2 class="hero-kicker text-2xl font-bold text-accent mb-6 uppercase tracking-wider">
-                <span class="hero-kicker-part">
-                    <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.2s ease 2s forwards;">Fort Wayne</span>
-                </span>
-                <span class="hero-kicker-part">
-                    <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.2s ease 2.4s forwards;">Deserves Better.</span>
-                </span>
-            </h2>
+            <div class="hero-mobile-intro">
+                <h1 class="hero-headline text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl mb-6">
+                    <span class="hero-line">
+                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 0.45s forwards;">DON'T LET THEM</span>
+                    </span>
+                    <span class="hero-line">
+                        <span class="hero-animate hero-line--accent text-accent underline decoration-4 decoration-accent/50 underline-offset-4" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 1.05s forwards;">GAMBLE AWAY</span>
+                    </span>
+                    <span class="hero-line">
+                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 1.65s forwards;">OUR CITY'S</span>
+                    </span>
+                    <span class="hero-line">
+                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 2.25s forwards;">FUTURE.</span>
+                    </span>
+                </h1>
+                <h2 class="hero-kicker text-2xl font-bold text-accent mb-6 uppercase tracking-wider">
+                    <span class="hero-kicker-part">
+                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 3s forwards;">Fort Wayne</span>
+                    </span>
+                    <span class="hero-kicker-part">
+                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 3.6s forwards;">Deserves Better.</span>
+                    </span>
+                </h2>
+            </div>
             <p class="hero-tagline text-lg text-slate-200 font-medium leading-relaxed mb-10 max-w-xl">
                 <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.5s ease 2s both;">
                 The proposed casino expansion creates a net fiscal loss for our city, introducing risks of addiction and
@@ -34,28 +36,26 @@
                 safety.
                 </span>
             </p>
-            <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <!-- Email Button -->
-                <a href="mailto:outreach@savefw.com"
-                    class="flex min-h-[56px] w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-white text-fw-teal dark:text-slate-900 px-6 text-sm font-bold shadow-lg transition-transform active:scale-95 active:bg-slate-100 whitespace-nowrap">
-                    <span class="material-symbols-outlined text-lg">mail</span>
-                    Email Us: outreach@savefw.com
-                </a>
-            </div>
 
+            <a href="#mayor-critique" class="hero-desktop-learn-more hidden lg:flex" aria-label="Learn more and continue to the next section">
+                <span class="hero-desktop-learn-more-text">Learn More</span>
+                <span class="hero-desktop-learn-more-circle" aria-hidden="true">
+                    <span class="hero-desktop-learn-more-chevron">v</span>
+                </span>
+            </a>
         </div>
 
         <!-- Image Side -->
-        <div class="relative w-full lg:w-[55%]">
+        <div class="hero-visual-stage relative w-full lg:w-[55%]">
             <!-- Slot Machine (Moved Here) -->
-            <div class="hero-slot-shell relative mx-auto z-0 mt-6 lg:mt-10">
+            <div class="hero-slot-shell relative mx-auto z-0 mt-6">
                 <!-- LEVER -->
                 <!-- LEVER BASE (Layered Behind) -->
                 <div class="lever-container" style="z-index: 0;">
                     <div class="lever-base"></div>
                 </div>
 
-                <div class="slot-machine-wrapper -top-12 lg:-top-20 xl:-top-24">
+                <div class="slot-machine-wrapper">
                     <!-- Siren Light -->
                     <div class="siren-wrapper" id="siren">
                         <div class="siren-base"></div>
@@ -105,9 +105,9 @@
 
                     <!-- Reel Control Buttons -->
                     <div class="reel-controls">
-                        <button class="reel-btn" @onclick="() => SpinReel(0)">SPIN</button>
-                        <button class="reel-btn" @onclick="() => SpinReel(1)">SPIN</button>
-                        <button class="reel-btn" @onclick="() => SpinReel(2)">SPIN</button>
+                        <button class="reel-btn" @onclick="() => SpinReel(0)">PUSH</button>
+                        <button class="reel-btn" @onclick="() => SpinReel(1)">PUSH</button>
+                        <button class="reel-btn" @onclick="() => SpinReel(2)">PUSH</button>
                     </div>
 
                     <!-- Coin Tray (centered) -->
@@ -140,9 +140,14 @@
 
                 </div>
 
+                <div class="hero-mobile-play-hint" aria-hidden="true">
+                    <span class="hint-arrow">v</span>
+                    <span class="hint-text">PUSH TO PLAY OR SCROLL DOWN TO LEARN MORE</span>
+                </div>
+
                 <!-- LEVER ARM (Layered In Front) -->
                 <div class="lever-container" style="z-index: 20; pointer-events: none;">
-                    <div class="lever-arm" id="slot-lever" style="pointer-events: auto;">
+                    <div class="lever-arm" id="slot-lever" style="pointer-events: auto;" role="button" tabindex="0" aria-label="Spin by clicking or pulling the lever">
                         <div class="lever-knob">
                             <span class="knob-text">CLICK<br>OR<br>PULL</span>
                         </div>
@@ -158,7 +163,7 @@
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("window.SlotMachine.init");
+            await JSRuntime.InvokeVoidAsync("slotMachineSafeInit", 1023, 10000);
         }
     }
 

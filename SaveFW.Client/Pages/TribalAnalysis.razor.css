@@ -1,0 +1,43 @@
+.tribal-impact-banner {
+    min-height: 100svh;
+}
+
+.tribal-impact-banner-image {
+    width: 100%;
+    height: 100svh;
+    object-fit: cover;
+    object-position: center;
+}
+
+.tribal-impact-title {
+    font-size: clamp(2.6rem, 7vw, 6.25rem);
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+}
+
+.tribal-impact-word {
+    display: block;
+}
+
+@media (max-width: 639px) {
+    .tribal-impact-banner-image {
+        object-position: 74% center;
+    }
+
+    .tribal-impact-title {
+        max-width: 100%;
+        font-size: clamp(2.75rem, 13.5vw, 5.25rem);
+        line-height: 0.84;
+        letter-spacing: -0.02em;
+    }
+}
+
+@media (min-width: 640px) {
+    .tribal-impact-banner {
+        min-height: 0;
+    }
+
+    .tribal-impact-banner-image {
+        height: auto;
+    }
+}

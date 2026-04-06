@@ -1,0 +1,9 @@
+.crime-safety-section-heading {
+    padding: 0;
+}
+
+@media (max-width: 767px) {
+    .crime-safety-section-heading {
+        padding: 1rem 1.1rem;
+    }
+}

@@ -2,10 +2,86 @@
     max-width: 42rem;
 }
 
+.hero-mobile-cta {
+    display: none;
+}
+
+.hero-desktop-learn-more {
+    width: auto;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.45rem;
+    color: rgba(241, 245, 249, 0.92);
+    text-decoration: none;
+    margin: 0.35rem auto 0;
+    align-self: center;
+    pointer-events: auto;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.hero-desktop-learn-more-circle {
+    width: 2.9rem;
+    height: 2.9rem;
+    border-radius: 9999px;
+    border: 2px solid rgba(241, 245, 249, 0.75);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.28);
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    animation: heroDesktopChevronBob 1.6s ease-in-out infinite;
+}
+
+.hero-desktop-learn-more-chevron {
+    font-size: 1.1rem;
+    line-height: 1;
+    font-weight: 700;
+    transform: translateY(1px);
+}
+
+.hero-desktop-learn-more-text {
+    font-size: 0.78rem;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.hero-desktop-learn-more:hover .hero-desktop-learn-more-circle {
+    transform: translateY(1px);
+    border-color: rgba(255, 255, 255, 0.95);
+    background: rgba(15, 23, 42, 0.44);
+    animation-play-state: paused;
+}
+
+@media (min-width: 1024px) {
+    .hero-desktop-learn-more {
+        animation: heroDesktopLearnMoreIn 0.55s ease 3.7s forwards;
+    }
+}
+
+.hero-mobile-play-hint {
+    display: none;
+}
+
 .hero-slot-shell {
     max-width: 54rem;
+    margin-top: 1.5rem;
     transform: scale(0.88);
     transform-origin: top center;
+}
+
+.hero-visual-stage {
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .hero-visual-stage {
+        width: 55%;
+    }
 }
 
 .hero-line,
@@ -17,6 +93,13 @@
     margin-top: 0.15rem;
 }
 
+@keyframes heroMobileIntroFadeOut {
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
 @media (min-width: 640px) {
     .hero-slot-shell {
         transform: scale(1);
@@ -26,7 +109,8 @@
 @media (min-width: 1024px) {
     .hero-slot-shell {
         max-width: 56rem;
-        transform: scale3d(0.96, 1.14, 1);
+        margin-top: -5.5rem;
+        transform: scale3d(0.92, 1.14, 1);
         transform-origin: top center;
     }
 }
@@ -34,12 +118,395 @@
 @media (min-width: 1280px) {
     .hero-slot-shell {
         max-width: 58rem;
-        transform: scale3d(0.98, 1.22, 1);
+        margin-top: -6.25rem;
+        transform: scale3d(0.94, 1.22, 1);
     }
 }
 
 @media (max-width: 1023px) {
+    #hero-section {
+        overflow: hidden;
+    }
+
+    #hero-section .hero-slot-shell .lever-container {
+        display: none;
+    }
+
+    #hero-section .reel-controls .reel-btn:first-child,
+    #hero-section .reel-controls .reel-btn:last-child {
+        display: none;
+    }
+
+    #hero-section .hero-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        min-height: 100svh;
+        align-items: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
     .hero-copy {
+        grid-area: 1 / 1;
         max-width: 100%;
+        min-height: 100svh;
+        justify-content: center;
+        padding-left: clamp(0.75rem, 4vw, 1.25rem);
+        padding-right: clamp(0.75rem, 4vw, 1.25rem);
+        padding-top: 3.5rem;
+        padding-bottom: 3.5rem;
+        z-index: 20;
+        transition: opacity 0.45s ease;
+    }
+
+    #hero-section .hero-mobile-intro::before {
+        content: "";
+        display: block;
+        width: min(86vw, 28rem);
+        height: clamp(5.2rem, 18vw, 8.4rem);
+        margin: -0.95rem 0 1rem 0;
+        background: -1.15rem center / 100% auto no-repeat url('/assets/SAVEFW_DARK_MODE.svg');
+        opacity: 0;
+        pointer-events: none;
+        filter: drop-shadow(0 4px 1px rgba(0, 0, 0, 0.7)) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.4));
+        transform: perspective(900px) rotateX(8deg) translateY(14px);
+        transform-origin: center center;
+        animation: heroMobileLogoFadeIn 0.95s ease 0.35s forwards;
+    }
+
+    #hero-section .hero-visual-stage {
+        grid-area: 1 / 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 100svh;
+        padding-top: clamp(1rem, 4vw, 2rem);
+        padding-bottom: clamp(1rem, 4vw, 2rem);
+        padding-left: clamp(0.25rem, 2vw, 0.75rem);
+        padding-right: clamp(0.25rem, 2vw, 0.75rem);
+        z-index: 24;
+        pointer-events: none;
+        overflow: hidden;
+    }
+}
+
+@keyframes heroMobileLogoFadeIn {
+    from {
+        opacity: 0;
+        transform: perspective(900px) rotateX(8deg) translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: perspective(900px) rotateX(8deg) translateY(0);
+    }
+}
+
+@media (max-width: 1023px) {
+    #hero-section .hero-tagline {
+        display: none;
+    }
+
+    #hero-section .hero-mobile-intro {
+        animation: heroMobileIntroFadeOut 0.65s ease 8.9s forwards;
+    }
+
+    #hero-section .hero-slot-shell {
+        width: min(100%, 34rem);
+        max-width: 34rem;
+        padding-top: clamp(2.5rem, 8vw, 3.25rem);
+        margin-top: 0;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(10px) scale(0.98);
+        transition: opacity 0.7s ease, transform 0.7s ease;
+        animation: heroMobileSlotFallbackReveal 0.85s ease 10s forwards;
+    }
+
+    #hero-section.mobile-sequence-ready .hero-slot-shell {
+        animation: none;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+    }
+
+    #hero-section.mobile-sequence-ready .hero-copy {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    #hero-section.mobile-sequence-ready .hero-visual-stage {
+        pointer-events: auto;
+    }
+
+    .hero-mobile-play-hint {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        margin-top: 0.6rem;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(8px);
+        transition: opacity 0.45s ease, transform 0.45s ease;
+        pointer-events: none;
+        animation: heroMobileHintReveal 0.55s ease 10.35s forwards;
+    }
+
+    .hero-mobile-play-hint .hint-arrow {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: rgba(241, 245, 249, 0.9);
+        line-height: 1;
+        animation: heroHintBob 1.4s ease-in-out infinite;
+    }
+
+    .hero-mobile-play-hint .hint-text {
+        font-size: 0.67rem;
+        line-height: 1.2;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(241, 245, 249, 0.9);
+        text-align: center;
+        max-width: min(92vw, 22rem);
+    }
+
+    #hero-section.mobile-sequence-ready .hero-mobile-play-hint {
+        animation: none;
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        transition-delay: 0.28s;
+    }
+}
+
+@media (max-width: 640px) {
+    ::deep .slot-machine-wrapper .marker-left {
+        left: 4px;
+    }
+
+    ::deep .slot-machine-wrapper .marker-right {
+        right: 4px;
+    }
+
+    ::deep .slot-machine-wrapper .marker-base {
+        width: 15px;
+        height: 24px;
+    }
+
+    ::deep .slot-machine-wrapper .marker-tip {
+        width: 15px;
+        height: 19px;
+    }
+
+    #hero-section .hero-slot-shell .lever-container {
+        right: -2px;
+    }
+
+    ::deep .slot-machine-wrapper {
+        padding-top: 96px;
+    }
+
+    ::deep .slot-machine-wrapper .siren-wrapper {
+        top: -46px;
+        transform: translateX(-50%) scale(0.86);
+    }
+
+    ::deep .slot-machine-wrapper .slot-window {
+        height: 252px;
+        margin-bottom: 24px;
+    }
+
+    ::deep .slot-machine-wrapper .marquee-logo {
+        max-width: min(90%, 430px);
+        height: clamp(64px, 16vw, 92px);
+        margin-top: calc(-1 * clamp(90px, 22vw, 110px));
+        margin-bottom: 14px;
+    }
+
+    ::deep .slot-machine-wrapper .marquee-logo img {
+        height: 100%;
+        max-width: 94%;
+        margin-top: 0;
+        object-fit: contain;
+    }
+
+    ::deep .slot-machine-wrapper .coin-panel {
+        right: 10px;
+        bottom: 22px;
+        transform: scale(0.74);
+        transform-origin: right bottom;
+    }
+
+    ::deep .slot-machine-wrapper .casino-lights li {
+        width: 16px;
+        height: 16px;
+        margin-left: -8px;
+        margin-top: -8px;
+        box-shadow: inset -1px -1px 2px rgba(255, 200, 100, 0.3),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.65),
+            0 0 6px 2px rgba(255, 170, 40, 0.55),
+            0 0 11px 4px rgba(255, 120, 0, 0.3);
+    }
+
+    ::deep .hero-slot-shell .lever-knob {
+        width: 34px;
+        height: 34px;
+        top: -18px;
+    }
+
+    ::deep .hero-slot-shell .knob-text {
+        font-size: 6px;
+        line-height: 1.05;
+    }
+}
+
+@media (max-width: 420px) {
+    ::deep .slot-machine-wrapper .marker-left {
+        left: 2px;
+    }
+
+    ::deep .slot-machine-wrapper .marker-right {
+        right: 2px;
+    }
+
+    ::deep .slot-machine-wrapper .marker-base {
+        width: 13px;
+        height: 20px;
+    }
+
+    ::deep .slot-machine-wrapper .marker-tip {
+        width: 13px;
+        height: 16px;
+    }
+
+    #hero-section .hero-slot-shell .lever-container {
+        right: 2px;
+    }
+
+    ::deep .slot-machine-wrapper {
+        padding-top: 88px;
+    }
+
+    ::deep .slot-machine-wrapper .siren-wrapper {
+        top: -42px;
+        transform: translateX(-50%) scale(0.8);
+    }
+
+    ::deep .slot-machine-wrapper .slot-window {
+        height: 238px;
+        margin-bottom: 20px;
+    }
+
+    ::deep .slot-machine-wrapper .marquee-logo {
+        max-width: min(88%, 360px);
+        height: clamp(54px, 15vw, 72px);
+        margin-top: calc(-1 * clamp(76px, 21vw, 96px));
+        margin-bottom: 10px;
+    }
+
+    ::deep .slot-machine-wrapper .marquee-logo img {
+        max-width: 92%;
+    }
+
+    ::deep .slot-machine-wrapper .coin-panel {
+        right: 6px;
+        bottom: 18px;
+        transform: scale(0.66);
+    }
+
+    ::deep .slot-machine-wrapper .casino-lights li {
+        width: 14px;
+        height: 14px;
+        margin-left: -7px;
+        margin-top: -7px;
+        box-shadow: inset -1px -1px 2px rgba(255, 200, 100, 0.28),
+            inset 1px 1px 1px rgba(255, 255, 255, 0.6),
+            0 0 5px 2px rgba(255, 170, 40, 0.45),
+            0 0 9px 3px rgba(255, 120, 0, 0.25);
+    }
+
+    ::deep .hero-slot-shell .lever-knob {
+        width: 28px;
+        height: 28px;
+        top: -16px;
+    }
+
+    ::deep .hero-slot-shell .knob-text {
+        font-size: 5px;
+        line-height: 1.05;
+    }
+}
+
+@keyframes heroHintBob {
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(3px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes heroDesktopChevronBob {
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(4px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes heroDesktopLearnMoreIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes heroMobileSlotFallbackReveal {
+    from {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes heroMobileHintReveal {
+    from {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
     }
 }

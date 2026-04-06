@@ -1018,6 +1018,100 @@ window.EconomicCalculator = (function ()
         return calculateAGRFromTax(cost) / 1000000;
     }
 
+    function getSensitivityCostScale(agrM, anchorAgrM)
+    {
+        const agr = Math.max(0, Number(agrM || 0));
+        const anchor = Math.max(0.1, Number(anchorAgrM || 0));
+        const ratio = agr / anchor;
+
+        if (ratio <= 1)
+        {
+            return Math.pow(ratio, 1.08);
+        }
+
+        if (ratio <= 1.75)
+        {
+            return Math.pow(ratio, 1.16);
+        }
+
+        const pivotScale = Math.pow(1.75, 1.16);
+        return pivotScale * Math.pow(ratio / 1.75, 1.3);
+    }
+
+    function createSensitivityNetEvaluator(options)
+    {
+        const revenueShare = Number(options && options.revenueShare || 0);
+        const baseCost = Number(options && options.baseCost || 0);
+        const anchorAgrM = Number(options && options.anchorAgrM || 0);
+
+        return function evaluateNetAtAgr(agrM)
+        {
+            const agr = Math.max(0, Number(agrM || 0));
+            const revenue = calculateTax(agr * 1000000).total * revenueShare;
+            const costScale = getSensitivityCostScale(agr, anchorAgrM);
+            const scaledCost = baseCost * costScale;
+            return revenue - scaledCost;
+        };
+    }
+
+    function estimateBreakEvenAgrFromNetFn(netAtAgrM, maxAgrM)
+    {
+        const upperBound = Math.max(0, Number(maxAgrM || 0));
+        if (upperBound <= 0 || typeof netAtAgrM !== 'function')
+        {
+            return null;
+        }
+
+        const netAtZero = Number(netAtAgrM(0) || 0);
+        if (netAtZero >= 0)
+        {
+            return 0;
+        }
+
+        const scanSteps = 80;
+        let prevAgr = 0;
+        let prevNet = netAtZero;
+        let bracketLow = null;
+        let bracketHigh = null;
+
+        for (let step = 1; step <= scanSteps; step++)
+        {
+            const agr = (upperBound * step) / scanSteps;
+            const net = Number(netAtAgrM(agr) || 0);
+            if (prevNet <= 0 && net >= 0)
+            {
+                bracketLow = prevAgr;
+                bracketHigh = agr;
+                break;
+            }
+
+            prevAgr = agr;
+            prevNet = net;
+        }
+
+        if (bracketLow === null || bracketHigh === null)
+        {
+            return null;
+        }
+
+        let low = bracketLow;
+        let high = bracketHigh;
+        for (let i = 0; i < 40; i++)
+        {
+            const mid = (low + high) / 2;
+            const net = Number(netAtAgrM(mid) || 0);
+            if (net >= 0)
+            {
+                high = mid;
+            } else
+            {
+                low = mid;
+            }
+        }
+
+        return (low + high) / 2;
+    }
+
     function renderNetImpactBalanceChart(model)
     {
         const canvas = document.getElementById('net-impact-balance-chart');
@@ -1156,35 +1250,32 @@ window.EconomicCalculator = (function ()
         const consolidatedRevenueShare = totalRevenueCurrent > 0 ? 1 : 0;
         const hostRevenueShare = totalRevenueCurrent > 0 ? hostRevenueCurrent / totalRevenueCurrent : 0;
         const regionalRevenueShare = totalRevenueCurrent > 0 ? regionalRevenueCurrent / totalRevenueCurrent : 0;
+        const hostNetAtAgr = createSensitivityNetEvaluator({
+            revenueShare: hostRevenueShare,
+            baseCost: Number(model.hostCost || 0),
+            anchorAgrM: currentAgrM
+        });
+        const regionalNetAtAgr = createSensitivityNetEvaluator({
+            revenueShare: regionalRevenueShare,
+            baseCost: Number(model.regionalCost || 0),
+            anchorAgrM: currentAgrM
+        });
+        const consolidatedNetAtAgr = createSensitivityNetEvaluator({
+            revenueShare: consolidatedRevenueShare,
+            baseCost: Number(model.consolidatedCost || 0),
+            anchorAgrM: currentAgrM
+        });
+        const maxBreakEvenAgrM = Math.max(sliderMax * 6, 500);
         const hostSeries = [];
         const regionalSeries = [];
         const consolidatedSeries = [];
 
-        const estimateBreakEvenAgrForShare = (cost, revenueShare) =>
-        {
-            const numericCost = Number(cost || 0);
-            const numericShare = Number(revenueShare || 0);
-
-            if (numericCost <= 0)
-            {
-                return 0;
-            }
-
-            if (numericShare <= 0)
-            {
-                return null;
-            }
-
-            return calculateAGRFromTax(numericCost / numericShare) / 1000000;
-        };
-
         for (let index = 0; index <= samples; index++)
         {
             const agrM = (sliderMax * index) / samples;
-            const revenue = calculateTax(agrM * 1000000).total;
-            hostSeries.push({ x: agrM, y: (revenue * hostRevenueShare) - Number(model.hostCost || 0) });
-            regionalSeries.push({ x: agrM, y: (revenue * regionalRevenueShare) - Number(model.regionalCost || 0) });
-            consolidatedSeries.push({ x: agrM, y: (revenue * consolidatedRevenueShare) - Number(model.consolidatedCost || 0) });
+            hostSeries.push({ x: agrM, y: hostNetAtAgr(agrM) });
+            regionalSeries.push({ x: agrM, y: regionalNetAtAgr(agrM) });
+            consolidatedSeries.push({ x: agrM, y: consolidatedNetAtAgr(agrM) });
         }
 
         const sensitivityOverlayPlugin = {
@@ -1285,8 +1376,8 @@ window.EconomicCalculator = (function ()
         const sensitivityModes = {
             host: {
                 series: hostSeries,
-                breakEvenAgr: estimateBreakEvenAgrForShare(model.hostCost, hostRevenueShare),
-                currentNet: Number(model.currentHostNet || 0),
+                breakEvenAgr: estimateBreakEvenAgrFromNetFn(hostNetAtAgr, maxBreakEvenAgrM),
+                currentNet: hostNetAtAgr(currentAgrM),
                 label: 'Host Net',
                 summaryLabel: 'Host Governments',
                 color: 'rgba(52, 211, 153, 1)',
@@ -1294,8 +1385,8 @@ window.EconomicCalculator = (function ()
             },
             regional: {
                 series: regionalSeries,
-                breakEvenAgr: estimateBreakEvenAgrForShare(model.regionalCost, regionalRevenueShare),
-                currentNet: Number(model.currentRegionalNet || 0),
+                breakEvenAgr: estimateBreakEvenAgrFromNetFn(regionalNetAtAgr, maxBreakEvenAgrM),
+                currentNet: regionalNetAtAgr(currentAgrM),
                 label: 'Regional Net',
                 summaryLabel: 'Regional',
                 color: 'rgba(96, 165, 250, 1)',
@@ -1303,8 +1394,8 @@ window.EconomicCalculator = (function ()
             },
             consolidated: {
                 series: consolidatedSeries,
-                breakEvenAgr: estimateBreakEvenAgrForShare(model.consolidatedCost, consolidatedRevenueShare),
-                currentNet: Number(model.currentConsolidatedNet || 0),
+                breakEvenAgr: estimateBreakEvenAgrFromNetFn(consolidatedNetAtAgr, maxBreakEvenAgrM),
+                currentNet: consolidatedNetAtAgr(currentAgrM),
                 label: 'Consolidated Net',
                 summaryLabel: 'Consolidated',
                 color: 'rgba(251, 191, 36, 1)',
@@ -1339,7 +1430,7 @@ window.EconomicCalculator = (function ()
                         borderWidth: 3,
                         pointRadius: 0,
                         pointHoverRadius: 4,
-                        tension: 0.22
+                        tension: 0.28
                     },
                     {
                         type: 'scatter',

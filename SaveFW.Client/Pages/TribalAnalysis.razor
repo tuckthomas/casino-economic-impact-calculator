@@ -1,7 +1,7 @@
 @inject IJSRuntime JSRuntime
 
 <section class="bg-slate-50 dark:bg-[#0B1221] py-24 relative overflow-hidden" id="tribal-analysis">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mb-16 text-center max-w-3xl mx-auto">
             <span class="text-orange-600 font-bold tracking-wider uppercase text-sm">Legal Fact Check</span>
@@ -369,19 +369,20 @@
     </div>
 </section>
 
-<section class="w-full relative shadow-2xl">
-    <img src="assets/depressing_downtown.png" alt="Impact on Downtown" class="w-full h-auto block" loading="lazy">
+<section class="tribal-impact-banner w-full relative shadow-2xl">
+    <img src="assets/depressing_downtown.png" alt="Impact on Downtown" class="tribal-impact-banner-image w-full block" loading="lazy">
     <div
-        class="absolute inset-y-0 left-0 w-full flex flex-col justify-center pl-8 sm:pl-12 lg:pl-16 z-20 pointer-events-none">
+        class="absolute inset-y-0 left-0 w-full flex flex-col justify-center pl-4 pr-4 sm:pl-12 sm:pr-0 lg:pl-16 z-20 pointer-events-none">
         <h2
-            class="text-3xl sm:text-5xl lg:text-7xl font-black text-white leading-[0.9] tracking-tighter drop-shadow-lg">
+            class="tribal-impact-title font-black text-white drop-shadow-lg">
             <span
-                class="block opacity-0 translate-y-8 transition-all duration-700 ease-out scroll-reveal delay-0">FORT
-                WAYNE</span>
+                class="tribal-impact-word opacity-0 translate-y-8 transition-all duration-700 ease-out scroll-reveal delay-0">FORT</span>
             <span
-                class="block opacity-0 translate-y-8 transition-all duration-700 ease-out scroll-reveal delay-300 text-orange-500">DESERVES</span>
+                class="tribal-impact-word opacity-0 translate-y-8 transition-all duration-700 ease-out scroll-reveal" style="transition-delay: 350ms;">WAYNE</span>
             <span
-                class="block opacity-0 translate-y-8 transition-all duration-700 ease-out scroll-reveal delay-600">BETTER</span>
+                class="tribal-impact-word opacity-0 translate-y-8 transition-all duration-700 ease-out scroll-reveal text-orange-500" style="transition-delay: 700ms;">DESERVES</span>
+            <span
+                class="tribal-impact-word opacity-0 translate-y-8 transition-all duration-700 ease-out scroll-reveal" style="transition-delay: 1050ms;">BETTER</span>
         </h2>
     </div>
 </section>

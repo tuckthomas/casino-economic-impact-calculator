@@ -9,6 +9,52 @@ body {
     width: 100%;
 }
 
+.tribal-impact-banner {
+    min-height: 100svh;
+}
+
+.tribal-impact-banner-image {
+    width: 100%;
+    height: 100svh;
+    object-fit: cover;
+    object-position: center;
+}
+
+@media (min-width: 640px) {
+    .tribal-impact-banner {
+        min-height: 0;
+    }
+
+    .tribal-impact-banner-image {
+        height: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    #mayor-critique > .mx-auto,
+    #tribal-analysis > .mx-auto,
+    #crime-safety > .mx-auto,
+    #economic-analysis > .economic-analysis-body,
+    #economic-analysis > .mx-auto,
+    #voice-your-opinion > .mx-auto,
+    #legislators > .mx-auto {
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: 0;
+        padding-right: 0;
+        width: 100%;
+    }
+
+    #mayor-critique div[class*="rounded-"][class*="shadow"],
+    #tribal-analysis div[class*="rounded-"][class*="shadow"],
+    #crime-safety div[class*="rounded-"][class*="shadow"],
+    #economic-analysis div[class*="rounded-"][class*="shadow"],
+    #voice-your-opinion div[class*="rounded-"][class*="shadow"],
+    #legislators div[class*="rounded-"][class*="shadow"] {
+        box-shadow: none;
+    }
+}
+
 #blazor-error-ui {
     background: #fff3cd;
     bottom: 0;
@@ -1211,5 +1257,23 @@ input[type=number] {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+/* Slot-machine right control panel should shrink with cabinet on small screens */
+@media (max-width: 640px) {
+    .slot-machine-wrapper .coin-panel {
+        right: 10px;
+        bottom: 22px;
+        transform: scale(0.78);
+        transform-origin: right bottom;
+    }
+}
+
+@media (max-width: 420px) {
+    .slot-machine-wrapper .coin-panel {
+        right: 6px;
+        bottom: 18px;
+        transform: scale(0.68);
     }
 }

@@ -122,16 +122,43 @@ _ = Task.Run(async () =>
 if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
+    app.MapOpenApi();
+}
+
+if (app.Environment.IsDevelopment())
+{
     app.Use(async (context, next) =>
     {
-        if (TryRewriteClientFrameworkAssetRequest(context.Request.Path, app.Environment.ContentRootPath, out var rewrittenPath))
+        var path = context.Request.Path.Value ?? string.Empty;
+        var accept = context.Request.Headers.Accept.ToString();
+        var isHtmlRequest =
+            path.Equals("/", StringComparison.OrdinalIgnoreCase) ||
+            path.EndsWith(".html", StringComparison.OrdinalIgnoreCase) ||
+            accept.Contains("text/html", StringComparison.OrdinalIgnoreCase);
+
+        var shouldDisableCache =
+            isHtmlRequest ||
+            path.StartsWith("/_framework/", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/js/", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/css/", StringComparison.OrdinalIgnoreCase) ||
+            path.EndsWith(".js", StringComparison.OrdinalIgnoreCase) ||
+            path.EndsWith(".css", StringComparison.OrdinalIgnoreCase) ||
+            path.EndsWith(".wasm", StringComparison.OrdinalIgnoreCase) ||
+            path.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase);
+
+        if (shouldDisableCache)
         {
-            context.Request.Path = rewrittenPath;
+            context.Response.OnStarting(() =>
+            {
+                context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0";
+                context.Response.Headers["Pragma"] = "no-cache";
+                context.Response.Headers["Expires"] = "0";
+                return Task.CompletedTask;
+            });
         }
 
         await next();
     });
-    app.MapOpenApi();
 }
 
 app.UseBlazorFrameworkFiles();
@@ -150,67 +177,6 @@ app.MapControllers();
 app.MapFallbackToPage("/Index");
 
 app.Run();
-
-static bool TryRewriteClientFrameworkAssetRequest(PathString requestPath, string contentRootPath, out PathString rewrittenPath)
-{
-    rewrittenPath = requestPath;
-
-    var path = requestPath.Value;
-    if (string.IsNullOrEmpty(path) || !path.StartsWith("/_framework/SaveFW.Client.", StringComparison.Ordinal))
-    {
-        return false;
-    }
-
-    string? extension = null;
-    if (path.EndsWith(".wasm", StringComparison.Ordinal))
-    {
-        extension = ".wasm";
-    }
-    else if (path.EndsWith(".pdb", StringComparison.Ordinal))
-    {
-        extension = ".pdb";
-    }
-
-    if (extension is null)
-    {
-        return false;
-    }
-
-    var frameworkDir = Path.GetFullPath(Path.Combine(
-        contentRootPath,
-        "..",
-        "SaveFW.Client",
-        "bin",
-        "Debug",
-        "net10.0",
-        "wwwroot",
-        "_framework"));
-
-    if (!Directory.Exists(frameworkDir))
-    {
-        return false;
-    }
-
-    var requestedFileName = Path.GetFileName(path);
-    var requestedFilePath = Path.Combine(frameworkDir, requestedFileName);
-    if (File.Exists(requestedFilePath))
-    {
-        return false;
-    }
-
-    var candidates = Directory.GetFiles(frameworkDir, $"SaveFW.Client.*{extension}", SearchOption.TopDirectoryOnly)
-        .Where(file => !file.EndsWith(".gz", StringComparison.Ordinal))
-        .OrderByDescending(File.GetLastWriteTimeUtc)
-        .ToArray();
-
-    if (candidates.Length == 0)
-    {
-        return false;
-    }
-
-    rewrittenPath = new PathString("/_framework/" + Path.GetFileName(candidates[0]));
-    return true;
-}
 
 static async Task WarmStateCacheAsync(IServiceProvider services)
 {

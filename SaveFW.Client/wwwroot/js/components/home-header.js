@@ -4,6 +4,7 @@ window.HomeHeader = (() => {
     let scrollHandler = null;
     let lastScrollY = 0;
     let isStuck = false;
+    let lastActiveLink = null;
     const desktopBreakpoint = window.matchMedia("(min-width: 1024px)");
 
     function destroy() {
@@ -24,6 +25,7 @@ window.HomeHeader = (() => {
 
         lastScrollY = 0;
         isStuck = false;
+        lastActiveLink = null;
     }
 
     function init() {
@@ -37,12 +39,79 @@ window.HomeHeader = (() => {
             return;
         }
 
+        const sectionLinks = Array.from(header.querySelectorAll('.home-sticky-link[href^="#"]'));
+        const linksViewport = header.querySelector(".home-sticky-header-links");
+        const sectionTargets = sectionLinks
+            .map(link => {
+                const selector = String(link.getAttribute("href") || "").trim();
+                if (!selector || selector === "#") return null;
+                const target = document.querySelector(selector);
+                return target ? { link, target } : null;
+            })
+            .filter(Boolean);
+
         const syncHeight = () => {
             spacer.style.setProperty("--home-header-height", `${header.offsetHeight}px`);
         };
 
         const setHeaderVisibility = (isVisible) => {
             header.classList.toggle("is-hidden", !isVisible);
+        };
+
+        const ensureActiveLinkVisible = (link, instant = false) => {
+            if (!link || !linksViewport || desktopBreakpoint.matches) return;
+
+            const maxScrollLeft = Math.max(linksViewport.scrollWidth - linksViewport.clientWidth, 0);
+            if (maxScrollLeft <= 0) return;
+
+            const viewportRect = linksViewport.getBoundingClientRect();
+            const linkRect = link.getBoundingClientRect();
+            const padding = 24;
+            const currentLeft = linksViewport.scrollLeft;
+
+            const isOutOfLeftBounds = linkRect.left < (viewportRect.left + padding);
+            const isOutOfRightBounds = linkRect.right > (viewportRect.right - padding);
+            if (!isOutOfLeftBounds && !isOutOfRightBounds) return;
+
+            const viewportCenter = viewportRect.left + (viewportRect.width / 2);
+            const linkCenter = linkRect.left + (linkRect.width / 2);
+            let targetLeft = currentLeft + (linkCenter - viewportCenter);
+
+            targetLeft = Math.min(Math.max(targetLeft, 0), maxScrollLeft);
+            if (Math.abs(targetLeft - currentLeft) < 1) return;
+
+            linksViewport.scrollTo({
+                left: targetLeft,
+                behavior: instant ? "auto" : "smooth"
+            });
+        };
+
+        const updateActiveSectionLink = (instantScroll = false) => {
+            if (!sectionTargets.length) return;
+
+            const scrollAnchor = (window.scrollY || window.pageYOffset || 0) + header.offsetHeight + 24;
+            let active = sectionTargets[0];
+
+            for (const entry of sectionTargets) {
+                if ((entry.target.offsetTop || 0) <= scrollAnchor) {
+                    active = entry;
+                } else {
+                    break;
+                }
+            }
+
+            sectionTargets.forEach(entry => {
+                entry.link.classList.toggle("is-active", entry === active);
+            });
+
+            if (!active) return;
+
+            const shouldScrollIntoView = instantScroll || active.link !== lastActiveLink;
+            lastActiveLink = active.link;
+
+            if (shouldScrollIntoView) {
+                ensureActiveLinkVisible(active.link, instantScroll);
+            }
         };
 
         const setStickyState = (nextIsStuck) => {
@@ -75,6 +144,7 @@ window.HomeHeader = (() => {
                 setHeaderVisibility(true);
             }
 
+            updateActiveSectionLink();
             lastScrollY = currentScrollY;
         };
 
@@ -93,6 +163,7 @@ window.HomeHeader = (() => {
 
         resizeHandler = () => {
             syncHeight();
+            updateActiveSectionLink(true);
             updateOnScroll();
         };
 
