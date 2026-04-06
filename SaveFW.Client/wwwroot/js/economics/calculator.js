@@ -1054,7 +1054,7 @@ window.EconomicCalculator = (function ()
         };
     }
 
-    function estimateBreakEvenAgrFromNetFn(netAtAgrM, maxAgrM)
+    function estimateBreakEvenAgrFromNetFn(netAtAgrM, maxAgrM, currentAgrM)
     {
         const upperBound = Math.max(0, Number(maxAgrM || 0));
         if (upperBound <= 0 || typeof netAtAgrM !== 'function')
@@ -1062,54 +1062,118 @@ window.EconomicCalculator = (function ()
             return null;
         }
 
-        const netAtZero = Number(netAtAgrM(0) || 0);
-        if (netAtZero >= 0)
-        {
-            return 0;
-        }
+        const sampleCount = 240;
+        const zeroTolerance = 1e-3;
+        const dedupeTolerance = Math.max(upperBound * 0.000001, 0.0001);
+        const points = [];
 
-        const scanSteps = 80;
-        let prevAgr = 0;
-        let prevNet = netAtZero;
-        let bracketLow = null;
-        let bracketHigh = null;
-
-        for (let step = 1; step <= scanSteps; step++)
+        for (let step = 0; step <= sampleCount; step++)
         {
-            const agr = (upperBound * step) / scanSteps;
+            const agr = (upperBound * step) / sampleCount;
             const net = Number(netAtAgrM(agr) || 0);
-            if (prevNet <= 0 && net >= 0)
+            if (!Number.isFinite(net))
             {
-                bracketLow = prevAgr;
-                bracketHigh = agr;
-                break;
+                continue;
             }
 
-            prevAgr = agr;
-            prevNet = net;
+            points.push({ agr, net });
         }
 
-        if (bracketLow === null || bracketHigh === null)
+        if (!points.length)
         {
             return null;
         }
 
-        let low = bracketLow;
-        let high = bracketHigh;
-        for (let i = 0; i < 40; i++)
+        const roots = [];
+        const pushRoot = function pushRoot(value)
         {
-            const mid = (low + high) / 2;
-            const net = Number(netAtAgrM(mid) || 0);
-            if (net >= 0)
+            const root = Math.max(0, Math.min(upperBound, Number(value || 0)));
+            if (!Number.isFinite(root))
             {
-                high = mid;
-            } else
+                return;
+            }
+
+            if (!roots.some(existing => Math.abs(existing - root) <= dedupeTolerance))
             {
-                low = mid;
+                roots.push(root);
+            }
+        };
+
+        const sign = function getSign(value)
+        {
+            if (value > zeroTolerance) return 1;
+            if (value < -zeroTolerance) return -1;
+            return 0;
+        };
+
+        for (let index = 1; index < points.length; index++)
+        {
+            const prev = points[index - 1];
+            const curr = points[index];
+            const prevSign = sign(prev.net);
+            const currSign = sign(curr.net);
+
+            if (prevSign === 0)
+            {
+                pushRoot(prev.agr);
+            }
+
+            if (currSign === 0)
+            {
+                pushRoot(curr.agr);
+            }
+
+            if (prevSign !== 0 && currSign !== 0 && prevSign !== currSign)
+            {
+                let lowAgr = prev.agr;
+                let highAgr = curr.agr;
+                let lowNet = prev.net;
+
+                for (let i = 0; i < 50; i++)
+                {
+                    const midAgr = (lowAgr + highAgr) / 2;
+                    const midNet = Number(netAtAgrM(midAgr) || 0);
+                    if (!Number.isFinite(midNet))
+                    {
+                        break;
+                    }
+
+                    if (Math.abs(midNet) <= zeroTolerance)
+                    {
+                        lowAgr = midAgr;
+                        highAgr = midAgr;
+                        break;
+                    }
+
+                    const lowToMidSignFlip = (lowNet <= 0 && midNet >= 0) || (lowNet >= 0 && midNet <= 0);
+                    if (lowToMidSignFlip)
+                    {
+                        highAgr = midAgr;
+                    } else
+                    {
+                        lowAgr = midAgr;
+                        lowNet = midNet;
+                    }
+                }
+
+                pushRoot((lowAgr + highAgr) / 2);
             }
         }
 
-        return (low + high) / 2;
+        if (!roots.length)
+        {
+            return null;
+        }
+
+        const targetAgr = Math.max(0, Math.min(upperBound, Number(currentAgrM || 0)));
+        roots.sort((a, b) =>
+        {
+            const distanceToTarget = Math.abs(a - targetAgr) - Math.abs(b - targetAgr);
+            if (distanceToTarget !== 0) return distanceToTarget;
+            return a - b;
+        });
+
+        return roots[0];
     }
 
     function renderNetImpactBalanceChart(model)
@@ -1376,7 +1440,7 @@ window.EconomicCalculator = (function ()
         const sensitivityModes = {
             host: {
                 series: hostSeries,
-                breakEvenAgr: estimateBreakEvenAgrFromNetFn(hostNetAtAgr, maxBreakEvenAgrM),
+                breakEvenAgr: estimateBreakEvenAgrFromNetFn(hostNetAtAgr, maxBreakEvenAgrM, currentAgrM),
                 currentNet: hostNetAtAgr(currentAgrM),
                 label: 'Host Net',
                 summaryLabel: 'Host Governments',
@@ -1385,7 +1449,7 @@ window.EconomicCalculator = (function ()
             },
             regional: {
                 series: regionalSeries,
-                breakEvenAgr: estimateBreakEvenAgrFromNetFn(regionalNetAtAgr, maxBreakEvenAgrM),
+                breakEvenAgr: estimateBreakEvenAgrFromNetFn(regionalNetAtAgr, maxBreakEvenAgrM, currentAgrM),
                 currentNet: regionalNetAtAgr(currentAgrM),
                 label: 'Regional Net',
                 summaryLabel: 'Regional',
@@ -1394,7 +1458,7 @@ window.EconomicCalculator = (function ()
             },
             consolidated: {
                 series: consolidatedSeries,
-                breakEvenAgr: estimateBreakEvenAgrFromNetFn(consolidatedNetAtAgr, maxBreakEvenAgrM),
+                breakEvenAgr: estimateBreakEvenAgrFromNetFn(consolidatedNetAtAgr, maxBreakEvenAgrM, currentAgrM),
                 currentNet: consolidatedNetAtAgr(currentAgrM),
                 label: 'Consolidated Net',
                 summaryLabel: 'Consolidated',
