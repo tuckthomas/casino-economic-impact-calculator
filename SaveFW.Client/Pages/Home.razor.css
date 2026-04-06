@@ -71,6 +71,8 @@
     position: relative;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    padding-inline: 0.9rem;
 }
 
 .home-sticky-link-label {
@@ -80,8 +82,8 @@
 
 .home-sticky-link + .home-sticky-link {
     border-left: 1px solid rgb(148 163 184 / 0.35);
-    margin-left: 0.25rem;
-    padding-left: 1rem;
+    margin-left: 0;
+    padding-left: 0.9rem;
 }
 
 .home-sticky-link.is-active {
@@ -111,7 +113,7 @@
 
 .home-sticky-link--icon {
     border-left: 0 !important;
-    padding-left: 0 !important;
+    padding-inline: 0;
     margin-left: 0.375rem !important;
 }
 
@@ -201,8 +203,12 @@
 
 @media (max-width: 640px) {
     .home-sticky-link + .home-sticky-link {
-        margin-left: 0.125rem;
-        padding-left: 0.75rem;
+        margin-left: 0;
+        padding-left: 0.65rem;
+    }
+
+    .home-sticky-link {
+        padding-inline: 0.65rem;
     }
 
     .home-sticky-link--icon {
