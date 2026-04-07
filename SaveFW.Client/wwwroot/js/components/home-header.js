@@ -92,11 +92,18 @@ window.HomeHeader = (() => {
             const scrollAnchor = (window.scrollY || window.pageYOffset || 0) + header.offsetHeight + 24;
             let active = sectionTargets[0];
 
+            const getDocumentTop = (element) => {
+                if (!element) return Number.POSITIVE_INFINITY;
+                const rect = element.getBoundingClientRect();
+                return rect.top + (window.scrollY || window.pageYOffset || 0);
+            };
+
+            let bestTop = Number.NEGATIVE_INFINITY;
             for (const entry of sectionTargets) {
-                if ((entry.target.offsetTop || 0) <= scrollAnchor) {
+                const top = getDocumentTop(entry.target);
+                if (top <= scrollAnchor && top >= bestTop) {
+                    bestTop = top;
                     active = entry;
-                } else {
-                    break;
                 }
             }
 
