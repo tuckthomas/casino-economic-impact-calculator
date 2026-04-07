@@ -29,10 +29,16 @@
     <script src="js/lib/page-flip.browser.js"></script>
 
     <!-- Custom Styles -->
-    <link href="css/app.css?v=20260331c" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
     <link href="SaveFW.Client.styles.css" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
     <style>
+        /* Critical fallback to prevent first-paint flat-color flash on hero before scoped CSS applies */
+        #home-hero-gradient,
+        .home-hero-gradient {
+            background: linear-gradient(to right bottom, #0f172a, #1e293b, #334155);
+        }
+
         /* Custom Scrollbar - Critical for preventing layout shift */
         html {
             overflow-y: scroll;
@@ -135,23 +141,23 @@
     <!-- Custom Modules -->
     <script src="js/lib/html2canvas.min.js"></script>
     <script src="js/pdf-helper.js"></script>
-    <script src="js/data/indiana-counties.js?v=20260105b"></script>
-    <script src="js/components/slot-machine.js?v=20260105b"></script>
-    <script src="js/components/adaptive-toast.js?v=20260114a"></script>
-    <script src="js/components/maplibre-map.js?v=20260331e"></script>
-    <script src="js/components/legislators.js?v=20260105b"></script>
-    <script src="js/components/image-modal.js?v=20260105a"></script>
-    <script src="js/components/modals.js?v=20260105e"></script>
-    <script src="js/components/flipbook.js?v=20260105h"></script>
-    <script src="js/components/toc.js?v=20260105d"></script>
-    <script src="js/components/reveal.js?v=20260105b"></script>
-    <script src="js/components/charts.js?v=20260105b"></script>
-    <script src="js/components/tooltip-portal.js?v=20260319a"></script>
-    <script src="js/components/slider-input-logic.js?v=20260331a"></script>
-    <script src="js/components/slider-input-group-logic.js?v=20260106f"></script>
-    <script src="js/components/home-header.js?v=20260331a"></script>
-    <script src="js/economics/calculator.js?v=20260331d"></script>
-    <script src="js/economics/substitution.js?v=20260105b"></script>
+    <script src="js/data/indiana-counties.js"></script>
+    <script src="js/components/slot-machine.js"></script>
+    <script src="js/components/adaptive-toast.js"></script>
+    <script src="js/components/maplibre-map.js"></script>
+    <script src="js/components/legislators.js"></script>
+    <script src="js/components/image-modal.js"></script>
+    <script src="js/components/modals.js"></script>
+    <script src="js/components/flipbook.js"></script>
+    <script src="js/components/toc.js"></script>
+    <script src="js/components/reveal.js"></script>
+    <script src="js/components/charts.js"></script>
+    <script src="js/components/tooltip-portal.js"></script>
+    <script src="js/components/slider-input-logic.js"></script>
+    <script src="js/components/slider-input-group-logic.js"></script>
+    <script src="js/components/home-header.js"></script>
+    <script src="js/economics/calculator.js"></script>
+    <script src="js/economics/substitution.js"></script>
 </body>
 
 </html>

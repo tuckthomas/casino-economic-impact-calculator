@@ -55,6 +55,45 @@ body {
     }
 }
 
+@media (max-width: 767px) {
+    .section-heading-block {
+        box-sizing: border-box;
+        padding-left: 1.1rem;
+        padding-right: 1.1rem;
+    }
+
+    .section-heading-block .section-heading-description {
+        width: 100%;
+        max-width: none !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .section-heading-block .section-heading-description > p {
+        width: 100%;
+        max-width: none !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* Force identical horizontal bounds for section descriptions on mobile */
+    #mayor-critique .section-heading-block > p,
+    #economic-analysis .section-heading-block > p,
+    #tribal-analysis .section-heading-block > p,
+    #crime-safety .section-heading-block > p,
+    #economic-analysis .section-heading-block > div {
+        box-sizing: border-box;
+        width: 100% !important;
+        max-width: none !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+}
+
 #blazor-error-ui {
     background: #fff3cd;
     bottom: 0;

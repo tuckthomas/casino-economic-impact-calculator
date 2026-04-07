@@ -200,6 +200,14 @@ window.SlotMachine = (function ()
         if (!heroTouchTracking || !isMobileViewport()) return;
         if (!e || !e.touches || e.touches.length === 0) return;
 
+        // Once a swipe navigation has been triggered, keep suppressing
+        // native horizontal scrolling until touchend to avoid in/out jitter.
+        if (heroTouchHandled)
+        {
+            if (e.cancelable) e.preventDefault();
+            return;
+        }
+
         const moveTouch = e.touches[0];
         const dx = moveTouch.clientX - heroTouchStartX;
         const dy = moveTouch.clientY - heroTouchStartY;
@@ -217,8 +225,9 @@ window.SlotMachine = (function ()
         heroTouchHandled = navigateHeroBySwipe(layout, dx);
         if (heroTouchHandled)
         {
-            heroTouchTracking = false;
-            heroSwipeLayout = null;
+            // Keep tracking until touchend so we can continue preventing
+            // native scroll on this gesture.
+            heroSwipeLayout = layout;
         }
     }
 
