@@ -46,6 +46,7 @@
                 </button>
                 @if (desktopPresetMenuOpen)
                 {
+                    <div class="fixed inset-0 z-[110]" aria-hidden="true" @onclick="CloseDesktopPresetMenu"></div>
                     <div id="preset-menu-@Id" role="listbox" class="sfw-custom-select-menu mt-2">
                         @foreach (var preset in PresetOptions)
                         {
@@ -257,6 +258,8 @@
         desktopPresetMenuOpen = false;
         await JSRuntime.InvokeVoidAsync("window.SliderInputLogic.setPresetValue", presetSelectRef, presetValue);
     }
+
+    private void CloseDesktopPresetMenu() => desktopPresetMenuOpen = false;
 
     protected override void OnParametersSet()
     {
