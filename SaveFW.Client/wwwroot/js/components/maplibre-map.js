@@ -643,6 +643,7 @@ window.MapLibreImpactMap = (function ()
                 currentCalcFeatures = cached.calcFeatures;
                 currentCountyTotals = cached.totals;
                 contextIsLite = cached.isLite;
+                updateHeatmapData();
                 return true;
             }
         }
@@ -744,6 +745,7 @@ window.MapLibreImpactMap = (function ()
                     currentContextGeoJSON = geojson;
                     currentCalcFeatures = calcFeatures;
                     currentCountyTotals = { adults: countyAdults, total: countyTotal };
+                    updateHeatmapData();
                 }
                 return true;
             } catch (e)
@@ -761,6 +763,7 @@ window.MapLibreImpactMap = (function ()
                     currentCalcFeatures = cached.calcFeatures;
                     currentCountyTotals = cached.totals;
                     contextIsLite = cached.isLite;
+                    updateHeatmapData();
                     return true;
                 }
                 return false;
@@ -1838,6 +1841,7 @@ window.MapLibreImpactMap = (function ()
         currentContextGeoJSON = null;
         currentCalcFeatures = null;
         currentCountyTotals = null;
+        updateHeatmapData();
         const idsToZero = ['val-t1', 'val-t2', 'val-t3', 'total-gamblers', 'calc-result', 'calc-gamblers', 'disp-pop-impact-zones', 'disp-pop-adults'];
         idsToZero.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = "0"; });
 
@@ -2520,6 +2524,7 @@ window.MapLibreImpactMap = (function ()
                 ['counties-fill', 'counties-line', 'county-highlight-line'].forEach(id => setLayerVisibility(id, visible));
                 break;
             case 'heatmap':
+                if (visible) updateHeatmapData();
                 setLayerVisibility('block-groups-heat', visible);
                 break;
             case 'tracts':
@@ -2688,6 +2693,9 @@ window.MapLibreImpactMap = (function ()
 
                 map.addLayer({
                     id: 'block-groups-heat', type: 'heatmap', source: 'block-groups',
+                    layout: {
+                        visibility: layersVisible.heatmap ? 'visible' : 'none'
+                    },
                     paint: {
                         'heatmap-weight': ['interpolate', ['linear'], ['get', 'POP_ADULT'], 0, 0, 5000, 1],
                         'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 5, 1, 15, 3],
@@ -2698,6 +2706,40 @@ window.MapLibreImpactMap = (function ()
                 }, beforeId);
             }
         } catch (e) { }
+
+        updateHeatmapData();
+    }
+
+    function updateHeatmapData()
+    {
+        if (!map) return;
+
+        const source = map.getSource('block-groups');
+        if (!source) return;
+
+        const features = Array.isArray(currentCalcFeatures)
+            ? currentCalcFeatures
+                .filter(feature =>
+                    Number.isFinite(feature?.lng)
+                    && Number.isFinite(feature?.lat)
+                    && Number(feature?.popAdult || 0) > 0)
+                .map(feature => ({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [feature.lng, feature.lat]
+                    },
+                    properties: {
+                        POP_ADULT: Number(feature.popAdult || 0),
+                        COUNTY_FIPS: feature.countyFips || currentCountyFips || ''
+                    }
+                }))
+            : [];
+
+        source.setData({
+            type: 'FeatureCollection',
+            features
+        });
     }
 
     function setupIsochroneLayers()
