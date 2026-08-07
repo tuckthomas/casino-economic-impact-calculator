@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.HttpOverrides;
 using SaveFW.Server.Data;
 using SaveFW.Server.Configuration;
 using SaveFW.Shared;
@@ -18,6 +19,14 @@ builder.Services.AddMemoryCache();
 builder.Services.AddRazorPages();
 builder.Services.AddOpenApi();
 builder.Services.Configure<TaxAllocationOptions>(builder.Configuration.GetSection("TaxAllocation"));
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // The application port is private to Docker, so forwarded headers can only
+    // arrive through the reverse proxy on the production network.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Register DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -58,6 +67,8 @@ builder.Services.AddScoped<SaveFW.Server.Services.ZipSwitchingModelService>();
 // builder.Services.AddHostedService<SaveFW.Server.Workers.ScoringWorker>();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 if (args.Contains("--seed-isochrones") || args.Contains("--run-allen-isochrones"))
 {

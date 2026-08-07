@@ -1,0 +1,14 @@
+.git
+.gitignore
+.github
+.vs
+.vscode
+**/bin
+**/obj
+**/publish
+node_modules
+infra/valhalla/custom_files
+infra/valhalla/osm
+*.osm.pbf
+valhalla_tiles.tar
+*.log

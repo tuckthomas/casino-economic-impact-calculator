@@ -51,7 +51,7 @@ public static class DbInitializer
         // 3. Seed Legislators
         if (!await db.Legislators.AnyAsync())
         {
-            var jsonPath = Path.Combine(Directory.GetCurrentDirectory(), "../../static_html_to_convert/data/legislators.json");
+            var jsonPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "legislators.json");
             if (File.Exists(jsonPath))
             {
                 var json = await File.ReadAllTextAsync(jsonPath);
@@ -101,6 +101,22 @@ public static class DbInitializer
                             Email = prop.Value.GetProperty("email").GetString() ?? "",
                             Party = prop.Value.TryGetProperty("party", out var p) ? p.GetString() : null,
                             Type = "State House",
+                            District = prop.Name
+                        });
+                    }
+                }
+
+                // State Senate
+                if (root.TryGetProperty("state_senate", out var stateSenate))
+                {
+                    foreach (var prop in stateSenate.EnumerateObject())
+                    {
+                        legislators.Add(new Legislator
+                        {
+                            Name = prop.Value.GetProperty("name").GetString() ?? "",
+                            Email = prop.Value.GetProperty("email").GetString() ?? "",
+                            Party = prop.Value.TryGetProperty("party", out var p) ? p.GetString() : null,
+                            Type = "State Senate",
                             District = prop.Name
                         });
                     }

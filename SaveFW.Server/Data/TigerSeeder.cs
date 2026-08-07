@@ -13,13 +13,15 @@ namespace SaveFW.Server.Data
         private readonly IConfiguration _config;
         private static readonly string[] BlockGroupStateFips = new[]
         {
+            "18", "39", "26", // Launch region first: Indiana, Ohio, Michigan.
             "01", "02", "04", "05", "06", "08", "09", "10", "11", "12",
-            "13", "15", "16", "17", "18", "19", "20", "21", "22", "23",
-            "24", "25", "26", "27", "28", "29", "30", "31", "32", "33",
-            "34", "35", "36", "37", "38", "39", "40", "41", "42", "44",
+            "13", "15", "16", "17", "19", "20", "21", "22", "23",
+            "24", "25", "27", "28", "29", "30", "31", "32", "33",
+            "34", "35", "36", "37", "38", "40", "41", "42", "44",
             "45", "46", "47", "48", "49", "50", "51", "53", "54", "55",
             "56", "60", "66", "69", "72", "78"
         };
+        private static readonly string[] PopulationStateFips = { "18", "39", "26" };
 
         public TigerSeeder(TigerIngestionService ingestionService, ILogger<TigerSeeder> logger, IConfiguration config)
         {
@@ -106,14 +108,47 @@ namespace SaveFW.Server.Data
                     hasBlockGroupTable = true;
                 }
 
+                if (PopulationStateFips.Contains(fips))
+                {
+                    using var populationCheck = conn.CreateCommand();
+                    populationCheck.CommandText = @"
+                            SELECT COALESCE(SUM(pop_total), 0), COALESCE(SUM(pop_18_plus), 0)
+                            FROM census_block_groups
+                            WHERE substring(geoid, 1, 2) = @fips;
+                        ";
+                    populationCheck.Parameters.AddWithValue("fips", fips);
+                    await using var populationReader = await populationCheck.ExecuteReaderAsync();
+                    await populationReader.ReadAsync();
+                    var statePopulation = populationReader.GetInt64(0);
+                    var stateAdultPopulation = populationReader.GetInt64(1);
+                    await populationReader.CloseAsync();
+
+                    if (statePopulation == 0 || stateAdultPopulation < statePopulation / 2)
+                    {
+                        try
+                        {
+                            await _ingestionService.BackfillPopulationForStateAsync(fips);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "TigerSeeder: Failed to backfill Census population for state {StateFips}.", fips);
+                        }
+                    }
+                }
+
                 // Check/Ingest Address Ranges
                 // Since tiger_address_ranges doesn't have a state column, we use a simple "HasData" check 
                 // to prevent re-ingesting 9GB of data on every startup.
                 // To force a re-seed, the user must TRUNCATE/DROP the tiger_address_ranges table.
             }
             
+            // Address-range ingestion currently targets the legacy lowercase-column schema,
+            // while EF creates the newer TigerAddressRange entity schema. Keep the importer
+            // opt-in until those two representations are reconciled.
+            var ingestAddressRanges = _config.GetValue<bool>("TigerSeeding:IngestAddressRanges");
+
             // Check if Address Ranges exist globally (once, outside the loop)
-            if (!await HasData(conn, "tiger_address_ranges"))
+            if (ingestAddressRanges && !await HasData(conn, "tiger_address_ranges"))
             {
                 _logger.LogInformation("TigerSeeder: No address ranges found. Ingesting for all defined states...");
                 foreach (var fips in BlockGroupStateFips)
@@ -121,6 +156,10 @@ namespace SaveFW.Server.Data
                      _logger.LogInformation($"TigerSeeder: Ingesting address ranges for state {fips}...");
                      await _ingestionService.IngestAddressRanges(fips);
                 }
+            }
+            else if (!ingestAddressRanges)
+            {
+                _logger.LogInformation("TigerSeeder: Address range ingestion disabled by configuration.");
             }
             else
             {
