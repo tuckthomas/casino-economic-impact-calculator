@@ -2956,6 +2956,13 @@ window.MapLibreImpactMap = (function ()
         const normalizedStateFips = String(stateFips || '').trim();
         map.once('moveend', () =>
         {
+            if (initialStateDrill)
+            {
+                initialStateDrill = false;
+                clearTimeout(tileLoadingTimeout);
+                toggleLoading(false);
+            }
+
             const heatmapRequested = layersVisible.heatmap
                 || document.getElementById('toggle-heatmap')?.checked;
             if (!heatmapRequested
