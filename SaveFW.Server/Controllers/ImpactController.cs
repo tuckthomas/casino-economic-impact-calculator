@@ -244,8 +244,8 @@ public class ImpactController : ControllerBase
                     'county_adults', (SELECT county_adults FROM county_stats),
                     'points', COALESCE(json_agg(
                         json_build_array(
-                            ST_X(ST_Centroid(b.geom)),
-                            ST_Y(ST_Centroid(b.geom)),
+                            ST_X(ST_PointOnSurface(b.geom)),
+                            ST_Y(ST_PointOnSurface(b.geom)),
                             b.pop_18_plus,
                             SUBSTRING(b.geoid, 1, 5)
                         )

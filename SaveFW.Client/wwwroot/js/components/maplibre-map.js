@@ -58,6 +58,8 @@ window.MapLibreImpactMap = (function ()
     let activeCompetitorPopup = null;
     let contextIsLite = false;
     let contextCache = {};
+    let blockGroupDensityCache = {};
+    let blockGroupDensityRequestSeq = 0;
     let activePrefetches = []; // Track background prefetch controllers
     // Population counts (Global for sharing between grid/radius modes)
     let t1PopRegional = 0, t2PopRegional = 0, t3PopRegional = 0;
@@ -86,6 +88,7 @@ window.MapLibreImpactMap = (function ()
     const layersVisible = {
         zones: true,
         boundary: true,
+        municipalities: true,
         overlay: true,
         blocks: false,
         tracts: false,
@@ -97,6 +100,7 @@ window.MapLibreImpactMap = (function ()
 
     // Risk Zone Mode: radius, live isochrone, or legacy cached grid
     let riskZoneMode = 'isochrone';
+    let drawingOverlaysSuppressed = false;
 
     // Current basemap
     let currentBasemap = 'offline';
@@ -639,11 +643,13 @@ window.MapLibreImpactMap = (function ()
             const cached = contextCache[fips];
             if (!(!lite && cached.isLite))
             {
+                if (isPrefetch) return true;
                 currentContextGeoJSON = cached.geojson;
                 currentCalcFeatures = cached.calcFeatures;
                 currentCountyTotals = cached.totals;
                 contextIsLite = cached.isLite;
                 updateHeatmapData();
+                if (layersVisible.heatmap) loadBlockGroupDensity(fips);
                 return true;
             }
         }
@@ -739,13 +745,14 @@ window.MapLibreImpactMap = (function ()
 
                 contextCache[fips] = { geojson, calcFeatures, totals: { adults: countyAdults, total: countyTotal }, isLite: lite };
 
-                if (!activeContextLoad || activeContextLoad.id === loadId)
+                if (!isPrefetch && (!activeContextLoad || activeContextLoad.id === loadId))
                 {
                     contextIsLite = lite;
                     currentContextGeoJSON = geojson;
                     currentCalcFeatures = calcFeatures;
                     currentCountyTotals = { adults: countyAdults, total: countyTotal };
                     updateHeatmapData();
+                    if (layersVisible.heatmap) loadBlockGroupDensity(fips);
                 }
                 return true;
             } catch (e)
@@ -759,11 +766,15 @@ window.MapLibreImpactMap = (function ()
                 if (contextCache[fips])
                 {
                     const cached = contextCache[fips];
-                    currentContextGeoJSON = cached.geojson;
-                    currentCalcFeatures = cached.calcFeatures;
-                    currentCountyTotals = cached.totals;
-                    contextIsLite = cached.isLite;
-                    updateHeatmapData();
+                    if (!isPrefetch)
+                    {
+                        currentContextGeoJSON = cached.geojson;
+                        currentCalcFeatures = cached.calcFeatures;
+                        currentCountyTotals = cached.totals;
+                        contextIsLite = cached.isLite;
+                        updateHeatmapData();
+                        if (layersVisible.heatmap) loadBlockGroupDensity(fips);
+                    }
                     return true;
                 }
                 return false;
@@ -2149,6 +2160,10 @@ window.MapLibreImpactMap = (function ()
                     <input type="checkbox" id="toggle-boundary" checked />
                 </label>
                 <label class="toggle-row">
+                    <span class="toggle-label">City/Town Boundaries</span>
+                    <input type="checkbox" id="toggle-municipalities" checked />
+                </label>
+                <label class="toggle-row">
                     <span class="toggle-label">Heatmap</span>
                     <input type="checkbox" id="toggle-heatmap" />
                 </label>
@@ -2195,6 +2210,7 @@ window.MapLibreImpactMap = (function ()
         const toggles = {
             'toggle-zones': 'zones',
             'toggle-boundary': 'boundary',
+            'toggle-municipalities': 'municipalities',
             'toggle-heatmap': 'heatmap',
             'toggle-tracts': 'tracts',
             'toggle-terrain3d': 'terrain3d',
@@ -2521,14 +2537,24 @@ window.MapLibreImpactMap = (function ()
                 toggleLayerVisibility('zones', layersVisible.zones);
                 break;
             case 'boundary':
-                ['counties-fill', 'counties-line', 'county-highlight-line'].forEach(id => setLayerVisibility(id, visible));
+                ['counties-fill', 'counties-line', 'county-highlight-line']
+                    .forEach(id => setLayerVisibility(id, visible && !drawingOverlaysSuppressed));
+                break;
+            case 'municipalities':
+                setMunicipalBoundaryVisibility();
                 break;
             case 'heatmap':
-                if (visible) updateHeatmapData();
+                if (visible)
+                {
+                    setupHeatmapLayer();
+                    updateHeatmapData();
+                    if (currentCountyFips) loadBlockGroupDensity(currentCountyFips);
+                }
                 setLayerVisibility('block-groups-heat', visible);
+                setLayerVisibility('block-group-density-fill', visible);
                 break;
             case 'tracts':
-                setLayerVisibility('tract-lines', visible);
+                setLayerVisibility('tract-lines', visible && !drawingOverlaysSuppressed);
                 if (visible && currentCountyFips) loadTracts(currentCountyFips);
                 break;
             case 'terrain3d':
@@ -2684,6 +2710,10 @@ window.MapLibreImpactMap = (function ()
         if (typeof map.isStyleLoaded === 'function' && !map.isStyleLoaded()) return;
 
         const heatmapData = buildHeatmapGeoJSON();
+        const emptyFeatureCollection = { type: 'FeatureCollection', features: [] };
+        const densityData = currentCountyFips
+            ? (blockGroupDensityCache[currentCountyFips] || emptyFeatureCollection)
+            : emptyFeatureCollection;
 
         try
         {
@@ -2694,6 +2724,15 @@ window.MapLibreImpactMap = (function ()
             } else
             {
                 map.addSource('block-groups', { type: 'geojson', data: heatmapData });
+            }
+
+            const existingDensitySource = map.getSource('block-group-density');
+            if (existingDensitySource)
+            {
+                existingDensitySource.setData(densityData);
+            } else
+            {
+                map.addSource('block-group-density', { type: 'geojson', data: densityData });
             }
         } catch (e)
         {
@@ -2708,17 +2747,49 @@ window.MapLibreImpactMap = (function ()
                 const firstLayer = map.getStyle().layers.find(l => l.type === 'symbol');
                 const beforeId = firstLayer ? firstLayer.id : undefined;
 
+                if (!map.getLayer('block-group-density-fill'))
+                {
+                    map.addLayer({
+                        id: 'block-group-density-fill',
+                        type: 'fill',
+                        source: 'block-group-density',
+                        minzoom: 8.5,
+                        layout: {
+                            visibility: layersVisible.heatmap ? 'visible' : 'none'
+                        },
+                        paint: {
+                            'fill-color': [
+                                'interpolate', ['linear'], ['coalesce', ['get', 'POP_DENSITY'], 0],
+                                0, 'rgba(173,216,230,0)',
+                                100, '#ADD8E6',
+                                500, '#FDE68A',
+                                1500, '#FEB24C',
+                                4000, '#FC4E2A',
+                                8000, '#E31A1C',
+                                15000, '#800026'
+                            ],
+                            'fill-opacity': [
+                                'interpolate', ['linear'], ['zoom'],
+                                8.5, 0,
+                                9.5, 0.48,
+                                13, 0.68
+                            ]
+                        }
+                    }, beforeId);
+                }
+
                 map.addLayer({
                     id: 'block-groups-heat', type: 'heatmap', source: 'block-groups',
+                    maxzoom: 10.5,
                     layout: {
                         visibility: layersVisible.heatmap ? 'visible' : 'none'
                     },
                     paint: {
-                        'heatmap-weight': ['interpolate', ['linear'], ['get', 'POP_ADULT'], 0, 0, 5000, 1],
-                        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 5, 1, 15, 3],
-                        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 5, 15, 15, 30],
+                        'heatmap-weight': ['interpolate', ['linear'], ['get', 'POP_ADULT'], 0, 0, 250, 0.15, 1000, 0.55, 3000, 1],
+                        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 1.8],
+                        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 5, 12, 10.5, 28],
                         'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(178,226,226,0)', 0.2, '#ADD8E6', 0.4, '#FEB24C', 0.6, '#FC4E2A', 0.8, '#E31A1C', 1, '#800026'],
-                        'heatmap-opacity': 0.6
+                        'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 5, 0.62, 8.5, 0.62, 10.5, 0]
                     }
                 }, beforeId);
             }
@@ -2775,6 +2846,64 @@ window.MapLibreImpactMap = (function ()
             // Heatmap rendering is optional and must never prevent the base map
             // or the rest of the impact calculator from initializing.
             console.warn('[Map] Heatmap data could not be updated:', e);
+        }
+    }
+
+    function clearBlockGroupDensity()
+    {
+        if (!map) return;
+        const source = map.getSource('block-group-density');
+        if (source)
+        {
+            source.setData({ type: 'FeatureCollection', features: [] });
+        }
+    }
+
+    async function loadBlockGroupDensity(countyFips)
+    {
+        if (!map || !layersVisible.heatmap) return;
+
+        const normalizedCountyFips = String(countyFips || '').trim();
+        if (!/^\d{5}$/.test(normalizedCountyFips))
+        {
+            clearBlockGroupDensity();
+            return;
+        }
+
+        setupHeatmapLayer();
+        const source = map.getSource('block-group-density');
+        if (!source) return;
+
+        const cached = blockGroupDensityCache[normalizedCountyFips];
+        if (cached)
+        {
+            if (normalizedCountyFips === String(currentCountyFips || '').trim())
+            {
+                source.setData(cached);
+            }
+            return;
+        }
+
+        const requestSeq = ++blockGroupDensityRequestSeq;
+        try
+        {
+            const res = await fetch(`/api/census/block-groups/${encodeURIComponent(normalizedCountyFips)}`);
+            if (!res.ok) throw new Error(`Block-group density request failed: ${res.status}`);
+
+            const geojson = await res.json();
+            blockGroupDensityCache[normalizedCountyFips] = geojson;
+            if (requestSeq !== blockGroupDensityRequestSeq
+                || normalizedCountyFips !== String(currentCountyFips || '').trim()
+                || !layersVisible.heatmap)
+            {
+                return;
+            }
+
+            source.setData(geojson);
+        } catch (e)
+        {
+            console.warn('[Map] Block-group density could not be loaded:', e);
+            if (requestSeq === blockGroupDensityRequestSeq) clearBlockGroupDensity();
         }
     }
 
@@ -3302,7 +3431,9 @@ window.MapLibreImpactMap = (function ()
         {
             map.addSource('municipal-boundaries', {
                 type: 'geojson',
-                data: { type: 'FeatureCollection', features: [] }
+                data: (currentCountyFips && cache.municipalities[currentCountyFips])
+                    ? cache.municipalities[currentCountyFips]
+                    : { type: 'FeatureCollection', features: [] }
             });
         }
 
@@ -3314,12 +3445,15 @@ window.MapLibreImpactMap = (function ()
                 'source': 'municipal-boundaries',
                 'minzoom': 0,
                 'layout': {
-                    'visibility': 'none'
+                    'visibility': 'none',
+                    'line-cap': 'round',
+                    'line-join': 'round'
                 },
                 'paint': {
                     'line-color': '#0f172a',
-                    'line-width': 2.5,
-                    'line-opacity': 0.95
+                    'line-width': 1.25,
+                    'line-dasharray': [1, 2.25],
+                    'line-opacity': 0.82
                 }
             });
         }
@@ -3424,6 +3558,15 @@ window.MapLibreImpactMap = (function ()
         setLayerVisibility('municipal-boundaries-line', false);
     }
 
+    function setMunicipalBoundaryVisibility()
+    {
+        const cached = currentCountyFips ? cache.municipalities[currentCountyFips] : null;
+        const hasFeatures = !!(cached && Array.isArray(cached.features) && cached.features.length);
+        const visible = layersVisible.municipalities && !drawingOverlaysSuppressed && hasFeatures;
+        setLayerVisibility('municipal-boundaries-line', visible);
+        if (!visible) clearMunicipalBoundaryHover();
+    }
+
     async function loadMunicipalBoundaries(countyFips)
     {
         if (!map || !map.getSource('municipal-boundaries'))
@@ -3446,7 +3589,7 @@ window.MapLibreImpactMap = (function ()
         if (cached)
         {
             map.getSource('municipal-boundaries').setData(cached);
-            setLayerVisibility('municipal-boundaries-line', !!(cached.features && cached.features.length));
+            setMunicipalBoundaryVisibility();
             return;
         }
 
@@ -3468,7 +3611,7 @@ window.MapLibreImpactMap = (function ()
 
             cache.municipalities[normalizedCountyFips] = geojson;
             map.getSource('municipal-boundaries').setData(geojson);
-            setLayerVisibility('municipal-boundaries-line', !!(geojson.features && geojson.features.length));
+            setMunicipalBoundaryVisibility();
         }
         catch (err)
         {
@@ -3683,6 +3826,8 @@ window.MapLibreImpactMap = (function ()
     async function selectCounty(countyFips)
     {
         currentCountyFips = countyFips;
+        blockGroupDensityRequestSeq++;
+        clearBlockGroupDensity();
         loadMunicipalBoundaries(countyFips);
 
         // CRITICAL: Prevent 'idle' event from previous state drill from hiding our overlay
@@ -3891,6 +4036,8 @@ window.MapLibreImpactMap = (function ()
                         countyNamesCache[newCountyFips] = countyName;
                     }
                     currentCountyFips = newCountyFips;
+                    blockGroupDensityRequestSeq++;
+                    clearBlockGroupDensity();
                     // Use lite=true to get all block groups within 50-mile radius
                     loadCountyContext(newCountyFips, true, "Loading Impact Analysis...").then(() =>
                     {
@@ -3957,6 +4104,16 @@ window.MapLibreImpactMap = (function ()
     }
 
     // === DRAWING TOOLS ===
+
+    function setDrawingOverlaySuppression(suppressed)
+    {
+        drawingOverlaysSuppressed = !!suppressed;
+        const showCountyLayers = layersVisible.boundary && !drawingOverlaysSuppressed;
+        ['counties-fill', 'counties-line', 'county-highlight-line']
+            .forEach(id => setLayerVisibility(id, showCountyLayers));
+        setLayerVisibility('tract-lines', layersVisible.tracts && !drawingOverlaysSuppressed);
+        setMunicipalBoundaryVisibility();
+    }
 
     async function setupDrawingTools()
     {
@@ -4053,7 +4210,11 @@ window.MapLibreImpactMap = (function ()
         // Toggle Button
         const toggleBtn = document.createElement('button');
         toggleBtn.id = 'draw-toggle-btn';
+        toggleBtn.type = 'button';
         toggleBtn.title = 'Drawing Tools';
+        toggleBtn.setAttribute('aria-label', 'Toggle drawing tools');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.setAttribute('aria-controls', 'drawing-panel');
         toggleBtn.className = 'bg-slate-950/40 backdrop-blur-sm w-[30px] h-[30px] flex items-center justify-center rounded-lg shadow-lg border border-white/5 text-white hover:bg-slate-900/60 transition-colors cursor-pointer';
         toggleBtn.innerHTML = '<span class="material-symbols-outlined text-xl leading-none">edit</span>';
 
@@ -4078,8 +4239,10 @@ window.MapLibreImpactMap = (function ()
         modes.forEach(m =>
         {
             const btn = document.createElement('button');
+            btn.type = 'button';
             btn.className = 'draw-tool-btn w-8 h-8 flex items-center justify-center rounded hover:bg-slate-700/50 text-slate-300 transition-colors';
             btn.title = m.title;
+            btn.setAttribute('aria-label', m.title);
             btn.innerHTML = `<span class="material-symbols-outlined text-sm">${m.icon}</span>`;
 
             btn.onclick = () =>
@@ -4116,6 +4279,16 @@ window.MapLibreImpactMap = (function ()
             const isVisible = panel.style.display !== 'none';
             panel.style.display = isVisible ? 'none' : 'flex';
             toggleBtn.classList.toggle('bg-blue-600', !isVisible);
+            toggleBtn.setAttribute('aria-expanded', String(!isVisible));
+            setDrawingOverlaySuppression(!isVisible);
+
+            if (isVisible && draw)
+            {
+                draw.setMode('static');
+                currentMode = 'static';
+                panel.querySelectorAll('.draw-tool-btn')
+                    .forEach(b => b.classList.remove('bg-blue-600', 'text-white'));
+            }
         };
 
         wrapper.appendChild(toggleBtn);
@@ -4360,6 +4533,8 @@ window.MapLibreImpactMap = (function ()
                 // Reset state
                 currentStateFips = null;
                 currentCountyFips = null;
+                blockGroupDensityRequestSeq++;
+                clearBlockGroupDensity();
                 markerPosition = null;
                 resetImpactStats();
 
@@ -4410,6 +4585,8 @@ window.MapLibreImpactMap = (function ()
             {
                 // Go back to state view - remove marker and circles, keep state selected
                 currentCountyFips = null;
+                blockGroupDensityRequestSeq++;
+                clearBlockGroupDensity();
                 markerPosition = null;
 
                 // Remove marker if exists

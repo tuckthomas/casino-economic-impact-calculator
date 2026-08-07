@@ -2002,7 +2002,6 @@ window.EconomicCalculator = (function ()
         const costEconPer = costAbusedPer + costEmploymentPer;
 
         const totalCost = totalCostHealth + totalCostSocial + totalCostCrime + totalCostLegal + totalCostEcon;
-        const totalCostM = totalCost / 1000000;
         // --- REVENUE SPLIT ---
         const totalRevenue = revenueM * 1000000;
         const agrTotal = agrM * 1000000;
@@ -2127,7 +2126,8 @@ window.EconomicCalculator = (function ()
         const otherRate = otherAdults > 0 ? (otherVictims / otherAdults) * 100 : 0;
         const spilloverTotalCost = Number(otherTotals.total || 0);
         const regionalNetAfterSpillover = revenueRda - spilloverTotalCost;
-        const statewideNet = totalRevenue - totalCost - spilloverTotalCost;
+        const consolidatedTotalCost = totalCost + spilloverTotalCost;
+        const statewideNet = totalRevenue - consolidatedTotalCost;
         const fmtVictims = Math.round(victims).toLocaleString();
         setTxt('calc-pop', Math.round(currentPop).toLocaleString());
         setTxt('calc-rate', gamblerGrowthRate.toFixed(2) + '%');
@@ -2434,9 +2434,9 @@ window.EconomicCalculator = (function ()
 
         // Bar
         let percentCovered = 0;
-        if (totalCostM > 0)
+        if (consolidatedTotalCost > 0)
         {
-            percentCovered = Math.min(100, Math.max(0, (revenueM / totalCostM) * 100));
+            percentCovered = Math.min(100, Math.max(0, (totalRevenue / consolidatedTotalCost) * 100));
         } else
         {
             percentCovered = 100;
@@ -2448,10 +2448,10 @@ window.EconomicCalculator = (function ()
         {
             if (percentCovered >= 100)
             {
-                els.resFooter.innerHTML = `Revenue covers <strong class="text-white text-lg">100%</strong> of costs.`;
+                els.resFooter.innerHTML = `Consolidated tax revenue covers <strong class="text-white text-lg">100%</strong> of statewide modeled costs.`;
             } else
             {
-                els.resFooter.innerHTML = `Tax Revenue covers only <strong class="text-white text-lg">${percentCovered.toFixed(0)}%</strong> of costs.`;
+                els.resFooter.innerHTML = `Consolidated tax revenue covers only <strong class="text-white text-lg">${percentCovered.toFixed(0)}%</strong> of statewide modeled costs.`;
             }
         }
 
@@ -2464,7 +2464,6 @@ window.EconomicCalculator = (function ()
             const subjectCountyName = (lastImpactBreakdown && lastImpactBreakdown.countyName) || countyIndex.get(subjectCountyFips) || "Selected";
             const subjectStateName = String((lastImpactBreakdown && lastImpactBreakdown.stateName) || "Indiana").trim();
 
-            const costRatio = totalRevenue > 0 ? (totalCost / totalRevenue).toFixed(2) : "N/A";
             const taxEffRate = agrM > 0 ? (totalRevenue / (agrM * 1000000)) * 100 : 0;
 
             const countyInfo = getCountyData().find(c => c.pop === currentPop) || { name: subjectCountyName, pop: currentPop };
@@ -2499,7 +2498,7 @@ window.EconomicCalculator = (function ()
             const projectionHasFutureYear = !!(populationProjection && Number(populationProjection.yearsFromBase || 0) > 0);
             const otherCountiesCount = (otherCosts && Array.isArray(otherCosts.counties)) ? otherCosts.counties.length : 0;
             const otherTotalCost = Number(otherTotals.total || 0);
-            const stateWideSocialCost = totalCost + otherTotalCost;
+            const stateWideSocialCost = consolidatedTotalCost;
             const stateWideNetBalance = totalRevenue - stateWideSocialCost;
             const scenarioDisplayName = selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID
                 ? 'Custom'
@@ -2682,11 +2681,28 @@ window.EconomicCalculator = (function ()
             if (stateWideNetBalance < 0)
             {
                 analysisHTML += `<li><strong>Fiscal Conclusion:</strong> Under this configuration, the consolidated statement remains in deficit. Total modeled social costs (${fmtM(stateWideSocialCost)}) exceed total tax revenue (${fmtM(totalRevenue)}) by ${fmtM(Math.abs(stateWideNetBalance))}, so any positive case for the project would need to rely on effects not presently included in the deterministic model.</li>`;
-                analysisHTML += `<li><strong>Cost-to-Revenue Ratio:</strong> For every $1 in tax revenue generated, the consolidated model projects $${(stateWideSocialCost / Math.max(1, totalRevenue)).toFixed(2)} in social costs.</li>`;
             } else
             {
                 analysisHTML += `<li><strong>Fiscal Conclusion:</strong> Under this configuration, the consolidated statement remains in surplus. Total modeled tax revenue (${fmtM(totalRevenue)}) exceeds total modeled social costs (${fmtM(stateWideSocialCost)}), leaving a positive consolidated balance of ${fmtM(Math.abs(stateWideNetBalance))}.</li>`;
             }
+
+            const hostRatioText = isHostCountySelection && hostLocalRevenue > 0
+                ? `For every $1 in host-government revenue, the selected-county model projects $${(subjectTotalCost / hostLocalRevenue).toFixed(2)} in social costs.`
+                : `No ratio is available because the active scenario assigns no host-government revenue for this location.`;
+            const regionalRatioText = revenueRda > 0
+                ? `For every $1 in regional revenue, the spillover model projects $${(spilloverTotalCost / revenueRda).toFixed(2)} in social costs.`
+                : `No ratio is available because the active scenario assigns no regional revenue.`;
+            const consolidatedRatioText = totalRevenue > 0
+                ? `For every $1 in total tax revenue, the statewide model projects $${(stateWideSocialCost / totalRevenue).toFixed(2)} in social costs.`
+                : `No ratio is available because this scenario produces no modeled tax revenue.`;
+
+            analysisHTML += `<li><strong>Cost-to-Revenue Ratios:</strong>
+                <ul class="list-[circle] pl-8 mt-2 space-y-2">
+                    <li><strong>Host Government:</strong> ${hostRatioText}</li>
+                    <li><strong>Regional State:</strong> ${regionalRatioText}</li>
+                    <li><strong>Consolidated (Entire State):</strong> ${consolidatedRatioText}</li>
+                </ul>
+            </li>`;
 
             analysisHTML += '</ul>';
             analysisEl.innerHTML = analysisHTML;

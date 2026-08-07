@@ -435,6 +435,77 @@ namespace SaveFW.Server.Controllers
         }
 
         /// <summary>
+        /// Returns block-group polygons and adult population density for a county.
+        /// This supports an accurate close-zoom density surface; the broader map
+        /// continues to use lightweight population points for performance.
+        /// </summary>
+        [HttpGet("block-groups/{countyFips}")]
+        public async Task<IActionResult> GetBlockGroups(string countyFips)
+        {
+            var normalizedCountyFips = string.Concat((countyFips ?? string.Empty).Where(char.IsDigit));
+            if (normalizedCountyFips.Length != 5)
+            {
+                return BadRequest("County FIPS must be 5 digits.");
+            }
+
+            var cacheKey = $"census_block_groups_{normalizedCountyFips}_density_geojson";
+            if (_cache.TryGetValue(cacheKey, out string? cachedJson) && !string.IsNullOrEmpty(cachedJson))
+            {
+                return Content(cachedJson, "application/json");
+            }
+
+            try
+            {
+                var conn = _db.Database.GetDbConnection();
+                await conn.OpenAsync();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandTimeout = 60;
+                cmd.CommandText = @"
+                    SELECT json_build_object(
+                        'type', 'FeatureCollection',
+                        'features', COALESCE(json_agg(
+                            json_build_object(
+                                'type', 'Feature',
+                                'geometry', ST_AsGeoJSON(COALESCE(geom_simplified, geom))::json,
+                                'properties', json_build_object(
+                                    'GEOID', geoid,
+                                    'POP_TOTAL', COALESCE(pop_total, 0),
+                                    'POP_ADULT', COALESCE(pop_18_plus, 0),
+                                    'POP_DENSITY', CASE
+                                        WHEN ST_Area(geom::geography) > 0 THEN
+                                            COALESCE(pop_18_plus, 0) /
+                                            (ST_Area(geom::geography) / 2589988.110336)
+                                        ELSE 0
+                                    END
+                                )
+                            ) ORDER BY geoid
+                        ), '[]'::json)
+                    )::text
+                    FROM census_block_groups
+                    WHERE substring(geoid, 1, 5) = @fips;
+                ";
+
+                var p = cmd.CreateParameter();
+                p.ParameterName = "fips";
+                p.Value = normalizedCountyFips;
+                cmd.Parameters.Add(p);
+
+                var json = (string?)await cmd.ExecuteScalarAsync();
+                if (string.IsNullOrEmpty(json))
+                {
+                    return NotFound($"No block-group data found for county {normalizedCountyFips}.");
+                }
+
+                _cache.Set(cacheKey, json, TimeSpan.FromHours(24));
+                return Content(json, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Get census tract boundaries for a county, dissolved from block groups.
         /// Tract GEOID = first 11 characters of block group GEOID (state 2 + county 3 + tract 6).
         /// </summary>
