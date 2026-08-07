@@ -2929,7 +2929,8 @@ window.MapLibreImpactMap = (function ()
             stateHeatmapCache[normalizedStateFips] = features;
             const heatmapRequested = layersVisible.heatmap
                 || document.getElementById('toggle-heatmap')?.checked;
-            if (normalizedStateFips !== String(currentStateFips || '').trim()
+            if (currentCountyFips
+                || normalizedStateFips !== String(currentStateFips || '').trim()
                 || !heatmapRequested)
             {
                 return;
@@ -3180,6 +3181,15 @@ window.MapLibreImpactMap = (function ()
         if (e.features.length > 0)
         {
             const props = e.features[0].properties;
+            const stateFips = String(props.geoid || props.GEOID || props.state_fp || '').padStart(2, '0');
+            const selectedStateFips = String(currentStateFips || '').padStart(2, '0');
+
+            // If already in this state, do not re-drill; let county selection handle it
+            if (currentStateFips && stateFips === selectedStateFips)
+            {
+                return;
+            }
+
             drillToState(props);
         }
     }
@@ -3781,7 +3791,7 @@ window.MapLibreImpactMap = (function ()
     {
         if (!props) return;
 
-        const stateFips = props.geoid || props.GEOID;
+        const stateFips = typeof props === 'string' ? props : (props.geoid || props.GEOID || props.state_fp);
         if (!stateFips) return;
 
         currentStateFips = stateFips;
@@ -3980,6 +3990,12 @@ window.MapLibreImpactMap = (function ()
     async function selectCounty(countyFips)
     {
         currentCountyFips = countyFips;
+        const stateFips = String(countyFips || '').padStart(5, '0').substring(0, 2);
+        if (stateFips && (!currentStateFips || currentStateFips !== stateFips))
+        {
+            currentStateFips = stateFips;
+            setCountyFilter(stateFips);
+        }
         blockGroupDensityRequestSeq++;
         clearBlockGroupDensity();
         loadMunicipalBoundaries(countyFips);
