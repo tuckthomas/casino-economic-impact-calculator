@@ -3340,7 +3340,10 @@ window.MapLibreImpactMap = (function ()
         if (e.features.length > 0)
         {
             const props = e.features[0].properties;
-            if (currentStateFips && props.state_fp === currentStateFips)
+            const countyGeoid = String(props.geoid || '').padStart(5, '0');
+            const clickedStateFips = String(props.state_fp || countyGeoid.substring(0, 2)).padStart(2, '0');
+            const selectedStateFips = String(currentStateFips || '').padStart(2, '0');
+            if (currentStateFips && clickedStateFips === selectedStateFips)
             {
                 // If they clicked inside the ALREADY selected county, just move the marker
                 if (currentCountyFips === props.geoid && marker)
