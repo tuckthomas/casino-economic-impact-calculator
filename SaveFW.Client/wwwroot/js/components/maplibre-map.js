@@ -2899,6 +2899,7 @@ window.MapLibreImpactMap = (function ()
             if (!currentCountyFips && normalizedStateFips === String(currentStateFips || '').trim())
             {
                 setHeatmapFeatures(cached);
+                setLayerVisibility('block-groups-heat', true);
             }
             return;
         }
@@ -2935,6 +2936,7 @@ window.MapLibreImpactMap = (function ()
             }
 
             setHeatmapFeatures(features);
+            setLayerVisibility('block-groups-heat', true);
         }
         catch (e)
         {
