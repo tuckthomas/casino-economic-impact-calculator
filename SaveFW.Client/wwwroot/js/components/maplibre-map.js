@@ -3797,6 +3797,11 @@ window.MapLibreImpactMap = (function ()
         // Set initialStateDrill flag so tile loading handler knows to show overlay
         initialStateDrill = true;
         clearTimeout(tileLoadingTimeout);
+        tileLoadingTimeout = setTimeout(() =>
+        {
+            initialStateDrill = false;
+            toggleLoading(false);
+        }, 1500);
         toggleLoading(true, "Loading County Boundaries...");
 
         // Show counties only for this state and its neighbors
