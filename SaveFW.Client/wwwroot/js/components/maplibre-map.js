@@ -3303,6 +3303,11 @@ window.MapLibreImpactMap = (function ()
 
     function onCountiesClick(e)
     {
+        // The same canvas click can hit both the state and county layers. During
+        // the initial state drill, ignore the underlying county event so state-
+        // scale overlays can finish loading before county selection is enabled.
+        if (initialStateDrill) return;
+
         if (e.features.length > 0)
         {
             const props = e.features[0].properties;
