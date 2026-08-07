@@ -548,10 +548,16 @@ namespace SaveFW.Server.Controllers
                         'buffer_miles', @bufferMiles,
                         'points', COALESCE(json_agg(
                             json_build_array(
-                                ST_X(ST_PointOnSurface(bg.geom)),
-                                ST_Y(ST_PointOnSurface(bg.geom)),
+                                bg.cx,
+                                bg.cy,
                                 COALESCE(bg.pop_18_plus, 0),
-                                substring(bg.geoid, 1, 5)
+                                substring(bg.geoid, 1, 5),
+                                CASE
+                                    WHEN ST_Area(bg.geom::geography) > 0 THEN
+                                        COALESCE(bg.pop_18_plus, 0) /
+                                        (ST_Area(bg.geom::geography) / 2589988.110336)
+                                    ELSE 0
+                                END
                             ) ORDER BY bg.geoid
                         ) FILTER (WHERE bg.geoid IS NOT NULL), '[]'::json)
                     )::text
@@ -559,7 +565,7 @@ namespace SaveFW.Server.Controllers
                     LEFT JOIN census_block_groups bg
                       ON bg.pop_18_plus > 0
                      AND bg.geom && c.geom
-                     AND ST_Intersects(ST_PointOnSurface(bg.geom), c.geom);
+                     AND ST_Intersects(ST_SetSRID(ST_Point(bg.cx, bg.cy), 4326), c.geom);
                 ";
 
                 var stateParam = cmd.CreateParameter();

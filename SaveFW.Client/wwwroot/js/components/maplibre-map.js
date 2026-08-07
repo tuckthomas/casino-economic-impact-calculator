@@ -2799,9 +2799,23 @@ window.MapLibreImpactMap = (function ()
                         visibility: layersVisible.heatmap ? 'visible' : 'none'
                     },
                     paint: {
-                        'heatmap-weight': ['interpolate', ['linear'], ['get', 'POP_ADULT'], 0, 0, 250, 0.15, 1000, 0.55, 3000, 1],
-                        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 4, 0.65, 8.5, 1.45],
-                        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 4, 7, 8.5, 22],
+                        'heatmap-weight': [
+                            'case',
+                            ['>', ['coalesce', ['get', 'POP_DENSITY'], 0], 0],
+                            [
+                                'interpolate', ['linear'], ['get', 'POP_DENSITY'],
+                                0, 0,
+                                50, 0.01,
+                                200, 0.05,
+                                750, 0.18,
+                                2000, 0.4,
+                                5000, 0.75,
+                                10000, 1
+                            ],
+                            ['interpolate', ['linear'], ['get', 'POP_ADULT'], 0, 0, 250, 0.08, 1000, 0.35, 3000, 0.8]
+                        ],
+                        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 4, 0.4, 8.5, 1.05],
+                        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 4, 5, 8.5, 18],
                         'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(178,226,226,0)', 0.2, '#ADD8E6', 0.4, '#FEB24C', 0.6, '#FC4E2A', 0.8, '#E31A1C', 1, '#800026'],
                         'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0.58, 7.75, 0.58, 8.75, 0]
                     }
@@ -2829,6 +2843,7 @@ window.MapLibreImpactMap = (function ()
                     },
                     properties: {
                         POP_ADULT: Number(feature.popAdult || 0),
+                        POP_DENSITY: Number(feature.popDensity || 0),
                         COUNTY_FIPS: feature.countyFips || currentCountyFips || ''
                     }
                 }))
@@ -2902,7 +2917,8 @@ window.MapLibreImpactMap = (function ()
                         lng: Number(point[0]),
                         lat: Number(point[1]),
                         popAdult: Number(point[2] || 0),
-                        countyFips: point.length >= 4 ? String(point[3] || '') : ''
+                        countyFips: point.length >= 4 ? String(point[3] || '') : '',
+                        popDensity: point.length >= 5 ? Number(point[4] || 0) : 0
                     }))
                     .filter(feature => Number.isFinite(feature.lng)
                         && Number.isFinite(feature.lat)
