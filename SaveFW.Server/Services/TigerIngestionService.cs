@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using Npgsql;
+using NpgsqlTypes;
 using SaveFW.Server.Data;
 
 namespace SaveFW.Server.Services
@@ -37,6 +38,113 @@ namespace SaveFW.Server.Services
             var url = $"{BaseTigerUrl}/BG/{fileName}";
             
             await ProcessTigerFile(url, fileName, "census_block_groups", fips);
+        }
+
+        public async Task<int> BackfillPopulationForStateAsync(string stateFips, CancellationToken cancellationToken = default)
+        {
+            stateFips = stateFips.PadLeft(2, '0');
+            var stateFiles = stateFips switch
+            {
+                "18" => (Folder: "Indiana", Abbreviation: "in"),
+                "26" => (Folder: "Michigan", Abbreviation: "mi"),
+                "39" => (Folder: "Ohio", Abbreviation: "oh"),
+                _ => throw new NotSupportedException($"No PL 94-171 download mapping is configured for state {stateFips}.")
+            };
+            var url = $"https://www2.census.gov/programs-surveys/decennial/2020/data/01-Redistricting_File--PL_94-171/{stateFiles.Folder}/{stateFiles.Abbreviation}2020.pl.zip";
+
+            _logger.LogInformation("Downloading official Census PL 94-171 population file for state {StateFips}...", stateFips);
+            using var response = await _http.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            var archiveBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            using var archiveStream = new MemoryStream(archiveBytes, writable: false);
+            using var archive = new ZipArchive(archiveStream, ZipArchiveMode.Read);
+
+            var prefix = stateFiles.Abbreviation;
+            var geoEntry = archive.GetEntry($"{prefix}geo2020.pl")
+                ?? throw new InvalidDataException("The Census archive did not contain its geography segment.");
+            var totalEntry = archive.GetEntry($"{prefix}000012020.pl")
+                ?? throw new InvalidDataException("The Census archive did not contain table P1.");
+            var adultEntry = archive.GetEntry($"{prefix}000022020.pl")
+                ?? throw new InvalidDataException("The Census archive did not contain table P3.");
+
+            var geoidsByRecord = new Dictionary<string, string>(StringComparer.Ordinal);
+            using (var reader = new StreamReader(geoEntry.Open()))
+            {
+                while (await reader.ReadLineAsync(cancellationToken) is { } line)
+                {
+                    var fields = line.Split('|');
+                    if (fields.Length > 9 && fields[2] == "150")
+                    {
+                        geoidsByRecord[fields[7]] = fields[9];
+                    }
+                }
+            }
+
+            var totalsByRecord = await ReadPopulationSegmentAsync(totalEntry, cancellationToken);
+            var adultsByRecord = await ReadPopulationSegmentAsync(adultEntry, cancellationToken);
+
+            var connString = _config.GetConnectionString("DefaultConnection");
+            await using var conn = new NpgsqlConnection(connString);
+            await conn.OpenAsync(cancellationToken);
+
+            await using (var create = conn.CreateCommand())
+            {
+                create.CommandText = @"
+                    CREATE TEMP TABLE census_population_stage (
+                        geoid text PRIMARY KEY,
+                        pop_total bigint NOT NULL,
+                        pop_18_plus bigint NOT NULL
+                    );
+                ";
+                await create.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await using (var writer = conn.BeginBinaryImport(
+                "COPY census_population_stage (geoid, pop_total, pop_18_plus) FROM STDIN (FORMAT BINARY)"))
+            {
+                foreach (var (recordNumber, geoid) in geoidsByRecord)
+                {
+                    totalsByRecord.TryGetValue(recordNumber, out var total);
+                    adultsByRecord.TryGetValue(recordNumber, out var adults);
+
+                    writer.StartRow();
+                    writer.Write(geoid, NpgsqlDbType.Text);
+                    writer.Write(total, NpgsqlDbType.Bigint);
+                    writer.Write(adults, NpgsqlDbType.Bigint);
+                }
+
+                await writer.CompleteAsync(cancellationToken);
+            }
+
+            await using var update = conn.CreateCommand();
+            update.CommandText = @"
+                UPDATE census_block_groups AS block_group
+                SET pop_total = population.pop_total,
+                    pop_18_plus = population.pop_18_plus
+                FROM census_population_stage AS population
+                WHERE block_group.geoid = population.geoid;
+            ";
+            var updated = await update.ExecuteNonQueryAsync(cancellationToken);
+            _logger.LogInformation("Updated population for {UpdatedCount} block groups in state {StateFips}.", updated, stateFips);
+            return updated;
+        }
+
+        private static async Task<Dictionary<string, long>> ReadPopulationSegmentAsync(
+            ZipArchiveEntry entry,
+            CancellationToken cancellationToken)
+        {
+            var values = new Dictionary<string, long>(StringComparer.Ordinal);
+            using var reader = new StreamReader(entry.Open());
+            while (await reader.ReadLineAsync(cancellationToken) is { } line)
+            {
+                var fields = line.Split('|');
+                if (fields.Length > 5 && long.TryParse(fields[5], out var population))
+                {
+                    values[fields[4]] = population;
+                }
+            }
+
+            return values;
         }
 
         public async Task IngestNationalCounties()

@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using SaveFW.Server.Data;
+using SaveFW.Server.Services.Valhalla;
 using System.Data;
+using System.Text.Json;
 
 namespace SaveFW.Server.Controllers;
 
@@ -13,12 +15,102 @@ public class ImpactController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IConfiguration _config;
     private readonly ILogger<ImpactController> _logger;
+    private readonly ValhallaClient _valhalla;
 
-    public ImpactController(AppDbContext db, IConfiguration config, ILogger<ImpactController> logger)
+    public ImpactController(AppDbContext db, IConfiguration config, ILogger<ImpactController> logger, ValhallaClient valhalla)
     {
         _db = db;
         _config = config;
         _logger = logger;
+        _valhalla = valhalla;
+    }
+
+    [HttpGet("live-isochrone")]
+    public async Task<IActionResult> GetLiveIsochrone(double lat, double lon, CancellationToken cancellationToken)
+    {
+        var contours = new[] { 15, 30, 60 };
+        var geoJsonText = await _valhalla.GetIsochroneJsonAsync(lat, lon, contours, cancellationToken);
+        if (string.IsNullOrWhiteSpace(geoJsonText))
+        {
+            return StatusCode(503, new { error = "Drive-time routing is temporarily unavailable." });
+        }
+
+        using var geoJsonDocument = JsonDocument.Parse(geoJsonText);
+        if (!geoJsonDocument.RootElement.TryGetProperty("features", out var features) || features.ValueKind != JsonValueKind.Array)
+        {
+            return StatusCode(502, new { error = "Drive-time routing returned an invalid response." });
+        }
+
+        var contourGeometries = new Dictionary<int, string>();
+        foreach (var feature in features.EnumerateArray())
+        {
+            if (!feature.TryGetProperty("properties", out var properties)
+                || !properties.TryGetProperty("contour", out var contourProperty)
+                || !contourProperty.TryGetInt32(out var contour)
+                || !feature.TryGetProperty("geometry", out var geometry))
+            {
+                continue;
+            }
+
+            contourGeometries[contour] = geometry.GetRawText();
+        }
+
+        var stats = new Dictionary<string, object>();
+        var connString = _config.GetConnectionString("DefaultConnection");
+        await using var conn = new NpgsqlConnection(connString);
+        await conn.OpenAsync(cancellationToken);
+
+        foreach (var contour in contours)
+        {
+            if (!contourGeometries.TryGetValue(contour, out var geometryJson))
+            {
+                stats[contour.ToString()] = new { total = 0d, by_county = new Dictionary<string, double>() };
+                continue;
+            }
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandTimeout = 60;
+            cmd.CommandText = @"
+                WITH isochrone AS (
+                    SELECT ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(@geometry), 4326)) AS geom
+                ),
+                county_population AS (
+                    SELECT
+                        substring(block_group.geoid, 1, 5) AS fips,
+                        SUM(
+                            block_group.pop_18_plus * LEAST(
+                                1.0,
+                                ST_Area(ST_Intersection(block_group.geom, isochrone.geom)::geography)
+                                / NULLIF(ST_Area(block_group.geom::geography), 0)
+                            )
+                        ) AS population
+                    FROM census_block_groups AS block_group
+                    CROSS JOIN isochrone
+                    WHERE block_group.pop_18_plus > 0
+                      AND ST_Intersects(block_group.geom, isochrone.geom)
+                    GROUP BY substring(block_group.geoid, 1, 5)
+                )
+                SELECT
+                    COALESCE(SUM(population), 0),
+                    COALESCE(json_object_agg(fips, population), '{}'::json)::text
+                FROM county_population;
+            ";
+            cmd.Parameters.AddWithValue("geometry", geometryJson);
+
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            await reader.ReadAsync(cancellationToken);
+            var total = reader.IsDBNull(0) ? 0d : Convert.ToDouble(reader.GetValue(0));
+            var byCountyJson = reader.IsDBNull(1) ? "{}" : reader.GetString(1);
+            var byCounty = JsonSerializer.Deserialize<Dictionary<string, double>>(byCountyJson)
+                ?? new Dictionary<string, double>();
+            stats[contour.ToString()] = new { total, by_county = byCounty };
+        }
+
+        return Ok(new
+        {
+            geoJson = geoJsonDocument.RootElement.Clone(),
+            stats
+        });
     }
 
     [HttpGet("schema")]
@@ -239,9 +331,9 @@ public class ImpactController : ControllerBase
                     WHERE state_fp = @stateFips AND name = @countyName
                     LIMIT 1
                 )
-                SELECT DISTINCT c.lat, c.lon
+                SELECT DISTINCT c.""Lat"", c.""Lon""
                 FROM isochrone_cache c
-                JOIN target_county t ON ST_Contains(t.geom, ST_SetSRID(ST_MakePoint(c.lon, c.lat), 4326))
+                JOIN target_county t ON ST_Contains(t.geom, ST_SetSRID(ST_MakePoint(c.""Lon"", c.""Lat""), 4326))
                 LIMIT 5000;
             ";
             
@@ -276,9 +368,9 @@ public class ImpactController : ControllerBase
         // Query both the GeoJSON and the population statistics for the 3 tiers
         var sql = @"
             WITH isochrones AS (
-                SELECT geom, minutes
+                SELECT ""Geom"" AS geom, ""Minutes"" AS minutes
                 FROM isochrone_cache
-                WHERE lat = @lat AND lon = @lon
+                WHERE ""Lat"" = @lat AND ""Lon"" = @lon
             ),
             intersection_stats AS (
                 SELECT 

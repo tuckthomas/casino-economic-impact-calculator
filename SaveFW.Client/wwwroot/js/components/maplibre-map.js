@@ -31,10 +31,9 @@ window.MapLibreImpactMap = (function ()
     };
 
     const ISOCHRONE_COLORS = {
-        5: '#22c55e',
-        10: '#84cc16',
-        15: '#eab308',
-        30: '#ef4444'
+        15: TIER_COLORS.tier1,
+        30: TIER_COLORS.tier2,
+        60: TIER_COLORS.tier3
     };
 
     const DEFAULT_CENTER = [-98.35, 39.5];
@@ -96,8 +95,8 @@ window.MapLibreImpactMap = (function ()
         buildings3d: false
     };
 
-    // Risk Zone Mode: 'radius' or 'isochrone'
-    let riskZoneMode = 'radius';
+    // Risk Zone Mode: radius, live isochrone, or legacy cached grid
+    let riskZoneMode = 'isochrone';
 
     // Current basemap
     let currentBasemap = 'offline';
@@ -820,7 +819,7 @@ window.MapLibreImpactMap = (function ()
         // Actually, updateIsochrones calls calculateImpact immediately after setting them.
         // So we should only zero them out if we are about to recalculate them (Radius mode).
 
-        if (riskZoneMode !== 'grid')
+        if (riskZoneMode === 'radius')
         {
             t1PopRegional = 0; t2PopRegional = 0; t3PopRegional = 0;
             t1PopCounty = 0; t2PopCounty = 0; t3PopCounty = 0;
@@ -831,7 +830,7 @@ window.MapLibreImpactMap = (function ()
         let baseAdultsWithin50 = 0;
 
         // Only run radius summation if NOT in grid mode
-        if (riskZoneMode !== 'grid')
+        if (riskZoneMode === 'radius')
         {
             byCounty = {}; // Reset global for Radius calculation
             for (const entry of currentCalcFeatures)
@@ -1187,6 +1186,54 @@ window.MapLibreImpactMap = (function ()
     }
 
     let isochroneTimeout = null;
+
+    function applyIsochronePopulationStats(stats)
+    {
+        function getStat(minutes)
+        {
+            const value = stats && stats[String(minutes)];
+            if (!value) return { total: 0, byCounty: {} };
+            return {
+                total: Number(value.total || 0),
+                byCounty: value.by_county || {}
+            };
+        }
+
+        const s15 = getStat(15);
+        const s30 = getStat(30);
+        const s60 = getStat(60);
+        byCounty = {};
+
+        const allFips = new Set([
+            ...Object.keys(s15.byCounty),
+            ...Object.keys(s30.byCounty),
+            ...Object.keys(s60.byCounty)
+        ]);
+
+        allFips.forEach(fips =>
+        {
+            const c15 = Number(s15.byCounty[fips] || 0);
+            const c30 = Number(s30.byCounty[fips] || 0);
+            const c60 = Number(s60.byCounty[fips] || 0);
+            const tier1 = c15;
+            const tier2 = Math.max(0, c30 - c15);
+            const tier3 = Math.max(0, c60 - c30);
+            if (tier1 + tier2 + tier3 > 0)
+            {
+                byCounty[fips] = { fips, t1Pop: tier1, t2Pop: tier2, t3Pop: tier3 };
+            }
+        });
+
+        t1PopRegional = s15.total;
+        t2PopRegional = Math.max(0, s30.total - s15.total);
+        t3PopRegional = Math.max(0, s60.total - s30.total);
+
+        const subjectCounty = currentCountyFips ? byCounty[currentCountyFips] : null;
+        t1PopCounty = subjectCounty ? subjectCounty.t1Pop : 0;
+        t2PopCounty = subjectCounty ? subjectCounty.t2Pop : 0;
+        t3PopCounty = subjectCounty ? subjectCounty.t3Pop : 0;
+    }
+
     async function updateIsochrones(lngLat)
     {
         if (!layersVisible.zones) return;
@@ -1305,11 +1352,36 @@ window.MapLibreImpactMap = (function ()
             return;
         }
 
-        /* 
-           Original live Valhalla fetch logic (currently disabled/unused effectively unless mode is isochrone 
-           but distinct from 'grid' mode which uses pre-calculated db cache).
-           If we ever want live valhalla again, we can re-enable this path.
-        */
+        if (riskZoneMode !== 'isochrone') return;
+
+        if (isochroneTimeout) clearTimeout(isochroneTimeout);
+        isochroneTimeout = setTimeout(async () =>
+        {
+            toggleLoading(true, "Calculating Drive-Time Population...");
+            try
+            {
+                const response = await fetch(`/api/Impact/live-isochrone?lat=${lngLat.lat}&lon=${lngLat.lng}`, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`Drive-time request failed: ${response.status}`);
+
+                const data = await response.json();
+                if (map.getSource('isochrones'))
+                {
+                    map.getSource('isochrones').setData(data.geoJson);
+                }
+
+                applyIsochronePopulationStats(data.stats || {});
+                calculateImpact();
+            }
+            catch (error)
+            {
+                console.error('Live drive-time calculation failed:', error);
+                showMapNotification('Drive-time calculation failed. Please try the location again.');
+            }
+            finally
+            {
+                toggleLoading(false);
+            }
+        }, 150);
     }
 
     // === GRID MODE ===
@@ -1501,8 +1573,8 @@ window.MapLibreImpactMap = (function ()
         {
             if (riskZoneMode === 'grid')
             {
-                console.log('[Snap] No grid points for new county, switching to radius mode');
-                setRiskZoneMode('radius');
+                console.log('[Snap] No cached grid points for new county, switching to live drive time');
+                setRiskZoneMode('isochrone');
             }
             return;
         }
@@ -1609,6 +1681,25 @@ window.MapLibreImpactMap = (function ()
             }
         }
 
+        if (mode === 'isochrone')
+        {
+            riskZoneMode = 'isochrone';
+            syncModeUI('grid');
+            if (marker) marker.setDraggable(true);
+
+            ['circle-tier1-fill', 'circle-tier2-fill', 'circle-tier3-fill', 'circle-tier1-line', 'circle-tier2-line', 'circle-tier3-line']
+                .forEach(id => setLayerVisibility(id, false));
+            setLayerVisibility('impact-grid-points-layer', false);
+            setLayerVisibility('impact-grid-points-hit-layer', false);
+            setLayerVisibility('impact-grid-isochrones-fill', false);
+            setLayerVisibility('impact-grid-isochrones-line', false);
+            setLayerVisibility('isochrone-fill', true);
+            setLayerVisibility('isochrone-line', true);
+
+            if (markerPosition) await updateIsochrones(markerPosition);
+            return;
+        }
+
         if (mode === 'grid')
         {
             // Require county selection before enabling grid mode
@@ -1627,9 +1718,7 @@ window.MapLibreImpactMap = (function ()
             if (!success)
             {
                 toggleLoading(false);
-                // No data or error - revert UI to radius
-                syncModeUI('radius');
-                showMapNotification("No isochrone grid data is available for this area yet.");
+                await setRiskZoneMode('isochrone');
                 return;
             }
 
@@ -2043,8 +2132,8 @@ window.MapLibreImpactMap = (function ()
                 <div class="toggle-row toggle-row--mode">
                     <span class="toggle-label toggle-label--muted">Risk Zone Mode</span>
                     <div id="mode-toggle-wrapper" class="mode-toggle-wrapper">
-                        <button id="mode-btn-radius" class="mode-btn active">Radius</button>
-                        <button id="mode-btn-grid" class="mode-btn">Grid</button>
+                        <button id="mode-btn-radius" class="mode-btn">Radius</button>
+                        <button id="mode-btn-grid" class="mode-btn active">Drive Time</button>
                     </div>
                 </div>
                 <label class="toggle-row">
@@ -2614,6 +2703,14 @@ window.MapLibreImpactMap = (function ()
     function setupIsochroneLayers()
     {
         if (!map) return;
+        const colorByContour = [
+            'match',
+            ['get', 'contour'],
+            15, ISOCHRONE_COLORS[15],
+            30, ISOCHRONE_COLORS[30],
+            60, ISOCHRONE_COLORS[60],
+            ISOCHRONE_COLORS[60]
+        ];
         try
         {
             map.addSource('isochrones', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -2625,7 +2722,8 @@ window.MapLibreImpactMap = (function ()
             {
                 map.addLayer({
                     id: 'isochrone-fill', type: 'fill', source: 'isochrones',
-                    paint: { 'fill-color': ['interpolate', ['linear'], ['get', 'contour'], 5, ISOCHRONE_COLORS[5], 15, ISOCHRONE_COLORS[15], 30, ISOCHRONE_COLORS[30]], 'fill-opacity': 0.3 }
+                    layout: { 'fill-sort-key': ['-', 0, ['get', 'contour']] },
+                    paint: { 'fill-color': colorByContour, 'fill-opacity': 0.3 }
                 });
             }
         } catch (e) { }
@@ -2636,7 +2734,8 @@ window.MapLibreImpactMap = (function ()
             {
                 map.addLayer({
                     id: 'isochrone-line', type: 'line', source: 'isochrones',
-                    paint: { 'line-color': ['interpolate', ['linear'], ['get', 'contour'], 5, ISOCHRONE_COLORS[5], 15, ISOCHRONE_COLORS[15], 30, ISOCHRONE_COLORS[30]], 'line-width': 2 }
+                    layout: { 'line-sort-key': ['-', 0, ['get', 'contour']] },
+                    paint: { 'line-color': colorByContour, 'line-width': 2 }
                 });
             }
         } catch (e) { }
@@ -3576,47 +3675,10 @@ window.MapLibreImpactMap = (function ()
                 updateMarker(markerPosition);
                 // updateCircles(markerPosition); // Handled by setRiskZoneMode below
 
-                // FEATURE: Auto-switch to Grid Mode if available for this county
-                const hasPoints = await loadGridPoints();
-                let useGrid = false;
-
-                if (hasPoints && currentGridFeatures && currentGridFeatures.length > 0)
-                {
-                    // Find the closest grid point to the county center
-                    let closestPoint = null;
-                    let minDistanceSq = Infinity;
-
-                    for (const f of currentGridFeatures)
-                    {
-                        const dx = f.properties.lon - markerPosition.lng;
-                        const dy = f.properties.lat - markerPosition.lat;
-                        const distSq = dx * dx + dy * dy;
-                        if (distSq < minDistanceSq)
-                        {
-                            minDistanceSq = distSq;
-                            closestPoint = f.properties;
-                        }
-                    }
-
-                    // If a point is reasonably close (within ~15 miles or 0.05 degrees squared), snap to it
-                    if (closestPoint && minDistanceSq < 0.05)
-                    {
-                        useGrid = true;
-                        markerPosition = { lng: closestPoint.lon, lat: closestPoint.lat };
-                        updateMarker(markerPosition);
-                    }
-                }
-
-                if (useGrid)
-                {
-                    console.log('[SelectCounty] Grid points available, switching to Grid Mode');
-                    await setRiskZoneMode('grid');
-                }
-                else
-                {
-                    console.log('[SelectCounty] No grid points found, defaulting to Radius Mode');
-                    setRiskZoneMode('radius');
-                }
+                // Live Valhalla drive-time is the default. Cached grids remain an
+                // optional optimization when a populated cache is available.
+                console.log('[SelectCounty] Loading live drive-time zones');
+                await setRiskZoneMode('isochrone');
 
                 // Fit to 50-mile circle around center
                 const circle50 = createCircleGeoJSON([center[0], center[1]], CIRCLE_RADII.tier3);
@@ -4103,6 +4165,7 @@ window.MapLibreImpactMap = (function ()
                 setupCircleLayers();
                 setupHeatmapLayer();
                 setupIsochroneLayers();
+                toggleLayerVisibility('zones', true);
 
                 // Load state data for dropdown/UI (not for map rendering)
                 await loadStates();
