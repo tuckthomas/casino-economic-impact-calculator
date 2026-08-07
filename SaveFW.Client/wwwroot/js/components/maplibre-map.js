@@ -2679,10 +2679,27 @@ window.MapLibreImpactMap = (function ()
     {
         if (!map) return;
 
+        // Style restoration emits events before the replacement style is ready.
+        // Adding/updating sources during that window can abort the map load callback.
+        if (typeof map.isStyleLoaded === 'function' && !map.isStyleLoaded()) return;
+
+        const heatmapData = buildHeatmapGeoJSON();
+
         try
         {
-            map.addSource('block-groups', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-        } catch (e) { }
+            const existingSource = map.getSource('block-groups');
+            if (existingSource)
+            {
+                existingSource.setData(heatmapData);
+            } else
+            {
+                map.addSource('block-groups', { type: 'geojson', data: heatmapData });
+            }
+        } catch (e)
+        {
+            console.warn('[Map] Heatmap source could not be initialized:', e);
+            return;
+        }
 
         try
         {
@@ -2705,18 +2722,14 @@ window.MapLibreImpactMap = (function ()
                     }
                 }, beforeId);
             }
-        } catch (e) { }
-
-        updateHeatmapData();
+        } catch (e)
+        {
+            console.warn('[Map] Heatmap layer could not be initialized:', e);
+        }
     }
 
-    function updateHeatmapData()
+    function buildHeatmapGeoJSON()
     {
-        if (!map) return;
-
-        const source = map.getSource('block-groups');
-        if (!source) return;
-
         const features = Array.isArray(currentCalcFeatures)
             ? currentCalcFeatures
                 .filter(feature =>
@@ -2736,10 +2749,33 @@ window.MapLibreImpactMap = (function ()
                 }))
             : [];
 
-        source.setData({
+        return {
             type: 'FeatureCollection',
             features
-        });
+        };
+    }
+
+    function updateHeatmapData()
+    {
+        if (!map) return;
+        if (typeof map.isStyleLoaded === 'function' && !map.isStyleLoaded()) return;
+
+        try
+        {
+            const source = map.getSource('block-groups');
+            if (source)
+            {
+                source.setData(buildHeatmapGeoJSON());
+            } else if (layersVisible.heatmap)
+            {
+                setupHeatmapLayer();
+            }
+        } catch (e)
+        {
+            // Heatmap rendering is optional and must never prevent the base map
+            // or the rest of the impact calculator from initializing.
+            console.warn('[Map] Heatmap data could not be updated:', e);
+        }
     }
 
     function setupIsochroneLayers()
