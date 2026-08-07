@@ -3748,7 +3748,12 @@ window.MapLibreImpactMap = (function ()
         blockGroupDensityRequestSeq++;
         clearBlockGroupDensity();
         setHeatmapFeatures([]);
-        if (layersVisible.heatmap) loadStatePopulationHeatmap(stateFips);
+        if (document.getElementById('toggle-heatmap')?.checked) layersVisible.heatmap = true;
+        if (layersVisible.heatmap)
+        {
+            setupHeatmapLayer();
+            loadStatePopulationHeatmap(stateFips);
+        }
 
         // Show loading indicator immediately - tiles will be requested after filter change
         // Set initialStateDrill flag so tile loading handler knows to show overlay
@@ -4691,7 +4696,12 @@ window.MapLibreImpactMap = (function ()
                 blockGroupDensityRequestSeq++;
                 clearBlockGroupDensity();
                 setHeatmapFeatures([]);
-                if (layersVisible.heatmap) loadStatePopulationHeatmap(currentStateFips);
+                if (document.getElementById('toggle-heatmap')?.checked) layersVisible.heatmap = true;
+                if (layersVisible.heatmap)
+                {
+                    setupHeatmapLayer();
+                    loadStatePopulationHeatmap(currentStateFips);
+                }
                 markerPosition = null;
 
                 // Remove marker if exists
