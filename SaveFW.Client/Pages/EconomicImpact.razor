@@ -89,8 +89,23 @@
                                         Active Scenario
                                     </label>
                                     <select id="tax-allocation-scenario-select"
-                                        class="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-base font-semibold text-white outline-none transition focus:border-blue-400">
+                                        aria-label="Active tax allocation scenario"
+                                        class="sfw-modern-select block w-full px-4 py-3 text-base font-semibold lg:hidden">
                                     </select>
+                                    <div class="relative hidden lg:block">
+                                        <button type="button"
+                                            id="tax-allocation-scenario-trigger"
+                                            class="sfw-modern-select sfw-modern-select-trigger w-full px-4 py-3 text-base font-semibold"
+                                            aria-label="Active tax allocation scenario"
+                                            aria-haspopup="listbox"
+                                            aria-expanded="false"
+                                            aria-controls="tax-allocation-scenario-menu">
+                                            <span id="tax-allocation-scenario-trigger-label" class="truncate">Loading scenarios...</span>
+                                            <span id="tax-allocation-scenario-trigger-icon" class="material-symbols-outlined text-[18px] transition-transform" aria-hidden="true">expand_more</span>
+                                        </button>
+                                        <div id="tax-allocation-scenario-menu" role="listbox"
+                                            class="sfw-custom-select-menu hidden mt-2"></div>
+                                    </div>
                                 </div>
                             </div>
                             <p id="tax-allocation-scenario-summary" class="mt-4 text-sm leading-relaxed text-slate-400"></p>

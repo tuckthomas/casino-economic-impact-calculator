@@ -253,6 +253,9 @@ window.EconomicCalculator = (function ()
     function renderTaxAllocationScenarioControls()
     {
         const scenarioSelect = document.getElementById('tax-allocation-scenario-select');
+        const scenarioTrigger = document.getElementById('tax-allocation-scenario-trigger');
+        const scenarioTriggerLabel = document.getElementById('tax-allocation-scenario-trigger-label');
+        const scenarioMenu = document.getElementById('tax-allocation-scenario-menu');
         const scenarioSummary = document.getElementById('tax-allocation-scenario-summary');
         const validationEl = document.getElementById('tax-allocation-validation');
         const editor = document.getElementById('tax-allocation-custom-editor');
@@ -274,6 +277,29 @@ window.EconomicCalculator = (function ()
             `<option value="${escapeHtml(option.id)}">${escapeHtml(option.label)}</option>`
         ).join('');
         scenarioSelect.value = selectedTaxScenarioId;
+
+        const selectedOption = options.find(option => option.id === selectedTaxScenarioId) || options[0];
+        if (scenarioTriggerLabel)
+        {
+            scenarioTriggerLabel.textContent = selectedOption ? selectedOption.label : 'Scenario unavailable';
+        }
+        if (scenarioMenu)
+        {
+            scenarioMenu.innerHTML = options.map(option => `
+                <button type="button"
+                    role="option"
+                    aria-selected="${option.id === selectedTaxScenarioId ? 'true' : 'false'}"
+                    data-tax-scenario-id="${escapeHtml(option.id)}"
+                    class="sfw-custom-select-option ${option.id === selectedTaxScenarioId ? 'is-active' : ''}">
+                    ${escapeHtml(option.label)}
+                </button>
+            `).join('');
+            scenarioMenu.classList.add('hidden');
+        }
+        if (scenarioTrigger)
+        {
+            scenarioTrigger.setAttribute('aria-expanded', 'false');
+        }
 
         const displayedScenario = getDisplayedTaxScenario();
         const isCustom = selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID;
@@ -365,6 +391,21 @@ window.EconomicCalculator = (function ()
                 </div>
             </div>
         `).join('');
+    }
+
+    function setTaxScenarioMenuOpen(isOpen)
+    {
+        const scenarioTrigger = document.getElementById('tax-allocation-scenario-trigger');
+        const scenarioTriggerIcon = document.getElementById('tax-allocation-scenario-trigger-icon');
+        const scenarioMenu = document.getElementById('tax-allocation-scenario-menu');
+        if (!scenarioTrigger || !scenarioMenu) return;
+
+        scenarioMenu.classList.toggle('hidden', !isOpen);
+        scenarioTrigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (scenarioTriggerIcon)
+        {
+            scenarioTriggerIcon.classList.toggle('rotate-180', isOpen);
+        }
     }
 
     function selectTaxScenario(nextScenarioId)
@@ -3259,6 +3300,33 @@ window.EconomicCalculator = (function ()
             };
         }
 
+        const scenarioTrigger = document.getElementById('tax-allocation-scenario-trigger');
+        const scenarioMenu = document.getElementById('tax-allocation-scenario-menu');
+        if (scenarioTrigger && scenarioMenu)
+        {
+            scenarioTrigger.onclick = (event) =>
+            {
+                event.stopPropagation();
+                setTaxScenarioMenuOpen(scenarioTrigger.getAttribute('aria-expanded') !== 'true');
+            };
+            scenarioTrigger.onkeydown = (event) =>
+            {
+                if (event.key === 'Escape')
+                {
+                    setTaxScenarioMenuOpen(false);
+                }
+            };
+            scenarioMenu.onclick = (event) =>
+            {
+                const option = event.target.closest('[data-tax-scenario-id]');
+                if (!option) return;
+                selectTaxScenario(option.dataset.taxScenarioId || '');
+                setTaxScenarioMenuOpen(false);
+                scenarioTrigger.focus();
+            };
+            document.addEventListener('click', () => setTaxScenarioMenuOpen(false));
+        }
+
         document.querySelectorAll('[data-net-chart-mode]').forEach(button =>
         {
             button.onclick = () =>
@@ -3637,6 +3705,7 @@ window.openSimulatorModal = function ()
     void modal.offsetWidth;
     modal.classList.remove('opacity-0');
     window.currentSimStep = 1;
+    window.syncSimulatorAllocationSummary();
     window.updateSimStep();
 };
 
@@ -3653,15 +3722,17 @@ window.closeSimulatorModal = function ()
 
 window.goToSimStep = function (step)
 {
-    window.currentSimStep = step;
+    window.currentSimStep = Math.min(3, Math.max(1, Number(step) || 1));
+    if (window.currentSimStep === 2) window.syncSimulatorAllocationSummary();
     window.updateSimStep();
 };
 
 window.nextSimStep = function ()
 {
-    if (window.currentSimStep < 4)
+    if (window.currentSimStep < 3)
     {
         window.currentSimStep++;
+        if (window.currentSimStep === 2) window.syncSimulatorAllocationSummary();
         window.updateSimStep();
     }
 };
@@ -3678,7 +3749,7 @@ window.prevSimStep = function ()
 window.updateSimStep = function ()
 {
     // Content Visibility
-    for (let i = 1; i <= 4; i++)
+    for (let i = 1; i <= 3; i++)
     {
         const el = document.getElementById(`sim-step-${i}`);
         if (el)
@@ -3700,7 +3771,7 @@ window.updateSimStep = function ()
         if (btnCancel) btnCancel.classList.remove('hidden');
         if (btnNext) btnNext.classList.remove('hidden');
         if (btnRun) btnRun.classList.add('hidden');
-    } else if (window.currentSimStep === 2 || window.currentSimStep === 3)
+    } else if (window.currentSimStep === 2)
     {
         if (btnBack) btnBack.classList.remove('hidden');
         if (btnCancel) btnCancel.classList.add('hidden');
@@ -3718,11 +3789,10 @@ window.updateSimStep = function ()
     const colors = {
         1: { bar: 'bg-emerald-500', shadow: 'shadow-[0_0_10px_rgba(16,185,129,0.5)]', text: 'text-emerald-400' },
         2: { bar: 'bg-purple-500', shadow: 'shadow-[0_0_10px_rgba(168,85,247,0.5)]', text: 'text-purple-400' },
-        3: { bar: 'bg-red-500', shadow: 'shadow-[0_0_10px_rgba(239,68,68,0.5)]', text: 'text-red-400' },
-        4: { bar: 'bg-red-500', shadow: 'shadow-[0_0_10px_rgba(239,68,68,0.5)]', text: 'text-red-400' }
+        3: { bar: 'bg-red-500', shadow: 'shadow-[0_0_10px_rgba(239,68,68,0.5)]', text: 'text-red-400' }
     };
 
-    for (let i = 1; i <= 4; i++)
+    for (let i = 1; i <= 3; i++)
     {
         const bar = document.getElementById(`sim-bar-${i}`);
         const label = document.getElementById(`sim-label-${i}`);
@@ -3750,6 +3820,25 @@ window.updateSimStep = function ()
     }
 };
 
+window.syncSimulatorAllocationSummary = function ()
+{
+    const scenarioSelect = document.getElementById('tax-allocation-scenario-select');
+    const scenarioName = document.getElementById('sim-allocation-scenario-name');
+    const scenarioSummary = document.getElementById('sim-allocation-scenario-summary');
+    const hbAllocation = document.getElementById('sim-hb1038-allocation');
+    const customNote = document.getElementById('sim-custom-allocation-note');
+    if (!scenarioSelect || !scenarioName || !scenarioSummary || !hbAllocation || !customNote) return;
+
+    const selectedOption = scenarioSelect.options[scenarioSelect.selectedIndex];
+    const selectedId = String(scenarioSelect.value || '');
+    scenarioName.textContent = selectedOption ? selectedOption.textContent : 'Active tax allocation scenario';
+    scenarioSummary.textContent = selectedId === 'custom'
+        ? 'The simulator will keep the active Custom tax scenario. The mapped casino location determines whether its municipal or fallback branch applies.'
+        : 'The mapped casino location determines whether the municipal-site or county fallback branch applies. No humanitarian split is imposed.';
+    hbAllocation.classList.toggle('hidden', selectedId === 'custom');
+    customNote.classList.toggle('hidden', selectedId !== 'custom');
+};
+
 window.updateCustomCostDisplay = function ()
 {
     const dirInput = document.querySelector('input[name="sim-cost-dir"]:checked');
@@ -3773,13 +3862,6 @@ window.runSimulation = function ()
         agrVal = document.getElementById('sim-custom-agr').value || 112;
     }
 
-    let allocInputEl = document.querySelector('input[name="sim-alloc"]:checked');
-    let allocVal = allocInputEl ? allocInputEl.value : '40';
-    if (allocVal === 'custom')
-    {
-        allocVal = document.getElementById('sim-custom-alloc').value || 40;
-    }
-
     let costInputEl = document.querySelector('input[name="sim-cost"]:checked');
     let costMult = costInputEl ? costInputEl.value : '1.0';
     if (costMult === 'custom')
@@ -3795,17 +3877,9 @@ window.runSimulation = function ()
 
     // 2. Update Main Inputs
     const mainAgrInput = document.getElementById('input-agr');
-    const mainAllocInput = document.getElementById('input-allocation');
-
     if (mainAgrInput)
     {
         window.applyAgrPreset(agrVal, 'Simulator Scenario');
-    }
-
-    if (mainAllocInput)
-    {
-        mainAllocInput.value = allocVal;
-        mainAllocInput.dispatchEvent(new Event('input'));
     }
 
     // 3. Social Cost Multipliers

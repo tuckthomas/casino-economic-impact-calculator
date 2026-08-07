@@ -193,7 +193,7 @@
                 {
                     var tolerance = Step > 0 ? Step / 2 : 0.000001;
                     var isDefault = Math.Abs(option.NumericValue - Value) <= tolerance;
-                    var label = isDefault && !option.Label.EndsWith(" (Default)", StringComparison.OrdinalIgnoreCase)
+                    var label = isDefault && !option.Label.Contains("Default", StringComparison.OrdinalIgnoreCase)
                         ? $"{option.Label} (Default)"
                         : option.Label;
 

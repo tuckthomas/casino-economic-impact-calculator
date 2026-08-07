@@ -104,55 +104,6 @@ window.Modals = (function ()
         // No-op - flipbook.js handles this
     }
 
-    /* --- SIMULATOR MODAL --- */
-    function initSimulator()
-    {
-        let currentSimStep = 1;
-        window.openSimulatorModal = function ()
-        {
-            const m = document.getElementById('simulator-modal');
-            m.classList.remove('hidden');
-            setTimeout(() => m.classList.remove('opacity-0'), 10);
-            currentSimStep = 1;
-            updateSimStep();
-        };
-        window.closeSimulatorModal = function ()
-        {
-            const m = document.getElementById('simulator-modal');
-            m.classList.add('opacity-0');
-            setTimeout(() => m.classList.add('hidden'), 300);
-        };
-        window.nextSimStep = function () { if (currentSimStep < 3) { currentSimStep++; updateSimStep(); } };
-        window.prevSimStep = function () { if (currentSimStep > 1) { currentSimStep--; updateSimStep(); } };
-
-        function updateSimStep()
-        {
-            for (let i = 1; i <= 3; i++)
-            {
-                const step = document.getElementById(`sim-step-${i}`);
-                if (step) step.classList.toggle('hidden', i !== currentSimStep);
-            }
-            document.getElementById('sim-btn-back').classList.toggle('hidden', currentSimStep === 1);
-            document.getElementById('sim-btn-next').classList.toggle('hidden', currentSimStep === 3);
-            document.getElementById('sim-btn-run').classList.toggle('hidden', currentSimStep !== 3);
-        }
-
-        window.runSimulation = function ()
-        {
-            const agr = document.querySelector('input[name="sim-agr"]:checked').value;
-            const alloc = document.querySelector('input[name="sim-alloc"]:checked').value;
-            const cost = document.querySelector('input[name="sim-cost"]:checked').value;
-
-            const agrInput = document.getElementById('input-agr');
-            const allocInput = document.getElementById('input-allocation');
-
-            if (agrInput) { agrInput.value = agr; agrInput.dispatchEvent(new Event('input')); }
-            if (allocInput) { allocInput.value = alloc; allocInput.dispatchEvent(new Event('input')); }
-
-            closeSimulatorModal();
-        };
-    }
-
     /* --- METHODOLOGY MODAL --- */
     function initMethodologyModal()
     {
@@ -182,7 +133,6 @@ window.Modals = (function ()
             initMethodologyModal();
             initSourcesModal();
             initFlipbook();
-            initSimulator();
         }
     };
 })();

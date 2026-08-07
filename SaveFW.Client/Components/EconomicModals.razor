@@ -306,21 +306,21 @@
                                     class="h-1.5 w-full bg-emerald-500 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(16,185,129,0.5)]">
                                 </div>
                                 <span id="sim-label-1"
-                                    class="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-widest transition-colors duration-300">Revenue</span>
+                                    class="text-sm font-bold text-emerald-400 uppercase tracking-widest transition-colors duration-300">Revenue</span>
                             </div>
                             <!-- Step 2 Indicator -->
                             <div class="flex flex-col gap-2 group cursor-pointer" onclick="goToSimStep(2)">
                                 <div id="sim-bar-2"
                                     class="h-1.5 w-full bg-slate-700 rounded-full transition-all duration-300"></div>
                                 <span id="sim-label-2"
-                                    class="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest transition-colors duration-300">Allocation</span>
+                                    class="text-sm font-bold text-slate-600 uppercase tracking-widest transition-colors duration-300">Allocation</span>
                             </div>
                             <!-- Step 3 Indicator -->
                             <div class="flex flex-col gap-2 group cursor-pointer" onclick="goToSimStep(3)">
                                 <div id="sim-bar-3"
                                     class="h-1.5 w-full bg-slate-700 rounded-full transition-all duration-300"></div>
                                 <span id="sim-label-3"
-                                    class="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest transition-colors duration-300">Social
+                                    class="text-sm font-bold text-slate-600 uppercase tracking-widest transition-colors duration-300">Social
                                     Costs</span>
                             </div>
                         </div>
@@ -341,7 +341,7 @@
                                     <div
                                         class="p-4 rounded-xl bg-slate-700/50 border-2 border-slate-600 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 transition-all hover:bg-slate-700 h-full flex flex-col">
                                         <div class="text-lg font-black text-white mb-1">$43 MM</div>
-                                        <div class="text-xs text-slate-400 leading-tight">Spectrum Gaming (With Tribal
+                                        <div class="text-sm text-slate-400 leading-tight">Spectrum Gaming (With Tribal
                                             Competition)</div>
                                     </div>
                                     <div
@@ -357,7 +357,7 @@
                                     <div
                                         class="p-4 rounded-xl bg-slate-700/50 border-2 border-slate-600 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 transition-all hover:bg-slate-700 h-full flex flex-col">
                                         <div class="text-lg font-black text-white mb-1">$112 MM</div>
-                                        <div class="text-xs text-slate-400 leading-tight">Spectrum Gaming (Primary
+                                        <div class="text-sm text-slate-400 leading-tight">Spectrum Gaming (Primary
                                             Projection)</div>
                                     </div>
                                     <div
@@ -373,7 +373,7 @@
                                     <div
                                         class="p-4 rounded-xl bg-slate-700/50 border-2 border-slate-600 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 transition-all hover:bg-slate-700 h-full flex flex-col">
                                         <div class="text-lg font-black text-white mb-1">$204 MM</div>
-                                        <div class="text-xs text-slate-400 leading-tight">Spectrum Gaming (No Tribal
+                                        <div class="text-sm text-slate-400 leading-tight">Spectrum Gaming (No Tribal
                                             Competition)</div>
                                     </div>
                                     <div
@@ -389,7 +389,7 @@
                                     <div
                                         class="p-4 rounded-xl bg-slate-700/50 border-2 border-slate-600 peer-checked:border-blue-500 peer-checked:bg-blue-500/10 transition-all hover:bg-slate-700 h-full flex flex-col">
                                         <div class="text-lg font-black text-white mb-1">$330 MM</div>
-                                        <div class="text-xs text-slate-400 leading-tight">Union Gaming (FWFirst Sales
+                                        <div class="text-sm text-slate-400 leading-tight">Union Gaming (FWFirst Sales
                                             Pitch)</div>
                                     </div>
                                 </label>
@@ -399,7 +399,7 @@
                             <div class="relative flex py-10 items-center">
                                 <div class="flex-grow border-t border-slate-700"></div>
                                 <span
-                                    class="flex-shrink-0 mx-4 text-slate-500 text-xs uppercase font-bold tracking-widest">Or
+                                    class="flex-shrink-0 mx-4 text-slate-500 text-sm uppercase font-bold tracking-widest">Or
                                     Enter Custom</span>
                                 <div class="flex-grow border-t border-slate-700"></div>
                             </div>
@@ -418,7 +418,7 @@
                                 <div class="flex-1 flex flex-col sm:flex-row sm:items-center gap-4">
                                     <div class="flex-1">
                                         <div class="text-lg font-bold text-white mb-1">Custom AGR Projection</div>
-                                        <div class="text-xs text-slate-400">Enter a specific Adjusted Gross Revenue
+                                        <div class="text-sm text-slate-400">Enter a specific Adjusted Gross Revenue
                                             figure ($MM).</div>
                                     </div>
                                     <div class="relative w-full sm:w-48">
@@ -431,104 +431,56 @@
                                             oninput="document.querySelector('input[name=sim-agr][value=custom]').checked = true">
                                         <div
                                             class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                            <span class="text-slate-500 font-bold text-xs">MM</span>
+                                            <span class="text-slate-500 font-bold text-sm">MM</span>
                                         </div>
                                     </div>
                                 </div>
                             </label>
                         </div>
 
-                        <!-- Step 2: Allocation Strategy -->
+                        <!-- Step 2: Enacted Tax Allocation -->
                         <div id="sim-step-2"
                             class="sim-step w-full h-full flex flex-col justify-start hidden transition-all duration-300">
                             <label class="text-sm font-bold text-slate-400 uppercase tracking-wider block mb-3">2. Tax
-                                Allocation Strategy</label>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <label
-                                    class="flex items-center p-3 rounded-lg border border-slate-600 bg-slate-700/30 cursor-pointer hover:bg-slate-700/50 transition-colors">
-                                    <input type="radio" name="sim-alloc" value="10"
-                                        class="w-4 h-4 text-purple-500 bg-slate-800 border-slate-500 focus:ring-purple-500 focus:ring-2">
-                                    <div class="ml-3">
-                                        <span class="block text-sm font-bold text-white">General Fund Focus</span>
-                                        <span class="block text-xs text-slate-400">10% Humanitarian / 90% General</span>
-                                    </div>
-                                </label>
-                                <label
-                                    class="flex items-center p-3 rounded-lg border-2 border-purple-500/50 bg-purple-900/10 cursor-pointer hover:bg-purple-900/20 transition-colors">
-                                    <input type="radio" name="sim-alloc" value="40"
-                                        class="w-4 h-4 text-purple-500 bg-slate-800 border-slate-500 focus:ring-purple-500 focus:ring-2"
-                                        checked>
-                                    <div class="ml-3">
-                                        <span class="block text-sm font-bold text-white">SaveFW Default</span>
-                                        <span class="block text-xs text-slate-400">40% Humanitarian / 60% General</span>
-                                    </div>
-                                </label>
-                                <label
-                                    class="flex items-center p-3 rounded-lg border border-slate-600 bg-slate-700/30 cursor-pointer hover:bg-slate-700/50 transition-colors">
-                                    <input type="radio" name="sim-alloc" value="50"
-                                        class="w-4 h-4 text-purple-500 bg-slate-800 border-slate-500 focus:ring-purple-500 focus:ring-2">
-                                    <div class="ml-3">
-                                        <span class="block text-sm font-bold text-white">Balanced Approach</span>
-                                        <span class="block text-xs text-slate-400">50% Humanitarian / 50% General</span>
-                                    </div>
-                                </label>
-                                <label
-                                    class="flex items-center p-3 rounded-lg border border-slate-600 bg-slate-700/30 cursor-pointer hover:bg-slate-700/50 transition-colors">
-                                    <input type="radio" name="sim-alloc" value="60"
-                                        class="w-4 h-4 text-purple-500 bg-slate-800 border-slate-500 focus:ring-purple-500 focus:ring-2">
-                                    <div class="ml-3">
-                                        <span class="block text-sm font-bold text-white">Humanitarian Focus</span>
-                                        <span class="block text-xs text-slate-400">60% Humanitarian / 40% General</span>
-                                    </div>
-                                </label>
-                                <label
-                                    class="flex items-center p-3 rounded-lg border border-slate-600 bg-slate-700/30 cursor-pointer hover:bg-slate-700/50 transition-colors">
-                                    <input type="radio" name="sim-alloc" value="75"
-                                        class="w-4 h-4 text-purple-500 bg-slate-800 border-slate-500 focus:ring-purple-500 focus:ring-2">
-                                    <div class="ml-3">
-                                        <span class="block text-sm font-bold text-white">Maximum Support</span>
-                                        <span class="block text-xs text-slate-400">75% Humanitarian / 25% General</span>
-                                    </div>
-                                </label>
-                            </div>
+                                Allocation Scenario</label>
 
-                            <!-- Custom Option -->
-                            <div class="relative flex py-10 items-center">
-                                <div class="flex-grow border-t border-slate-700"></div>
-                                <span
-                                    class="flex-shrink-0 mx-4 text-slate-500 text-xs uppercase font-bold tracking-widest">Or
-                                    Enter Custom</span>
-                                <div class="flex-grow border-t border-slate-700"></div>
-                            </div>
-
-                            <label
-                                class="cursor-pointer group relative flex items-center p-4 rounded-xl bg-slate-700/30 border-2 border-slate-600 peer-checked:border-blue-500 peer-checked:bg-blue-500/10 transition-all hover:bg-slate-700/50">
-                                <input type="radio" name="sim-alloc" value="custom" class="peer sr-only"
-                                    onchange="document.getElementById('sim-custom-alloc').focus()">
-
-                                <!-- Visible Radio (Icon Swap) -->
-                                <span
-                                    class="material-symbols-outlined text-slate-500 text-2xl mr-4 peer-checked:hidden transition-colors">radio_button_unchecked</span>
-                                <span
-                                    class="material-symbols-outlined text-purple-500 text-2xl mr-4 hidden peer-checked:block transition-colors">check_circle</span>
-
-                                <div class="flex-1 flex flex-col sm:flex-row sm:items-center gap-4">
-                                    <div class="flex-1">
-                                        <div class="text-lg font-bold text-white mb-1">Custom Allocation</div>
-                                        <div class="text-xs text-slate-400">Enter the percentage allocated to the
-                                            Humanitarian Fund (0-100%).</div>
-                                    </div>
-                                    <div class="relative w-full sm:w-32">
-                                        <input type="number" id="sim-custom-alloc" min="0" max="100" placeholder="40"
-                                            class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg py-2 pl-4 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono font-bold text-right"
-                                            oninput="document.querySelector('input[name=sim-alloc][value=custom]').checked = true">
-                                        <div
-                                            class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                            <span class="text-slate-500 font-bold text-xs">%</span>
-                                        </div>
+                            <div class="rounded-xl border-2 border-purple-500/50 bg-purple-900/10 p-5">
+                                <div class="flex items-start gap-4">
+                                    <span class="material-symbols-outlined text-purple-400 text-2xl" aria-hidden="true">account_balance</span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="text-sm font-bold uppercase tracking-wide text-purple-300">Active Scenario</div>
+                                        <div id="sim-allocation-scenario-name" class="mt-1 text-xl font-black text-white">NE Indiana Casino (HB 1038)</div>
+                                        <p id="sim-allocation-scenario-summary" class="mt-2 text-sm leading-relaxed text-slate-300">
+                                            The selected casino location determines which host-government branch applies. The simulator keeps the active tax scenario instead of applying a separate humanitarian split.
+                                        </p>
                                     </div>
                                 </div>
-                            </label>
+                            </div>
+
+                            <div id="sim-hb1038-allocation" class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="rounded-xl border border-slate-600 bg-slate-700/30 p-4">
+                                    <div class="text-sm font-bold uppercase tracking-wide text-slate-300">Regular Wagering Tax</div>
+                                    <div class="mt-3 space-y-2 text-sm leading-relaxed text-slate-300">
+                                        <p><strong class="text-white">Municipal site:</strong> 75% state / 25% host municipality</p>
+                                        <p><strong class="text-white">Unincorporated fallback:</strong> 75% state / 25% host county</p>
+                                    </div>
+                                </div>
+                                <div class="rounded-xl border border-slate-600 bg-slate-700/30 p-4">
+                                    <div class="text-sm font-bold uppercase tracking-wide text-slate-300">Supplemental Wagering Tax (3.5% AGR)</div>
+                                    <div class="mt-3 space-y-2 text-sm leading-relaxed text-slate-300">
+                                        <p><strong class="text-white">Municipal site:</strong> 45% city / 45% county / 10% NE Indiana RDA</p>
+                                        <p><strong class="text-white">Modeled unincorporated fallback:</strong> 90% county / 10% NE Indiana RDA</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="sim-custom-allocation-note" class="hidden mt-5 rounded-xl border border-blue-500/40 bg-blue-500/10 p-4 text-sm leading-relaxed text-blue-100">
+                                The active Custom scenario will be used. Its municipal or fallback branch is selected automatically from the casino's mapped location.
+                            </div>
+
+                            <p class="mt-5 text-sm leading-relaxed text-slate-400">
+                                To inspect or edit every branch percentage, close this quick-start form and use the Tax Allocation Scenario controls under Economic Inputs.
+                            </p>
                         </div>
 
                         <!-- Step 3: Social Cost Sensitivity -->
@@ -537,32 +489,31 @@
                             <label class="text-sm font-bold text-slate-400 uppercase tracking-wider block mb-3">3.
                                 Social Cost Sensitivity</label>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <label
-                                    class="flex items-center p-3 rounded-lg border border-slate-600 bg-slate-700/30 cursor-pointer hover:bg-slate-700/50 transition-colors">
-                                    <input type="radio" name="sim-cost" value="0.8"
-                                        class="w-4 h-4 text-red-500 bg-slate-800 border-slate-500 focus:ring-red-500 focus:ring-2">
+                                <label class="flex items-center p-3 rounded-lg border-2 border-slate-600 bg-slate-700/30 hover:bg-slate-700/50 has-[:checked]:border-red-500/70 has-[:checked]:bg-red-900/10 focus-within:ring-2 focus-within:ring-red-400 cursor-pointer transition-colors">
+                                    <input type="radio" name="sim-cost" value="0.8" class="peer sr-only">
+                                    <span class="material-symbols-outlined text-slate-500 text-xl peer-checked:hidden" aria-hidden="true">radio_button_unchecked</span>
+                                    <span class="material-symbols-outlined hidden text-red-500 text-xl peer-checked:block" aria-hidden="true">check_circle</span>
                                     <div class="ml-3">
                                         <span class="block text-sm font-bold text-white">Conservative</span>
-                                        <span class="block text-xs text-slate-400">-20% to Baseline</span>
+                                        <span class="block text-sm text-slate-400">-20% to Baseline</span>
                                     </div>
                                 </label>
-                                <label
-                                    class="flex items-center p-3 rounded-lg border-2 border-red-500/50 bg-red-900/10 cursor-pointer hover:bg-red-900/20 transition-colors">
-                                    <input type="radio" name="sim-cost" value="1.0"
-                                        class="w-4 h-4 text-red-500 bg-slate-800 border-slate-500 focus:ring-red-500 focus:ring-2"
-                                        checked>
+                                <label class="flex items-center p-3 rounded-lg border-2 border-slate-600 bg-slate-700/30 hover:bg-slate-700/50 has-[:checked]:border-red-500/70 has-[:checked]:bg-red-900/10 focus-within:ring-2 focus-within:ring-red-400 cursor-pointer transition-colors">
+                                    <input type="radio" name="sim-cost" value="1.0" class="peer sr-only" checked>
+                                    <span class="material-symbols-outlined text-slate-500 text-xl peer-checked:hidden" aria-hidden="true">radio_button_unchecked</span>
+                                    <span class="material-symbols-outlined hidden text-red-500 text-xl peer-checked:block" aria-hidden="true">check_circle</span>
                                     <div class="ml-3">
                                         <span class="block text-sm font-bold text-white">Standard Baseline</span>
-                                        <span class="block text-xs text-slate-400">Inflation-Adjusted Grinols</span>
+                                        <span class="block text-sm text-slate-400">Inflation-Adjusted Grinols</span>
                                     </div>
                                 </label>
-                                <label
-                                    class="flex items-center p-3 rounded-lg border border-slate-600 bg-slate-700/30 cursor-pointer hover:bg-slate-700/50 transition-colors">
-                                    <input type="radio" name="sim-cost" value="1.2"
-                                        class="w-4 h-4 text-red-500 bg-slate-800 border-slate-500 focus:ring-red-500 focus:ring-2">
+                                <label class="flex items-center p-3 rounded-lg border-2 border-slate-600 bg-slate-700/30 hover:bg-slate-700/50 has-[:checked]:border-red-500/70 has-[:checked]:bg-red-900/10 focus-within:ring-2 focus-within:ring-red-400 cursor-pointer transition-colors">
+                                    <input type="radio" name="sim-cost" value="1.2" class="peer sr-only">
+                                    <span class="material-symbols-outlined text-slate-500 text-xl peer-checked:hidden" aria-hidden="true">radio_button_unchecked</span>
+                                    <span class="material-symbols-outlined hidden text-red-500 text-xl peer-checked:block" aria-hidden="true">check_circle</span>
                                     <div class="ml-3">
                                         <span class="block text-sm font-bold text-white">Aggressive</span>
-                                        <span class="block text-xs text-slate-400">+20% to Baseline</span>
+                                        <span class="block text-sm text-slate-400">+20% to Baseline</span>
                                     </div>
                                 </label>
                             </div>
@@ -571,7 +522,7 @@
                             <div class="relative flex py-10 items-center">
                                 <div class="flex-grow border-t border-slate-700"></div>
                                 <span
-                                    class="flex-shrink-0 mx-4 text-slate-500 text-xs uppercase font-bold tracking-widest">Or
+                                    class="flex-shrink-0 mx-4 text-slate-500 text-sm uppercase font-bold tracking-widest">Or
                                     Enter Custom</span>
                                 <div class="flex-grow border-t border-slate-700"></div>
                             </div>
@@ -591,7 +542,7 @@
 
                                     <div class="flex-1">
                                         <div class="text-lg font-bold text-white mb-1">Custom Adjustment</div>
-                                        <div class="text-xs text-slate-400">Apply a percentage increase or decrease to
+                                        <div class="text-sm text-slate-400">Apply a percentage increase or decrease to
                                             the baseline costs.</div>
                                     </div>
                                 </div>
@@ -624,7 +575,7 @@
                                                 oninput="document.getElementById('sim-cost-custom-radio').checked = true; updateCustomCostDisplay()">
                                             <div
                                                 class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                                <span class="text-slate-500 font-bold text-xs">%</span>
+                                                <span class="text-slate-500 font-bold text-sm">%</span>
                                             </div>
                                         </div>
 
@@ -632,7 +583,7 @@
                                         <div
                                             class="flex-1 text-right sm:text-left sm:pl-4 border-t sm:border-t-0 sm:border-l border-slate-700 pt-4 sm:pt-0">
                                             <div
-                                                class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">
+                                                class="text-sm uppercase font-bold text-slate-500 tracking-wider mb-1">
                                                 Resulting Multiplier</div>
                                             <div class="text-xl font-mono font-black text-white" id="sim-custom-result">
                                                 1.00x</div>
@@ -645,10 +596,16 @@
 
                     <!-- Footer -->
                     <div class="bg-slate-900/50 px-6 py-4 border-t border-slate-700 flex justify-between items-center">
-                        <button id="sim-btn-back" onclick="prevSimStep()"
-                            class="hidden px-6 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-500 transition-colors shadow-lg shadow-red-500/20 flex items-center justify-center gap-2">
-                            <span class="material-symbols-outlined text-sm">arrow_back</span> Back
-                        </button>
+                        <div>
+                            <button id="sim-btn-cancel" onclick="closeSimulatorModal()"
+                                class="px-6 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-500 transition-colors shadow-lg shadow-red-500/20 flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-sm" aria-hidden="true">close</span> Cancel
+                            </button>
+                            <button id="sim-btn-back" onclick="prevSimStep()"
+                                class="hidden px-6 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-500 transition-colors shadow-lg shadow-red-500/20 flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-sm" aria-hidden="true">arrow_back</span> Back
+                            </button>
+                        </div>
 
                         <div class="flex gap-3">
                             <button id="sim-btn-next" onclick="nextSimStep()"
