@@ -4684,6 +4684,8 @@ window.MapLibreImpactMap = (function ()
                 clearBlockGroupDensity();
                 markerPosition = null;
                 resetImpactStats();
+                setLayerVisibility('block-groups-heat', false);
+                setLayerVisibility('block-group-density-fill', false);
 
                 // Remove marker if exists
                 if (marker)
