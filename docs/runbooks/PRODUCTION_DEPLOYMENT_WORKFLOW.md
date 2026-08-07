@@ -18,7 +18,8 @@ M:\SaveNEIN  ->  GitHub main  ->  /opt/save-nein/app on the VPS
 
 Production details:
 
-- Public site: `https://savefw.com`
+- Canonical public site: `https://savenein.com`
+- Redirect aliases: `https://www.savenein.com`, `https://savefw.com`, and `https://www.savefw.com`
 - Windows checkout: `M:\SaveNEIN`
 - SSH host alias: `savefw-vps`
 - VPS checkout: `/opt/save-nein/app`
@@ -122,7 +123,7 @@ docker compose \
 
 curl -fsS -o /dev/null \
   -w 'origin HTTP %{http_code} in %{time_total}s\n' \
-  https://savefw.com/
+  https://savenein.com/
 ```
 
 The application, database, and Nginx containers must report healthy. Valhalla
