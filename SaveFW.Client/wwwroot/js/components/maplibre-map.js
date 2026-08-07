@@ -2929,8 +2929,7 @@ window.MapLibreImpactMap = (function ()
             stateHeatmapCache[normalizedStateFips] = features;
             const heatmapRequested = layersVisible.heatmap
                 || document.getElementById('toggle-heatmap')?.checked;
-            if (currentCountyFips
-                || normalizedStateFips !== String(currentStateFips || '').trim()
+            if (normalizedStateFips !== String(currentStateFips || '').trim()
                 || !heatmapRequested)
             {
                 return;
