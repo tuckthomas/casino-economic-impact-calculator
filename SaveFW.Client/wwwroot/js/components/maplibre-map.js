@@ -2949,6 +2949,29 @@ window.MapLibreImpactMap = (function ()
         }
     }
 
+    function refreshStateHeatmapAfterMovement(stateFips)
+    {
+        if (!map) return;
+
+        const normalizedStateFips = String(stateFips || '').trim();
+        map.once('moveend', () =>
+        {
+            const heatmapRequested = layersVisible.heatmap
+                || document.getElementById('toggle-heatmap')?.checked;
+            if (!heatmapRequested
+                || currentCountyFips
+                || normalizedStateFips !== String(currentStateFips || '').trim())
+            {
+                return;
+            }
+
+            // A camera transition can rebuild style-backed sources after the
+            // fast cached response renders. Reapply the selected state's data
+            // once the transition finishes so the layer is never left empty.
+            loadStatePopulationHeatmap(normalizedStateFips);
+        });
+    }
+
     function clearBlockGroupDensity()
     {
         if (!map) return;
@@ -3791,6 +3814,7 @@ window.MapLibreImpactMap = (function ()
             if (stateFeature)
             {
                 const bounds = turf.bbox(stateFeature);
+                refreshStateHeatmapAfterMovement(stateFips);
                 map.fitBounds(bounds, { padding: 40 });
                 if (els.stateDisplay) els.stateDisplay.textContent = stateFeature.properties.NAME || stateFeature.properties.name;
 
@@ -4750,6 +4774,7 @@ window.MapLibreImpactMap = (function ()
                     );
                     if (stateFeature)
                     {
+                        refreshStateHeatmapAfterMovement(currentStateFips);
                         map.fitBounds(turf.bbox(stateFeature), { padding: 40 });
                     }
                 }
