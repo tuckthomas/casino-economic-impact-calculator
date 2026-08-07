@@ -192,7 +192,7 @@
         width: min(86vw, 28rem);
         height: clamp(5.2rem, 18vw, 8.4rem);
         margin: -0.95rem 0 1rem 0;
-        background: -1.15rem center / 100% auto no-repeat url('/assets/SAVENEIN_DARK_MODE.png');
+        background: -1.15rem center / 100% auto no-repeat url('/assets/SAVENEIN.svg');
         opacity: 0;
         pointer-events: none;
         filter: drop-shadow(0 4px 1px rgba(0, 0, 0, 0.7)) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.4));

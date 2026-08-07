@@ -1,7 +1,7 @@
 <div align="center">
 
   <picture>
-    <img alt="Save Northeast Indiana Logo" src="SaveFW.Client/wwwroot/assets/SAVENEIN_DARK_MODE.png" width="200">
+    <img alt="Save Northeast Indiana Logo" src="SaveFW.Client/wwwroot/assets/SAVENEIN.svg" width="200">
   </picture>
 
   # Save Fort Wayne
