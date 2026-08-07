@@ -1,4 +1,7 @@
 @page "/"
+@{
+    var clientBuildVersion = typeof(SaveFW.Client.App).Assembly.ManifestModule.ModuleVersionId.ToString("N");
+}
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth bg-slate-900">
 
@@ -163,8 +166,18 @@
     <script src="js/economics/calculator.js" asp-append-version="true"></script>
     <script src="js/economics/substitution.js" asp-append-version="true"></script>
 
-    @* Start Blazor only after every JS interop module is available. *@
-    <script src="_framework/blazor.webassembly.js" asp-append-version="true"></script>
+    @* Start Blazor only after every JS interop module is available. Version every boot resource
+       with the compiled client MVID so a deployment cannot reuse an older boot manifest. *@
+    <script src="_framework/blazor.webassembly.js" asp-append-version="true" autostart="false"></script>
+    <script>
+        Blazor.start({
+            loadBootResource: (_, __, defaultUri) => {
+                const resourceUrl = new URL(defaultUri, document.baseURI);
+                resourceUrl.searchParams.set("build", "@clientBuildVersion");
+                return resourceUrl.toString();
+            }
+        });
+    </script>
 </body>
 
 </html>
