@@ -506,6 +506,93 @@ namespace SaveFW.Server.Controllers
         }
 
         /// <summary>
+        /// Returns compact block-group population points for a selected state and
+        /// the surrounding 50-mile area. The point payload keeps state-scale
+        /// population heatmaps fast while still including nearby cross-border
+        /// population centers.
+        /// </summary>
+        [HttpGet("population-heatmap/{stateFips}")]
+        public async Task<IActionResult> GetPopulationHeatmap(string stateFips)
+        {
+            var normalizedStateFips = string.Concat((stateFips ?? string.Empty).Where(char.IsDigit));
+            if (normalizedStateFips.Length != 2)
+            {
+                return BadRequest("State FIPS must be 2 digits.");
+            }
+
+            const int bufferMiles = 50;
+            const double bufferMeters = bufferMiles * 1609.344;
+            var cacheKey = $"population_heatmap_{normalizedStateFips}_{bufferMiles}mi";
+            if (_cache.TryGetValue(cacheKey, out string? cachedJson) && !string.IsNullOrEmpty(cachedJson))
+            {
+                return Content(cachedJson, "application/json");
+            }
+
+            try
+            {
+                var conn = _db.Database.GetDbConnection();
+                await conn.OpenAsync();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandTimeout = 90;
+                cmd.CommandText = @"
+                    WITH coverage AS MATERIALIZED (
+                        SELECT ST_SimplifyPreserveTopology(
+                            ST_Buffer(geom::geography, @bufferMeters)::geometry,
+                            0.02
+                        ) AS geom
+                        FROM tiger_states
+                        WHERE geoid = @stateFips
+                    )
+                    SELECT json_build_object(
+                        'state_fips', @stateFips,
+                        'buffer_miles', @bufferMiles,
+                        'points', COALESCE(json_agg(
+                            json_build_array(
+                                ST_X(ST_PointOnSurface(bg.geom)),
+                                ST_Y(ST_PointOnSurface(bg.geom)),
+                                COALESCE(bg.pop_18_plus, 0),
+                                substring(bg.geoid, 1, 5)
+                            ) ORDER BY bg.geoid
+                        ) FILTER (WHERE bg.geoid IS NOT NULL), '[]'::json)
+                    )::text
+                    FROM coverage c
+                    LEFT JOIN census_block_groups bg
+                      ON bg.pop_18_plus > 0
+                     AND bg.geom && c.geom
+                     AND ST_Intersects(ST_PointOnSurface(bg.geom), c.geom);
+                ";
+
+                var stateParam = cmd.CreateParameter();
+                stateParam.ParameterName = "stateFips";
+                stateParam.Value = normalizedStateFips;
+                cmd.Parameters.Add(stateParam);
+
+                var milesParam = cmd.CreateParameter();
+                milesParam.ParameterName = "bufferMiles";
+                milesParam.Value = bufferMiles;
+                cmd.Parameters.Add(milesParam);
+
+                var metersParam = cmd.CreateParameter();
+                metersParam.ParameterName = "bufferMeters";
+                metersParam.Value = bufferMeters;
+                cmd.Parameters.Add(metersParam);
+
+                var json = (string?)await cmd.ExecuteScalarAsync();
+                if (string.IsNullOrEmpty(json))
+                {
+                    return NotFound($"No population heatmap data found for state {normalizedStateFips}.");
+                }
+
+                _cache.Set(cacheKey, json, TimeSpan.FromHours(24));
+                return Content(json, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Get census tract boundaries for a county, dissolved from block groups.
         /// Tract GEOID = first 11 characters of block group GEOID (state 2 + county 3 + tract 6).
         /// </summary>

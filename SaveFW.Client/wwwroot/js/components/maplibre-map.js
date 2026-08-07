@@ -54,12 +54,15 @@ window.MapLibreImpactMap = (function ()
     let currentContextGeoJSON = null;
     let currentCalcFeatures = null;
     let currentCountyTotals = null;
+    let currentHeatmapFeatures = [];
     let competitorMarkers = [];
     let activeCompetitorPopup = null;
     let contextIsLite = false;
     let contextCache = {};
     let blockGroupDensityCache = {};
     let blockGroupDensityRequestSeq = 0;
+    let stateHeatmapCache = {};
+    let stateHeatmapRequestSeq = 0;
     let activePrefetches = []; // Track background prefetch controllers
     // Population counts (Global for sharing between grid/radius modes)
     let t1PopRegional = 0, t2PopRegional = 0, t3PopRegional = 0;
@@ -648,7 +651,7 @@ window.MapLibreImpactMap = (function ()
                 currentCalcFeatures = cached.calcFeatures;
                 currentCountyTotals = cached.totals;
                 contextIsLite = cached.isLite;
-                updateHeatmapData();
+                setHeatmapFeatures(cached.calcFeatures);
                 if (layersVisible.heatmap) loadBlockGroupDensity(fips);
                 return true;
             }
@@ -751,7 +754,7 @@ window.MapLibreImpactMap = (function ()
                     currentContextGeoJSON = geojson;
                     currentCalcFeatures = calcFeatures;
                     currentCountyTotals = { adults: countyAdults, total: countyTotal };
-                    updateHeatmapData();
+                    setHeatmapFeatures(calcFeatures);
                     if (layersVisible.heatmap) loadBlockGroupDensity(fips);
                 }
                 return true;
@@ -772,7 +775,7 @@ window.MapLibreImpactMap = (function ()
                         currentCalcFeatures = cached.calcFeatures;
                         currentCountyTotals = cached.totals;
                         contextIsLite = cached.isLite;
-                        updateHeatmapData();
+                        setHeatmapFeatures(cached.calcFeatures);
                         if (layersVisible.heatmap) loadBlockGroupDensity(fips);
                     }
                     return true;
@@ -1847,12 +1850,12 @@ window.MapLibreImpactMap = (function ()
         }
     }
 
-    function resetImpactStats()
+    function resetImpactStats(preserveHeatmap = false)
     {
         currentContextGeoJSON = null;
         currentCalcFeatures = null;
         currentCountyTotals = null;
-        updateHeatmapData();
+        if (!preserveHeatmap) setHeatmapFeatures([]);
         const idsToZero = ['val-t1', 'val-t2', 'val-t3', 'total-gamblers', 'calc-result', 'calc-gamblers', 'disp-pop-impact-zones', 'disp-pop-adults'];
         idsToZero.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = "0"; });
 
@@ -2164,7 +2167,7 @@ window.MapLibreImpactMap = (function ()
                     <input type="checkbox" id="toggle-municipalities" checked />
                 </label>
                 <label class="toggle-row">
-                    <span class="toggle-label">Heatmap</span>
+                    <span class="toggle-label">Population Heat Map</span>
                     <input type="checkbox" id="toggle-heatmap" />
                 </label>
                 <label class="toggle-row">
@@ -2547,8 +2550,19 @@ window.MapLibreImpactMap = (function ()
                 if (visible)
                 {
                     setupHeatmapLayer();
-                    updateHeatmapData();
-                    if (currentCountyFips) loadBlockGroupDensity(currentCountyFips);
+                    if (currentCountyFips)
+                    {
+                        setHeatmapFeatures(currentCalcFeatures || []);
+                        loadBlockGroupDensity(currentCountyFips);
+                    }
+                    else if (currentStateFips)
+                    {
+                        loadStatePopulationHeatmap(currentStateFips);
+                    }
+                    else
+                    {
+                        setHeatmapFeatures([]);
+                    }
                 }
                 setLayerVisibility('block-groups-heat', visible);
                 setLayerVisibility('block-group-density-fill', visible);
@@ -2753,7 +2767,7 @@ window.MapLibreImpactMap = (function ()
                         id: 'block-group-density-fill',
                         type: 'fill',
                         source: 'block-group-density',
-                        minzoom: 8.5,
+                        minzoom: 8,
                         layout: {
                             visibility: layersVisible.heatmap ? 'visible' : 'none'
                         },
@@ -2770,8 +2784,8 @@ window.MapLibreImpactMap = (function ()
                             ],
                             'fill-opacity': [
                                 'interpolate', ['linear'], ['zoom'],
-                                8.5, 0,
-                                9.5, 0.48,
+                                8, 0,
+                                8.75, 0.52,
                                 13, 0.68
                             ]
                         }
@@ -2780,16 +2794,16 @@ window.MapLibreImpactMap = (function ()
 
                 map.addLayer({
                     id: 'block-groups-heat', type: 'heatmap', source: 'block-groups',
-                    maxzoom: 10.5,
+                    maxzoom: 9,
                     layout: {
                         visibility: layersVisible.heatmap ? 'visible' : 'none'
                     },
                     paint: {
                         'heatmap-weight': ['interpolate', ['linear'], ['get', 'POP_ADULT'], 0, 0, 250, 0.15, 1000, 0.55, 3000, 1],
-                        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 1.8],
-                        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 5, 12, 10.5, 28],
+                        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 4, 0.65, 8.5, 1.45],
+                        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 4, 7, 8.5, 22],
                         'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(178,226,226,0)', 0.2, '#ADD8E6', 0.4, '#FEB24C', 0.6, '#FC4E2A', 0.8, '#E31A1C', 1, '#800026'],
-                        'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 5, 0.62, 8.5, 0.62, 10.5, 0]
+                        'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0.58, 7.75, 0.58, 8.75, 0]
                     }
                 }, beforeId);
             }
@@ -2801,8 +2815,8 @@ window.MapLibreImpactMap = (function ()
 
     function buildHeatmapGeoJSON()
     {
-        const features = Array.isArray(currentCalcFeatures)
-            ? currentCalcFeatures
+        const features = Array.isArray(currentHeatmapFeatures)
+            ? currentHeatmapFeatures
                 .filter(feature =>
                     Number.isFinite(feature?.lng)
                     && Number.isFinite(feature?.lat)
@@ -2846,6 +2860,73 @@ window.MapLibreImpactMap = (function ()
             // Heatmap rendering is optional and must never prevent the base map
             // or the rest of the impact calculator from initializing.
             console.warn('[Map] Heatmap data could not be updated:', e);
+        }
+    }
+
+    function setHeatmapFeatures(features)
+    {
+        currentHeatmapFeatures = Array.isArray(features) ? features : [];
+        updateHeatmapData();
+    }
+
+    async function loadStatePopulationHeatmap(stateFips)
+    {
+        const normalizedStateFips = String(stateFips || '').trim();
+        if (!/^\d{2}$/.test(normalizedStateFips))
+        {
+            setHeatmapFeatures([]);
+            return;
+        }
+
+        const cached = stateHeatmapCache[normalizedStateFips];
+        if (cached)
+        {
+            if (!currentCountyFips && normalizedStateFips === String(currentStateFips || '').trim())
+            {
+                setHeatmapFeatures(cached);
+            }
+            return;
+        }
+
+        const requestSeq = ++stateHeatmapRequestSeq;
+        try
+        {
+            const res = await fetch(`/api/census/population-heatmap/${encodeURIComponent(normalizedStateFips)}`);
+            if (!res.ok) throw new Error(`State population heatmap request failed: ${res.status}`);
+
+            const data = await res.json();
+            const features = Array.isArray(data?.points)
+                ? data.points
+                    .filter(point => Array.isArray(point) && point.length >= 3)
+                    .map(point => ({
+                        lng: Number(point[0]),
+                        lat: Number(point[1]),
+                        popAdult: Number(point[2] || 0),
+                        countyFips: point.length >= 4 ? String(point[3] || '') : ''
+                    }))
+                    .filter(feature => Number.isFinite(feature.lng)
+                        && Number.isFinite(feature.lat)
+                        && feature.popAdult > 0)
+                : [];
+
+            stateHeatmapCache[normalizedStateFips] = features;
+            if (requestSeq !== stateHeatmapRequestSeq
+                || currentCountyFips
+                || normalizedStateFips !== String(currentStateFips || '').trim()
+                || !layersVisible.heatmap)
+            {
+                return;
+            }
+
+            setHeatmapFeatures(features);
+        }
+        catch (e)
+        {
+            console.warn('[Map] State population heatmap could not be loaded:', e);
+            if (requestSeq === stateHeatmapRequestSeq && !currentCountyFips)
+            {
+                setHeatmapFeatures([]);
+            }
         }
     }
 
@@ -3647,6 +3728,11 @@ window.MapLibreImpactMap = (function ()
         if (!stateFips) return;
 
         currentStateFips = stateFips;
+        currentCountyFips = null;
+        blockGroupDensityRequestSeq++;
+        clearBlockGroupDensity();
+        setHeatmapFeatures([]);
+        if (layersVisible.heatmap) loadStatePopulationHeatmap(stateFips);
 
         // Show loading indicator immediately - tiles will be requested after filter change
         // Set initialStateDrill flag so tile loading handler knows to show overlay
@@ -4534,6 +4620,7 @@ window.MapLibreImpactMap = (function ()
                 currentStateFips = null;
                 currentCountyFips = null;
                 blockGroupDensityRequestSeq++;
+                stateHeatmapRequestSeq++;
                 clearBlockGroupDensity();
                 markerPosition = null;
                 resetImpactStats();
@@ -4587,6 +4674,8 @@ window.MapLibreImpactMap = (function ()
                 currentCountyFips = null;
                 blockGroupDensityRequestSeq++;
                 clearBlockGroupDensity();
+                setHeatmapFeatures([]);
+                if (layersVisible.heatmap) loadStatePopulationHeatmap(currentStateFips);
                 markerPosition = null;
 
                 // Remove marker if exists
@@ -4631,7 +4720,7 @@ window.MapLibreImpactMap = (function ()
                     }
                 }
 
-                resetImpactStats();
+                resetImpactStats(true);
                 updateMapNavUI(2);
             }
         },
