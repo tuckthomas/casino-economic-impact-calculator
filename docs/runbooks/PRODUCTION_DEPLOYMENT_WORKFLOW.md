@@ -165,4 +165,3 @@ Do not reuse a personal SSH key for automation. The pipeline should use a
 dedicated deployment identity with only the permissions required to update this
 application. GitHub Actions secrets must contain only deployment-specific
 credentials, never the production `.env` file or database contents.
-
