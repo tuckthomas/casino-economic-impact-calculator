@@ -143,8 +143,6 @@
         };
     </script>
 
-    <script src="_framework/blazor.webassembly.js" asp-append-version="true"></script>
-
     <script src="js/lib/html2canvas.min.js" asp-append-version="true"></script>
     <script src="js/pdf-helper.js" asp-append-version="true"></script>
     <script src="js/data/indiana-counties.js" asp-append-version="true"></script>
@@ -164,6 +162,9 @@
     <script src="js/components/home-header.js" asp-append-version="true"></script>
     <script src="js/economics/calculator.js" asp-append-version="true"></script>
     <script src="js/economics/substitution.js" asp-append-version="true"></script>
+
+    @* Start Blazor only after every JS interop module is available. *@
+    <script src="_framework/blazor.webassembly.js" asp-append-version="true"></script>
 </body>
 
 </html>
