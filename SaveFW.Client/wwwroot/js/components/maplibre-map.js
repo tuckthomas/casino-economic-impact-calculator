@@ -2927,14 +2927,17 @@ window.MapLibreImpactMap = (function ()
                 : [];
 
             stateHeatmapCache[normalizedStateFips] = features;
+            const heatmapRequested = layersVisible.heatmap
+                || document.getElementById('toggle-heatmap')?.checked;
             if (requestSeq !== stateHeatmapRequestSeq
                 || currentCountyFips
                 || normalizedStateFips !== String(currentStateFips || '').trim()
-                || !layersVisible.heatmap)
+                || !heatmapRequested)
             {
                 return;
             }
 
+            layersVisible.heatmap = true;
             setHeatmapFeatures(features);
             setLayerVisibility('block-groups-heat', true);
         }
