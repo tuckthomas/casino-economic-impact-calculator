@@ -51,7 +51,7 @@ window.Modals = (function ()
             hookList.innerHTML = TARGET_KEYS.map(word => `
                 <li class="flex flex-wrap items-center justify-between gap-3 bg-red-50 dark:bg-red-900/20 p-3 rounded-xl border border-red-100 dark:border-red-800">
                     <span class="font-semibold text-red-900 dark:text-red-100 text-sm">${word}</span>
-                    <button onclick="openWordModal('${word}')" class="px-3 py-1 bg-white border border-red-200 text-red-600 text-xs font-bold rounded-lg uppercase">Learn More</button>
+                    <button onclick="openWordModal('${word}')" class="px-3 py-1 bg-white border border-red-200 text-red-600 text-sm font-bold rounded-lg uppercase">Learn More</button>
                 </li>
             `).join('');
 

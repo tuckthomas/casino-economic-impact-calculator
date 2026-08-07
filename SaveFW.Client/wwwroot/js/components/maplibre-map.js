@@ -1897,9 +1897,9 @@ window.MapLibreImpactMap = (function ()
         labelStack.id = 'map-overlay-topright';
         labelStack.style.cssText = 'position: absolute; top: 80px; right: 12px; z-index: 60; display: flex; flex-direction: column; gap: 8px;';
         labelStack.innerHTML = `
-            <div style="min-width: 160px; display: flex; justify-content: space-between; align-items: center;" class="bg-blue-600/40 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-xl border border-white/20 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 cursor-pointer"><span>High Risk:</span><span id="label-high-val">-</span></div>
-            <div style="min-width: 160px; display: flex; justify-content: space-between; align-items: center;" class="bg-red-600/40 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-xl border border-white/20 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 cursor-pointer"><span>Elevated:</span><span id="label-elevated-val">-</span></div>
-            <div style="min-width: 160px; display: flex; justify-content: space-between; align-items: center;" class="bg-orange-600/40 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-xl border border-white/20 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 cursor-pointer"><span>Baseline:</span><span id="label-baseline-val">-</span></div>
+            <div style="min-width: 160px; display: flex; justify-content: space-between; align-items: center;" class="bg-blue-600/40 text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-xl border border-white/20 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 cursor-pointer"><span>High Risk:</span><span id="label-high-val">-</span></div>
+            <div style="min-width: 160px; display: flex; justify-content: space-between; align-items: center;" class="bg-red-600/40 text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-xl border border-white/20 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 cursor-pointer"><span>Elevated:</span><span id="label-elevated-val">-</span></div>
+            <div style="min-width: 160px; display: flex; justify-content: space-between; align-items: center;" class="bg-orange-600/40 text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-xl border border-white/20 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 cursor-pointer"><span>Baseline:</span><span id="label-baseline-val">-</span></div>
         `;
         container.parentElement.appendChild(labelStack);
 

@@ -29,10 +29,10 @@
                         class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500">
                 </div>
                 <div class="mt-2 flex gap-2">
-                    <button @onclick='() => Sort("alpha")' class="flex-1 text-xs font-bold uppercase tracking-wide px-2 py-1 rounded-md border border-slate-700 text-slate-300 hover:bg-slate-800 @(sortMode == "alpha" ? "bg-slate-800 text-white" : "")">
+                    <button @onclick='() => Sort("alpha")' class="flex-1 text-sm font-bold uppercase tracking-wide px-2 py-1 rounded-md border border-slate-700 text-slate-300 hover:bg-slate-800 @(sortMode == "alpha" ? "bg-slate-800 text-white" : "")">
                         Sort A-Z @(sortMode == "alpha" ? (sortAsc ? "↓" : "↑") : "")
                     </button>
-                    <button @onclick='() => Sort("pop")' class="flex-1 text-xs font-bold uppercase tracking-wide px-2 py-1 rounded-md border border-slate-700 text-slate-300 hover:bg-slate-800 @(sortMode == "pop" ? "bg-slate-800 text-white" : "")">
+                    <button @onclick='() => Sort("pop")' class="flex-1 text-sm font-bold uppercase tracking-wide px-2 py-1 rounded-md border border-slate-700 text-slate-300 hover:bg-slate-800 @(sortMode == "pop" ? "bg-slate-800 text-white" : "")">
                         Sort Pop @(sortMode == "pop" ? (sortAsc ? "↑" : "↓") : "")
                     </button>
                 </div>
@@ -48,7 +48,7 @@
                     {
                         <div @onclick="() => Select(item)" class="px-4 py-3 text-sm text-slate-200 hover:bg-slate-800 hover:text-blue-300 cursor-pointer transition-colors flex items-center justify-between group">
                             <span class="font-medium">@item.Text</span>
-                            <span class="text-xs text-white font-mono bg-slate-700 px-2 py-0.5 rounded transition-colors">@item.Badge</span>
+                            <span class="text-sm text-white font-mono bg-slate-700 px-2 py-0.5 rounded transition-colors">@item.Badge</span>
                         </div>
                     }
                 }

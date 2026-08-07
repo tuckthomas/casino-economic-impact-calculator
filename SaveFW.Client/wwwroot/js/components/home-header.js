@@ -137,11 +137,8 @@ window.HomeHeader = (() => {
             const currentScrollY = Math.max(window.scrollY || window.pageYOffset || 0, 0);
             const scrollDelta = currentScrollY - lastScrollY;
             const revealThreshold = header.offsetHeight * 0.5;
-            const isDesktop = desktopBreakpoint.matches;
 
             if (!isStuck) {
-                setHeaderVisibility(true);
-            } else if (isDesktop) {
                 setHeaderVisibility(true);
             } else if (currentScrollY <= hero.offsetHeight) {
                 setHeaderVisibility(true);

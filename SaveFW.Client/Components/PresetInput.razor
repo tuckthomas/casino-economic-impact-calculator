@@ -24,15 +24,16 @@
             <select id="preset-@Id" @ref="presetSelectRef"
                     value="@selectedPresetValue"
                     @onchange="HandleNativePresetChanged"
-                    aria-label="@($"{Label} preset")"
-                    class="sfw-modern-select block w-full px-3 py-2 text-sm font-semibold lg:hidden">
+                    aria-hidden="true"
+                    tabindex="-1"
+                    class="hidden">
                 @foreach (var preset in PresetOptions)
                 {
                     <option value="@preset.Value">@preset.Label</option>
                 }
                 <option value="@CustomPresetValue">Custom</option>
             </select>
-            <div class="relative hidden lg:block">
+            <div class="relative block">
                 <button type="button"
                         id="preset-trigger-@Id"
                         class="sfw-modern-select sfw-modern-select-trigger w-full px-3 py-2 text-sm font-semibold"
@@ -67,7 +68,7 @@
             </div>
         </div>
         <div class="space-y-1 lg:w-[14rem] @(IsCustomSelected ? "" : "hidden lg:block lg:h-0 lg:overflow-hidden lg:opacity-0 lg:pointer-events-none")">
-            <label for="val-@Id" class="text-xs font-semibold uppercase tracking-wide text-slate-400">Value</label>
+            <label for="val-@Id" class="text-sm font-semibold uppercase tracking-wide text-slate-400">Value</label>
             <div class="flex items-center gap-1">
                 @if (InputType == "Currency" || InputType == "MoneyMM")
                 {

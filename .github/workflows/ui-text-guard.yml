@@ -1,0 +1,20 @@
+name: UI text-size guard
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-ui-text:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Reject tiny UI text
+        run: npm run check:ui-text

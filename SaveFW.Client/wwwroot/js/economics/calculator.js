@@ -693,7 +693,7 @@ window.EconomicCalculator = (function ()
             div.className = "px-4 py-3 text-sm text-slate-200 hover:bg-slate-800 hover:text-blue-300 cursor-pointer transition-colors flex items-center justify-between group";
             div.innerHTML = `
                                         <span class="font-medium">${c.name}</span>
-                                        <span class="text-xs text-white font-mono bg-[#0f172a] dark:bg-[#0f172a] px-2 py-0.5 rounded transition-colors">${c.pop ? c.pop.toLocaleString() : ''}</span>
+                                        <span class="text-sm text-white font-mono bg-[#0f172a] dark:bg-[#0f172a] px-2 py-0.5 rounded transition-colors">${c.pop ? c.pop.toLocaleString() : ''}</span>
                                     `;
             div.onclick = () =>
             {
@@ -1853,7 +1853,7 @@ window.EconomicCalculator = (function ()
                                                 <div class="flex justify-between items-center ${colorClass}">
                                                     <div class="flex flex-col">
                                                         <span>${item.label}</span>
-                                                        ${item.note ? `<span class="text-[10px] opacity-70 font-mono">${item.note}</span>` : ''}
+                                                        ${item.note ? `<span class="text-sm opacity-70 font-mono">${item.note}</span>` : ''}
                                                     </div>
                                                     <span class="font-mono">${item.val}</span>
                                                 </div>
@@ -2577,9 +2577,11 @@ window.EconomicCalculator = (function ()
                 : isHostCountySelection
                     ? `The site is outside any incorporated municipal PLACE boundary in ${hostCountyName} County, so the fallback branch is active and the municipality-directed allocation is 0.0% / ${fmtM(revenueCity)} in this analysis.`
                     : `The selected county is outside the active scenario's host-county eligibility area, so host-local allocation rows are inactive and only the non-local recipients remain funded in this analysis.`;
-            const statementConstructionSummary = isHostCountySelection
-                ? `Host statement: ${fmtM(hostLocalRevenue)} revenue minus ${fmtM(subjectTotalCost)} selected-county social costs. Regional statement: ${fmtM(revenueRda)} revenue minus ${fmtM(spilloverTotalCost)} spillover social costs. Consolidated statement: ${fmtM(totalRevenue)} revenue minus ${fmtM(stateWideSocialCost)} total social costs.`
-                : `Host statement: inactive for this county under the active scenario. Regional statement: ${fmtM(revenueRda)} revenue minus ${fmtM(spilloverTotalCost)} spillover social costs. Consolidated statement: ${fmtM(totalRevenue)} revenue minus ${fmtM(stateWideSocialCost)} total social costs.`;
+            const hostFiscalViewSummary = isHostCountySelection
+                ? `${fmtM(hostLocalRevenue)} in host-government revenue compared with ${fmtM(subjectTotalCost)} in selected-county social costs.`
+                : `Inactive for this county under the active tax-allocation scenario.`;
+            const regionalFiscalViewSummary = `${fmtM(revenueRda)} in regional revenue compared with ${fmtM(spilloverTotalCost)} in spillover social costs outside the selected county.`;
+            const consolidatedFiscalViewSummary = `${fmtM(totalRevenue)} in total statewide revenue compared with ${fmtM(stateWideSocialCost)} in total statewide social costs.`;
 
             let analysisHTML = '';
 
@@ -2633,7 +2635,13 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Geographic Analysis</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
             analysisHTML += `<li><strong>Geospatial Data:</strong> Population data is sourced directly from the <a href="https://www.census.gov/data/developers/data-sets/decennial-census.html" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">U.S. Census Bureau's 2020 Decennial Census API</a>, seeded into the SaveFW database in January 2026. Geographic boundaries utilize high-precision 2020 TIGER/Line Shapefiles processed via PostGIS.</li>`;
-            analysisHTML += `<li><strong>Statement Construction:</strong> ${escapeHtml(statementConstructionSummary)}</li>`;
+            analysisHTML += `<li><strong>Fiscal View Comparisons:</strong> Each view compares the public revenue assigned to that jurisdictional scope with the social costs attributed to the same scope.
+                                            <ul class="list-[circle] pl-8 mt-2 space-y-2">
+                                                <li><strong>Host Government:</strong> ${escapeHtml(hostFiscalViewSummary)}</li>
+                                                <li><strong>Regional:</strong> ${escapeHtml(regionalFiscalViewSummary)}</li>
+                                                <li><strong>Consolidated State:</strong> ${escapeHtml(consolidatedFiscalViewSummary)}</li>
+                                            </ul>
+                                        </li>`;
             if (populationProjection)
             {
                 if (projectionUsesProjectedAdults)
@@ -3480,7 +3488,7 @@ window.EconomicCalculator = (function ()
         if (globalTooltip) return;
         globalTooltip = document.createElement('div');
         globalTooltip.id = 'economic-calculator-global-tooltip';
-        globalTooltip.className = 'fixed hidden pointer-events-none z-[10000] w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-2xl border border-slate-700 font-normal whitespace-normal transition-opacity duration-200 opacity-0';
+        globalTooltip.className = 'fixed hidden pointer-events-none z-[10000] w-64 p-3 bg-slate-900 text-white text-sm rounded-lg shadow-2xl border border-slate-700 font-normal whitespace-normal transition-opacity duration-200 opacity-0';
         document.body.appendChild(globalTooltip);
         // Hide tooltip on any scroll event to prevent sticking
         window.addEventListener('scroll', () => hideTooltip(), true);
