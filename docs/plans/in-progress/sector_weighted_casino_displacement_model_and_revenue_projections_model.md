@@ -1,768 +1,1586 @@
-# Casino Impact Web App — AI Agent Implementation Checklist
+# Casino Gravity, Revenue Projection, Cannibalization, and Downstream Impact Model
 
-## 0. Document purpose and required implementation posture
+## Governing AI Agent Implementation Checklist
 
-- [ ] Read this entire document before writing or modifying code.
-  - [ ] Treat this file as the governing implementation checklist for the next phase of the casino impact web application.
-  - [ ] Use this document to guide database changes, service-layer design, revenue heuristics, competition logic, UI messaging, sensitivity controls, and documentation.
-  - [ ] Do not skip ahead to UI polish before the underlying data model and calculation logic exist.
-
-- [ ] Understand the overall goal.
-  - [ ] Strengthen the app in a transparent and defensible manner.
-  - [ ] Add a persistent dataset of existing casinos and casino-like gambling venues in Indiana and surrounding states.
-  - [ ] Add competition-aware location scoring so the app no longer treats all proposed locations as having the same revenue potential.
-  - [ ] Add public-data-informed revenue adjustment logic that is heuristic, scenario-based, and transparent.
-  - [ ] Add user-facing warnings and scenario tools so users are not misled when they move the marker to a materially weaker market location.
-  - [ ] Preserve user trust by clearly distinguishing between user-entered assumptions, app recommendations, heuristics, and outputs.
-
-- [ ] Understand what this project is **not** trying to do.
-  - [ ] Do **not** claim to replicate Spectrum’s full proprietary revenue model.
-  - [ ] Do **not** imply that this project has access to Indiana Gaming Commission operator database data unless such data is actually present in the codebase and legally usable.
-  - [ ] Do **not** build a fake “precision forecast” that presents unsupported dollar values as if they were statistically validated.
-  - [ ] Do **not** silently modify AGR assumptions without surfacing that behavior clearly to the user.
-
-- [ ] Understand what this project **can** reasonably do.
-  - [ ] Use publicly described elements of Spectrum’s methodology as directional guidance.
-  - [ ] Use publicly available data to build a defensible market-depth and competition heuristic.
-  - [ ] Use public Spectrum scenarios as calibration anchors for relative site comparison.
-  - [ ] Support transparent sensitivity testing rather than pretending to deliver exact forecast certainty.
+> **Status:** In progress. This document supersedes the earlier revenue-heuristic-only implementation plan.
+>
+> **Primary objective:** Build a transparent, empirically calibrated casino gravity model that can produce defensible site-specific gaming revenue projections for Northeast Indiana, reconcile those projections against the publicly released Allen County, Northeast/DeKalb, and Steuben County studies, and feed the resulting patron-origin and revenue estimates into the application's existing downstream economic, displacement, fiscal, and social-cost framework.
+>
+> **Implementation posture:** Do not treat the existing `RevenueHeuristicService`, `CompetitionScoringService`, or `ZipSwitchingModelService` as the finished model. They are prototypes and scaffolding. Preserve useful code where appropriate, but replace unsupported assumptions and straight-line approximations with a calibrated, auditable model.
 
 ---
 
-## 0.1 Review feedback and refinements (added after implementation review)
+# 0. Read this first: non-negotiable agent instructions
 
-- [x] Clarified that status checkboxes marked complete are implementation targets already landed in code, while open items represent verification/documentation follow-through.
-- [x] Added explicit benchmark-scenario API testing coverage requirement so Step 11 can be validated repeatably without manual map interaction only.
-- [x] Added explicit note to document heuristic assumptions directly in service-level XML comments and methodology UI text to satisfy Step 12 traceability.
-
----
-
-## 1. Required design principles
-
-- [ ] Preserve transparency in all implementation layers.
-  - [ ] Clearly label any revenue-location logic as a heuristic, recommendation, scenario aid, or calibration layer.
-  - [ ] Avoid labels such as “forecast engine,” “projection model,” or “predicted AGR” unless the math and data genuinely support those labels.
-  - [ ] Whenever the app adjusts assumptions or suggests reductions, show that explicitly.
-
-- [ ] Preserve user control.
-  - [ ] Let the user keep manual control over AGR assumptions.
-  - [ ] The app may recommend a reduced AGR scenario.
-  - [ ] The app may provide quick sensitivity presets.
-  - [ ] The app may optionally apply a user-clicked preset.
-  - [ ] The app must not secretly alter revenue assumptions behind the scenes.
-
-- [ ] Surface uncertainty rather than hide it.
-  - [ ] Make it clear that revenue-side estimates are more uncertain than location-to-location relative ranking.
-  - [ ] Explain that missing state-supplied ZIP-level visitation/theoretical win data increases model uncertainty.
-  - [ ] Explain that the app is stronger at directional site comparison than at precise AGR point estimation.
-
-- [ ] Keep the app scenario-based.
-  - [ ] Treat outputs as scenario results under stated assumptions.
-  - [ ] Treat baseline problem gambling prevalence and AGR as sensitivity drivers.
-  - [ ] Encourage users to test multiple revenue scenarios for weaker-demand locations.
-  - [ ] Encourage users to test multiple prevalence assumptions where warranted.
-
-- [ ] Separate conceptually distinct things in both code and UI.
-  - [ ] User input
-  - [ ] App recommendation
-  - [ ] Heuristic adjustment suggestion
-  - [ ] Scenario output
-  - [ ] Methodology note / disclosure
+- [ ] Read this entire document before changing production code.
+- [ ] Inspect the current repository before implementing each section.
+  - [ ] Do not assume a service, table, endpoint, migration, data file, component, or test does not exist merely because it is not described here.
+  - [ ] Reuse working infrastructure where it is technically sound.
+  - [ ] Refactor prototype logic rather than creating duplicate parallel systems unless separation is intentional and documented.
+- [ ] Follow `AGENTS.md` and all repository-specific UI and engineering guardrails.
+- [ ] Do not mark a checklist item complete merely because code was written.
+  - [ ] A database task is complete only after schema/migration, ingestion, provenance, and verification are complete.
+  - [ ] A model task is complete only after unit tests, integration tests, validation output, and documented assumptions exist.
+  - [ ] A UI task is complete only after the API integration works and the user can distinguish model estimates from manual assumptions.
+- [ ] Do not hard-code a number solely because a public consultant used it.
+  - [ ] Public consultant assumptions are benchmark priors and validation anchors, not automatic truth.
+  - [ ] Any adopted coefficient must have a source, calibration rationale, sensitivity range, or all three.
+- [ ] Do not tune the model solely until it reproduces one desired public projection.
+  - [ ] The model must be capable of explaining why Allen, DeKalb/Northeast, and Steuben projections differ.
+  - [ ] It must also behave sensibly at existing casino locations and at deliberately weak candidate locations.
+- [ ] Never hide manual overrides or silently replace user inputs.
+- [ ] Preserve reproducibility.
+  - [ ] Every production model run must identify the model version, parameter set, data vintages, candidate-site coordinates, development program, and run timestamp.
+- [ ] Preserve auditability.
+  - [ ] Every displayed revenue number must be decomposable back to geographic origin, demand pool, attraction/share calculation, tourism/traffic increment, and applicable adjustment.
 
 ---
 
-## 2. Required source-model understanding the agent must retain
+# 1. Verified current repository foundation and deficiencies
 
-- [ ] Understand the current app’s analytical gap.
-  - [ ] Social-cost outputs change when location changes because the affected population in the three impact tiers changes.
-  - [ ] Revenue assumptions, however, can currently be overstated if the proposed marker is moved to a materially weaker market location.
-  - [ ] Existing casinos and casino-like venues are not yet being modeled as competition in a structured way.
-  - [ ] The app therefore needs a competition-aware, public-data-informed revenue-potential layer.
+## 1.1 Existing foundation already present
 
-- [ ] Understand the public Spectrum distinction.
-  - [ ] Spectrum’s public report describes a methodology that used:
-    - [ ] drive-time segmentation
-    - [ ] AGI/income-weighted market potential
-    - [ ] competition/cannibalization logic
-    - [ ] location/access quality
-    - [ ] current market capture using state-supplied data
-  - [ ] The project can mirror the **publicly described structure** of that methodology.
-  - [ ] The project cannot credibly claim to recreate Spectrum’s **actual hidden inputs**, especially state-supplied ZIP-level visitation and theoretical revenue capture data.
+The following items were verified in the repository and should be treated as scaffolding rather than reimplemented blindly.
 
-- [ ] Understand the correct uncertainty framing.
-  - [ ] Missing private/state data does not merely mean “the confidence interval is wider.”
-  - [ ] It also means the revenue side is less structurally identified.
-  - [ ] The app may still support reasonable relative ranking between candidate sites.
-  - [ ] The app has lower confidence in exact AGR dollar point estimates.
-  - [ ] Documentation should explicitly say this.
+- [x] A persistent `casino_competitors` entity/table exists.
+- [x] A `CasinoCompetitorSeeder` exists with a starter set of Indiana, Michigan, and Ohio properties.
+- [x] `CompetitionScoringService` exists.
+- [x] `RevenueHeuristicService` exists.
+- [x] `ZipSwitchingModelService` exists and already implements a basic origin-to-casino multinomial share calculation.
+- [x] `RevenueController` exposes prototype revenue endpoints.
+- [x] Valhalla routing/isochrone infrastructure exists elsewhere in the project.
+- [x] Census/block-group spatial infrastructure exists.
+- [x] The existing application already models downstream costs and location-sensitive population exposure.
+- [x] A sector-weighted displacement concept already exists in this plan and must be retained and improved.
 
----
+## 1.2 Deficiency: the current revenue heuristic is not a gravity model
 
-## 3. Database work — create a persistent casino competitor reference dataset
+- [ ] Retire `RevenueHeuristicService` as the primary revenue estimator once the gravity engine is production-ready.
+- [ ] Preserve only useful explainability/site-quality concepts from it, if desired.
+- [ ] Remove or replace the following unsupported structures from production revenue estimation:
+  - [ ] fixed Fort Wayne-center distance penalties;
+  - [ ] 30-mile and 50-mile straight-line threshold deductions;
+  - [ ] nearby market depth based on an approximate degree-radius query;
+  - [ ] `population × 0.75` as the adult population proxy;
+  - [ ] a hard-coded $65,000 median-income normalization;
+  - [ ] a hard-coded `benchmarkDepth = 400000`;
+  - [ ] a final multiplier formed from `accessScore × depthScore - competitionPenalty`;
+  - [ ] classification cutoffs that are not empirically calibrated.
+- [ ] If the heuristic remains available for UI diagnostics, label it explicitly as a site-quality diagnostic and never use its multiplier as the gravity-model GGR forecast.
 
-### 3.1 Create the table
+## 1.3 Deficiency: current competition scoring is hand-weighted and Fort-Wayne-centric
 
-- [ ] Create a new persistent table for casino competitors.
-  - [ ] Preferred conceptual names:
-    - [ ] `casino_reference_sites`
-    - [ ] `casino_competitors`
-    - [ ] `gaming_venue_reference_sites`
-  - [ ] Use the naming convention that best fits the existing project structure.
+- [ ] Replace hand-set venue-type plus feature-adders as the principal competitive-mass measure.
+- [ ] Do not use Haversine distance as the main travel-friction measure when Valhalla drive time is available.
+- [ ] Do not approximate catchment overlap by measuring each competitor's distance from a single Fort Wayne point.
+- [ ] Compute overlap at the origin-zone level so that each ZIP/ZCTA/block-group chooses among the facilities that are realistically accessible to that origin.
+- [ ] Preserve simple feature scores only as fallback metadata or explanatory components.
 
-- [ ] Ensure the table supports geospatial querying and weighted calculations.
-  - [ ] Store raw numeric latitude and longitude.
-  - [ ] If the project already uses PostGIS or another geospatial extension, also store a geometry/geography field where appropriate.
-  - [ ] Make the table easy to query by state, county, feature set, and active status.
+## 1.4 Deficiency: the current ZIP switching model is an uncalibrated prototype
 
-### 3.2 Required columns
+- [ ] Keep the conceptual origin-to-facility share structure, but replace the present defaults and mechanics.
+- [ ] Replace Haversine miles with cached network travel time and network distance.
+- [ ] Replace unsupported defaults such as:
+  - [ ] `ParticipationRate = 0.28`;
+  - [ ] `AnnualGgrPerParticipant = 1200`;
+  - [ ] `DistanceBeta = 0.06` in a linear utility formulation;
+  - [ ] arbitrary proposed quality of `1.0`.
+- [ ] Do not force all modeled demand to be allocated across an incomplete set of casinos.
+  - [ ] Include a sufficiently complete competitive field and/or an explicit outside option.
+- [ ] Use numerically stable share calculations.
+  - [ ] Implement log-sum-exp or an equivalent stable denominator calculation.
+  - [ ] Test extreme utilities and very large competitive sets for overflow/underflow.
+- [ ] Do not derive incumbent attractiveness solely from the current feature-addition score.
+- [ ] Do not treat the current `ZipDemandInput` request payload as the long-term source of origin demand.
+  - [ ] Production demand should be loaded from versioned persisted public datasets and model parameter sets.
+  - [ ] The API may still allow expert overrides for testing.
 
-- [ ] Add the minimum required identity/location fields.
-  - [ ] `id`
-  - [ ] `name`
-  - [ ] `state`
-  - [ ] `county`
-  - [ ] `city`
-  - [ ] `latitude`
-  - [ ] `longitude`
-  - [ ] `is_active`
-  - [ ] `notes`
+## 1.5 Deficiency: competitor records are too shallow for a mass-weighted model
 
-- [ ] Add venue classification fields.
-  - [ ] `venue_type`
-  - [ ] `operator_name` if readily available
-  - [ ] `market_notes` optional
-  - [ ] `source_url` optional
-  - [ ] `last_verified_at` optional
+- [ ] Expand the competitor schema beyond boolean amenities.
+- [ ] Add time-varying observed performance and physical-scale data.
+- [ ] Add source-level provenance for material attributes.
+- [ ] Build an authoritative inclusion rule instead of relying on a short hand-entered seed list.
 
-- [ ] Add competition/feature fields.
-  - [ ] `has_slots`
-  - [ ] `has_table_games`
-  - [ ] `has_poker`
-  - [ ] `has_sportsbook`
-  - [ ] `has_racetrack`
-  - [ ] `has_hotel`
-  - [ ] `has_restaurants`
-  - [ ] `has_entertainment`
-  - [ ] `has_loyalty_program` optional
-  - [ ] `has_resort_amenities` optional
-  - [ ] `estimated_competition_weight` optional cached field
+## 1.6 Deficiency: the earlier plan prematurely marked the revenue work complete
 
-### 3.3 Venue type taxonomy
-
-- [ ] Implement a venue-type taxonomy that distinguishes materially different kinds of gambling venues.
-  - [ ] Support at minimum:
-    - [ ] `full_service_casino`
-    - [ ] `racino`
-    - [ ] `off_track_betting`
-    - [ ] `sportsbook_only`
-    - [ ] `slots_only`
-    - [ ] `charity_gaming`
-    - [ ] `other`
-
-- [ ] Ensure the type system is designed for competition weighting.
-  - [ ] A full-service casino should generally carry the highest base competitive relevance.
-  - [ ] A limited-feature off-track betting venue should carry minimal or no meaningful competition weight.
-  - [ ] The schema must support adding additional venue types later without breaking calculations.
-
-### 3.4 Visual representations (Map Markers)
-
-- [ ] Utilize the existing custom SVG map markers for rendering competitor locations on the interactive map.
-  - [ ] Source directory: `SaveFW.Client/wwwroot/assets/map-markers`
-  - [ ] Map `full_service_casino` to `EXISTING_CASINO_MARKER.svg`.
-  - [ ] Map `racino` to `EXISTING_CASINO_RACETRACK_MARKER.svg`.
-  - [ ] Map standalone racetracks to `EXISTING_RACETRACK_MARKER.svg`.
-  - [ ] Map tribal operations to `EXISTING_TRIBAL_CASINO_MARKER.svg`.
-- [ ] Ensure competitor markers are static (not draggable) on the map interface, unlike the primary proposed casino marker.
-
-### 3.5 Data scope and geography
-
-- [ ] Populate the dataset with:
-  - [ ] Indiana casinos
-  - [ ] nearby Michigan casinos relevant to Northeast Indiana demand
-  - [ ] nearby Ohio casinos relevant to Northeast Indiana demand
-  - [ ] any nearby Illinois venues only if they are plausibly relevant to the proposed market
-  - [ ] casino-like gambling venues in the surrounding states if they may divert some share of demand
-
-- [ ] Be selective about “casino-like” venues.
-  - [ ] Do not treat every low-feature betting location as a major competitor.
-  - [ ] Preserve the distinction between destination-style casinos and weak substitutes.
+- [ ] Treat all full-gravity-model tasks in this document as open until validated.
+- [ ] Do not infer completion from the prior document's old `[x]` implementation-order or acceptance section.
+- [ ] The prototype services demonstrate progress but do not satisfy the revised acceptance criteria.
 
 ---
 
-## 4. Competition model — score how much a venue should matter
+# 2. Public benchmark studies the implementation must understand
 
-### 4.1 Build a competition score for each existing venue
+## 2.1 Spectrum Gaming Group: Indiana Gaming Commission relocation study
 
-- [ ] Create a venue-level competition-weight function.
-  - [ ] The score must be heuristic and explainable.
-  - [ ] The score must not be a black box.
-  - [ ] The score must support inspection and future tuning.
+Primary source:
 
-- [ ] The competition score must consider at minimum:
-  - [ ] venue type
-  - [ ] feature richness
-  - [ ] substitutability for a destination casino experience
-  - [ ] distance from proposed site
-  - [ ] distance from primary patron base / Fort Wayne market where relevant
-  - [ ] likely catchment overlap
+- `https://www.in.gov/igc/files/publications/Spectrum-Relocation-Report-to-Indiana-Gaming-Commission-9-30-2025-Final.pdf`
 
-### 4.2 Use weighted logic, not binary logic
+Required model lessons:
 
-- [ ] Do not use simplistic binary rules such as:
-  - [ ] “inside X miles = competitor, outside X miles = not competitor”
-  - [ ] “all venues count the same”
-  - [ ] “all venues with the word casino count equally”
+- [ ] Understand Spectrum's public-data demand construction.
+  - [ ] Spectrum estimated casino revenue potential by ZIP using casino gaming revenue relative to IRS adjusted gross income (AGI).
+  - [ ] Spectrum reported a national casino-revenue-to-AGI ratio of approximately 0.58% using 2022 data.
+  - [ ] Spectrum increased the Indiana benchmark to approximately 0.66% as a mature-market adjustment.
+  - [ ] Treat 0.58% and 0.66% as benchmark priors, not immutable constants.
+- [ ] Understand Spectrum's private/state-assisted advantage.
+  - [ ] Spectrum received rated/tracked play by ZIP from Indiana casino operators through the Indiana Gaming Commission.
+  - [ ] That data allowed it to observe current visits and theoretical gaming value by origin ZIP.
+  - [ ] This project does not possess equivalent patron-level operator capture data unless such a dataset is lawfully obtained later.
+- [ ] Understand Spectrum's drive-time logic.
+  - [ ] It analyzed 0-15, 16-30, and 31-60 minute catchment bands for Indiana commercial casinos.
+  - [ ] It explicitly considered existing capture, unmet demand, and retained revenue at competing casinos.
+- [ ] Retain the Northeast proxy as a validation anchor.
+  - [ ] Spectrum's Northeast proxy at I-69 / SR 8 reported estimated market potential of approximately $219.9 million and proxy AGR potential of approximately $204.3 million after its capture/retention adjustments.
+  - [ ] Do not force the new model to equal $204.3 million. Explain variance based on site, development program, competitive mass, data vintage, and model structure.
 
-- [ ] Use a weighted scoring structure instead.
-  - [ ] Example base type values:
-    - [ ] full-service casino = 1.00
-    - [ ] racino = 0.70
-    - [ ] sportsbook-only = 0.35
-    - [ ] off-track betting bar = 0.10
-    - [ ] charity/minor gaming = 0.05
-  - [ ] Example feature adders:
-    - [ ] slots = +0.15
-    - [ ] table games = +0.20
-    - [ ] poker = +0.10
-    - [ ] sportsbook = +0.05
-    - [ ] hotel = +0.15
-    - [ ] entertainment = +0.05
-    - [ ] destination dining = +0.05
+## 2.2 CBRE / Union Gaming Analytics: Greater Fort Wayne Area Casino Analysis
 
-- [ ] Preserve transparency.
-  - [ ] Store the score components or make them inspectable.
-  - [ ] Do not leave future maintainers unable to understand why a venue received its score.
+Primary source:
 
-### 4.3 Catchment-overlap logic
+- `https://cdn.insideindianabusiness.com/wp-content/uploads/2026/01/GFWI-Casino-Analysis-Presentation-Final-2025-12-03.pdf`
 
-- [ ] Add logic that reflects market overlap, not just raw physical distance.
-  - [ ] A venue matters more if it competes for the same Fort Wayne demand pool.
-  - [ ] A venue matters more if it sits in the same repeat-visit corridor.
-  - [ ] A venue matters less if it is geographically close but serves a different travel pattern or experience type.
-  - [ ] A venue matters less if it is weakly substitutable for a full-service casino.
+Required model lessons:
 
-- [ ] Implement at minimum:
-  - [ ] distance from proposed site to competitor
-  - [ ] distance from Fort Wayne or other designated primary market center to competitor
-  - [ ] optional corridor membership test if the project has corridor logic
+- [ ] Understand CBRE's public description of its gravity model.
+  - [ ] It considers population.
+  - [ ] It considers per-capita income.
+  - [ ] It considers project and competitor attractiveness/development scale.
+  - [ ] It considers distance from the proposed project and competitors.
+- [ ] Incorporate a development-program concept.
+  - [ ] CBRE modeled approximately 1,600 slots, 50 tables, and 200 hotel rooms for its proxy project.
+  - [ ] A proposed casino's attractiveness must therefore be a scenario input, not a universal constant attached only to latitude/longitude.
+- [ ] Incorporate non-local demand explicitly.
+  - [ ] CBRE added incremental out-of-market GGR using a traffic-intercept approach based on INDOT highway data.
+  - [ ] Highway traffic cannot simply be counted as resident population demand.
+- [ ] Model stabilization/ramp separately from stabilized demand.
+  - [ ] CBRE treated Year 3 as stabilized.
+  - [ ] It reported first full-year performance of roughly 87% of stabilized GGR as an observed competitive-market benchmark.
+  - [ ] Use this only as a ramp prior subject to validation.
+- [ ] Build an independent reasonableness test.
+  - [ ] CBRE reports that a regression across nearly 200 casinos produced a local-driven GGR estimate close to its gravity estimate.
+  - [ ] CBRE also compared casino GGR as a percentage of total market income.
+  - [ ] The new project must likewise include at least one independent validation model rather than trusting one gravity specification.
+- [ ] Retain public CBRE outputs as benchmark checks.
+  - [ ] Stabilized Year 3 casino GGR: approximately $282.3 million.
+  - [ ] Local-driven gravity GGR used in reasonableness testing: approximately $216.7 million.
+  - [ ] Regression reasonableness estimate: approximately $215.0 million.
+  - [ ] Comparable-market income allocation average: approximately 0.64%.
+  - [ ] Greater Fort Wayne modeled income allocation: approximately 0.63%.
+- [ ] Retain the published competitor-impact vector as a cannibalization/repatriation validation target, not a required outcome.
+  - [ ] FireKeepers: about -$35.5 million.
+  - [ ] Hollywood Toledo: about -$9.1 million.
+  - [ ] Hollywood Gaming at Dayton Raceway: about -$3.8 million.
+  - [ ] Hollywood Columbus: about -$1.7 million.
+  - [ ] Four Winds South Bend: about -$11.6 million.
+  - [ ] Harrah's Hoosier Park: about -$8.0 million.
+  - [ ] Proposed Greater Fort Wayne casino: about +$282.3 million.
+  - [ ] CBRE's stated incremental GGR to Indiana commercial casinos: about +$274.3 million.
 
----
+## 2.3 A.M. Steinberg Advisors: Steuben County Gaming Market Feasibility Study
 
-## 5. Public-data market-depth layer — build a weighted market depth proxy
+Primary source:
 
-### 5.1 Do this because flat population alone is too weak
+- `https://www.steubenedc.com/media/userfiles/subsite_259/files/SCEDC_Feasibility_Study_FINAL.pdf`
 
-- [ ] Add a weighted market-depth layer rather than relying only on raw population counts.
-  - [ ] Population matters.
-  - [ ] Income/AGI depth also matters.
-  - [ ] Market depth should be stronger where reachable adults also have greater aggregate income/resources.
-  - [ ] This aligns directionally with the public description of Spectrum’s market-potential logic.
+This is the separate Steuben County report that must be used as a benchmark.
 
-### 5.2 Required public data stack
+Required model lessons:
 
-- [ ] Use public data sources as the market-depth foundation.
-  - [ ] IRS SOI ZIP-level AGI data where feasible
-  - [ ] ACS 5-year data for adult population and supporting demographic fields
-  - [ ] HUD USPS ZIP crosswalk if needed to align ZIP and Census geographies
-  - [ ] BEA county income data only as a fallback/coarser layer
-  - [ ] BLS Consumer Expenditure Survey only as a secondary support layer, not a ZIP-level local capture substitute
+- [ ] Understand its explicitly described mass-weighted gravity model.
+  - [ ] 2030 projected population age 21+.
+  - [ ] Income-adjusted per-capita gaming expenditure.
+  - [ ] Travel-time/distance decay.
+  - [ ] Base distance-decay parameter β = 1.5.
+  - [ ] Sensitivity range reported around β = 1.4 to 1.6.
+  - [ ] Competitive mass based materially on observed 2024 incumbent GGR.
+  - [ ] Full competitive inclusion within a 120-minute trade area.
+  - [ ] Primary 0-30 minute, secondary 30-60 minute, tertiary 60-120 minute resident markets.
+- [ ] Understand its market-share posture.
+  - [ ] Revenue is a share-of-market/capture problem, not an unconstrained local population multiplication exercise.
+  - [ ] Larger and higher-performing casinos exert more pull than small satellite facilities.
+  - [ ] Non-gaming amenities and game types modify competitive attractiveness.
+- [ ] Retain its reported per-adult gaming-spend scenarios as validation priors only.
+  - [ ] Conservative: approximately $350 per adult 21+.
+  - [ ] Base: approximately $375.
+  - [ ] High: approximately $390.
+- [ ] Retain its tourism separation principle.
+  - [ ] Lake tourism was modeled outside the resident gravity pool to reduce double counting.
+  - [ ] The report's base resident GGR was approximately $194.5 million and base induced lake-tourism GGR approximately $8.6 million, for approximately $203.1 million total.
+- [ ] Retain the low/base/high total benchmarks.
+  - [ ] Low: approximately $188.6 million.
+  - [ ] Base: approximately $203.1 million.
+  - [ ] High: approximately $214.0 million.
 
-- [ ] Structure the code so these sources can be swapped or refreshed later.
-  - [ ] Do not hard-code one-off CSV assumptions throughout the codebase.
-  - [ ] Centralize data ingestion and transformation.
+## 2.4 Benchmark studies are not apples-to-apples
 
-### 5.3 Compute market depth
-
-- [ ] Build a market-depth computation module that can produce at minimum:
-  - [ ] raw adult population by zone
-  - [ ] AGI-weighted adult exposure by zone
-  - [ ] optional normalized demand score by zone
-  - [ ] optional per-ZIP or per-tract contribution records for auditing/debugging
-
-- [ ] Intersect public geographic data with:
-  - [ ] Valhalla isochrones
-  - [ ] drive-time rings
-  - [ ] or the project’s existing three-zone impact structure
-
-- [ ] Support an internal formula such as:
-  - [ ] `weighted_market_depth = Σ(zone geography AGI contribution)`
-  - [ ] or `adult population × income weight × proximity weight`
-  - [ ] or another transparent formulation that can be explained in documentation
-
-- [ ] Keep the formulation inspectable.
-  - [ ] The user or developer should be able to understand how the weighted market depth was derived.
-
----
-
-## 6. Revenue-potential heuristic — build a transparent location scoring framework
-
-### 6.1 Create a revenue-potential heuristic, not a pseudo-statistical forecast
-
-- [ ] Create a dedicated revenue-potential heuristic module.
-  - [ ] It must be clearly labeled as heuristic.
-  - [ ] It must not be presented as a precise forecast.
-  - [ ] It must support relative comparison between candidate locations.
-
-### 6.2 Required conceptual purpose
-
-- [ ] The heuristic must help answer:
-  - [ ] Is the proposed site inside the strongest Northeast Indiana demand corridor?
-  - [ ] Is it still viable but weaker?
-  - [ ] Is it materially weaker and therefore likely to require a downward AGR adjustment?
-
-### 6.3 Required scoring factors
-
-- [ ] Include at minimum:
-  - [ ] access to Fort Wayne urban core / primary market
-  - [ ] access to I-69 / major highways / corridor quality
-  - [ ] adult population within relevant drive-time bands
-  - [ ] AGI/income-weighted market depth
-  - [ ] competition penalty from overlapping casinos
-  - [ ] destination/access quality
-  - [ ] optional tourism support if applicable
-
-- [ ] Use a weighted index or similar transparent structure.
-  - [ ] Example categories:
-    - [ ] Fort Wayne market access = 0–40 points
-    - [ ] highway accessibility = 0–25 points
-    - [ ] weighted nearby adult market depth = 0–20 points
-    - [ ] competition penalty = subtract 0–20 points
-    - [ ] tourism/destination support = 0–10 points
-  - [ ] These values are placeholders, not hard mandates.
-
-### 6.4 Normalize relative to a benchmark site
-
-- [ ] Normalize the revenue heuristic against a reference Northeast corridor location.
-  - [ ] Use the I-69 / SR-8 area or whichever benchmark the project designates.
-  - [ ] Treat that benchmark as a calibration anchor rather than as proof of exact state-model parity.
-  - [ ] Allow the heuristic to generate a relative multiplier compared to the benchmark site.
-
-- [ ] Example conceptual output:
-  - [ ] benchmark corridor site = 1.00
-  - [ ] Allen-adjacent comparable site = near 1.00
-  - [ ] materially weaker site = below 1.00
-  - [ ] competition-heavy but accessible site = below 1.00 for a different reason
+- [ ] Add a benchmark reconciliation note in code documentation and UI methodology.
+- [ ] Explicitly explain that reported values differ because of:
+  - [ ] different proxy locations;
+  - [ ] different modeled development programs;
+  - [ ] different competitive fields;
+  - [ ] different source years;
+  - [ ] different treatment of tourism and highway intercept;
+  - [ ] different definitions of GGR, AGR, and taxable gaming revenue;
+  - [ ] private operator data available to Spectrum but not to this project;
+  - [ ] different stabilization years and population forecasts.
+- [ ] Never imply that disagreement with one report automatically means this model is wrong or that the public report is wrong.
+- [ ] Use the three studies to define a validation envelope and to identify structural reasons for divergence.
 
 ---
 
-## 7. Spectrum-based calibration rules
+# 3. Model terminology and accounting identities
 
-### 7.1 Use Spectrum publicly, but carefully
+## 3.1 Stop using GGR and AGR interchangeably
 
-- [ ] Use publicly available Spectrum outputs as calibration anchors, not as a false claim of full replication.
-  - [ ] Public Spectrum scenarios can help anchor the plausibility of a benchmark site.
-  - [ ] Public Spectrum methodology can help justify the inclusion of:
-    - [ ] drive-time logic
-    - [ ] AGI/income weighting
-    - [ ] competition/cannibalization logic
-    - [ ] access/location quality
-  - [ ] Do not state or imply that the app recreated the hidden operator/IGC ZIP-capture database.
+- [ ] Create explicit domain definitions and use them consistently across server, shared DTOs, UI, reports, and tests.
+- [ ] At minimum distinguish:
+  - [ ] **GGR / casino win:** patron wagers minus gaming payouts, before jurisdiction-specific taxable adjustments.
+  - [ ] **Taxable AGR / taxable gaming base:** the amount defined by applicable Indiana law for wagering-tax calculation after any legally permitted adjustments.
+  - [ ] **Non-gaming revenue:** hotel, food and beverage, entertainment, retail/other property revenue.
+  - [ ] **Total property revenue:** gaming plus non-gaming revenue.
+- [ ] Verify current Indiana statutory terminology and promotional-credit treatment from authoritative Indiana sources at implementation time.
+- [ ] Never convert GGR to taxable AGR with a stale hard-coded deduction.
 
-### 7.2 Required documentation language
+## 3.2 Required origin/facility notation
 
-- [ ] Add methodology language equivalent to the following idea:
-  - [ ] “This revenue-potential layer is public-data-informed and directionally consistent with publicly described elements of the Spectrum study, but it does not replicate Spectrum’s proprietary or state-assisted model because this project does not possess the same underlying operator capture data.”
+Use consistent notation in source comments and methodology documentation.
 
-### 7.3 Trial-and-error calibration rules
-
-- [ ] Trial-and-error is allowed only as transparent heuristic tuning.
-  - [ ] It is acceptable to tune weights so the benchmark site lands in a plausible neighborhood relative to public Spectrum scenarios.
-  - [ ] It is acceptable to use Spectrum scenarios as sanity-check anchors.
-  - [ ] It is **not** acceptable to claim that trial-and-error recovered the proprietary hidden visitation data.
-  - [ ] It is **not** acceptable to label the result a replication of Spectrum’s model.
-
----
-
-## 8. Revenue uncertainty and confidence disclosures
-
-### 8.1 Required uncertainty concept
-
-- [ ] Build disclosures that explain that the app has:
-  - [ ] stronger directional confidence in relative site ranking
-  - [ ] weaker confidence in exact AGR point estimates
-
-- [ ] Explain why.
-  - [ ] The project lacks state-supplied ZIP-level visitation/theoretical win data.
-  - [ ] Public data can estimate potential and relative attractiveness.
-  - [ ] Public data cannot reproduce current market capture with the same confidence.
-
-### 8.2 Required wording concept
-
-- [ ] Add documentation or UI notes equivalent to:
-  - [ ] “Revenue estimates should be interpreted as heuristic and scenario-based rather than precise forecasts.”
-  - [ ] “The model is more reliable for directional comparison between sites than for exact AGR point estimates.”
-  - [ ] “Because proprietary/state-supplied capture data is unavailable, uncertainty around exact AGR values is materially higher.”
+- [ ] `i` = origin zone, preferably ZCTA/ZIP-compatible demand geography with supporting block-group allocation.
+- [ ] `j` = casino/facility alternative.
+- [ ] `D_i` = annual resident casino gaming expenditure pool generated by origin `i` under the selected demand specification.
+- [ ] `T_ij` = network drive time from origin `i` to facility `j`.
+- [ ] `L_ij` = network drive distance from origin `i` to facility `j`.
+- [ ] `A_j` = calibrated attraction/competitive mass of facility `j`.
+- [ ] `F_ij` = travel-friction function.
+- [ ] `W_ij` = unnormalized attraction weight for origin `i` and facility `j`.
+- [ ] `P_ij` = modeled share/probability of origin `i` gaming expenditure allocated to facility `j`.
+- [ ] `R_j` = modeled resident GGR captured by facility `j`.
+- [ ] `R_j,tourism` = incremental tourism GGR.
+- [ ] `R_j,traffic` = incremental through-traffic/intercept GGR.
+- [ ] `R_j,total` = total stabilized GGR before ramp-up.
 
 ---
 
-## 9. User-facing warning system — add location-sensitive AGR warnings
+# 4. Data provenance and reproducibility layer
 
-### 9.1 Why this is required
+## 4.1 Create a source catalog
 
-- [ ] Prevent users from being misled when they move the marker to a weak-demand county but keep an unrealistically high AGR assumption.
-  - [ ] Social costs already fall when the marker moves because the impacted population changes.
-  - [ ] Revenue may also need to fall, but only the user or an explicit scenario tool should decide that.
-  - [ ] The app therefore needs a visible warning/recommendation layer.
+- [ ] Add a persistent source/dataset catalog rather than embedding URLs in arbitrary service code.
+- [ ] Suggested entity: `data_sources`.
+- [ ] Include:
+  - [ ] `id`;
+  - [ ] `name`;
+  - [ ] `publisher`;
+  - [ ] `source_url`;
+  - [ ] `dataset_type`;
+  - [ ] `vintage_or_period`;
+  - [ ] `retrieved_at`;
+  - [ ] `license_or_terms_notes`;
+  - [ ] `content_hash`;
+  - [ ] `is_authoritative`;
+  - [ ] `notes`.
 
-### 9.2 Required behavior
+## 4.2 Create immutable dataset snapshots
 
-- [ ] When a site is outside the strongest demand corridor, show a visible revenue assumption notice.
-  - [ ] Do not hide the message behind a tooltip only.
-  - [ ] Place it near the revenue input or scenario controls.
-  - [ ] Make it clear that revenue assumptions for corridor sites may overstate AGR for the currently selected location.
+- [ ] Add `dataset_snapshots` or equivalent.
+- [ ] Store:
+  - [ ] source ID;
+  - [ ] source period/vintage;
+  - [ ] ingestion timestamp;
+  - [ ] row count;
+  - [ ] checksum/hash;
+  - [ ] transform version;
+  - [ ] validation status;
+  - [ ] error/warning summary.
+- [ ] Do not overwrite a prior calibrated dataset without preserving its snapshot identity.
 
-### 9.3 Example warning concepts
+## 4.3 Every model run must reference its data
 
-- [ ] Implement wording close to:
-  - [ ] “This location appears to be outside the strongest Northeast Indiana casino demand corridor.”
-  - [ ] “Revenue assumptions used for Allen-adjacent or southern DeKalb corridor sites may overstate expected AGR here.”
-  - [ ] “Test lower AGR scenarios before interpreting net impact results.”
-
-### 9.4 Classification bands
-
-- [ ] If feasible, classify the proposed site into one of several revenue-potential bands.
-  - [ ] High revenue potential
-  - [ ] Moderate revenue potential
-  - [ ] Lower revenue potential
-
-- [ ] Tie UI behavior to the classification.
-  - [ ] High = no warning or minimal note
-  - [ ] Moderate = suggest mild sensitivity testing
-  - [ ] Lower = suggest substantial sensitivity testing
-
----
-
-## 10. AGR sensitivity tools — add user-clicked scenario presets
-
-### 10.1 Required feature
-
-- [ ] Add quick revenue sensitivity presets near the AGR input.
-  - [ ] No adjustment
-  - [ ] Mild reduction
-  - [ ] Moderate reduction
-  - [ ] Severe reduction
-
-### 10.2 Example preset structure
-
-- [ ] Example percentages:
-  - [ ] Mild = -15%
-  - [ ] Moderate = -35%
-  - [ ] Severe = -50%
-  - [ ] These may be tuned later.
-
-### 10.3 Required behavior rules
-
-- [ ] Presets must be explicitly user-applied.
-  - [ ] Do not auto-apply them without user action.
-  - [ ] Make it obvious what the preset changed.
-  - [ ] Show the before/after AGR value if possible.
-
-### 10.4 Strongly recommended enhancement
-
-- [ ] If the location is materially weak, offer a one-click prompt such as:
-  - [ ] “Run lower AGR sensitivity scenarios”
-  - [ ] “Apply conservative revenue scenario”
-  - [ ] “Compare base AGR vs reduced AGR cases”
+- [ ] Add `model_runs` with:
+  - [ ] run UUID;
+  - [ ] model version;
+  - [ ] parameter-set ID;
+  - [ ] scenario ID;
+  - [ ] candidate coordinates;
+  - [ ] development-program ID;
+  - [ ] origin-demographic snapshot;
+  - [ ] income/AGI snapshot;
+  - [ ] competitor snapshot;
+  - [ ] observed-GGR snapshot;
+  - [ ] travel-time matrix version/hash;
+  - [ ] tourism/traffic snapshot IDs where used;
+  - [ ] created timestamp;
+  - [ ] execution duration;
+  - [ ] warnings.
 
 ---
 
-## 11. Baseline problem gambling sensitivity disclosures
+# 5. Origin geography and resident market data
 
-### 11.1 Required acknowledgment
+## 5.1 Select a production origin geography deliberately
 
-- [ ] Explicitly disclose that results are highly sensitive to baseline problem gambling rate assumptions.
-  - [ ] The current default 2.3% baseline should be described as conservative if that remains the project assumption.
-  - [ ] Make it clear that the baseline is not a fixed truth.
-  - [ ] Make it clear that changing the baseline can materially change results.
+- [ ] Prefer a ZIP/ZCTA-compatible origin layer because the public benchmark studies are materially ZIP-based and IRS SOI AGI is ZIP-based.
+- [ ] Do not assume USPS ZIP Codes and Census ZCTAs are identical.
+- [ ] Build an explicit crosswalk and document limitations.
+- [ ] Where better spatial precision is needed:
+  - [ ] retain Census block groups as the demographic base;
+  - [ ] allocate block-group population/income to ZCTA using an explicit geographic or population-weighted crosswalk;
+  - [ ] store the allocation weights.
+- [ ] Avoid a naive ZIP centroid when the centroid is unrepresentative.
+  - [ ] Use a population-weighted representative point or point-on-surface of populated subareas where feasible.
+  - [ ] Flag rural/large ZCTAs with poor centroid representation.
 
-### 11.2 Required note concept
+## 5.2 Create `origin_zones`
 
-- [ ] Add UI/disclosure text conceptually equivalent to:
-  - [ ] “Results are highly sensitive to both the baseline problem gambling rate and assumed annual gaming revenue.”
-  - [ ] “The default 2.3% baseline is intentionally conservative and does not assume an increase in the background prevalence rate.”
+- [ ] Store at minimum:
+  - [ ] origin ID;
+  - [ ] ZCTA/ZIP identifier;
+  - [ ] state;
+  - [ ] county allocation(s);
+  - [ ] representative latitude/longitude;
+  - [ ] population-weighted point geometry;
+  - [ ] area geometry if retained;
+  - [ ] urban/rural classification optional;
+  - [ ] source snapshot IDs.
 
-### 11.3 Keep the logic aligned with the current model
+## 5.3 Use casino-eligible adult population, not a blanket adult proxy
 
-- [ ] Do not describe social costs as fixed.
-  - [ ] They are variable and depend on the affected population across the three tiered zones.
-  - [ ] The UI and documentation must reflect that the social-cost side already changes when the marker changes.
+- [ ] Ingest or derive age 21+ population.
+- [ ] Do not use `Population × 0.75` in the production model.
+- [ ] Store age-21+ population by origin and source year.
+- [ ] If 21+ must be estimated from ACS age bins:
+  - [ ] document the interpolation method for the 20-24 age bin;
+  - [ ] preserve the raw age-bin values;
+  - [ ] test totals against county/state controls.
+- [ ] Support projection to a scenario year using an explicit population-growth source/method.
+  - [ ] Do not silently call current ACS population “2030 population.”
 
----
+## 5.4 Add income/AGI measures
 
-## 12. Displacement model integration — preserve and integrate the sector-weighted approach
-
-### 12.1 Keep the existing displacement enhancement plan
-
-- [ ] Preserve the sector-weighted displacement model work.
-  - [ ] Do not replace it with a flat global deduction once this checklist is implemented.
-  - [ ] Integrate the displacement model with the broader net-impact framework.
-
-### 12.2 Core displacement definitions
-
-- [ ] Ensure the model retains or implements the following definitions:
-  - [ ] AGR = casino adjusted gross revenue
-  - [ ] Local Share % (`LS`) = share of AGR attributable to local residents whose spending would otherwise circulate locally
-  - [ ] Local Displacement Base (`Base_local`) = `AGR × LS`
-  - [ ] Displacement coefficient (`k`) = default 0.243
-  - [ ] Total displaced revenue (`D_total`) = `Base_local × k`
-  - [ ] Sector allocation weight (`w_s`) = proportion of displaced spending assigned to each sector
-  - [ ] Taxability factor (`t_s`) = share of sector sales subject to sales tax
-  - [ ] Net income margin (`m_s`) = sector net income margin proxy
-  - [ ] Effective income tax rate (`r_inc`) = applicable personal/corporate blended or pass-through rate
-
-### 12.3 Local-share control
-
-- [ ] Expose Local Share % as a user-controlled input or scenario preset.
-  - [ ] Regional convenience casinos: suggested higher local share scenarios
-  - [ ] destination/tourism-heavy casinos: suggested lower local share scenarios
-  - [ ] Present these as scenarios, not universal truths
-
-### 12.4 At-risk sector inventory
-
-- [ ] Preserve the plan to identify at-risk discretionary businesses using the map/business layer.
-  - [ ] NAICS 72
-  - [ ] NAICS 44–45 combined
-  - [ ] NAICS 71
-  - [ ] Exclude sectors that are implausible substitutes for casino spending
-
-- [ ] Preserve the count/proxy approach.
-  - [ ] counts by sector
-  - [ ] optional employment proxies
-  - [ ] optional square-footage proxies
-  - [ ] optional sales proxies where available
-
-### 12.5 Sector allocation weighting
-
-- [ ] Preserve the baseline weighting idea while allowing local inventory to modulate weights.
-  - [ ] Dining/Hospitality prior = 0.60
-  - [ ] Retail prior = 0.30
-  - [ ] Entertainment prior = 0.10
-  - [ ] Do not accidentally double-count retail by assigning separate full weights to both 44 and 45
-
-- [ ] Use normalized data-driven weighting where feasible.
-  - [ ] `rawWeight_s = baselineWeight_s × presence_s`
-  - [ ] `w_s = rawWeight_s / Σ(rawWeight)`
-
-### 12.6 Tax waterfall and schema
-
-- [ ] Preserve the tax waterfall structure.
-  - [ ] sector sales-tax loss
-  - [ ] sector income-tax loss
-  - [ ] state-specific taxability overrides
-  - [ ] pass-through / corporate tax blend if implemented
-
-- [ ] Preserve the recommended configuration structure.
-  - [ ] single sector list
-  - [ ] no accidental retail double counting
-  - [ ] state-specific tax rules
-  - [ ] optional local add-on tax rates
-  - [ ] optional sensitivity multipliers
-
-### 12.7 Required integration point
-
-- [ ] Ensure the new revenue-potential layer and the sector-weighted displacement layer can coexist.
-  - [ ] Revenue potential affects the assumed AGR scenario.
-  - [ ] Local share and displacement affect the downstream local tax-loss calculations.
-  - [ ] The code should not entangle these layers so badly that later tuning becomes impossible.
+- [ ] Ingest IRS SOI ZIP-level AGI where legally/publicly available.
+- [ ] Ingest ACS income measures needed for independent demand specifications and missing-data fallback.
+- [ ] Store:
+  - [ ] total AGI;
+  - [ ] number of returns;
+  - [ ] AGI per return;
+  - [ ] median household income;
+  - [ ] optional per-capita income/disposable-income proxy;
+  - [ ] inflation year/dollar basis.
+- [ ] Normalize all dollar inputs to a declared model-dollar year.
+- [ ] Preserve nominal raw values as well as inflation-adjusted model values.
 
 ---
 
-## 13. Service-layer architecture requirements
+# 6. Build two independent resident-demand specifications
 
-### 13.1 Create dedicated modules/services
+A professional-grade model should not depend on a single unexplained demand formula. Implement one primary demand engine and one independent reasonableness engine. They must not be added together.
 
-- [ ] Do not scatter the new logic across UI components.
-  - [ ] Create a casino competitor data service/repository.
-  - [ ] Create a competition scoring service.
-  - [ ] Create a market-depth computation service.
-  - [ ] Create a revenue-potential heuristic service.
-  - [ ] Create a warning/recommendation service.
-  - [ ] Preserve or extend the displacement model service.
+## 6.1 Specification A: AGI-share demand model
 
-### 13.2 Service responsibilities
+- [ ] Implement a Spectrum-like public-data specification:
 
-- [ ] Casino competitor data service must:
-  - [ ] load and query venue records
-  - [ ] filter by geography and active status
-  - [ ] expose feature sets and classifications
+```text
+D_i_AGI = AGI_i_real × gaming_income_share_state_or_region × optional_origin_adjustment_i
+```
 
-- [ ] Competition scoring service must:
-  - [ ] compute venue competition weights
-  - [ ] compute site-level competition pressure
-  - [ ] expose score components for inspection/debugging
+- [ ] Make `gaming_income_share` a calibrated/versioned parameter.
+- [ ] Seed priors from public evidence, including Spectrum's roughly 0.58% national and 0.66% Indiana mature-market references.
+- [ ] Do not mechanically apply Indiana's rate to Michigan, Ohio, or every other origin.
+- [ ] Estimate/validate state or regional intensity using observed public gaming revenue where possible.
+- [ ] Prevent double income weighting.
+  - [ ] If total AGI is already the demand mass, do not multiply it again by an ACS income index without a specific modeled reason.
 
-- [ ] Market-depth service must:
-  - [ ] ingest public data layers
-  - [ ] intersect them with isochrones or zones
-  - [ ] compute weighted market depth metrics
+## 6.2 Specification B: age-21+ per-capita expenditure model
 
-- [ ] Revenue heuristic service must:
-  - [ ] compute site access/location scores
-  - [ ] apply competition penalties
-  - [ ] normalize relative to a benchmark site
-  - [ ] expose the multiplier/classification/reasons
+- [ ] Implement a Steuben-like independent specification:
 
-- [ ] Warning/recommendation service must:
-  - [ ] translate heuristic results into user-facing messages
-  - [ ] determine whether to suggest sensitivity presets
-  - [ ] avoid changing assumptions unless user-invoked
+```text
+D_i_PCE = Adults21_i × BaseGamingExpenditurePerAdult × IncomeAdjustment_i
+IncomeAdjustment_i = (IncomeMetric_i / RegionalReferenceIncome)^epsilon_income
+```
 
----
+- [ ] Make `BaseGamingExpenditurePerAdult` configurable and calibrated.
+- [ ] Treat the Steuben $350 / $375 / $390 scenarios as benchmark priors, not production constants.
+- [ ] Estimate `epsilon_income` rather than assuming a linear one-for-one relationship unless validation supports it.
+- [ ] Bound extreme income adjustments to avoid implausible ZIP-level demand.
+- [ ] Document how students, institutions, prisons, military populations, and other unusual population concentrations are handled if they materially affect a zone.
 
-## 14. UI requirements
+## 6.3 Demand-model reconciliation
 
-### 14.1 Add a distinct revenue assumptions / site quality panel
-
-- [ ] Create a dedicated UI area for:
-  - [ ] revenue potential notice
-  - [ ] AGR input
-  - [ ] AGR sensitivity presets
-  - [ ] methodology note
-  - [ ] confidence/disclosure note
-
-- [ ] Keep this visually distinct from the social-cost cards.
-  - [ ] The user should understand that assumptions and scenario aids are not the same thing as computed outputs.
-
-### 14.2 Required UI concepts
-
-- [ ] Show a location-based message when appropriate.
-- [ ] Show quick AGR sensitivity controls.
-- [ ] Show methodology/disclosure language.
-- [ ] Show if the site is benchmark-like, moderate, or weak.
-- [ ] Show why the classification happened if feasible:
-  - [ ] weaker access to Fort Wayne
-  - [ ] weaker corridor access
-  - [ ] strong competition overlap
-  - [ ] weaker weighted market depth
-
-### 14.3 Avoid misleading UI behavior
-
-- [ ] Do not display a confidence level that implies formal statistical calibration if the model does not support it.
-- [ ] Do not present a single-point AGR output without also indicating it is assumption-driven.
-- [ ] Do not use hidden auto-adjustments.
+- [ ] Produce both AGI-based and per-adult-based demand totals for every benchmark scenario.
+- [ ] Add a reconciliation report showing:
+  - [ ] total market demand;
+  - [ ] demand by state;
+  - [ ] demand by drive-time band;
+  - [ ] largest origin-zone differences between specifications.
+- [ ] Select the production/base specification using validation performance, not preference.
+- [ ] Optionally support an ensemble only after both models are independently validated.
+  - [ ] If an ensemble is used, document and version its weights.
 
 ---
 
-## 15. Methodology and disclaimer text requirements
+# 7. Competitive casino universe
 
-### 15.1 Required methodology posture
+## 7.1 Define the inclusion rule before collecting properties
 
-- [ ] Add a methodology note explaining:
-  - [ ] the revenue-potential layer is a public-data-informed heuristic
-  - [ ] it is directionally informed by public descriptions of Spectrum’s approach
-  - [ ] it does not replicate Spectrum’s hidden state/operator data
-  - [ ] it is more suitable for relative comparisons than exact point forecasts
+- [ ] Build a complete competitive field for all origins that can materially contribute to the candidate site's demand.
+- [ ] Candidate-site trade-area cutoffs and competitor inclusion cutoffs are different concepts.
+  - [ ] An origin may be within 120 minutes of the proposed casino while its competing casino is more than 120 minutes from the proposed casino.
+  - [ ] Therefore do not filter competitors solely by distance from the candidate site.
+- [ ] Include a margin outside the candidate trade area or use an explicit outside alternative so edge-origin demand is not artificially forced inward.
+- [ ] Include commercial casinos, racinos, and tribal casinos that offer a sufficiently substitutable gaming product.
+- [ ] Treat limited gaming, sportsbook-only, OTB, charity gaming, and distributed gaming separately unless evidence shows material substitution with casino-floor GGR.
 
-### 15.2 Required displacement note
+## 7.2 Expand `casino_competitors`
 
-- [ ] Preserve the existing displacement note conceptually equivalent to:
-  - [ ] local business income-tax loss is estimated using IRS SOI nonfarm sole proprietorship data as a proxy
-  - [ ] margins are scenario-analysis inputs, not precise business-level measurements
-  - [ ] results are intended for scenario analysis, not exact forecasting
+- [ ] Add stable identity fields:
+  - [ ] canonical property ID;
+  - [ ] regulatory license ID if available;
+  - [ ] tribal/commercial status;
+  - [ ] state regulator;
+  - [ ] opening date;
+  - [ ] closure date;
+  - [ ] operator changes over time.
+- [ ] Add physical-scale fields:
+  - [ ] slot/VLT positions;
+  - [ ] table-game count;
+  - [ ] poker tables where material;
+  - [ ] total gaming positions or derived equivalent positions;
+  - [ ] casino gaming-floor square footage if available;
+  - [ ] hotel rooms;
+  - [ ] major event/entertainment capacity;
+  - [ ] food-and-beverage outlet count or qualitative index;
+  - [ ] resort/spa/golf/destination components where material;
+  - [ ] estimated/announced development cost and dollar year where public.
+- [ ] Add accessibility/context fields where useful:
+  - [ ] interstate/limited-access-highway proximity;
+  - [ ] direct interchange access flag;
+  - [ ] urban/destination/local orientation;
+  - [ ] border-market indicator.
 
-### 15.3 Required uncertainty note
+## 7.3 Create observed casino performance history
 
-- [ ] Add wording conceptually equivalent to:
-  - [ ] “Without state-supplied ZIP-level visitation/theoretical capture data, revenue estimates are subject to materially higher uncertainty.”
-  - [ ] “The model can still support useful relative site comparisons and sensitivity testing.”
+- [ ] Create `casino_ggr_periods` or equivalent.
+- [ ] Store monthly data when available; annual aggregates may be derived.
+- [ ] Include:
+  - [ ] property ID;
+  - [ ] period;
+  - [ ] reported GGR/AGR/win value;
+  - [ ] metric definition;
+  - [ ] slots/VLT win if separately reported;
+  - [ ] table win if separately reported;
+  - [ ] source ID/snapshot;
+  - [ ] inflation-adjusted value;
+  - [ ] anomalous-period flag.
+- [ ] Ingest authoritative public data from relevant regulators.
+  - [ ] Indiana Gaming Commission.
+  - [ ] Michigan Gaming Control Board and appropriate tribal/public sources where available.
+  - [ ] Ohio Casino Control Commission and Ohio Lottery for racinos/VLT facilities as applicable.
+- [ ] Treat 2020-2021 pandemic distortions and openings/closures explicitly during calibration.
+- [ ] Prefer trailing 12-month or stabilized multi-year performance over a single anomalous month.
 
----
+## 7.4 Do not create circular proposed-casino attractiveness
 
-## 16. Calibration, testing, and validation checklist
-
-### 16.1 Benchmark testing
-
-- [ ] Select a benchmark Northeast site and verify that:
-  - [ ] the heuristic score is sensible
-  - [ ] nearby corridor sites score similarly
-  - [ ] materially weaker sites score lower
-  - [ ] competition-heavy locations receive a penalty where appropriate
-
-### 16.2 Sanity-check testing
-
-- [ ] Test a location farther north, such as a Steuben-like scenario.
-  - [ ] Verify that social costs fall because affected population exposure falls.
-  - [ ] Verify that the app now warns that AGR assumptions may be too high for that location.
-  - [ ] Verify that the user can run lower AGR scenarios easily.
-
-- [ ] Test an Allen-adjacent or DeKalb-corridor-like scenario.
-  - [ ] Verify that the revenue-potential classification is materially stronger than the Steuben-like case.
-  - [ ] Verify that competition overlap is still being accounted for.
-  - [ ] Verify that no hidden AGR adjustment occurs.
-
-### 16.3 Competition tests
-
-- [ ] Test a full-service competitor overlapping the same catchment.
-  - [ ] Confirm that competition pressure meaningfully increases.
-
-- [ ] Test a weak substitute venue such as a limited-feature betting venue.
-  - [ ] Confirm that it receives a low competition weight.
-
-### 16.4 Disclosure tests
-
-- [ ] Verify that:
-  - [ ] methodology notes render
-  - [ ] warning messages render
-  - [ ] sensitivity presets are explicit
-  - [ ] the baseline prevalence disclosure is present
-  - [ ] revenue uncertainty wording is present
-
----
-
-## 17. Implementation order — do this in sequence
-
-- [x] Step 1: create the casino competitor database table and seed structure.
-- [x] Step 2: ingest and normalize venue records for Indiana and surrounding relevant states.
-- [x] Step 3: add venue-type and feature-aware competition scoring.
-- [x] Step 4: add public-data market-depth ingestion and computations.
-- [x] Step 5: add the location-based revenue-potential heuristic.
-- [x] Step 6: add Spectrum-informed calibration anchors and documentation language.
-- [x] Step 7: add user-facing revenue warning logic.
-- [x] Step 8: add AGR sensitivity presets.
-- [x] Step 9: add uncertainty and methodology disclosures.
-- [x] Step 10: integrate with the sector-weighted displacement model.
-- [x] Step 11: run benchmark and edge-case tests.
-- [x] Step 12: document all assumptions in code comments and user-facing methodology notes.
+- [ ] Never define the proposed property's competitive mass directly from the GGR that the same model is attempting to predict.
+- [ ] Create a proposed `development_program` entity/scenario with physical and capital inputs.
+- [ ] Map the program to an attractiveness/mass measure using calibrated relationships or comparable-property scaling.
 
 ---
 
-## 18. Final acceptance criteria
+# 8. Network travel-time matrix
 
-- [x] The project contains a persistent casino competitor dataset.
-- [x] Competing venues are not all treated equally.
-- [x] Venue type and feature richness affect competition weight.
-- [x] Catchment overlap affects competition weight.
-- [x] Public-data weighted market depth is incorporated into the revenue-potential logic.
-- [x] A benchmark-relative revenue heuristic exists.
-- [x] Spectrum is used only as public calibration guidance, not as a false replication claim.
-- [x] The app warns users when a proposed site is in a weaker-demand location.
-- [x] The app provides explicit AGR sensitivity presets.
-- [x] The app clearly discloses sensitivity to baseline prevalence and AGR.
-- [x] The app preserves the sector-weighted displacement methodology.
-- [x] The app’s code separates data, calculation, recommendation, and UI concerns cleanly.
-- [x] The final user experience is more transparent, more defensible, and harder to misread than the prior version.
+## 8.1 Use Valhalla as the primary travel-friction source
+
+- [ ] Build origin-to-facility network travel times.
+- [ ] Do not use Haversine distance except as:
+  - [ ] a cheap prefilter;
+  - [ ] fallback diagnostics;
+  - [ ] a test comparison.
+- [ ] Capture both:
+  - [ ] travel time in minutes;
+  - [ ] routed distance in miles/kilometers.
+- [ ] Use consistent costing/profile settings for ordinary passenger vehicles.
+
+## 8.2 Persist and cache the matrix
+
+- [ ] Create `origin_facility_travel`.
+- [ ] Key by:
+  - [ ] origin-zone ID;
+  - [ ] facility ID or scenario-facility ID;
+  - [ ] routing graph/version hash;
+  - [ ] costing profile.
+- [ ] Store:
+  - [ ] seconds/minutes;
+  - [ ] distance;
+  - [ ] route-found flag;
+  - [ ] calculated timestamp.
+- [ ] Precompute all stable origin-to-incumbent routes.
+- [ ] For a draggable proposed site, compute only the proposed-site column dynamically and cache it by a coordinate grid/rounded key where appropriate.
+
+## 8.3 Performance requirements
+
+- [ ] Do not call Valhalla separately for thousands of individual origin/facility pairs if matrix/batched routing can be used.
+- [ ] Precompute Northeast regional origins and incumbent facilities offline.
+- [ ] Keep interactive candidate-site response latency acceptable.
+- [ ] Support background warming of candidate-grid travel data.
 
 ---
 
-## 19. Non-negotiable “do not do this” list
+# 9. Gravity/Huff attraction model
 
-- [ ] Do **not** claim the model replicates Spectrum’s full proprietary/state-assisted model.
-- [ ] Do **not** imply access to hidden Indiana operator capture data unless it truly exists in the project.
-- [ ] Do **not** silently lower or raise AGR based on location.
-- [ ] Do **not** treat every gambling venue as equally competitive.
-- [ ] Do **not** describe social costs as fixed.
-- [ ] Do **not** use flat population alone if weighted market depth is available.
-- [ ] Do **not** present exact AGR figures with faux certainty.
-- [ ] Do **not** let the new revenue heuristic overwrite the existing displacement-model logic.
-- [ ] Do **not** bury methodology or uncertainty notes where users will never see them.
+## 9.1 Implement a true origin-specific attraction equation
+
+At minimum support an inverse-power Huff/gravity formulation:
+
+```text
+W_ij = A_j^alpha × B_ij / (T_ij + t0)^beta
+```
+
+where:
+
+- `A_j` = facility attraction/competitive mass;
+- `alpha` = attraction elasticity;
+- `B_ij` = optional origin-facility modifiers with documented evidence;
+- `T_ij` = network travel time;
+- `t0` = small positive regularization term if required;
+- `beta` = calibrated travel-time decay.
+
+- [ ] Keep parameters in a versioned parameter set, not source-code literals.
+- [ ] Support an exponential-decay alternative for validation if useful:
+
+```text
+W_ij = A_j^alpha × B_ij × exp(-lambda × T_ij)
+```
+
+- [ ] Select the production friction form based on out-of-sample validation.
+- [ ] Do not mix inverse-power and exponential decay ad hoc in one formula.
+
+## 9.2 Calibrate distance decay
+
+- [ ] Seed β around the publicly reported Steuben value of 1.5 only as a prior/start point.
+- [ ] Evaluate at minimum a 1.4-1.6 sensitivity band because that public study reports it.
+- [ ] Expand the search range if observed-property validation indicates a materially different value.
+- [ ] Test whether one β works across all markets.
+  - [ ] If not, consider a hierarchical or segment-specific formulation for local convenience versus destination facilities.
+- [ ] Prefer travel time over raw distance for the primary model.
+
+## 9.3 Model facility attractiveness using observable scale
+
+- [ ] Build a `FacilityAttractivenessService` separate from distance decay.
+- [ ] At minimum evaluate:
+  - [ ] gaming positions;
+  - [ ] table-game breadth;
+  - [ ] hotel room count;
+  - [ ] major entertainment/event capacity;
+  - [ ] resort/non-gaming amenities;
+  - [ ] development scale/capital where comparable and available;
+  - [ ] brand/loyalty strength only if a defensible proxy exists.
+- [ ] Avoid double counting correlated size measures.
+  - [ ] Example: slots, gaming floor area, development cost, and observed GGR may all represent overlapping scale.
+- [ ] Normalize attractiveness to a reference facility so values remain interpretable.
+
+## 9.4 Implement and compare two competitive-mass approaches
+
+### Approach 1: structural physical mass
+
+- [ ] Estimate attraction from physical/development features for both incumbents and proposed properties.
+- [ ] Fit/validate coefficients against observed incumbent GGR or market shares.
+- [ ] Advantage: proposed facility can be scored without circular use of projected GGR.
+
+### Approach 2: observed-GGR incumbent mass with proposed comparable scaling
+
+- [ ] Implement a Steuben-style reconciliation model where incumbent mass is anchored partly to observed GGR.
+- [ ] Map the proposed development program to equivalent competitive mass using comparable facilities rather than its own forecast.
+- [ ] Use this as a benchmark/reconciliation model if it validates better or helps explain public studies.
+
+- [ ] Do not silently switch between the two approaches.
+- [ ] Save the selected attraction specification in the model run.
 
 ---
 
-## 20. Summary directive to the AI agent
+# 10. Market-share allocation and outside option
 
-- [ ] Build a transparent, public-data-informed, competition-aware, benchmark-calibrated revenue-potential layer.
-- [ ] Preserve manual user control while adding explicit recommendations and sensitivity tools.
-- [ ] Keep social-cost logic variable and zone-driven.
-- [ ] Preserve and integrate the sector-weighted displacement model.
-- [ ] Use Spectrum’s public logic as directional guidance, not as a false claim of exact replication.
-- [ ] Favor clarity, explainability, and defensibility over fake precision.
+## 10.1 Basic share equation
+
+For a comprehensive competitive set:
+
+```text
+P_ij = W_ij / (W_i0 + Σ_k W_ik)
+```
+
+where `W_i0` is an optional outside/unmodeled alternative.
+
+- [ ] Ensure shares are non-negative.
+- [ ] Ensure the sum of facility shares plus outside share equals 1 within numerical tolerance.
+- [ ] Use a stable denominator implementation.
+
+## 10.2 Outside option requirements
+
+- [ ] Do not omit an outside option simply because the prototype did not have one.
+- [ ] The outside option may represent:
+  - [ ] relevant casinos beyond the explicitly modeled competitive boundary;
+  - [ ] other gaming supply not represented as individual facilities;
+  - [ ] leakage required to reconcile modeled origin demand with observed regional casino capture.
+- [ ] Do **not** use the outside option as an unexplained fudge factor.
+- [ ] Calibrate it against observed total casino GGR and/or holdout properties.
+- [ ] If the competitor universe is broad enough that no outside option is required for a particular specification, prove that through validation and document it.
+
+## 10.3 Do not conflate casino participation with facility share
+
+- [ ] Decide whether `D_i` represents:
+  - [ ] all adult discretionary spending potentially available to gaming, or
+  - [ ] an already-calibrated total casino gaming expenditure pool.
+- [ ] If `D_i` is already total casino expenditure, do not multiply it by an independent arbitrary casino participation rate again.
+- [ ] If participation is modeled separately, calibrate participation and spend-per-participant from data and make the accounting identity explicit.
+
+---
+
+# 11. Accessibility-induced market expansion
+
+A fixed market-share model only redistributes a constant gaming pool. Public studies and basic consumer behavior suggest that substantially improved convenience may also increase gaming participation/frequency. Model that separately and transparently.
+
+## 11.1 Baseline versus proposed accessibility
+
+- [ ] Calculate each origin's baseline accessibility/inclusive-value index using incumbent facilities.
+- [ ] Recalculate after adding the proposed casino.
+- [ ] Store the change in accessibility by origin.
+
+## 11.2 Optional induced-demand formulation
+
+- [ ] Implement an accessibility-elasticity layer only if it can be calibrated or bounded defensibly.
+- [ ] Candidate form:
+
+```text
+D_i_with = D_i_base × exp(eta_access × (IV_i_with - IV_i_base))
+```
+
+- [ ] Keep `eta_access` at zero in the conservative specification unless empirical calibration supports induced expansion.
+- [ ] Cap implausible growth.
+- [ ] Report induced gaming demand separately from reallocated existing gaming demand.
+- [ ] Never hide induced demand inside a higher attraction score.
+
+---
+
+# 12. Baseline/with-project simulation and cannibalization accounting
+
+## 12.1 Always run two market equilibria
+
+- [ ] **Baseline run:** current competitive field without proposed casino.
+- [ ] **With-project run:** identical assumptions plus proposed casino and any induced-demand effect.
+
+## 12.2 Compute facility-level deltas
+
+For every incumbent:
+
+```text
+DeltaGGR_j = GGR_j_with_project - GGR_j_baseline
+```
+
+- [ ] Report deltas by property and state.
+- [ ] Reconcile total losses plus market expansion against proposed-casino GGR.
+
+## 12.3 Required decomposition of proposed GGR
+
+- [ ] Break proposed GGR into at least:
+  - [ ] diverted from existing Indiana commercial casinos;
+  - [ ] repatriated from Michigan casinos;
+  - [ ] repatriated from Ohio casinos;
+  - [ ] repatriated from other out-of-state casinos;
+  - [ ] shifted from outside/unmodeled casino alternatives;
+  - [ ] accessibility-induced incremental gaming demand;
+  - [ ] imported gaming demand generated by non-Indiana residents;
+  - [ ] local-county resident demand;
+  - [ ] other Indiana resident demand.
+- [ ] These categories must reconcile exactly or have a documented residual.
+
+## 12.4 Validate against CBRE's published competitor deltas
+
+- [ ] Run the Allen/Greater Fort Wayne proxy scenario with a development program comparable to CBRE's public assumptions.
+- [ ] Compare direction and magnitude of competitor impacts with CBRE's public vector.
+- [ ] Investigate large disagreements rather than tuning property-by-property multipliers until they disappear.
+
+---
+
+# 13. Tourism, destination demand, and through-traffic
+
+Resident gravity demand and nonresident incremental demand must be separate modules to prevent double counting.
+
+## 13.1 Tourism demand module
+
+- [ ] Create `TourismDemandService`.
+- [ ] Model tourism as visitor-person exposure or explicit pseudo-origin markets, not as permanent resident population.
+- [ ] Candidate public inputs may include:
+  - [ ] county tourism bureau visitation studies;
+  - [ ] hotel room demand/occupancy;
+  - [ ] seasonal second-home occupancy;
+  - [ ] attraction attendance;
+  - [ ] visitor origin studies;
+  - [ ] state/local tourism statistics.
+- [ ] Identify visitor origins where possible.
+- [ ] Remove visitor demand already captured by the resident gravity model.
+- [ ] Store a clear double-counting adjustment.
+
+## 13.2 Steuben-specific lake tourism scenario
+
+- [ ] Implement a Steuben-style tourism module that can separately model lake/seasonal demand.
+- [ ] Use the public A.M. Steinberg $7.1m / $8.6m / $11.8m tourism figures only as benchmark checks.
+- [ ] Do not hard-code those numbers into arbitrary locations.
+
+## 13.3 Highway traffic-intercept module
+
+- [ ] Create `TrafficInterceptService` for candidate sites with meaningful interstate/highway pass-by exposure.
+- [ ] Ingest authoritative INDOT AADT/traffic-count data.
+- [ ] Determine traffic segments that actually pass the site/interchange.
+- [ ] Avoid counting local commuters as incremental out-of-market casino visitors when they are already represented in resident demand.
+- [ ] Separate:
+  - [ ] resident/local recurring traffic;
+  - [ ] regional through trips;
+  - [ ] long-distance/nonresident traffic where estimable.
+- [ ] Use capture-rate assumptions as calibrated scenario parameters.
+- [ ] Report traffic-intercept GGR separately.
+- [ ] Validate the Allen scenario against the fact that CBRE explicitly adds traffic-intercept GGR.
+
+## 13.4 Destination amenity uplift
+
+- [ ] Do not represent hotel/event-center effects twice through both facility attractiveness and an added revenue uplift.
+- [ ] Decide whether an amenity:
+  - [ ] increases resident facility share;
+  - [ ] increases nonresident/destination demand;
+  - [ ] produces non-gaming revenue;
+  - [ ] does more than one of these for defensible reasons.
+- [ ] Document each channel separately to prevent double counting.
+
+---
+
+# 14. Proposed development program and capacity constraints
+
+## 14.1 Create a development-program scenario
+
+- [ ] Add `casino_development_programs` or an equivalent scenario object.
+- [ ] Include:
+  - [ ] slots/VLT positions;
+  - [ ] table games;
+  - [ ] poker where applicable;
+  - [ ] hotel rooms;
+  - [ ] event/entertainment capacity;
+  - [ ] restaurants/F&B scale;
+  - [ ] resort amenities;
+  - [ ] projected capital investment and dollar year;
+  - [ ] parking/access assumptions where material;
+  - [ ] opening/stabilization year.
+- [ ] Provide named templates for public-report reconciliation.
+  - [ ] Allen/CBRE-like program.
+  - [ ] Spectrum Northeast proxy generic program only if public assumptions can be established.
+  - [ ] Steuben destination-program template based on public report assumptions.
+- [ ] Do not imply a template is the user's prediction unless selected.
+
+## 14.2 Capacity/productivity sanity checks
+
+- [ ] Calculate implied GGR per gaming position/day and per slot/table where possible.
+- [ ] Compare with observed regional facilities.
+- [ ] Flag forecasts that imply implausible productivity for the proposed physical program.
+- [ ] If capacity is likely binding, support a capacity-constrained scenario rather than allowing infinite capture from a small facility.
+- [ ] Do not impose a capacity cap without showing the assumption and comparable basis.
+
+---
+
+# 15. Stabilization and year-by-year revenue ramp
+
+## 15.1 Separate stabilized market potential from opening-year performance
+
+- [ ] The gravity model should first estimate stabilized GGR under normalized conditions.
+- [ ] Add a separate ramp service/configuration for Years 1-N.
+- [ ] Do not change gravity attraction merely to mimic opening-year novelty.
+
+## 15.2 Ramp scenarios
+
+- [ ] Support configurable Year 1, Year 2, Year 3 stabilization percentages.
+- [ ] Include CBRE's public observation that competitive-market first-year properties can be around 87% of Year 3 as a benchmark prior.
+- [ ] Add opening novelty upside as a separate sensitivity, not as permanent stabilized demand.
+- [ ] Support nominal growth after stabilization separately from real market growth and inflation.
+
+---
+
+# 16. Independent validation and triangulation model
+
+## 16.1 Build a casino-level regression reasonableness model
+
+- [ ] Create an offline calibration/validation workflow, not necessarily a production interactive endpoint.
+- [ ] Target observed stabilized casino GGR using variables such as:
+  - [ ] population age 21+ within drive-time bands;
+  - [ ] aggregate income/AGI within drive-time bands;
+  - [ ] gaming positions;
+  - [ ] hotel rooms;
+  - [ ] development/amenity scale;
+  - [ ] competition intensity;
+  - [ ] nearest-competitor drive time;
+  - [ ] state/regulatory fixed effects where justified;
+  - [ ] tourism/destination indicators.
+- [ ] Use regularization or parsimonious specification to limit overfit.
+- [ ] Report coefficient signs, uncertainty, and out-of-sample metrics.
+- [ ] Do not expose a black-box ML model as the sole revenue forecast.
+
+## 16.2 Comparable-market income-allocation check
+
+- [ ] Calculate modeled GGR as a percentage of total relevant market income/AGI.
+- [ ] Compare against observed regional casino markets and the public CBRE comparable analysis.
+- [ ] Flag extreme values.
+- [ ] Do not simply cap at 0.64%; use the comparison as a diagnostic.
+
+## 16.3 Three-way reconciliation
+
+For each benchmark site, produce:
+
+- [ ] gravity-model estimate;
+- [ ] regression reasonableness estimate;
+- [ ] income-allocation/comparable estimate;
+- [ ] public-study estimate where available;
+- [ ] explanation of differences.
+
+---
+
+# 17. Calibration and backtesting
+
+## 17.1 Calibrate on existing casinos, not just proposed sites
+
+- [ ] Build a calibration dataset of existing Indiana/Michigan/Ohio regional properties with observed GGR and facility attributes.
+- [ ] For each calibration property, construct a synthetic scenario treating it as the target property within the existing competitive field.
+- [ ] Estimate how well the model reproduces observed GGR.
+
+## 17.2 Use holdout validation
+
+- [ ] Split calibration and validation properties or use cross-validation/leave-one-property-out methods.
+- [ ] Do not report only in-sample fit.
+- [ ] Report at minimum:
+  - [ ] MAE;
+  - [ ] RMSE;
+  - [ ] MAPE or sMAPE with appropriate handling of low-GGR properties;
+  - [ ] log-RMSE where useful;
+  - [ ] rank correlation for site-strength ordering;
+  - [ ] bias by state and property type.
+
+## 17.3 Parameter calibration
+
+- [ ] Calibrate a small, identifiable set of parameters first:
+  - [ ] distance decay;
+  - [ ] attraction elasticity;
+  - [ ] income elasticity for the PCE specification;
+  - [ ] market gaming-intensity parameter(s);
+  - [ ] outside-option scale if used.
+- [ ] Add amenity coefficients only when the dataset can support them.
+- [ ] Penalize or reject parameter sets that produce economically nonsensical behavior even if headline RMSE improves.
+
+## 17.4 Store calibration results
+
+- [ ] Create `model_parameter_sets`.
+- [ ] Create `calibration_runs` / `validation_results`.
+- [ ] Store:
+  - [ ] parameter values;
+  - [ ] calibration sample;
+  - [ ] holdout sample;
+  - [ ] objective function;
+  - [ ] fit metrics;
+  - [ ] source snapshot IDs;
+  - [ ] code/model version;
+  - [ ] timestamp.
+- [ ] Only mark a parameter set `production` after validation criteria are satisfied.
+
+---
+
+# 18. Benchmark scenario suite
+
+## 18.1 Allen County / Greater Fort Wayne benchmark
+
+- [ ] Create a reproducible Allen benchmark scenario with documented proxy coordinates and a CBRE-like development program.
+- [ ] Compare:
+  - [ ] resident/local-driven GGR;
+  - [ ] traffic-intercept GGR;
+  - [ ] destination/amenity uplift if separately modeled;
+  - [ ] total stabilized GGR;
+  - [ ] competitor losses;
+  - [ ] Indiana versus out-of-state repatriation.
+- [ ] Explain differences from approximately $282.3m CBRE stabilized GGR rather than force-fitting.
+
+## 18.2 Northeast / DeKalb Spectrum benchmark
+
+- [ ] Create a reproducible I-69 / SR 8 benchmark scenario.
+- [ ] Compare origin demand and total forecast with Spectrum's approximately $204.3m Northeast proxy AGR potential.
+- [ ] Show the effect of using the AGI-share demand specification versus the per-adult specification.
+- [ ] Explicitly document that the model cannot replicate Spectrum's operator ZIP-level theoretical-win subtraction.
+
+## 18.3 Steuben benchmark
+
+- [ ] Create a reproducible I-69 / I-80/90 Steuben proxy scenario.
+- [ ] Use a 120-minute resident trade area for reconciliation.
+- [ ] Run β = 1.4 / 1.5 / 1.6.
+- [ ] Run per-adult expenditure benchmark scenarios around $350 / $375 / $390.
+- [ ] Model tourism separately.
+- [ ] Compare with $188.6m / $203.1m / $214.0m public totals.
+- [ ] Do not simply set the tourism module to the published numbers and call the model validated.
+
+## 18.4 Deliberately weak-site tests
+
+- [ ] Test multiple rural or poorly accessed sites.
+- [ ] Confirm that lower population/income access and longer travel times reduce predicted GGR without arbitrary county penalties.
+- [ ] Confirm that a site can be geographically near Fort Wayne yet score weakly if network access or competition is poor.
+- [ ] Confirm that a farther destination-scale site can outperform a closer small facility when attraction and tourism justify it.
+
+---
+
+# 19. Uncertainty and sensitivity
+
+## 19.1 Deterministic sensitivity first
+
+- [ ] Expose structured sensitivity for:
+  - [ ] β / travel decay;
+  - [ ] attraction elasticity;
+  - [ ] per-adult gaming expenditure or AGI share;
+  - [ ] income elasticity;
+  - [ ] proposed facility scale;
+  - [ ] tourism capture;
+  - [ ] traffic-intercept capture;
+  - [ ] induced-demand elasticity;
+  - [ ] stabilization ramp;
+  - [ ] outside-option scale.
+
+## 19.2 Probabilistic uncertainty once parameters are defensible
+
+- [ ] Add Monte Carlo or Latin Hypercube simulation only after reasonable parameter distributions can be justified.
+- [ ] Report P10/P50/P90 or similar forecast ranges.
+- [ ] Do not present probabilistic intervals if parameter distributions are arbitrary.
+- [ ] Separate:
+  - [ ] parameter uncertainty;
+  - [ ] scenario uncertainty;
+  - [ ] data uncertainty.
+
+## 19.3 Never use a fake confidence score
+
+- [ ] Do not show “92% confidence” or a similar pseudo-statistical number unless it has a formal definition and validation basis.
+- [ ] Prefer forecast ranges, sensitivity tornadoes, and validation-error summaries.
+
+---
+
+# 20. Revenue result contract
+
+## 20.1 Create a production `CasinoRevenueProjectionResult`
+
+- [ ] Include top-level values:
+  - [ ] stabilized resident GGR;
+  - [ ] tourism GGR;
+  - [ ] traffic-intercept GGR;
+  - [ ] accessibility-induced incremental GGR;
+  - [ ] total stabilized GGR;
+  - [ ] taxable AGR/tax base if calculated;
+  - [ ] non-gaming revenue by category if calculated;
+  - [ ] total property revenue;
+  - [ ] Year 1-Year N ramp.
+- [ ] Include patron-source decomposition:
+  - [ ] target county;
+  - [ ] other Northeast Indiana;
+  - [ ] other Indiana;
+  - [ ] Michigan;
+  - [ ] Ohio;
+  - [ ] other states;
+  - [ ] tourism/traffic.
+- [ ] Include competition decomposition:
+  - [ ] incumbent baseline GGR;
+  - [ ] with-project GGR;
+  - [ ] delta by property;
+  - [ ] repatriated out-of-state total;
+  - [ ] cannibalized in-state total.
+- [ ] Include diagnostics:
+  - [ ] top origin ZIPs/ZCTAs;
+  - [ ] capture by drive-time band;
+  - [ ] market income allocation;
+  - [ ] implied GGR per gaming position;
+  - [ ] model warnings;
+  - [ ] data completeness warnings.
+- [ ] Include provenance:
+  - [ ] model version;
+  - [ ] parameter-set ID;
+  - [ ] data snapshot IDs;
+  - [ ] run ID.
+
+---
+
+# 21. Revenue API redesign
+
+## 21.1 Preserve prototype endpoints only for compatibility where needed
+
+- [ ] Do not make `/api/revenue/potential` the primary production projection endpoint after gravity implementation.
+- [ ] Deprecate or clearly label heuristic endpoints.
+- [ ] Keep `/zip-switching` only as a debug/legacy endpoint if useful.
+
+## 21.2 Add production endpoints
+
+- [ ] `POST /api/revenue/project`
+  - [ ] coordinates;
+  - [ ] development-program ID or inline scenario;
+  - [ ] model parameter-set ID/default;
+  - [ ] projection year;
+  - [ ] optional expert overrides.
+- [ ] `GET /api/revenue/runs/{id}` for reproducibility.
+- [ ] `GET /api/revenue/runs/{id}/origins` for origin decomposition.
+- [ ] `GET /api/revenue/runs/{id}/competitor-impacts`.
+- [ ] `GET /api/revenue/benchmarks`.
+- [ ] `POST /api/revenue/compare-sites` to evaluate multiple candidate points under one common development program/parameter set.
+- [ ] Add request validation and sensible limits.
+
+## 21.3 Avoid huge synchronous payloads
+
+- [ ] Return summarized projection output by default.
+- [ ] Load detailed origin contribution tables on demand.
+- [ ] Consider async/background run persistence for heavy calibration or multi-site sweeps.
+
+---
+
+# 22. UI: model estimate versus manual scenario
+
+## 22.1 Preserve current user flexibility
+
+- [ ] Add explicit revenue-mode selection:
+  - [ ] **Model projection**;
+  - [ ] **Manual scenario**;
+  - [ ] optional **Public-report benchmark** for educational comparison.
+- [ ] Never silently replace a manual amount when the map marker moves.
+- [ ] In model mode, moving the site should trigger/retrieve a new projection under the same development-program assumptions.
+
+## 22.2 Model projection panel
+
+- [ ] Show:
+  - [ ] stabilized GGR;
+  - [ ] Year 1-Year N ramp;
+  - [ ] resident versus tourism/traffic split;
+  - [ ] local versus out-of-state patron share;
+  - [ ] forecast range/sensitivity where available;
+  - [ ] selected development program;
+  - [ ] model/data version.
+- [ ] Show a short “Why this changed” explanation when moving the site.
+  - [ ] drive-time market access changed;
+  - [ ] income-weighted demand changed;
+  - [ ] competitor share changed;
+  - [ ] traffic/tourism assumptions changed.
+
+## 22.3 Expert detail drawer/panel
+
+- [ ] Allow advanced users to inspect:
+  - [ ] β;
+  - [ ] demand specification;
+  - [ ] origin totals;
+  - [ ] facility attractiveness;
+  - [ ] outside-option share;
+  - [ ] top competitors;
+  - [ ] top origin zones;
+  - [ ] benchmark reconciliation.
+- [ ] Expert controls must not clutter the default public experience.
+
+## 22.4 Map layers and existing marker assets
+
+- [ ] Add optional map layers for:
+  - [ ] competing casinos;
+  - [ ] candidate drive-time rings/isochrones;
+  - [ ] origin contribution heatmap;
+  - [ ] modeled market share by origin;
+  - [ ] competitor loss/repatriation detail where practical.
+- [ ] Reuse the repository's existing casino/racetrack/tribal SVG markers in `SaveFW.Client/wwwroot/assets/map-markers` rather than creating duplicate marker sets.
+- [ ] Competitor markers remain static/non-draggable.
+
+---
+
+# 23. Fiscal model integration
+
+## 23.1 Convert model revenue to applicable tax bases correctly
+
+- [ ] Build a versioned Indiana gaming-tax rules module.
+- [ ] Source rates/brackets/distributions from current Indiana Code, IGC, or other authoritative state material.
+- [ ] Include effective dates.
+- [ ] Do not hard-code one year's tax structure permanently.
+- [ ] Distinguish:
+  - [ ] wagering tax;
+  - [ ] supplemental wagering tax;
+  - [ ] promotional-credit treatment;
+  - [ ] local distributions;
+  - [ ] state distributions.
+
+## 23.2 Location-sensitive jurisdiction rules
+
+- [ ] Determine whether the selected point is inside a municipality or unincorporated county.
+- [ ] Apply local tax/distribution logic based on the actual scenario location.
+- [ ] Do not automatically attribute all local revenue to Fort Wayne for a site outside the city.
+
+## 23.3 Non-gaming taxes
+
+- [ ] Calculate only when the non-gaming revenue/property assumptions support them.
+- [ ] Separate:
+  - [ ] sales tax;
+  - [ ] innkeeper/lodging taxes;
+  - [ ] food-and-beverage taxes where applicable;
+  - [ ] property tax only when assessed-value assumptions are present;
+  - [ ] corporate income tax only with an explicit taxable-income/profit assumption.
+- [ ] Do not infer property tax directly from GGR.
+
+---
+
+# 24. Use patron origins to improve the displacement model
+
+The gravity model should make the downstream model materially better rather than merely producing a headline revenue number.
+
+## 24.1 Endogenize local share where possible
+
+Existing concept:
+
+```text
+Base_local = AGR × LocalShare
+D_total = Base_local × k
+```
+
+Improve it:
+
+- [ ] Derive a modeled local-resident share directly from origin contributions.
+- [ ] Let the user define the relevant “local economy” boundary:
+  - [ ] host county;
+  - [ ] Allen-DeKalb-Steuben Northeast Indiana region;
+  - [ ] custom jurisdiction group if supported.
+- [ ] Calculate:
+
+```text
+LocalResidentCasinoGGR = Σ proposed_GGR_i for origins inside local boundary
+```
+
+- [ ] Preserve a manual Local Share override for sensitivity/testing.
+- [ ] Show the modeled share next to the override so the user can see divergence.
+
+## 24.2 Decompose revenue before applying displacement
+
+- [ ] Classify proposed gaming revenue into economically different source categories:
+  - [ ] local resident spend newly induced by improved access;
+  - [ ] local resident spend repatriated from out-of-region casinos;
+  - [ ] local resident spend diverted from another Indiana casino;
+  - [ ] imported spend from nonlocal patrons;
+  - [ ] tourism/through-traffic spend.
+- [ ] Do not apply the same local-displacement rate to every category.
+  - [ ] Imported patron spending is not displaced from local resident household budgets.
+  - [ ] Repatriated local casino spending was already leaving the local economy to the extent patrons previously spent it out of region.
+  - [ ] Newly induced local gambling is more directly relevant to local discretionary-spending displacement.
+- [ ] Build a transparent source-category displacement matrix.
+
+## 24.3 Revisit the fixed displacement coefficient
+
+- [ ] Do not retain `k = 0.243` as an unexplained immutable constant.
+- [ ] Document its empirical/source basis.
+- [ ] Create a versioned parameter with low/base/high sensitivity.
+- [ ] If stronger literature or local calibration supports a replacement, update it and preserve backward-compatible scenario documentation.
+
+---
+
+# 25. Sector-weighted local business displacement
+
+## 25.1 Preserve sector weighting, but make it data-driven
+
+- [ ] Retain the core at-risk categories:
+  - [ ] NAICS 72: accommodation and food services;
+  - [ ] NAICS 44-45 combined: retail trade;
+  - [ ] NAICS 71: arts, entertainment, and recreation.
+- [ ] Do not double count retail by treating 44 and 45 as independent full sectors.
+- [ ] Expand sectors only with documented substitution logic.
+
+## 25.2 Replace unsupported fixed priors where better local data exist
+
+Existing priors may remain starting assumptions:
+
+- Dining/Hospitality 0.60
+- Retail 0.30
+- Entertainment 0.10
+
+But:
+
+- [ ] Treat these as priors, not facts.
+- [ ] Modulate them using local establishment/employment/sales capacity.
+- [ ] Use Census County Business Patterns, Economic Census, BLS/QCEW, or other authoritative sources as available.
+- [ ] Normalize final sector weights to 1.0.
+
+## 25.3 Sector displacement formula
+
+- [ ] Preserve an inspectable structure such as:
+
+```text
+AtRiskLocalSpend = LocalResidentRelevantGGR × displacement_coefficient
+rawWeight_s = priorWeight_s × localPresenceIndex_s × scenarioSubstitutionFactor_s
+w_s = rawWeight_s / Σ rawWeight_s
+DisplacedSales_s = AtRiskLocalSpend × w_s
+```
+
+- [ ] Do not claim precision beyond the quality of the substitution parameter.
+
+## 25.4 Non-gaming casino displacement
+
+- [ ] Add a separate optional displacement channel for on-property food, hotel, retail, and entertainment revenue.
+- [ ] Avoid double counting gaming bankroll displacement and non-gaming property spending.
+- [ ] Use patron origin to distinguish imported non-gaming spend from local substitution.
+
+---
+
+# 26. Net economic impact: do not count transfers as wholly incremental
+
+## 26.1 Separate gross impact from net incremental impact
+
+- [ ] If the app adds direct/indirect/induced casino output, also subtract displaced local-sector output where applicable.
+- [ ] Do not apply economic multipliers to all local-resident casino revenue as if that money appeared from outside the region.
+- [ ] Distinguish:
+  - [ ] imported visitor spending;
+  - [ ] repatriated local spending previously spent at out-of-region casinos;
+  - [ ] displaced local discretionary spending;
+  - [ ] newly induced gambling spend;
+  - [ ] in-state casino cannibalization.
+
+## 26.2 Input-output multipliers
+
+- [ ] If BEA RIMS II or another input-output model is used:
+  - [ ] document geography;
+  - [ ] document industry codes;
+  - [ ] document multiplier vintage;
+  - [ ] avoid applying the same multiplier to gross casino revenue and then separately to overlapping non-gaming revenue;
+  - [ ] present direct, indirect, and induced effects separately when the source supports it.
+- [ ] Make clear that input-output models estimate economic activity, not social welfare.
+
+---
+
+# 27. Social-cost model integration
+
+## 27.1 Preserve the existing cost model while adding reconciliation
+
+- [ ] Do not break or silently replace the current social-cost calculations merely to make them track GGR.
+- [ ] Keep the existing prevalence/cost methodology as an independently documented module until a better evidence-based replacement is explicitly adopted.
+- [ ] Add reconciliation between the cost-side geographic exposure and gravity-model patron origins.
+
+## 27.2 Move toward origin-aware exposure
+
+- [ ] Calculate modeled gaming contribution/capture by origin zone.
+- [ ] Allow the methodology layer to compare:
+  - [ ] current proximity/isochrone population exposure;
+  - [ ] modeled origin-zone gaming exposure;
+  - [ ] incremental accessibility change.
+- [ ] Investigate whether future social-cost attribution should use the gravity model's accessibility and origin mix rather than only Euclidean/drive-time population tiers.
+- [ ] Do not implement a causal prevalence increase without source support.
+
+## 27.3 Baseline problem-gambling assumptions
+
+- [ ] Keep prevalence assumptions versioned and source-cited.
+- [ ] Do not label 2.3% “conservative” unless the source context and definition support that description.
+- [ ] Distinguish:
+  - [ ] baseline prevalence;
+  - [ ] incremental casino-attributable prevalence, if modeled;
+  - [ ] problem gambling versus gambling disorder definitions where sources differ.
+- [ ] Add low/base/high sensitivity and show the direct effect on cost estimates.
+
+---
+
+# 28. Tax-loss waterfall from displaced local business spending
+
+- [ ] Preserve/implement sector-specific taxability rather than a flat sales-tax loss.
+- [ ] For each sector `s`, maintain:
+  - [ ] sales-taxability fraction `t_s`;
+  - [ ] net-income margin `m_s`;
+  - [ ] effective applicable income-tax rate `r_inc,s` or documented blended rate;
+  - [ ] local tax add-ons where relevant.
+- [ ] Calculate inspectably:
+
+```text
+SalesTaxLoss_s = DisplacedSales_s × t_s × salesTaxRate
+NetIncomeLost_s = DisplacedSales_s × m_s
+IncomeTaxLoss_s = NetIncomeLost_s × effectiveIncomeTaxRate_s
+```
+
+- [ ] Do not apply corporate tax rates to all small-business income if pass-through treatment is more appropriate.
+- [ ] Version tax assumptions by effective date.
+- [ ] Separate state, county, municipal, and special-district effects.
+
+---
+
+# 29. Data quality and missing-data hierarchy
+
+## 29.1 Define fallback rules before runtime
+
+- [ ] For each material model field, define an ordered fallback hierarchy.
+- [ ] Example for competitor GGR scale:
+  1. authoritative property-level trailing-12-month GGR;
+  2. authoritative latest full-year GGR;
+  3. regulator-reported gaming win by category summed consistently;
+  4. physical-scale comparable estimate;
+  5. explicit flagged fallback.
+- [ ] Never quietly replace missing data with zero.
+
+## 29.2 Add completeness scores
+
+- [ ] For every competitor, calculate data completeness for:
+  - [ ] observed GGR;
+  - [ ] gaming positions;
+  - [ ] tables;
+  - [ ] hotel;
+  - [ ] amenities;
+  - [ ] location;
+  - [ ] source recency.
+- [ ] Surface material missing-data warnings in model-run diagnostics.
+
+---
+
+# 30. Automated tests
+
+## 30.1 Gravity mathematics unit tests
+
+- [ ] Increasing a facility's travel time while all else is equal must not increase its share.
+- [ ] Increasing attraction while all else is equal must not reduce its share.
+- [ ] Facility shares plus outside share must sum to 1 within tolerance.
+- [ ] Adding a strong nearby competitor must not increase the proposed site's resident share unless another modeled mechanism explicitly explains it.
+- [ ] Zero/negative population, income, AGI, GGR, or malformed parameters must fail validation or be handled explicitly.
+- [ ] Very large/small utilities must not create `NaN`, infinity, or overflow.
+- [ ] The same inputs and model/data versions must produce deterministic results.
+
+## 30.2 Network-routing tests
+
+- [ ] Known origin/facility pairs return plausible Valhalla times.
+- [ ] Cached and live travel-time results agree within expected graph/version tolerance.
+- [ ] Route failure does not become zero travel time.
+- [ ] Haversine prefilter never excludes a route that could materially contribute because of an overly tight threshold.
+
+## 30.3 Accounting identity tests
+
+- [ ] Proposed GGR equals the sum of origin contributions plus separately modeled tourism/traffic components.
+- [ ] Baseline-to-with-project incumbent deltas reconcile with proposed capture and induced demand.
+- [ ] Patron-source shares sum to 100%.
+- [ ] Local/nonlocal decomposition sums to resident GGR.
+- [ ] Displacement categories do not exceed the associated local-resident revenue bases.
+- [ ] Fiscal totals reconcile to component taxes.
+
+## 30.4 Benchmark regression tests
+
+- [ ] Save versioned benchmark-output snapshots for Allen, I-69/SR8, and Steuben scenarios.
+- [ ] Fail tests only on unexplained large structural changes, not tiny floating-point changes.
+- [ ] Require an intentional benchmark-update note when changing model parameters or source vintages.
+
+---
+
+# 31. Performance and caching tests
+
+- [ ] Benchmark candidate-site projection latency with warm incumbent travel matrix.
+- [ ] Benchmark cold route computation.
+- [ ] Ensure origin-detail output is paged/lazy when large.
+- [ ] Add indexes for:
+  - [ ] origin IDs;
+  - [ ] property IDs;
+  - [ ] period dates;
+  - [ ] geometry/geography fields;
+  - [ ] model run IDs;
+  - [ ] travel matrix composite keys.
+- [ ] Verify no N+1 database pattern when evaluating hundreds/thousands of origins against the competitive field.
+
+---
+
+# 32. Required calibration/diagnostic artifacts
+
+The AI agent must generate machine-readable calibration outputs in the repository or an intentional generated-data location. Do not leave validation only in console logs.
+
+- [ ] `docs/model/gravity_model_methodology.md`
+- [ ] `docs/model/data_dictionary.md`
+- [ ] `docs/model/data_sources.md`
+- [ ] `docs/model/calibration_methodology.md`
+- [ ] `docs/model/benchmark_reconciliation.md`
+- [ ] A machine-readable parameter-set file or database seed.
+- [ ] A benchmark scenario file containing exact coordinates and development-program assumptions.
+- [ ] Validation metrics export, preferably CSV/JSON generated by a repeatable command.
+- [ ] A repeatable calibration command/script documented in README or model docs.
+
+---
+
+# 33. Agent implementation sequence
+
+Do these in order unless a repository dependency requires a documented deviation.
+
+## Phase A: audit and data architecture
+
+- [ ] Step A1: inventory all existing revenue, competitor, census, isochrone, tax, displacement, and social-cost code.
+- [ ] Step A2: document which prototype components will be retained, refactored, deprecated, or deleted.
+- [ ] Step A3: add source catalog and dataset snapshots.
+- [ ] Step A4: expand competitor schema and add performance-history schema.
+- [ ] Step A5: create development-program and parameter-set schema.
+- [ ] Step A6: create origin-zone and travel-matrix schema.
+
+## Phase B: data ingestion
+
+- [ ] Step B1: ingest/derive age-21+ origin population.
+- [ ] Step B2: ingest IRS SOI ZIP AGI and supporting ACS income.
+- [ ] Step B3: build ZIP/ZCTA/block-group crosswalk and representative points.
+- [ ] Step B4: build authoritative competitor universe.
+- [ ] Step B5: ingest historical GGR and physical property scale.
+- [ ] Step B6: validate totals, vintages, missing fields, and hashes.
+
+## Phase C: routing
+
+- [ ] Step C1: build batched Valhalla origin-to-incumbent routing.
+- [ ] Step C2: persist travel matrix.
+- [ ] Step C3: build candidate-site dynamic/cached routing.
+- [ ] Step C4: validate travel-time bands against known map routes.
+
+## Phase D: demand engines
+
+- [ ] Step D1: implement AGI-share demand.
+- [ ] Step D2: implement age-21+ per-capita/income-elasticity demand.
+- [ ] Step D3: build reconciliation output.
+- [ ] Step D4: normalize all model dollars to one declared real-dollar year.
+
+## Phase E: attraction and gravity engine
+
+- [ ] Step E1: implement structural property mass.
+- [ ] Step E2: implement observed-GGR-mass reconciliation approach.
+- [ ] Step E3: implement inverse-power travel decay.
+- [ ] Step E4: implement outside alternative / broad competitor treatment.
+- [ ] Step E5: implement stable share allocation.
+- [ ] Step E6: implement baseline and with-project equilibria.
+- [ ] Step E7: implement competitor delta decomposition.
+
+## Phase F: calibration and validation
+
+- [ ] Step F1: create existing-property calibration dataset.
+- [ ] Step F2: optimize a parsimonious parameter set.
+- [ ] Step F3: run holdout/cross-validation.
+- [ ] Step F4: implement regression reasonableness model.
+- [ ] Step F5: implement comparable income-allocation check.
+- [ ] Step F6: reject/repair structurally bad parameters even if fit metrics appear good.
+
+## Phase G: nonresident demand
+
+- [ ] Step G1: implement tourism module.
+- [ ] Step G2: implement Steuben lake-tourism benchmark scenario.
+- [ ] Step G3: ingest INDOT traffic and implement traffic-intercept module.
+- [ ] Step G4: prevent resident/tourist/traffic double counting.
+
+## Phase H: benchmark reconciliation
+
+- [ ] Step H1: Allen/CBRE scenario.
+- [ ] Step H2: Spectrum I-69/SR8 scenario.
+- [ ] Step H3: Steuben/AMS scenario.
+- [ ] Step H4: produce one written reconciliation explaining the spread in estimates.
+
+## Phase I: fiscal and downstream integration
+
+- [ ] Step I1: connect projected GGR to tax-base calculations.
+- [ ] Step I2: derive modeled local-resident share from origin contributions.
+- [ ] Step I3: classify proposed GGR by repatriation/cannibalization/induced/imported source.
+- [ ] Step I4: refactor sector-weighted displacement around those source categories.
+- [ ] Step I5: add non-gaming displacement separately where defensible.
+- [ ] Step I6: reconcile with existing social-cost geographic model without silently rewriting its methodology.
+
+## Phase J: API and UI
+
+- [ ] Step J1: add production projection API.
+- [ ] Step J2: add run persistence and detail APIs.
+- [ ] Step J3: add model/manual revenue modes.
+- [ ] Step J4: add projection explanation and diagnostics.
+- [ ] Step J5: add map origin/catchment layers.
+- [ ] Step J6: follow repository UI minimum-text-size and dropdown guardrails.
+
+## Phase K: final QA
+
+- [ ] Step K1: run all unit tests.
+- [ ] Step K2: run benchmark integration tests.
+- [ ] Step K3: run performance tests.
+- [ ] Step K4: verify no stale prototype endpoint is presented as the production model.
+- [ ] Step K5: verify methodology and source links are visible from the user-facing model.
+- [ ] Step K6: verify every headline result reconciles to origin/component detail.
+
+---
+
+# 34. Production acceptance criteria
+
+The full model is not complete until every applicable item below passes.
+
+## 34.1 Data
+
+- [ ] Age-21+ population is available by production origin geography.
+- [ ] AGI/income is available by production origin geography with documented crosswalks.
+- [ ] Competitor field is substantially complete for the modeled Northeast Indiana trade area and edge origins.
+- [ ] Major incumbent properties have observed GGR and physical-scale records.
+- [ ] Material model inputs carry source/vintage provenance.
+
+## 34.2 Gravity model
+
+- [ ] Uses network travel time rather than Haversine distance for primary allocation.
+- [ ] Uses calibrated facility mass rather than hand-set venue-type weights as the principal attraction measure.
+- [ ] Calculates origin-specific facility shares.
+- [ ] Handles outside/unmodeled capture explicitly.
+- [ ] Runs baseline and with-project scenarios.
+- [ ] Produces competitor cannibalization/repatriation deltas.
+- [ ] Does not contain circular proposed-property GGR attraction.
+
+## 34.3 Validation
+
+- [ ] Existing-property validation metrics are recorded.
+- [ ] Holdout performance is recorded.
+- [ ] Regression/comparable-market reasonableness check exists.
+- [ ] Allen, Spectrum Northeast, and Steuben benchmark reconciliations exist.
+- [ ] No parameter was selected solely to hit one consultant's headline forecast.
+
+## 34.4 Revenue output
+
+- [ ] Resident GGR is separated from tourism/traffic GGR.
+- [ ] Stabilized GGR is separated from opening-year ramp.
+- [ ] GGR is distinguished from taxable AGR.
+- [ ] Origin contribution and local/nonlocal shares are available.
+- [ ] Forecast sensitivities/ranges are available.
+
+## 34.5 Downstream integration
+
+- [ ] Gravity origin data feeds modeled local share.
+- [ ] Imported, repatriated, cannibalized, and induced revenue are distinguishable.
+- [ ] Sector displacement does not treat imported patron spending as local household displacement.
+- [ ] Economic multipliers do not turn local spending transfers into fake wholly incremental output.
+- [ ] Social-cost logic remains separately sourced and auditable.
+
+## 34.6 User experience
+
+- [ ] User can choose model projection or manual scenario.
+- [ ] No hidden revenue overrides occur.
+- [ ] User can see why two locations produce different GGR.
+- [ ] User can inspect assumptions and data vintage.
+- [ ] Public-report benchmarks are clearly labeled as comparisons, not endorsements or ground truth.
+
+---
+
+# 35. Non-negotiable failure conditions
+
+The implementation is unacceptable if any of the following remain in the production forecast path without a documented, temporary compatibility reason.
+
+- [ ] Do not use straight-line distance as the principal travel friction when network routing is available.
+- [ ] Do not use `Population × 0.75` as the age-eligible population estimate.
+- [ ] Do not use arbitrary fixed participation and GGR-per-participant defaults as the production demand model.
+- [ ] Do not allocate 100% of an incomplete origin demand pool among only the listed casinos.
+- [ ] Do not use a fixed Fort Wayne point as a substitute for origin-specific competitive overlap.
+- [ ] Do not use hand-entered amenity adders as the sole competitive-mass model.
+- [ ] Do not define proposed-casino attraction from its own predicted GGR.
+- [ ] Do not add tourism/traffic demand without subtracting overlap with resident demand.
+- [ ] Do not call a benchmark-calibrated multiplier a statistical forecast.
+- [ ] Do not call GGR, AGR, and taxable gaming revenue the same thing.
+- [ ] Do not treat all proposed GGR as economically incremental to the host region.
+- [ ] Do not treat all local-resident GGR as equally displaced local business spending.
+- [ ] Do not apply positive economic multipliers to transferred local spending without the offsetting displacement side.
+- [ ] Do not claim replication of Spectrum's operator-data model.
+- [ ] Do not overfit to CBRE, Spectrum, or A.M. Steinberg headline estimates.
+- [ ] Do not mark this plan complete until the validation artifacts exist.
+
+---
+
+# 36. Final directive to the implementing AI agent
+
+- [ ] Transform the existing prototype revenue logic into a genuine mass-weighted, origin-based casino gravity model.
+- [ ] Build the model around network travel time, age-eligible population, income/AGI, calibrated casino scale, and a complete competitive field.
+- [ ] Use public Allen/CBRE, Spectrum Northeast/DeKalb, and Steuben/AMS reports as independent benchmark anchors.
+- [ ] Triangulate the gravity output using a separate regression/comparable-income reasonableness model.
+- [ ] Model resident demand, tourism, and highway traffic through separate auditable channels.
+- [ ] Run baseline and with-project equilibria so cannibalization, repatriation, and incremental demand can be measured rather than guessed.
+- [ ] Feed patron-origin results into the downstream displacement model so local-share assumptions become evidence-informed.
+- [ ] Preserve the application's existing strength: it evaluates costs and downstream effects that the public market-feasibility reports either omit or treat much more narrowly.
+- [ ] Present gross benefits and downstream costs in the same scenario framework so a user can see the full net-impact picture.
+- [ ] Favor transparent equations, versioned assumptions, source provenance, and out-of-sample validation over apparent precision.
