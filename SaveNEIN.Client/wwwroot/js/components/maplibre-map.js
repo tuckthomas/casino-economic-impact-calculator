@@ -4636,6 +4636,7 @@ window.MapLibreImpactMap = (function ()
                 center: options.center || DEFAULT_CENTER,
                 zoom: options.zoom || DEFAULT_ZOOM,
                 scrollZoom: true,
+                cooperativeGestures: window.innerWidth < 1024,
                 dragPan: true,
                 attributionControl: false,
                 preserveDrawingBuffer: true,  // Required for PDF/image export via canvas.toDataURL()

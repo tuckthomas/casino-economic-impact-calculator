@@ -194,7 +194,7 @@
         aspect-ratio: 6471 / 2892;
         height: auto;
         margin: 0 0 1.25rem 0;
-        background: left center / contain no-repeat url('/assets/SaveNEIN_SVG_Dark_Mode.svg');
+        background: left center / contain no-repeat url('/assets/SaveNEIN_SVG_Dark_Mode_Small.svg');
         opacity: 0;
         pointer-events: none;
         filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
