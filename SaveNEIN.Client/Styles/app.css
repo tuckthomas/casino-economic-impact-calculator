@@ -31,7 +31,7 @@ body {
 }
 
 @media (max-width: 640px) {
-    #mayor-critique > .mx-auto,
+    #proponents-critique > .mx-auto,
     #tribal-analysis > .mx-auto,
     #crime-safety > .mx-auto,
     #economic-analysis > .economic-analysis-body,
@@ -45,7 +45,7 @@ body {
         width: 100%;
     }
 
-    #mayor-critique div[class*="rounded-"][class*="shadow"],
+    #proponents-critique div[class*="rounded-"][class*="shadow"],
     #tribal-analysis div[class*="rounded-"][class*="shadow"],
     #crime-safety div[class*="rounded-"][class*="shadow"],
     #economic-analysis div[class*="rounded-"][class*="shadow"],
@@ -79,7 +79,7 @@ body {
     }
 
     /* Force identical horizontal bounds for section descriptions on mobile */
-    #mayor-critique .section-heading-block > p,
+    #proponents-critique .section-heading-block > p,
     #economic-analysis .section-heading-block > p,
     #tribal-analysis .section-heading-block > p,
     #crime-safety .section-heading-block > p,
