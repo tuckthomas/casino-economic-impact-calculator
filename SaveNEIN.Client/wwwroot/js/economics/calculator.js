@@ -2939,7 +2939,10 @@ window.EconomicCalculator = (function ()
         const scenarioLabels = resolveTaxAllocationLabels(activeTaxScenario, {
             subjectStateName,
             hostCountyName: subjectCountyName,
-               if (!rows.length)
+            municipalityName
+        });
+
+        if (!rows.length)
         {
             hostContainer.innerHTML = `<div class="p-4 text-sm text-slate-500 italic text-center">Select a county on the map to see cost distribution.</div>`;
             regionalContainer.innerHTML = '';

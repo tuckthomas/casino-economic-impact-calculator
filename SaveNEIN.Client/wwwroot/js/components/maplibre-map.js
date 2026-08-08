@@ -4629,6 +4629,7 @@ window.MapLibreImpactMap = (function ()
                 center: options.center || DEFAULT_CENTER,
                 zoom: options.zoom || DEFAULT_ZOOM,
                 scrollZoom: true,
+                dragPan: true,
                 attributionControl: false,
                 preserveDrawingBuffer: true,  // Required for PDF/image export via canvas.toDataURL()
                 transformRequest: (url, resourceType) =>
@@ -4638,6 +4639,11 @@ window.MapLibreImpactMap = (function ()
                     return { url, credentials: 'same-origin' };
                 }
             });
+
+            if (map.scrollZoom)
+            {
+                map.scrollZoom.enable();
+            }
 
             map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 

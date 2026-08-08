@@ -96,8 +96,8 @@
             <!-- Map Container -->
             <div class="relative w-full h-[600px] mb-6 rounded-2xl overflow-hidden group border border-slate-700 shadow-2xl">
                 <!-- Three-Step Navigation Mechanism -->
-                <div id="map-navigation-overlay" class="absolute top-4 left-1/2 -translate-x-1/2 z-[90] w-auto sm:w-full max-w-[200px] sm:max-w-xl px-1 sm:px-4">
-                    <div class="bg-slate-950/40 backdrop-blur-sm p-2 rounded-2xl border border-white/5">
+                <div id="map-navigation-overlay" class="absolute top-4 left-1/2 -translate-x-1/2 z-[90] w-auto sm:w-full max-w-[200px] sm:max-w-xl px-1 sm:px-4 pointer-events-none">
+                    <div class="bg-slate-950/40 backdrop-blur-sm p-2 rounded-2xl border border-white/5 pointer-events-auto">
                         <div class="grid grid-cols-3 gap-3">
                             <!-- Step 1: Nationwide -->
                             <div class="flex flex-col gap-1.5 group cursor-pointer" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(1)">
@@ -126,8 +126,8 @@
                 </div>
 
                 <!-- Interactive In-Map Step Guidance Overlay -->
-                <div id="map-step-guidance" class="absolute bottom-5 left-1/2 -translate-x-1/2 z-[85] w-[94%] sm:w-auto max-w-lg transition-all duration-500 transform translate-y-0 opacity-100 pointer-events-auto">
-                    <div class="bg-slate-950/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-4 shadow-2xl flex items-start gap-3.5 text-left relative overflow-hidden">
+                <div id="map-step-guidance" class="absolute bottom-5 left-1/2 -translate-x-1/2 z-[85] w-[94%] sm:w-auto max-w-lg transition-all duration-500 transform translate-y-0 opacity-100 pointer-events-none">
+                    <div class="bg-slate-950/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-4 shadow-2xl flex items-start gap-3.5 text-left relative overflow-hidden pointer-events-auto">
                         <!-- Accent Glow Line -->
                         <div id="guidance-accent-line" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 transition-all duration-500"></div>
                         
@@ -148,14 +148,14 @@
                         </div>
 
                         <!-- Close / Dismiss Button -->
-                        <button id="guidance-dismiss-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.dismissGuidance()" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors" title="Dismiss hint" aria-label="Dismiss guide">
+                        <button id="guidance-dismiss-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.dismissGuidance()" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors pointer-events-auto" title="Dismiss hint" aria-label="Dismiss guide">
                             <span class="material-symbols-outlined text-[18px]">close</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Compact Re-open Guide Pill -->
-                <button id="guidance-reopen-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.showGuidance()" class="hidden absolute bottom-5 right-5 z-[85] bg-slate-950/90 hover:bg-slate-900 border border-slate-700/80 rounded-full px-4 py-2 shadow-xl backdrop-blur-md flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-all transform hover:scale-105">
+                <button id="guidance-reopen-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.showGuidance()" class="hidden absolute bottom-5 right-5 z-[85] bg-slate-950/90 hover:bg-slate-900 border border-slate-700/80 rounded-full px-4 py-2 shadow-xl backdrop-blur-md flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-all transform hover:scale-105 pointer-events-auto">
                     <span class="material-symbols-outlined text-blue-400 text-[18px]">help</span>
                     <span class="font-medium">Map Guide</span>
                 </button>
