@@ -354,16 +354,16 @@ window.MapLibreImpactMap = (function ()
 
         if (settings.yearsFromBase === 0)
         {
-            summaryEl.textContent = 'Using current adult population as calculated.';
+            summaryEl.textContent = 'Using 2020 Decennial Census baseline adult population.';
         } else if (!settings.usesProjectedAdults)
         {
-            summaryEl.textContent = `Projection year ${settings.targetYear} selected, but adult population remains unchanged at 0.0% annual growth.`;
+            summaryEl.textContent = `Projection year ${settings.targetYear} selected, but adult population remains at 2020 baseline (0.0% annual growth).`;
         } else
         {
-            summaryEl.textContent = `Projecting adult population to ${settings.targetYear} at ${settings.annualGrowthRate.toFixed(1)}% annual growth.`;
+            summaryEl.textContent = `Projecting adult population from 2020 to ${settings.targetYear} at ${settings.annualGrowthRate.toFixed(1)}% annual growth.`;
         }
 
-        detailEl.textContent = `${settings.baseYear} census adult population baseline, ${settings.annualGrowthRate.toFixed(1)}% annual growth, ${settings.multiplier.toFixed(3)}x multiplier.`;
+        detailEl.textContent = `${settings.baseYear} Decennial Census block-level baseline, ${settings.annualGrowthRate.toFixed(1)}% annual growth, ${settings.multiplier.toFixed(3)}x multiplier.`;
     }
 
     function syncProjectionInputRefs(target)
