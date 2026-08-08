@@ -2,7 +2,7 @@
 module.exports = {
   content: [
     "./**/*.razor",
-    "./**/*.html",
+    "./wwwroot/**/*.html",
     "./wwwroot/js/**/*.js",
   ],
   darkMode: "class",
