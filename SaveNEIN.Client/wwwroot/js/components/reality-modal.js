@@ -153,7 +153,7 @@
                     <!-- Footer with Navigation -->
                     <div class="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
                         <!-- Prev Button -->
-                        <button id="reality-prev-btn" onclick="window.prevRealityItem()" class="btn-raised flex items-center justify-center gap-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all text-sm m-0 shrink-0 shadow-lg">
+                        <button id="reality-prev-btn" onclick="window.prevRealityItem()" class="btn-raised flex items-center justify-center gap-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all text-sm m-0 shrink-0">
                             <span class="material-symbols-outlined text-[18px]">arrow_back_ios_new</span>
                             <span class="hidden sm:inline">Previous</span>
                         </button>
@@ -162,7 +162,7 @@
                         <span id="reality-modal-pagination" class="text-sm text-slate-500 dark:text-slate-400 font-medium"></span>
                         
                         <!-- Next Button -->
-                        <button id="reality-next-btn" onclick="window.nextRealityItem()" class="btn-raised flex items-center justify-center gap-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all text-sm m-0 shrink-0 shadow-lg">
+                        <button id="reality-next-btn" onclick="window.nextRealityItem()" class="btn-raised flex items-center justify-center gap-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all text-sm m-0 shrink-0">
                             <span class="hidden sm:inline">Next</span>
                             <span class="material-symbols-outlined text-[18px]">arrow_forward_ios</span>
                         </button>
