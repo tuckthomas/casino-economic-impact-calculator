@@ -105,6 +105,10 @@ window.MapLibreImpactMap = (function ()
     let riskZoneMode = 'isochrone';
     let drawingOverlaysSuppressed = false;
 
+    // In-map guidance card state
+    let guidanceFadeTimer = null;
+    let guidanceDismissed = false;
+
     // Current basemap
     let currentBasemap = 'offline';
     let mapDarkMode = true; // Default to dark mode for streets/terrain
