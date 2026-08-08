@@ -3,7 +3,9 @@
 }
 
 .home-hero-gradient {
-    background: linear-gradient(to right bottom, #0f172a, #1e293b, #334155);
+    background: radial-gradient(circle at bottom left, rgba(185, 28, 28, 0.25) 0%, transparent 60%),
+                radial-gradient(circle at top right, rgba(30, 41, 59, 0.6) 0%, transparent 60%),
+                #0f172a;
 }
 
 .home-hero-shell {
@@ -11,7 +13,9 @@
 }
 
 .home-sticky-header-shell {
-    background: linear-gradient(to right bottom, #0f172a, #1e293b, #334155);
+    background: radial-gradient(circle at bottom left, rgba(185, 28, 28, 0.25) 0%, transparent 60%),
+                radial-gradient(circle at top right, rgba(30, 41, 59, 0.6) 0%, transparent 60%),
+                #0f172a;
     isolation: isolate;
     position: relative;
     transform: translateY(0);

@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+.footer-gradient {
+    background: radial-gradient(circle at bottom left, rgba(185, 28, 28, 0.2) 0%, transparent 60%),
+                radial-gradient(circle at top right, rgba(30, 41, 59, 0.4) 0%, transparent 60%),
+                #0f172a;
+}
+
 /* Custom Scrollbar moved to index.html to prevent load shift */
 html,
 body {
