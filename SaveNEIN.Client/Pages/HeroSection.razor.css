@@ -121,12 +121,12 @@
 @keyframes heroMobileLogoFadeIn {
     from {
         opacity: 0;
-        transform: perspective(900px) rotateX(8deg) translateY(18px);
+        transform: translateY(10px);
     }
 
     to {
         opacity: 1;
-        transform: perspective(900px) rotateX(8deg) translateY(0);
+        transform: translateY(0);
     }
 }
 
@@ -190,14 +190,15 @@
     #hero-section .hero-mobile-intro::before {
         content: "";
         display: block;
-        width: min(86vw, 28rem);
-        height: clamp(5.2rem, 18vw, 8.4rem);
-        margin: -0.95rem 0 1rem 0;
-        background: -1.15rem center / 100% auto no-repeat url('/assets/SaveNEIN_SVG_Dark_Mode.svg');
+        width: min(88vw, 24rem);
+        aspect-ratio: 6471 / 2892;
+        height: auto;
+        margin: 0 0 1.25rem 0;
+        background: left center / contain no-repeat url('/assets/SaveNEIN_SVG_Dark_Mode.svg');
         opacity: 0;
         pointer-events: none;
-        filter: drop-shadow(0 4px 1px rgba(0, 0, 0, 0.7)) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.4));
-        transform: perspective(900px) rotateX(8deg) translateY(14px);
+        filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+        transform: translateY(10px);
         transform-origin: center center;
         animation: heroMobileLogoFadeIn 0.95s ease 0.35s forwards;
     }
