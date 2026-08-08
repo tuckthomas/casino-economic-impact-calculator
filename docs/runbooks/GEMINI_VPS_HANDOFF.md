@@ -26,7 +26,7 @@ Development rules:
    git status --short --branch
 3. Preserve unrelated or untracked user files. Never use git reset --hard or
    discard unexplained changes.
-4. Read AGENTS.md. Never introduce text-xs or an arbitrary UI text size below
+4. Read .agents/AGENTS.md. Never introduce text-xs or an arbitrary UI text size below
    14px. The pre-commit hook and GitHub workflow enforce this.
 5. Validate relevant JavaScript with node --check, run npm run check:ui-text,
    and run git diff --check. For a full application build, use the Linux Docker
