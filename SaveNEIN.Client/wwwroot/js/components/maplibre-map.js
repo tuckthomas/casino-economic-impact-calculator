@@ -1251,7 +1251,6 @@ window.MapLibreImpactMap = (function ()
         t3PopCounty = subjectCounty ? subjectCounty.t3Pop : 0;
     }
 
-    let isochroneTimeout = null;
     let activeIsochroneSeq = 0;
 
     async function updateIsochrones(lngLat, debounceMs = 0)
