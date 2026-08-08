@@ -2735,21 +2735,48 @@ window.EconomicCalculator = (function ()
                 analysisHTML += `<li><strong>Fiscal Conclusion:</strong> Under this configuration, the consolidated statement remains in surplus. Total modeled tax revenue (${fmtM(totalRevenue)}) exceeds total modeled social costs (${fmtM(stateWideSocialCost)}), leaving a positive consolidated balance of ${fmtM(Math.abs(stateWideNetBalance))}.</li>`;
             }
 
-            const hostRatioText = isHostCountySelection && hostLocalRevenue > 0
-                ? `For every $1 in host-government revenue, the selected-county model projects $${(subjectTotalCost / hostLocalRevenue).toFixed(2)} in social costs.`
+            const hostRatioVal = (isHostCountySelection && hostLocalRevenue > 0) ? (subjectTotalCost / hostLocalRevenue) : null;
+            const regionalRatioVal = (revenueRda > 0) ? (spilloverTotalCost / revenueRda) : null;
+            const consolidatedRatioVal = (totalRevenue > 0) ? (stateWideSocialCost / totalRevenue) : null;
+
+            const hostRatioText = hostRatioVal !== null
+                ? `For every $1 in host-government revenue, the selected-county model projects $${hostRatioVal.toFixed(2)} in social costs.`
                 : `No ratio is available because the active scenario assigns no host-government revenue for this location.`;
-            const regionalRatioText = revenueRda > 0
-                ? `For every $1 in regional revenue, the spillover model projects $${(spilloverTotalCost / revenueRda).toFixed(2)} in social costs.`
+            const regionalRatioText = regionalRatioVal !== null
+                ? `For every $1 in regional revenue, the spillover model projects $${regionalRatioVal.toFixed(2)} in social costs.`
                 : `No ratio is available because the active scenario assigns no regional revenue.`;
-            const consolidatedRatioText = totalRevenue > 0
-                ? `For every $1 in total tax revenue, the statewide model projects $${(stateWideSocialCost / totalRevenue).toFixed(2)} in social costs.`
+            const consolidatedRatioText = consolidatedRatioVal !== null
+                ? `For every $1 in total tax revenue, the statewide model projects $${consolidatedRatioVal.toFixed(2)} in social costs.`
                 : `No ratio is available because this scenario produces no modeled tax revenue.`;
+
+            let ratioExplanation = '';
+            if (regionalRatioVal !== null && consolidatedRatioVal !== null && regionalRatioVal > consolidatedRatioVal * 2)
+            {
+                const hostContextSnippet = (hostRatioVal !== null && hostRatioVal > consolidatedRatioVal * 1.5)
+                    ? ` Similarly, the host-government ratio ($${hostRatioVal.toFixed(2)} per $1) is elevated because the host county absorbs the concentrated 0–10 mile urban core impacts while the state retains the majority of progressive wagering tax brackets.`
+                    : '';
+
+                ratioExplanation = `
+                    <li class="list-none mt-3 p-3.5 rounded-lg bg-slate-900/60 border border-slate-700/70 text-slate-300 text-sm leading-relaxed">
+                        <strong class="text-blue-300 font-semibold block mb-1">Ratio Variance Analysis:</strong>
+                        The substantial divergence between the regional ratio ($${regionalRatioVal.toFixed(2)} per $1) and the consolidated ratio ($${consolidatedRatioVal.toFixed(2)} per $1) results from the geographic distribution of population density relative to statutory tax distribution. Placing the casino in ${escapeHtml(subjectCountyName)} County—a densely populated regional hub—means the immediate 0–20 mile high-risk impact zones encompass large population corridors across ${otherCountiesCount} neighboring counties, creating significant aggregate spillover costs. Because regional funds receive only a modest, fractional allocation of total gaming revenue, the resulting cost burden per dollar of regional revenue appears disproportionately high.${hostContextSnippet}
+                    </li>`;
+            }
+            else if (hostRatioVal !== null && consolidatedRatioVal !== null && hostRatioVal > consolidatedRatioVal * 1.5)
+            {
+                ratioExplanation = `
+                    <li class="list-none mt-3 p-3.5 rounded-lg bg-slate-900/60 border border-slate-700/70 text-slate-300 text-sm leading-relaxed">
+                        <strong class="text-blue-300 font-semibold block mb-1">Ratio Variance Analysis:</strong>
+                        The host-government ratio ($${hostRatioVal.toFixed(2)} per $1) is higher than the consolidated statewide ratio ($${consolidatedRatioVal.toFixed(2)} per $1) because the host municipality absorbs the densest concentration of immediate 0–10 mile proximity costs (such as public health, emergency services, and local economic disruption), whereas the state retains the majority of wagering tax collections through progressive statutory brackets rather than remitting them directly to the host government.
+                    </li>`;
+            }
 
             analysisHTML += `<li><strong>Cost-to-Revenue Ratios:</strong>
                 <ul class="list-[circle] pl-8 mt-2 space-y-2">
                     <li><strong>Host Government:</strong> ${hostRatioText}</li>
                     <li><strong>Regional State:</strong> ${regionalRatioText}</li>
                     <li><strong>Consolidated (Entire State):</strong> ${consolidatedRatioText}</li>
+                    ${ratioExplanation}
                 </ul>
             </li>`;
 
