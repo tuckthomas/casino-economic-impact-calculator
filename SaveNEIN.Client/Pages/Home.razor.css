@@ -16,9 +16,7 @@
 }
 
 .home-sticky-header-shell {
-    background: radial-gradient(circle at bottom left, rgba(185, 28, 28, 0.25) 0%, transparent 60%),
-                radial-gradient(circle at top right, rgba(30, 41, 59, 0.6) 0%, transparent 60%),
-                #0f172a;
+    background: #0f172a;
     isolation: isolate;
     position: relative;
     transform: translateY(0);

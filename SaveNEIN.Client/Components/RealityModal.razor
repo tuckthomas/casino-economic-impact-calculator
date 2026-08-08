@@ -33,8 +33,7 @@
                 
                 <!-- Footer with Navigation -->
                 <div class="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
-                    <!-- Prev Button -->
-                    <AppButton OnButtonClick="Prev" Disabled="@(CurrentIndex == 0)" Icon="arrow_back_ios_new">
+                    <AppButton OnButtonClick="Prev" Icon="arrow_back_ios_new">
                         <span class="hidden sm:inline">Previous</span>
                     </AppButton>
                     
@@ -42,7 +41,7 @@
                     <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">@(CurrentIndex + 1) of @CurrentItems.Count</span>
                     
                     <!-- Next Button -->
-                    <AppButton OnButtonClick="Next" Disabled="@(CurrentIndex == CurrentItems.Count - 1)" Class="bg-red-600 hover:bg-red-700 text-white flex-row-reverse">
+                    <AppButton OnButtonClick="Next" Class="bg-red-600 hover:bg-red-700 text-white flex-row-reverse">
                         <span class="hidden sm:inline">Next</span>
                         <span class="material-symbols-outlined text-[18px]">arrow_forward_ios</span>
                     </AppButton>
@@ -76,20 +75,32 @@
 
     private void Next()
     {
+        if (CurrentItems.Count == 0) return;
+        
         if (CurrentIndex < CurrentItems.Count - 1)
         {
             CurrentIndex++;
-            StateHasChanged();
         }
+        else
+        {
+            CurrentIndex = 0;
+        }
+        StateHasChanged();
     }
 
     private void Prev()
     {
+        if (CurrentItems.Count == 0) return;
+
         if (CurrentIndex > 0)
         {
             CurrentIndex--;
-            StateHasChanged();
         }
+        else
+        {
+            CurrentIndex = CurrentItems.Count - 1;
+        }
+        StateHasChanged();
     }
 
     public class RealityItem
