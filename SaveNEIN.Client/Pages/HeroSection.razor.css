@@ -36,10 +36,11 @@
 }
 
 .hero-desktop-learn-more-chevron {
-    font-size: 1.1rem;
-    line-height: 1;
-    font-weight: 700;
-    transform: translateY(1px);
+    width: 1.2rem;
+    height: 1.2rem;
+    display: block;
+    color: rgba(241, 245, 249, 0.92);
+    flex-shrink: 0;
 }
 
 .hero-desktop-learn-more-text {

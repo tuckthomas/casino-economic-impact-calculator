@@ -1,6 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./SaveNEIN.Client/**/*.{razor,html,js}"],
+  content: [
+    "./**/*.razor",
+    "./**/*.html",
+    "./wwwroot/js/**/*.js",
+  ],
   darkMode: "class",
   theme: {
     extend: {
