@@ -1,0 +1,220 @@
+@using SaveNEIN.Client.Components
+
+@if (IsVisible)
+{
+    <div class="fixed inset-0 z-[9999]">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @onclick="Close"></div>
+        
+        <!-- Modal Container -->
+        <div class="absolute inset-4 md:inset-8 lg:inset-16 flex items-center justify-center pointer-events-none">
+            <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden pointer-events-auto flex flex-col" style="height: 400px;">
+                
+                <!-- Header -->
+                <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+                    <h3 class="text-lg font-black text-red-600 uppercase tracking-wide">@CurrentItem.Title</h3>
+                    <button @onclick="Close" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+                        <span class="material-symbols-outlined text-slate-500">close</span>
+                    </button>
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1 overflow-y-auto p-6">
+                    <p class="text-slate-700 dark:text-slate-300 leading-relaxed">
+                        @((MarkupString)CurrentItem.Content)
+                    </p>
+                    @if (!string.IsNullOrEmpty(CurrentItem.Source))
+                    {
+                        <a href="@CurrentItem.Source" target="_blank" class="mt-4 text-red-600 hover:text-red-700 font-bold text-sm flex items-center gap-1">
+                            Source <span class="material-symbols-outlined text-sm">open_in_new</span>
+                        </a>
+                    }
+                </div>
+                
+                <!-- Footer with Navigation -->
+                <div class="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                    <!-- Prev Button -->
+                    <AppButton OnButtonClick="Prev" Disabled="@(CurrentIndex == 0)" Icon="arrow_back_ios_new">
+                        <span class="hidden sm:inline">Previous</span>
+                    </AppButton>
+                    
+                    <!-- Pagination -->
+                    <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">@(CurrentIndex + 1) of @CurrentItems.Count</span>
+                    
+                    <!-- Next Button -->
+                    <AppButton OnButtonClick="Next" Disabled="@(CurrentIndex == CurrentItems.Count - 1)" Class="bg-red-600 hover:bg-red-700 text-white flex-row-reverse">
+                        <span class="hidden sm:inline">Next</span>
+                        <span class="material-symbols-outlined text-[18px]">arrow_forward_ios</span>
+                    </AppButton>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    public bool IsVisible { get; private set; }
+    private string CurrentCategory { get; set; } = string.Empty;
+    private int CurrentIndex { get; set; } = 0;
+
+    private List<RealityItem> CurrentItems => RealityData.TryGetValue(CurrentCategory, out var items) ? items : new List<RealityItem>();
+    private RealityItem CurrentItem => CurrentItems.Count > 0 && CurrentIndex >= 0 && CurrentIndex < CurrentItems.Count ? CurrentItems[CurrentIndex] : new RealityItem();
+
+    public void Open(string categoryId)
+    {
+        CurrentCategory = categoryId;
+        CurrentIndex = 0;
+        IsVisible = true;
+        StateHasChanged();
+    }
+
+    public void Close()
+    {
+        IsVisible = false;
+        StateHasChanged();
+    }
+
+    private void Next()
+    {
+        if (CurrentIndex < CurrentItems.Count - 1)
+        {
+            CurrentIndex++;
+            StateHasChanged();
+        }
+    }
+
+    private void Prev()
+    {
+        if (CurrentIndex > 0)
+        {
+            CurrentIndex--;
+            StateHasChanged();
+        }
+    }
+
+    public class RealityItem
+    {
+        public string Title { get; set; } = "";
+        public string Content { get; set; } = "";
+        public string? Source { get; set; }
+    }
+
+    private static readonly Dictionary<string, List<RealityItem>> RealityData = new()
+    {
+        {
+            "economic-engine", new List<RealityItem>
+            {
+                new() {
+                    Title = "Local Businesses Lost",
+                    Content = "The primary economic argument for the proposed Northeast Indiana casino is that it will generate \"new\" money. This assumes it functions as a tourist destination. However, the Spectrum Study (2025) confirms that nearly 95% of visitors live within 60–90 minutes, defining it as a \"convenience\" venue. This triggers the <strong>Substitution Effect</strong>: money is not imported; it is simply diverted from local restaurants, theaters, and retail to the casino, creating a net loss for the existing economy.",
+                    Source = "https://www.stlouisfed.org/community-development/publications/bridges/casinos-and-economic-development-a-look-at-the-issues"
+                },
+                new() {
+                    Title = "Bankruptcies",
+                    Content = "Counties that legalize casino gambling experience a 2.3% higher annual growth rate in personal bankruptcies compared to non-casino counties. Bankruptcy rates eventually exceed those of non-casino counties after nine years of operations.",
+                    Source = "https://researchworks.creighton.edu/esploro/outputs/other/The-impact-of-casino-gambling-on/991005931167902656"
+                },
+                new() {
+                    Title = "Poverty",
+                    Content = "Despite casinos generating revenue, poverty rates for Native American communities with casinos remain higher than the national average (19.6% vs 12.1%). The \"economic engine\" argument often fails to account for the lack of wealth distribution to the poorest residents.",
+                    Source = "https://www.actionnetwork.com/news/new-research-highlights-economic-changes-driven-by-tribal-casinos"
+                },
+                new() {
+                    Title = "Foreclosure",
+                    Content = "While foreclosure specific data varies, the sharp rise in personal bankruptcies and \"bad debt\" in casino counties directly correlates to housing instability and loss of assets.",
+                    Source = "https://k-12talk.com/gambling-debt-understanding-the-average-contributing-factors-and-recovery/"
+                },
+                new() {
+                    Title = "Bad Debt",
+                    Content = "Gambling debt is often hidden due to shame, but studies show significant financial harm to families. \"Affected others\" (family/friends) report severe stress, ill health, and relationship breakdown due to the gambler's debt.",
+                    Source = "https://www.researchgate.net/publication/305495934_Breaking_Bad_Comparing_Gambling_Harms_Among_Gamblers_and_Affected_Others"
+                }
+            }
+        },
+        {
+            "jobs-promise", new List<RealityItem>
+            {
+                new() {
+                    Title = "The \"5,520 Jobs\" Myth",
+                    Content = "The \"5,520 Jobs\" headline is a deception. They are mostly <strong>temporary construction jobs</strong>. Once the concrete dries, those workers leave, and the taxpayers are left with the 30-year social bill. In a tight labor market, the 1,024 projected permanent jobs gains will likely be negated by job losses from local small businesses (restaurants, bars, etc.) that are cannibalized by the casino.",
+                    Source = null
+                },
+                new() {
+                    Title = "Low Wage Jobs",
+                    Content = "The data specifically regarding Full House Resorts' 'Rising Star Casino' shows that essential service roles pay significantly less than the current market rate for fast food workers in Fort Wayne. Line Cooks at the casino earn $13.25-$17.75/hr vs $20.27/hr at local fast food chains.",
+                    Source = "https://www.ziprecruiter.com/Salaries/Fast-Food-Salary-in-Fort-Wayne,IN"
+                },
+                new() {
+                    Title = "Embezzlement",
+                    Content = "A Dept. of Justice study found that arrestees identified as pathological gamblers were 3 to 5 times more likely to be arrested than the general population, often committing robbery, assault, or theft to finance their addiction.",
+                    Source = "https://www.ojp.gov/pdffiles1/nij/203197.pdf"
+                }
+            }
+        },
+        {
+            "community-health", new List<RealityItem>
+            {
+                new() {
+                    Title = "Addiction",
+                    Content = "Research indicates that 96% of individuals with gambling disorder have a co-occurring psychiatric disorder. The American Psychiatric Association defines it as a disorder leading to clinically significant impairment, where sufferers exhaust savings and damage family relationships.",
+                    Source = "https://www.addiction.rutgers.edu/about-addiction/facts-and-figures/gambling/"
+                },
+                new() {
+                    Title = "Homelessness",
+                    Content = "A University of Cambridge study found that homeless individuals are 10 times more likely to be problem gamblers than the non-homeless population, establishing a \"bi-directional\" link where gambling leads to homelessness and vice versa.",
+                    Source = "https://www.stoppredatorygambling.org/study-examines-the-link-between-homelessness-and-problem-gambling/"
+                },
+                new() {
+                    Title = "Mental Health Issues",
+                    Content = "Gambling disorder has the highest suicide attempt rate of any addiction. In one state study, 23.2% of those meeting criteria for gambling disorder had attempted suicide.",
+                    Source = "https://www.oapgg.org/newsletters-and-updates/blog-post-title-three-9faw2"
+                },
+                new() {
+                    Title = "Substance Abuse",
+                    Content = "There is a high comorbidity between gambling and substance abuse. Pathological gamblers have a 5.5 times higher risk for substance use disorders compared to non-gamblers, often using drugs or alcohol to cope with losses.",
+                    Source = "https://www.tandfonline.com/doi/full/10.1080/19585969.2025.2484288"
+                },
+                new() {
+                    Title = "Fatal Accidents",
+                    Content = "A study in the Journal of Health Economics estimates that alcohol-related fatal traffic accidents increase by approximately 9.2% in counties that open casinos.",
+                    Source = "https://www.stoppredatorygambling.org/wp-content/uploads/2012/12/Journal-of-Health-Economics-Impact-of-Casinos-on-Fatal-Alcohol-related-Traffic-Accidents.pdf"
+                }
+            }
+        },
+        {
+            "world-class", new List<RealityItem>
+            {
+                new() {
+                    Title = "The Saturation Barrier",
+                    Content = "The Spectrum Study (2025) projects that nearly 95% of visitors will come from within a 60–90 minute \"catchment area,\" mathematically defining this as a \"convenience casino\" rather than a tourist destination. Fort Wayne is surrounded by established competitors: South Bend (Four Winds), Toledo (Hollywood), Battle Creek (FireKeepers), and Shelbyville (Horseshoe). Without a unique global hook, a standard regional casino cannot \"pull\" tourists past the venues they already drive past.",
+                    Source = null
+                },
+                new() {
+                    Title = "Human Trafficking",
+                    Content = "The American Gaming Association admits that casinos are used by traffickers to \"facilitate criminal activity\" and \"seek out potential buyers.\" Survivors report that traffickers use the anonymity of casino environments to mask the movement and exploitation of victims.",
+                    Source = "https://www.americangaming.org/wp-content/uploads/2022/06/AGA-Preventing-and-Combating-Human-Trafficking-in-the-Gaming-Industry.pdf"
+                },
+                new() {
+                    Title = "Corruption",
+                    Content = "Empirical models indicate a \"Granger causality\" where casino revenues can \"cause\" political corruption. The large cash flows attract rent-seeking behavior from politicians and can lead to the erosion of public sector integrity.",
+                    Source = "https://www.researchgate.net/publication/267883543_The_Casino_Industry_and_the_Corruption_of_US_Public_Officials"
+                },
+                new() {
+                    Title = "Domestic Violence",
+                    Content = "Women whose partners have a gambling problem are 10.5 times more likely to experience intimate partner violence. Nearly 25% of pathological gamblers report engaging in spousal abuse.",
+                    Source = "https://dbhdd.georgia.gov/document/document/trauma0911pdf/download"
+                },
+                new() {
+                    Title = "Child Neglect",
+                    Content = "A systematic review found a significant association between problem gambling and multiple forms of child maltreatment, including physical abuse and neglect. The financial strain and time consumption of gambling directly erode parental capacity.",
+                    Source = "https://aifs.gov.au/resources/short-articles/child-maltreatment-and-problem-gambling"
+                },
+                new() {
+                    Title = "Divorces",
+                    Content = "The National Gambling Impact Study Commission reports a lifetime divorce rate of 39.5% for problem gamblers, compared to 18.2% for the general population. 80% of divorced problem gamblers cite gambling as a significant factor in the split.",
+                    Source = "https://www.mccaberussell.com/blog/divorcing-a-gambling-addict-what-you-should-know/"
+                }
+            }
+        }
+    };
+}

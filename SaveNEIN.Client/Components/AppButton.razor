@@ -1,0 +1,30 @@
+@inherits ComponentBase
+
+<button class="@CssClass" @onclick="OnClickHandler" disabled="@Disabled" @attributes="AdditionalAttributes">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <span class="material-symbols-outlined text-[18px]">@Icon</span>
+    }
+    @ChildContent
+</button>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnButtonClick { get; set; }
+    [Parameter] public string Class { get; set; } = "bg-red-600 hover:bg-red-700 text-white";
+    [Parameter] public bool Disabled { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string CssClass => $"btn-raised flex items-center justify-center gap-1.5 px-4 py-2 font-bold rounded-lg transition-all text-sm m-0 shrink-0 {Class} {(Disabled ? "opacity-50 cursor-not-allowed" : "")}";
+
+    private async Task OnClickHandler(MouseEventArgs e)
+    {
+        if (!Disabled && OnButtonClick.HasDelegate)
+        {
+            await OnButtonClick.InvokeAsync(e);
+        }
+    }
+}
