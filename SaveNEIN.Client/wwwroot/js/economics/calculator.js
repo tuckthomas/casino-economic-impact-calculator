@@ -3879,7 +3879,7 @@ window.updateCustomCostDisplay = function ()
     if (resEl) resEl.textContent = mult.toFixed(2) + 'x';
 };
 
-window.runSimulation = function ()
+window.runSimulation = async function ()
 {
     // 1. Get Values
     let agrInputEl = document.querySelector('input[name="sim-agr"]:checked');
@@ -3927,13 +3927,42 @@ window.runSimulation = function ()
         }
     });
 
+    // 4. Ensure Casino Location is set to the referenced study site (Fort Wayne / Allen County: 41.0793, -85.1394)
+    if (window.MapLibreImpactMap)
+    {
+        const currentMarker = window.MapLibreImpactMap.getMarkerPosition();
+        if (!currentMarker)
+        {
+            // Auto-set to the referenced Spectrum Gaming / HB 1038 benchmark location:
+            // Fort Wayne, Allen County, IN (FIPS 18003, Lat: 41.0793, Lon: -85.1394)
+            if (typeof window.MapLibreImpactMap.setCasinoLocation === 'function')
+            {
+                await window.MapLibreImpactMap.setCasinoLocation(41.0793, -85.1394, '18003');
+            }
+            else if (typeof window.MapLibreImpactMap.loadCounty === 'function')
+            {
+                await window.MapLibreImpactMap.loadCounty('18003');
+            }
+        }
+        else
+        {
+            // Recalculate impact with updated scenario numbers
+            if (typeof window.MapLibreImpactMap.recalculate === 'function')
+            {
+                window.MapLibreImpactMap.recalculate();
+            }
+        }
+    }
+
     // Close Modal
     window.closeSimulatorModal();
 
     // Scroll to results or calculator
-    const calculator = document.getElementById('calculator-controls');
-    if (calculator)
+    const netImpactTable = document.getElementById('net-impact-table');
+    const calculator = document.getElementById('calculator-controls') || document.getElementById('economic-impact');
+    const targetScroll = netImpactTable || calculator;
+    if (targetScroll)
     {
-        calculator.scrollIntoView({ behavior: 'smooth' });
+        targetScroll.scrollIntoView({ behavior: 'smooth' });
     }
 };

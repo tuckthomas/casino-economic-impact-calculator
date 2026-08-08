@@ -4903,6 +4903,26 @@ window.MapLibreImpactMap = (function ()
         getMap: () => map,
         loadState: (fips) => drillToState(fips),
         loadCounty: (fips) => selectCounty(fips),
+        setCasinoLocation: async (lat, lng, countyFips) =>
+        {
+            const targetCountyFips = countyFips || '18003';
+            const stateFips = targetCountyFips.substring(0, 2);
+            if (!map) return;
+            if (currentStateFips !== stateFips)
+            {
+                await drillToState(stateFips);
+            }
+            await selectCounty(targetCountyFips);
+            if (typeof lat === 'number' && typeof lng === 'number')
+            {
+                markerPosition = { lng: lng, lat: lat };
+                updateMarker(markerPosition);
+                updateCircles(markerPosition);
+                await updateIsochrones(markerPosition);
+                calculateImpact();
+            }
+        },
+        recalculate: () => calculateImpact(),
         setIsochroneVisibility: (v) => { toggleLayerVisibility('valhalla', v); const cb = document.getElementById('toggle-valhalla'); if (cb) cb.checked = v; },
         setRiskZoneMode // expose
     };
