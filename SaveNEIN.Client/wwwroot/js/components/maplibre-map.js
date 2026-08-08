@@ -4609,8 +4609,8 @@ window.MapLibreImpactMap = (function ()
 
             // Determine default basemap based on connectivity
             const isOnline = navigator.onLine;
-            currentBasemap = isOnline ? 'hybrid' : 'offline';
-            const initialStyle = isOnline ? BASEMAPS.hybrid.style : BASEMAPS.offline.style;
+            currentBasemap = isOnline ? 'streets' : 'offline';
+            const initialStyle = isOnline ? BASEMAPS.streets.style : BASEMAPS.offline.style;
 
             map = new maplibregl.Map({
                 container: containerId,
