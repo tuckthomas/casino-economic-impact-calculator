@@ -2,19 +2,11 @@ window.HomeHeader = (() => {
     let observer = null;
     let resizeHandler = null;
     let scrollHandler = null;
-    let lastScrollY = 0;
-    let isStuck = false;
+    let animationFrameId = null;
     let lastActiveLink = null;
-    let hideTimer = null;
-    let isNavigating = false;
     const desktopBreakpoint = window.matchMedia("(min-width: 1024px)");
 
     function destroy() {
-        if (hideTimer) {
-            clearTimeout(hideTimer);
-            hideTimer = null;
-        }
-
         if (observer) {
             observer.disconnect();
             observer = null;
@@ -30,10 +22,13 @@ window.HomeHeader = (() => {
             scrollHandler = null;
         }
 
-        lastScrollY = 0;
-        isStuck = false;
+        if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+
+        document.documentElement.style.scrollPaddingTop = "";
         lastActiveLink = null;
-        isNavigating = false;
     }
 
     function init() {
@@ -41,9 +36,8 @@ window.HomeHeader = (() => {
 
         const hero = document.getElementById("home-hero-gradient");
         const header = document.getElementById("home-sticky-header");
-        const spacer = document.getElementById("home-sticky-header-spacer");
 
-        if (!hero || !header || !spacer) {
+        if (!hero || !header) {
             return;
         }
 
@@ -58,26 +52,8 @@ window.HomeHeader = (() => {
             })
             .filter(Boolean);
 
-        sectionLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                isNavigating = true;
-                setHeaderVisibility(true);
-                clearTimeout(hideTimer);
-                hideTimer = setTimeout(() => {
-                    isNavigating = false;
-                    if (isStuck && lastScrollY > header.offsetHeight * 2) {
-                        setHeaderVisibility(false);
-                    }
-                }, 3000);
-            });
-        });
-
-        const syncHeight = () => {
-            spacer.style.setProperty("--home-header-height", `${header.offsetHeight}px`);
-        };
-
-        const setHeaderVisibility = (isVisible) => {
-            header.classList.toggle("is-hidden", !isVisible);
+        const syncScrollPadding = () => {
+            document.documentElement.style.scrollPaddingTop = `${header.offsetHeight + 12}px`;
         };
 
         const ensureActiveLinkVisible = (link, instant = false) => {
@@ -113,16 +89,11 @@ window.HomeHeader = (() => {
 
             const scrollAnchor = (window.scrollY || window.pageYOffset || 0) + header.offsetHeight + 24;
             let active = sectionTargets[0];
-
-            const getDocumentTop = (element) => {
-                if (!element) return Number.POSITIVE_INFINITY;
-                const rect = element.getBoundingClientRect();
-                return rect.top + (window.scrollY || window.pageYOffset || 0);
-            };
-
             let bestTop = Number.NEGATIVE_INFINITY;
+            const currentScrollY = window.scrollY || window.pageYOffset || 0;
+
             for (const entry of sectionTargets) {
-                const top = getDocumentTop(entry.target);
+                const top = entry.target.getBoundingClientRect().top + currentScrollY;
                 if (top <= scrollAnchor && top >= bestTop) {
                     bestTop = top;
                     active = entry;
@@ -140,86 +111,42 @@ window.HomeHeader = (() => {
 
             if (shouldUpdate) {
                 ensureActiveLinkVisible(active.link, instantScroll);
-                const hash = active.link.getAttribute("href");
-                if (hash && window.location.hash !== hash) {
-                    history.replaceState(null, null, hash);
-                }
             }
         };
 
-        const setStickyState = (nextIsStuck) => {
-            isStuck = nextIsStuck;
-            header.classList.toggle("is-stuck", nextIsStuck);
-            spacer.classList.toggle("is-active", nextIsStuck);
+        const scheduleScrollUpdate = () => {
+            if (animationFrameId !== null) return;
 
-            if (!nextIsStuck) {
-                setHeaderVisibility(true);
-            }
-
-            syncHeight();
+            animationFrameId = requestAnimationFrame(() => {
+                animationFrameId = null;
+                updateActiveSectionLink();
+            });
         };
 
-        const updateOnScroll = () => {
-            const currentScrollY = Math.max(window.scrollY || window.pageYOffset || 0, 0);
-            const scrollDelta = currentScrollY - lastScrollY;
-            const revealThreshold = header.offsetHeight * 0.5;
+        syncScrollPadding();
+        updateActiveSectionLink(true);
 
-            if (!isStuck) {
-                setHeaderVisibility(true);
-                clearTimeout(hideTimer);
-                isNavigating = false;
-            } else if (currentScrollY <= hero.offsetHeight) {
-                setHeaderVisibility(true);
-                clearTimeout(hideTimer);
-                isNavigating = false;
-            } else if (scrollDelta > 6 && currentScrollY > header.offsetHeight * 2) {
-                if (!isNavigating) {
-                    setHeaderVisibility(false);
-                    clearTimeout(hideTimer);
-                }
-            } else if (scrollDelta < -4 || currentScrollY <= hero.offsetHeight + revealThreshold) {
-                if (!isNavigating) {
-                    setHeaderVisibility(true);
-                    clearTimeout(hideTimer);
-                    
-                    if (currentScrollY > hero.offsetHeight + revealThreshold) {
-                        hideTimer = setTimeout(() => {
-                            setHeaderVisibility(false);
-                        }, 2500);
-                    }
-                }
-            }
-
-            updateActiveSectionLink();
-            lastScrollY = currentScrollY;
-        };
-
-        syncHeight();
-        lastScrollY = Math.max(window.scrollY || window.pageYOffset || 0, 0);
-
+        // Native CSS sticky positioning owns the header geometry. The observer only
+        // adds a shadow once the hero has left the viewport; it never changes layout.
         observer = new IntersectionObserver(
             ([entry]) => {
-                setStickyState(!entry.isIntersecting);
-                updateOnScroll();
+                header.classList.toggle("is-stuck", !entry.isIntersecting);
             },
             { threshold: 0 }
         );
-
         observer.observe(hero);
 
         resizeHandler = () => {
-            syncHeight();
+            syncScrollPadding();
             updateActiveSectionLink(true);
-            updateOnScroll();
         };
 
         scrollHandler = () => {
-            updateOnScroll();
+            scheduleScrollUpdate();
         };
 
         window.addEventListener("resize", resizeHandler);
         window.addEventListener("scroll", scrollHandler, { passive: true });
-        updateOnScroll();
     }
 
     return { init };
