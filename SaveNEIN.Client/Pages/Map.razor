@@ -61,7 +61,7 @@
             Casino Impact Zone Visualizer
         </h3>
         <p class="text-slate-400 leading-relaxed mb-8">
-            This interactive tool visualizes the geographic reach of gambling-related risks. You can drag the 
+            This interactive tool visualizes the geographic reach of gambling-related risks. You can drag the
             casino marker to any Indiana location on the map to see how the
             proximity-based risk zones shift. Moving the pin automatically recalculates the population
             distribution across the three impact tiers (High, Elevated, and Baseline Risk) shown in the
@@ -90,64 +90,64 @@
                     <span
                         class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </button>
-
             </div>
+        </div>
 
-            <!-- Map Container: full-width bleed on mobile, card-contained on sm+ -->
-            <div class="-mx-8 sm:mx-0 relative w-[calc(100%+4rem)] sm:w-full h-[500px] sm:h-[600px] mb-6 rounded-none sm:rounded-2xl overflow-hidden group border-y sm:border border-slate-700 shadow-2xl">
-                <!-- Contextual Back Buttons (hidden until state/county is selected) -->
-                <!-- Back to National: shown once a state is selected (step >= 2) -->
-                <button id="map-back-national-btn" type="button"
-                    onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(1)"
-                    class="hidden absolute top-3 left-3 z-[90] bg-slate-950/80 hover:bg-slate-900 border border-slate-700/80 rounded-full pl-2 pr-3 py-1.5 shadow-lg backdrop-blur-md flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-all pointer-events-auto">
-                    <span class="material-symbols-outlined text-[16px] text-slate-400">arrow_back</span>
-                    <span class="font-medium text-sm">National</span>
-                </button>
-                <!-- Back to State: shown once a county is selected (step 3) -->
-                <button id="map-back-state-btn" type="button"
-                    onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(2)"
-                    class="hidden absolute top-3 left-3 z-[90] bg-slate-950/80 hover:bg-slate-900 border border-slate-700/80 rounded-full pl-2 pr-3 py-1.5 shadow-lg backdrop-blur-md flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-all pointer-events-auto">
-                    <span class="material-symbols-outlined text-[16px] text-slate-400">arrow_back</span>
-                    <span id="map-back-state-label" class="font-medium text-sm">State</span>
-                </button>
+        <!-- Map Container: full-width bleed on mobile (negates card p-8 only), contained on sm+ -->
+        <div class="-mx-8 sm:mx-0 relative w-[calc(100%+4rem)] sm:w-full h-[500px] sm:h-[600px] mb-6 rounded-2xl overflow-hidden group border border-slate-700 shadow-2xl">
+            <!-- Contextual Back Buttons (hidden until state/county is selected) -->
+            <!-- Back to National: shown once a state is selected (step >= 2) -->
+            <button id="map-back-national-btn" type="button"
+                onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(1)"
+                class="hidden absolute top-3 left-3 z-[90] bg-slate-950/80 hover:bg-slate-900 border border-slate-700/80 rounded-full pl-2 pr-3 h-9 shadow-lg backdrop-blur-md flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-all pointer-events-auto">
+                <span class="material-symbols-outlined text-[16px] text-slate-400">arrow_back</span>
+                <span class="font-medium text-sm">National</span>
+            </button>
+            <!-- Back to State: shown once a county is selected (step 3) -->
+            <button id="map-back-state-btn" type="button"
+                onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(2)"
+                class="hidden absolute top-3 left-3 z-[90] bg-slate-950/80 hover:bg-slate-900 border border-slate-700/80 rounded-full pl-2 pr-3 h-9 shadow-lg backdrop-blur-md flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-all pointer-events-auto">
+                <span class="material-symbols-outlined text-[16px] text-slate-400">arrow_back</span>
+                <span id="map-back-state-label" class="font-medium text-sm">State</span>
+            </button>
 
-                <!-- Interactive In-Map Step Guidance Overlay -->
-                <div id="map-step-guidance" class="absolute bottom-5 left-1/2 -translate-x-1/2 z-[85] w-[94%] sm:w-auto max-w-lg transition-all duration-500 transform translate-y-0 opacity-100 pointer-events-none">
-                    <div class="bg-slate-950/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-4 shadow-2xl flex items-start gap-3.5 text-left relative overflow-hidden pointer-events-auto">
-                        <!-- Accent Glow Line -->
-                        <div id="guidance-accent-line" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 transition-all duration-500"></div>
-                        
-                        <!-- Step Icon -->
-                        <div id="guidance-icon-container" class="mt-0.5 shrink-0 w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400 shadow-inner">
-                            <span id="guidance-icon" class="material-symbols-outlined text-[22px]">touch_app</span>
-                        </div>
+            <!-- Interactive In-Map Step Guidance Overlay -->
+            <div id="map-step-guidance" class="hidden absolute bottom-5 left-1/2 -translate-x-1/2 z-[85] w-[94%] sm:w-auto max-w-lg transition-all duration-500 transform opacity-0 translate-y-2 pointer-events-none">
+                <div class="bg-slate-950/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-4 shadow-2xl flex items-start gap-3.5 text-left relative overflow-hidden pointer-events-auto">
+                    <!-- Accent Glow Line -->
+                    <div id="guidance-accent-line" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 transition-all duration-500"></div>
 
-                        <!-- Content -->
-                        <div class="flex-1 min-w-0 pr-6">
-                            <div class="flex items-center gap-2 mb-1 flex-wrap">
-                                <span id="guidance-badge" class="px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30">Step 1 of 3</span>
-                                <span id="guidance-title" class="font-bold text-white text-sm">Select a State</span>
-                            </div>
-                            <p id="guidance-text" class="text-sm text-slate-300 leading-snug">
-                                Click any state on the map (such as Indiana) to zoom in and load its county boundaries.
-                            </p>
-                        </div>
-
-                        <!-- Close / Dismiss Button -->
-                        <button id="guidance-dismiss-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.dismissGuidance()" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors pointer-events-auto" title="Dismiss hint" aria-label="Dismiss guide">
-                            <span class="material-symbols-outlined text-[18px]">close</span>
-                        </button>
+                    <!-- Step Icon -->
+                    <div id="guidance-icon-container" class="mt-0.5 shrink-0 w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400 shadow-inner">
+                        <span id="guidance-icon" class="material-symbols-outlined text-[22px]">touch_app</span>
                     </div>
+
+                    <!-- Content -->
+                    <div class="flex-1 min-w-0 pr-6">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span id="guidance-badge" class="px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30">Step 1 of 3</span>
+                            <span id="guidance-title" class="font-bold text-white text-sm">Select a State</span>
+                        </div>
+                        <p id="guidance-text" class="text-sm text-slate-300 leading-snug">
+                            Click any state on the map (such as Indiana) to zoom in and load its county boundaries.
+                        </p>
+                    </div>
+
+                    <!-- Close / Dismiss Button -->
+                    <button id="guidance-dismiss-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.dismissGuidance()" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors pointer-events-auto" title="Dismiss hint" aria-label="Dismiss guide">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
                 </div>
-
-                <!-- Compact Re-open Guide Pill -->
-                <button id="guidance-reopen-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.showGuidance()" class="hidden absolute bottom-5 left-5 z-[85] bg-slate-950/90 hover:bg-slate-900 border border-slate-700/80 rounded-full px-4 py-2 shadow-xl backdrop-blur-md flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-all transform hover:scale-105 pointer-events-auto">
-                    <span class="material-symbols-outlined text-blue-400 text-[18px]">help</span>
-                    <span class="font-medium">Map Guide</span>
-                </button>
-
-                <div id="impact-map" class="w-full h-full z-0 transition-all duration-500"></div>
             </div>
+
+            <!-- Compact Re-open Guide Pill â€” bottom-left, h-9 matches MapLibre zoom btn height -->
+            <button id="guidance-reopen-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.showGuidance()" class="hidden absolute bottom-[29px] left-[10px] z-[85] bg-slate-950/90 hover:bg-slate-900 border border-slate-700/80 rounded-lg h-[29px] px-3 shadow-xl backdrop-blur-md flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-all transform hover:scale-105 pointer-events-auto">
+                <span class="material-symbols-outlined text-blue-400 text-[18px]">help</span>
+                <span class="font-medium">Map Guide</span>
+            </button>
+
+            <div id="impact-map" class="w-full h-full z-0 transition-all duration-500"></div>
+        </div>
 
             <!-- Problem Gambling Slider -->
             <div class="mt-10">
@@ -157,7 +157,7 @@
                              MajorTickInterval="2" MinorTickInterval="0.5"
                              Tooltip="Pre-existing percentage of adults meeting clinical or sub-clinical diagnostic criteria for problem gambling prior to casino introduction."
                              Description="Default 2.3% is the official baseline clinical diagnosis rate for adult Hoosiers established by the Indiana Family and Social Services Administration (FSSA) / Division of Mental Health and Addiction (DMHA) statewide survey, capturing pre-construction problem gambling before new facility exposure."
-                             Markers='@(new List<SliderMarker> { 
+                             Markers='@(new List<SliderMarker> {
                                  new() { Label="Dx (2.3%)", Value=2.3, TooltipDescription="Default: Official Indiana FSSA/DMHA baseline rate for adult Hoosiers meeting clinical criteria for Gambling Disorder (2023)." },
                                  new() { Label="Problem (3.0%)", Value=3.0, TooltipDescription="Statewide survey rate of Hoosiers reporting self-identified problems with gambling." },
                                  new() { Label="At-Risk (5.5%)", Value=5.5, TooltipDescription="Broader combined at-risk and problem gambling prevalence (National Council on Problem Gambling benchmark)." }
@@ -170,7 +170,7 @@
                              MajorTickInterval="0.5" MinorTickInterval="0.25"
                              Tooltip="Empirical background prevalence increase across the 50-mile patron footprint, capturing regional market-wide lift beyond localized proximity tiers."
                              Description="Default 0.5% reflects the conservative lower-quartile prevalence increase (+0.4% to +0.9%) documented in empirical longitudinal studies (NORC/NGISC, Volberg SEIGMA) when introducing a commercial casino into a previously unserved 50-mile regional market where 95% of patrons reside."
-                             Markers='@(new List<SliderMarker> { 
+                             Markers='@(new List<SliderMarker> {
                                  new() { Label="None (0%)", Value=0, TooltipDescription="Zero regional background increase; models proximity premiums exclusively within 20 miles." },
                                  new() { Label="Low (0.5%)", Value=0.5, TooltipDescription="Default: Conservative empirical baseline lift (+0.5%) across the full 50-mile commercial catchment area." },
                                  new() { Label="High (1.0%)", Value=1.0, TooltipDescription="Higher baseline lift (+1.0%) modeling aggressive market saturation and digital gaming crossover." }
@@ -207,14 +207,14 @@
             <!-- ... (Keeping existing Stats Grid HTML as it relies on IDs populated by JS) ... -->
             <!-- I am keeping the stats grid from lines ~370-550 of original file. -->
             <!-- Since I am writing the WHOLE file, I must include it. -->
-            
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-4">
                 <div class="p-4 bg-blue-900/20 rounded-xl border border-blue-800 relative overflow-hidden group flex flex-col">
                     <div class="absolute top-0 right-0 bg-blue-500/40 backdrop-blur-sm text-white text-sm px-2 py-0.5 rounded-bl-lg font-bold">2.0x Risk</div>
                     <div class="flex-1">
                         <div class="text-sm font-bold text-blue-500 uppercase tracking-wider mb-2">0-10 Miles (High Risk)</div>
                         <div class="text-lg font-black text-white mb-1" id="val-t1">-</div>
-                        <div class="text-sm text-white mb-2">Adult Population (18+) — State Total</div>
+                        <div class="text-sm text-white mb-2">Adult Population (18+) â€” State Total</div>
                         <div class="text-sm text-white leading-tight mb-2">
                             <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="val-t1-county">-</span></div>
                             <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="val-t1-other">-</span></div>
@@ -239,7 +239,7 @@
                     <div class="flex-1">
                         <div class="text-sm font-bold text-red-500 uppercase tracking-wider mb-2">10-20 Miles (Elevated)</div>
                         <div class="text-lg font-black text-white mb-1" id="val-t2">-</div>
-                        <div class="text-sm text-white mb-2">Adult Population (18+) — State Total</div>
+                        <div class="text-sm text-white mb-2">Adult Population (18+) â€” State Total</div>
                         <div class="text-sm text-white leading-tight mb-2">
                             <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="val-t2-county">-</span></div>
                             <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="val-t2-other">-</span></div>
@@ -264,7 +264,7 @@
                     <div class="flex-1">
                         <div class="text-sm font-bold text-orange-500 uppercase tracking-wider mb-2">20-50 Miles (Baseline)</div>
                         <div class="text-lg font-black text-white mb-1" id="val-t3">-</div>
-                        <div class="text-sm text-white mb-2" id="label-t3">Adult Population (18+) — State Total</div>
+                        <div class="text-sm text-white mb-2" id="label-t3">Adult Population (18+) â€” State Total</div>
                         <div class="text-sm text-white leading-tight mb-2">
                             <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="val-t3-county">-</span></div>
                             <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="val-t3-other">-</span></div>
@@ -360,7 +360,7 @@
                     <div class="text-right"><div class="text-xl font-mono text-blue-200 leading-none" id="disp-regional-counties">-</div><div class="text-sm font-mono text-slate-500 mt-1" id="disp-regional-counties-20">-</div></div>
                 </div>
             </div>
-            <p class="mt-3 text-sm text-slate-400 italic leading-relaxed hidden">* County population totals reflect the full assessed county. Impact zones are modeled within a 50‑mile radius (0–10, 10–20, 20–50) for the subject county and same‑state spillover; out‑of‑state impacts are excluded.</p>
+            <p class="mt-3 text-sm text-slate-400 italic leading-relaxed hidden">* County population totals reflect the full assessed county. Impact zones are modeled within a 50â€‘mile radius (0â€“10, 10â€“20, 20â€“50) for the subject county and sameâ€‘state spillover; outâ€‘ofâ€‘state impacts are excluded.</p>
         </div>
     </div>
 </div>

@@ -4749,8 +4749,30 @@ window.MapLibreImpactMap = (function ()
             // changes always propagate through the map -> breakdown -> calculator pipeline.
             window.addEventListener('slider-input-sync', handleProjectionControlEvent);
 
-            // Initialize navigation UI & guidance overlay
+            // Initialize navigation UI back buttons (step 1 = hide both)
             updateMapNavUI(1);
+
+            // Show guidance overlay once map scrolls into view, then auto-fade after 8s
+            const mapContainer = document.getElementById('impact-map');
+            if (mapContainer && 'IntersectionObserver' in window)
+            {
+                const observer = new IntersectionObserver((entries) =>
+                {
+                    entries.forEach(entry =>
+                    {
+                        if (entry.isIntersecting && !guidanceDismissed)
+                        {
+                            observer.disconnect();
+                            showGuidance();
+                            guidanceFadeTimer = setTimeout(() =>
+                            {
+                                dismissGuidance(true);
+                            }, 8000);
+                        }
+                    });
+                }, { threshold: 0.4 });
+                observer.observe(mapContainer);
+            }
 
             return map;
         },
@@ -4992,23 +5014,25 @@ window.MapLibreImpactMap = (function ()
 
     function dismissGuidance(isAuto = false)
     {
+        clearTimeout(guidanceFadeTimer);
         const guidanceEl = document.getElementById('map-step-guidance');
         const reopenBtn = document.getElementById('guidance-reopen-btn');
         if (guidanceEl)
         {
             guidanceEl.classList.remove('opacity-100', 'translate-y-0');
-            guidanceEl.classList.add('opacity-0', 'translate-y-4');
+            guidanceEl.classList.add('opacity-0', 'translate-y-2');
             setTimeout(() =>
             {
                 guidanceEl.classList.add('hidden');
                 if (reopenBtn) reopenBtn.classList.remove('hidden');
-            }, 400);
+            }, 500);
         }
         if (!isAuto) guidanceDismissed = true;
     }
 
     function showGuidance()
     {
+        clearTimeout(guidanceFadeTimer);
         guidanceDismissed = false;
         const guidanceEl = document.getElementById('map-step-guidance');
         const reopenBtn = document.getElementById('guidance-reopen-btn');
@@ -5016,11 +5040,20 @@ window.MapLibreImpactMap = (function ()
         if (guidanceEl)
         {
             guidanceEl.classList.remove('hidden');
-            setTimeout(() =>
+            // rAF ensures display:block takes effect before opacity transition fires
+            requestAnimationFrame(() =>
             {
-                guidanceEl.classList.remove('opacity-0', 'translate-y-4');
-                guidanceEl.classList.add('opacity-100', 'translate-y-0');
-            }, 20);
+                requestAnimationFrame(() =>
+                {
+                    guidanceEl.classList.remove('opacity-0', 'translate-y-2');
+                    guidanceEl.classList.add('opacity-100', 'translate-y-0');
+                });
+            });
+            // Auto-fade again after 8s when user manually reopens
+            guidanceFadeTimer = setTimeout(() =>
+            {
+                dismissGuidance(true);
+            }, 8000);
         }
     }
 })();
