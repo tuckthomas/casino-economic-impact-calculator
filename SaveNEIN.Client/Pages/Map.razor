@@ -125,6 +125,41 @@
                     </div>
                 </div>
 
+                <!-- Interactive In-Map Step Guidance Overlay -->
+                <div id="map-step-guidance" class="absolute bottom-5 left-1/2 -translate-x-1/2 z-[85] w-[94%] sm:w-auto max-w-lg transition-all duration-500 transform translate-y-0 opacity-100 pointer-events-auto">
+                    <div class="bg-slate-950/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-4 shadow-2xl flex items-start gap-3.5 text-left relative overflow-hidden">
+                        <!-- Accent Glow Line -->
+                        <div id="guidance-accent-line" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 transition-all duration-500"></div>
+                        
+                        <!-- Step Icon -->
+                        <div id="guidance-icon-container" class="mt-0.5 shrink-0 w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400 shadow-inner">
+                            <span id="guidance-icon" class="material-symbols-outlined text-[22px]">touch_app</span>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="flex-1 min-w-0 pr-6">
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <span id="guidance-badge" class="px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30">Step 1 of 3</span>
+                                <span id="guidance-title" class="font-bold text-white text-sm">Select a State</span>
+                            </div>
+                            <p id="guidance-text" class="text-sm text-slate-300 leading-snug">
+                                Click any state on the map (such as Indiana) to zoom in and load its county boundaries.
+                            </p>
+                        </div>
+
+                        <!-- Close / Dismiss Button -->
+                        <button id="guidance-dismiss-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.dismissGuidance()" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors" title="Dismiss hint" aria-label="Dismiss guide">
+                            <span class="material-symbols-outlined text-[18px]">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Compact Re-open Guide Pill -->
+                <button id="guidance-reopen-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.showGuidance()" class="hidden absolute bottom-5 right-5 z-[85] bg-slate-950/90 hover:bg-slate-900 border border-slate-700/80 rounded-full px-4 py-2 shadow-xl backdrop-blur-md flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-all transform hover:scale-105">
+                    <span class="material-symbols-outlined text-blue-400 text-[18px]">help</span>
+                    <span class="font-medium">Map Guide</span>
+                </button>
+
                 <div id="impact-map" class="w-full h-full z-0 transition-all duration-500"></div>
             </div>
 

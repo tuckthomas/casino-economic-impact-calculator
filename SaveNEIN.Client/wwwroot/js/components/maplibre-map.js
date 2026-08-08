@@ -1907,32 +1907,6 @@ window.MapLibreImpactMap = (function ()
         }
     }
 
-    function updateMapNavUI(step)
-    {
-        const colors = {
-            1: { bar: 'bg-blue-500', shadow: 'shadow-[0_0_10px_rgba(59,130,246,0.5)]', text: 'text-blue-400' },
-            2: { bar: 'bg-emerald-500', shadow: 'shadow-[0_0_10px_rgba(16,185,129,0.5)]', text: 'text-emerald-400' },
-            3: { bar: 'bg-purple-500', shadow: 'shadow-[0_0_10px_rgba(168,85,247,0.5)]', text: 'text-purple-400' }
-        };
-        for (let i = 1; i <= 3; i++)
-        {
-            const bar = document.getElementById(`map-nav-bar-${i}`);
-            const label = document.getElementById(`map-nav-label-${i}`);
-            if (!bar || !label) continue;
-            bar.className = bar.className.replace(/bg-\w+-\d+|shadow-\[.*?\]/g, '').trim();
-            label.className = label.className.replace(/text-\w+-\d+/g, '').trim();
-            if (i <= step)
-            {
-                bar.classList.add(colors[i].bar, colors[i].shadow);
-                label.classList.add(colors[i].text);
-            } else
-            {
-                bar.classList.add('bg-slate-700');
-                label.classList.add('text-slate-600');
-            }
-        }
-    }
-
     function resetImpactStats(preserveHeatmap = false)
     {
         currentContextGeoJSON = null;
@@ -3925,7 +3899,6 @@ window.MapLibreImpactMap = (function ()
                 refreshStateHeatmapAfterMovement(stateFips);
                 map.fitBounds(bounds, { padding: 40 });
                 if (els.stateDisplay) els.stateDisplay.textContent = stateFeature.properties.NAME || stateFeature.properties.name;
-
             }
         }
         else
@@ -3934,7 +3907,15 @@ window.MapLibreImpactMap = (function ()
             if (els.stateDisplay) els.stateDisplay.textContent = props.name || props.NAME;
         }
 
-        updateMapNavUI(2);
+        let resolvedStateName = (typeof props === 'object' ? (props.name || props.NAME) : '') || '';
+        if (stateData && stateData.features)
+        {
+            const stF = stateData.features.find(f => (f.properties.GEOID === stateFips || f.properties.geoid === stateFips));
+            if (stF) resolvedStateName = stF.properties.NAME || stF.properties.name || resolvedStateName;
+        }
+        if (!resolvedStateName && stateFips === '18') resolvedStateName = 'Indiana';
+
+        updateMapNavUI(2, resolvedStateName);
 
         // Pre-fetch county context and names in background
         prefetchTopCounties(stateFips);
@@ -4178,7 +4159,7 @@ window.MapLibreImpactMap = (function ()
             const countyName = countyFeature?.properties?.name || countyFeature?.properties?.NAME || '';
             window.dispatchEvent(new CustomEvent('county-selected-map', { detail: { geoid: countyFips, name: countyName } }));
 
-            updateMapNavUI(3);
+            updateMapNavUI(3, countyName);
         }
         catch (err)
         {
@@ -4305,6 +4286,7 @@ window.MapLibreImpactMap = (function ()
                     }));
                     const displayEl = document.getElementById('county-display');
                     if (displayEl) displayEl.textContent = countyName;
+                    updateMapNavUI(3, countyName);
 
                     // In grid mode we update dynamically only when snapping at dragend
                     // In radius mode we update isochrones dynamically
@@ -4754,6 +4736,9 @@ window.MapLibreImpactMap = (function ()
             // changes always propagate through the map -> breakdown -> calculator pipeline.
             window.addEventListener('slider-input-sync', handleProjectionControlEvent);
 
+            // Initialize navigation UI & guidance overlay
+            updateMapNavUI(1);
+
             return map;
         },
 
@@ -4778,7 +4763,7 @@ window.MapLibreImpactMap = (function ()
             if (cb) cb.checked = newVal;
         },
 
-        navigateToStep: function (step)
+        navigateToStep: async function (step)
         {
             if (step === 1)
             {
@@ -4836,69 +4821,29 @@ window.MapLibreImpactMap = (function ()
                 map.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM });
                 updateMapNavUI(1);
             }
-            else if (step === 2 && currentStateFips) 
+            else if (step === 2)
             {
-                // Go back to state view - remove marker and circles, keep state selected
-                currentCountyFips = null;
-                blockGroupDensityRequestSeq++;
-                clearBlockGroupDensity();
-                setHeatmapFeatures([]);
-                if (document.getElementById('toggle-heatmap')?.checked) layersVisible.heatmap = true;
-                if (layersVisible.heatmap)
+                const targetState = currentStateFips || '18';
+                await drillToState(targetState);
+                let stateName = 'Indiana';
+                if (stateData && stateData.features)
                 {
-                    setupHeatmapLayer();
-                    loadStatePopulationHeatmap(currentStateFips);
+                    const stateFeature = stateData.features.find(f => (f.properties.GEOID === targetState || f.properties.geoid === targetState));
+                    if (stateFeature) stateName = stateFeature.properties.NAME || stateFeature.properties.name || 'Indiana';
                 }
-                markerPosition = null;
-
-                // Remove marker if exists
-                if (marker)
-                {
-                    marker.remove();
-                    marker = null;
-                }
-
-                // Clear circles
-                if (map.getSource('impact-circles'))
-                {
-                    map.getSource('impact-circles').setData({ type: 'FeatureCollection', features: [] });
-                }
-
-                // Clear county highlight
-                setLayerVisibility('county-highlight-line', false);
-                clearMunicipalBoundaries();
-
-                // Re-show county lines for state selection
-                setCountyFilter(currentStateFips);
-
-                // Hide state hover since we're in county selection mode
-                if (map.getLayer('states-hover'))
-                {
-                    map.setLayoutProperty('states-hover', 'visibility', 'none');
-                }
-                if (map.getLayer('states-line-hover'))
-                {
-                    map.setLayoutProperty('states-line-hover', 'visibility', 'none');
-                }
-
-                // Zoom back to state bounds
-                if (stateData && stateData.features && typeof turf !== 'undefined')
-                {
-                    const stateFeature = stateData.features.find(f =>
-                        f.properties.GEOID === currentStateFips || f.properties.geoid === currentStateFips
-                    );
-                    if (stateFeature)
-                    {
-                        refreshStateHeatmapAfterMovement(currentStateFips);
-                        map.fitBounds(turf.bbox(stateFeature), { padding: 40 });
-                    }
-                }
-
-                resetImpactStats(true);
-                updateMapNavUI(2);
+                updateMapNavUI(2, stateName);
+            }
+            else if (step === 3)
+            {
+                const targetCounty = currentCountyFips || '18003';
+                await selectCounty(targetCounty);
+                const countyName = countyNamesCache[targetCounty] || 'Allen County';
+                updateMapNavUI(3, countyName);
             }
         },
 
+        dismissGuidance: () => dismissGuidance(false),
+        showGuidance: () => showGuidance(),
         getMarkerPosition: () => markerPosition,
         getMap: () => map,
         loadState: (fips) => drillToState(fips),
@@ -4926,6 +4871,144 @@ window.MapLibreImpactMap = (function ()
         setIsochroneVisibility: (v) => { toggleLayerVisibility('valhalla', v); const cb = document.getElementById('toggle-valhalla'); if (cb) cb.checked = v; },
         setRiskZoneMode // expose
     };
+
+    let guidanceDismissed = false;
+    let guidanceFadeTimer = null;
+
+    function updateMapNavUI(step, contextName)
+    {
+        // 1. Update top 3-step navigation bar
+        const bar1 = document.getElementById('map-nav-bar-1');
+        const bar2 = document.getElementById('map-nav-bar-2');
+        const bar3 = document.getElementById('map-nav-bar-3');
+        const lbl1 = document.getElementById('map-nav-label-1');
+        const lbl2 = document.getElementById('map-nav-label-2');
+        const lbl3 = document.getElementById('map-nav-label-3');
+
+        if (bar1 && bar2 && bar3)
+        {
+            if (step === 1)
+            {
+                bar1.className = 'h-1.5 w-full bg-blue-500 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]';
+                bar2.className = 'h-1.5 w-full bg-slate-700 rounded-full transition-all duration-300';
+                bar3.className = 'h-1.5 w-full bg-slate-700 rounded-full transition-all duration-300';
+                if (lbl1) lbl1.className = 'text-sm sm:text-sm font-bold text-blue-400 uppercase tracking-widest text-center transition-colors duration-300';
+                if (lbl2) lbl2.className = 'text-sm sm:text-sm font-bold text-slate-600 uppercase tracking-widest text-center transition-colors duration-300';
+                if (lbl3) lbl3.className = 'text-sm sm:text-sm font-bold text-slate-600 uppercase tracking-widest text-center transition-colors duration-300';
+            }
+            else if (step === 2)
+            {
+                bar1.className = 'h-1.5 w-full bg-blue-500/60 rounded-full transition-all duration-300';
+                bar2.className = 'h-1.5 w-full bg-cyan-400 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(34,211,238,0.5)]';
+                bar3.className = 'h-1.5 w-full bg-slate-700 rounded-full transition-all duration-300';
+                if (lbl1) lbl1.className = 'text-sm sm:text-sm font-bold text-blue-300 uppercase tracking-widest text-center transition-colors duration-300';
+                if (lbl2) lbl2.className = 'text-sm sm:text-sm font-bold text-cyan-400 uppercase tracking-widest text-center transition-colors duration-300';
+                if (lbl3) lbl3.className = 'text-sm sm:text-sm font-bold text-slate-600 uppercase tracking-widest text-center transition-colors duration-300';
+            }
+            else if (step === 3)
+            {
+                bar1.className = 'h-1.5 w-full bg-blue-500/50 rounded-full transition-all duration-300';
+                bar2.className = 'h-1.5 w-full bg-cyan-500/60 rounded-full transition-all duration-300';
+                bar3.className = 'h-1.5 w-full bg-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(52,211,153,0.5)]';
+                if (lbl1) lbl1.className = 'text-sm sm:text-sm font-bold text-blue-300 uppercase tracking-widest text-center transition-colors duration-300';
+                if (lbl2) lbl2.className = 'text-sm sm:text-sm font-bold text-cyan-300 uppercase tracking-widest text-center transition-colors duration-300';
+                if (lbl3) lbl3.className = 'text-sm sm:text-sm font-bold text-emerald-400 uppercase tracking-widest text-center transition-colors duration-300';
+            }
+        }
+
+        // 2. Update in-map guidance card
+        const guidanceEl = document.getElementById('map-step-guidance');
+        const reopenBtn = document.getElementById('guidance-reopen-btn');
+        const badgeEl = document.getElementById('guidance-badge');
+        const titleEl = document.getElementById('guidance-title');
+        const textEl = document.getElementById('guidance-text');
+        const iconEl = document.getElementById('guidance-icon');
+        const iconContainer = document.getElementById('guidance-icon-container');
+        const accentLine = document.getElementById('guidance-accent-line');
+
+        if (guidanceEl && badgeEl && titleEl && textEl && iconEl)
+        {
+            clearTimeout(guidanceFadeTimer);
+
+            if (step === 1)
+            {
+                badgeEl.textContent = 'Step 1 of 3';
+                badgeEl.className = 'px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30';
+                titleEl.textContent = 'Select a State';
+                textEl.textContent = 'Click any state on the map (such as Indiana) to zoom in and load its county boundaries.';
+                iconEl.textContent = 'touch_app';
+                if (iconContainer) iconContainer.className = 'mt-0.5 shrink-0 w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400 shadow-inner';
+                if (accentLine) accentLine.className = 'absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-500';
+            }
+            else if (step === 2)
+            {
+                badgeEl.textContent = 'Step 2 of 3';
+                badgeEl.className = 'px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-400/30';
+                titleEl.textContent = contextName ? `Select a County in ${contextName}` : 'Select a County';
+                textEl.textContent = 'Click a county on the map (such as Allen County) to place the proposed casino and calculate drive-time impact.';
+                iconEl.textContent = 'location_on';
+                if (iconContainer) iconContainer.className = 'mt-0.5 shrink-0 w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400 shadow-inner';
+                if (accentLine) accentLine.className = 'absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-500';
+            }
+            else if (step === 3)
+            {
+                badgeEl.textContent = 'Step 3 of 3 (Optional)';
+                badgeEl.className = 'px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+                titleEl.textContent = 'Move Casino Marker (Optional)';
+                textEl.innerHTML = `Casino marker placed${contextName ? ` in <strong class="text-white">${escapeHtml(contextName)}</strong>` : ''}! You <strong>can move the casino marker</strong> around within the county or into other counties to test alternative locations.`;
+                iconEl.textContent = 'pin_drop';
+                if (iconContainer) iconContainer.className = 'mt-0.5 shrink-0 w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shadow-inner';
+                if (accentLine) accentLine.className = 'absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 transition-all duration-500';
+
+                // Automatically collapse Step 3 guidance after 12s so it doesn't obstruct map interaction
+                guidanceFadeTimer = setTimeout(() =>
+                {
+                    dismissGuidance(true);
+                }, 12000);
+            }
+
+            if (!guidanceDismissed)
+            {
+                guidanceEl.classList.remove('hidden', 'opacity-0', 'translate-y-4');
+                guidanceEl.classList.add('opacity-100', 'translate-y-0');
+                if (reopenBtn) reopenBtn.classList.add('hidden');
+            }
+        }
+    }
+
+    function dismissGuidance(isAuto = false)
+    {
+        const guidanceEl = document.getElementById('map-step-guidance');
+        const reopenBtn = document.getElementById('guidance-reopen-btn');
+        if (guidanceEl)
+        {
+            guidanceEl.classList.remove('opacity-100', 'translate-y-0');
+            guidanceEl.classList.add('opacity-0', 'translate-y-4');
+            setTimeout(() =>
+            {
+                guidanceEl.classList.add('hidden');
+                if (reopenBtn) reopenBtn.classList.remove('hidden');
+            }, 400);
+        }
+        if (!isAuto) guidanceDismissed = true;
+    }
+
+    function showGuidance()
+    {
+        guidanceDismissed = false;
+        const guidanceEl = document.getElementById('map-step-guidance');
+        const reopenBtn = document.getElementById('guidance-reopen-btn');
+        if (reopenBtn) reopenBtn.classList.add('hidden');
+        if (guidanceEl)
+        {
+            guidanceEl.classList.remove('hidden');
+            setTimeout(() =>
+            {
+                guidanceEl.classList.remove('opacity-0', 'translate-y-4');
+                guidanceEl.classList.add('opacity-100', 'translate-y-0');
+            }, 20);
+        }
+    }
 })();
 
 // === GLOBAL HELPERS (for HTML onclick handlers) ===
@@ -4936,6 +5019,22 @@ window.toggleLayer = function (id)
     if (cb && window.MapLibreImpactMap)
     {
         window.MapLibreImpactMap.toggleLayer(id);
+    }
+};
+
+window.dismissMapGuidance = function ()
+{
+    if (window.MapLibreImpactMap && window.MapLibreImpactMap.dismissGuidance)
+    {
+        window.MapLibreImpactMap.dismissGuidance();
+    }
+};
+
+window.showMapGuidance = function ()
+{
+    if (window.MapLibreImpactMap && window.MapLibreImpactMap.showGuidance)
+    {
+        window.MapLibreImpactMap.showGuidance();
     }
 };
 
