@@ -108,7 +108,20 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Seed TIGER Data on startup and warm caches (fire-and-forget to avoid blocking startup)
+// Municipality containment directly changes the tax-allocation branch. The PLACE
+// dataset needed by configured municipal scenarios is therefore a startup/readiness
+// dependency, not optional background map data. Do not begin serving requests until
+// the required state PLACE data exists and contains usable active geometries.
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
+    Console.WriteLine("Ensuring required municipality PLACE data is ready...");
+    await seeder.EnsureRequiredMunicipalityPlaceDataAsync();
+    Console.WriteLine("Required municipality PLACE data is ready.");
+}
+
+// Seed the remaining TIGER datasets and warm caches in the background. Correctness-
+// critical municipality PLACE data has already been verified above.
 _ = Task.Run(async () =>
 {
     using var scope = app.Services.CreateScope();
