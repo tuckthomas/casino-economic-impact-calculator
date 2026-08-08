@@ -4,26 +4,24 @@
 <style>
     /* MapLibre GL JS Navigation Controls */
     .maplibregl-ctrl-group {
-        border-radius: 12px !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        border-radius: 0.5rem !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
         overflow: hidden;
-        background-color: rgba(2, 6, 23, 0.5) !important;
-        backdrop-filter: blur(4px);
+        background-color: rgba(2, 6, 23, 0.4) !important;
+        backdrop-filter: blur(4px) !important;
     }
     .maplibregl-ctrl-group button {
-        background-color: rgba(2, 6, 23, 0.5) !important;
+        background-color: transparent !important;
         color: white !important;
         border-bottom: 1px solid rgba(255,255,255,0.05) !important;
         transition: all 0.15s ease !important;
     }
     .maplibregl-ctrl-group button:hover {
-        background-color: rgba(59, 130, 246, 0.4) !important;
-        box-shadow: inset 0 0 12px rgba(59, 130, 246, 0.3) !important;
+        background-color: rgba(15, 23, 42, 0.6) !important;
     }
     .maplibregl-ctrl-group button:active {
-        background-color: rgba(59, 130, 246, 0.6) !important;
-        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+        background-color: rgba(15, 23, 42, 0.8) !important;
         transform: scale(0.95);
     }
     .maplibregl-ctrl-group button span {
@@ -140,9 +138,9 @@
                 </div>
             </div>
 
-            <!-- Compact Re-open Guide Pill â€” bottom-left, h-9 matches MapLibre zoom btn height -->
-            <button id="guidance-reopen-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.showGuidance()" class="hidden absolute bottom-[29px] left-[10px] z-[85] bg-slate-950/90 hover:bg-slate-900 border border-slate-700/80 rounded-lg h-[29px] px-3 shadow-xl backdrop-blur-md flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-all transform hover:scale-105 pointer-events-auto">
-                <span class="material-symbols-outlined text-blue-400 text-[18px]">help</span>
+            <!-- Compact Re-open Guide Pill -->
+            <button id="guidance-reopen-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.showGuidance()" class="hidden absolute bottom-[10px] left-[10px] z-[85] bg-slate-950/40 hover:bg-slate-900/60 border border-white/5 rounded-lg h-[30px] px-3 shadow-lg backdrop-blur-sm flex items-center gap-2 text-sm text-white transition-colors pointer-events-auto">
+                <span class="material-symbols-outlined text-white text-[18px]">help</span>
                 <span class="font-medium">Map Guide</span>
             </button>
 

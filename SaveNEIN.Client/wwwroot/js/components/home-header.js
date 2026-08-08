@@ -5,9 +5,15 @@ window.HomeHeader = (() => {
     let lastScrollY = 0;
     let isStuck = false;
     let lastActiveLink = null;
+    let hideTimer = null;
     const desktopBreakpoint = window.matchMedia("(min-width: 1024px)");
 
     function destroy() {
+        if (hideTimer) {
+            clearTimeout(hideTimer);
+            hideTimer = null;
+        }
+
         if (observer) {
             observer.disconnect();
             observer = null;
@@ -140,12 +146,23 @@ window.HomeHeader = (() => {
 
             if (!isStuck) {
                 setHeaderVisibility(true);
+                clearTimeout(hideTimer);
             } else if (currentScrollY <= hero.offsetHeight) {
                 setHeaderVisibility(true);
+                clearTimeout(hideTimer);
             } else if (scrollDelta > 6 && currentScrollY > header.offsetHeight * 2) {
                 setHeaderVisibility(false);
+                clearTimeout(hideTimer);
             } else if (scrollDelta < -4 || currentScrollY <= hero.offsetHeight + revealThreshold) {
                 setHeaderVisibility(true);
+                clearTimeout(hideTimer);
+                
+                // On mobile, auto-hide the header after 2.5s of no scrolling if we're far down the page
+                if (!desktopBreakpoint.matches && currentScrollY > hero.offsetHeight + revealThreshold) {
+                    hideTimer = setTimeout(() => {
+                        setHeaderVisibility(false);
+                    }, 2500);
+                }
             }
 
             updateActiveSectionLink();
