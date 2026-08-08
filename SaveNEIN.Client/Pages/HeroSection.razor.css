@@ -328,11 +328,13 @@
         width: 1.2rem;
         height: 1.2rem;
         display: block;
+        color: rgba(241, 245, 249, 0.92);
+        flex-shrink: 0;
     }
 
     .hero-mobile-scroll-hint .hero-mobile-scroll-chevron-icon path {
-        stroke: rgba(241, 245, 249, 0.92);
-        stroke-width: 2.5;
+        stroke: currentColor;
+        stroke-width: 2.25;
         stroke-linecap: round;
         stroke-linejoin: round;
     }
