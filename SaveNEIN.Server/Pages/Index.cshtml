@@ -3,7 +3,7 @@
     var clientBuildVersion = typeof(SaveNEIN.Client.App).Assembly.ManifestModule.ModuleVersionId.ToString("N");
 }
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth bg-slate-900">
+<html lang="en" class="scroll-smooth">
 
 <head>
     <meta charset="utf-8" />
@@ -11,24 +11,57 @@
     <title>Save Northeast Indiana - Protect Our Future</title>
     <base href="/" />
 
-    <link href="lib/public-sans/index.css" rel="stylesheet" asp-append-version="true" />
-    <link href="lib/material-symbols-outlined/index.css" rel="stylesheet" asp-append-version="true" />
-
-    <link rel="stylesheet" href="css/maplibre-gl.css" asp-append-version="true" />
-    <script src="js/lib/maplibre-gl.js" asp-append-version="true"></script>
-    <script src="js/lib/pmtiles.js" asp-append-version="true"></script>
-
-    <script src="js/lib/turf.min.js" asp-append-version="true"></script>
-    <script src="js/lib/chart.js" asp-append-version="true"></script>
-    <script src="js/lib/terra-draw.umd.js" asp-append-version="true"></script>
-
-    <script src="js/lib/pdf.min.js" asp-append-version="true"></script>
-    <script src="js/lib/page-flip.browser.js" asp-append-version="true"></script>
-
-    <link href="css/app.css" rel="stylesheet" asp-append-version="true" />
-    <link href="SaveNEIN.Client.styles.css" rel="stylesheet" asp-append-version="true" />
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" asp-append-version="true" />
     <style>
+        /*
+           Critical first paint. Keep this visually aligned with the real hero so the
+           browser never shows the old flat slate/blue loading screen while Blazor and
+           the heavier JavaScript libraries are still starting.
+        */
+        html,
+        body,
+        #app {
+            min-height: 100%;
+            margin: 0;
+            background-color: #070c18;
+            background-image:
+                radial-gradient(ellipse 62% 72% at 3% 104%, rgba(80, 5, 12, 0.20) 0%, rgba(80, 5, 12, 0.08) 34%, transparent 66%),
+                radial-gradient(ellipse 46% 55% at 94% 3%, rgba(30, 41, 59, 0.34) 0%, rgba(15, 23, 42, 0.12) 48%, transparent 72%),
+                linear-gradient(115deg, #080914 0%, #07101e 50%, #0b1424 100%);
+        }
+
+        #app {
+            min-height: 100svh;
+        }
+
+        .startup-hero-backdrop {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            background-color: #070c18;
+            background-image:
+                radial-gradient(ellipse 62% 72% at 3% 104%, rgba(80, 5, 12, 0.20) 0%, rgba(80, 5, 12, 0.08) 34%, transparent 66%),
+                radial-gradient(ellipse 46% 55% at 94% 3%, rgba(30, 41, 59, 0.34) 0%, rgba(15, 23, 42, 0.12) 48%, transparent 72%),
+                linear-gradient(115deg, #080914 0%, #07101e 50%, #0b1424 100%);
+        }
+
+        .startup-hero-backdrop::before {
+            content: "";
+            position: absolute;
+            width: 172%;
+            height: 176%;
+            left: -43%;
+            bottom: -66%;
+            opacity: 0.78;
+            filter: blur(18px);
+            background-image:
+                radial-gradient(ellipse 16% 11% at 24% 61%, rgba(2, 6, 23, 0.66) 0%, rgba(2, 6, 23, 0.24) 48%, transparent 72%),
+                radial-gradient(ellipse 13% 9% at 36% 70%, rgba(2, 6, 23, 0.55) 0%, rgba(2, 6, 23, 0.18) 50%, transparent 72%),
+                radial-gradient(ellipse 29% 18% at 17% 71%, rgba(80, 5, 12, 0.82) 0%, rgba(80, 5, 12, 0.42) 34%, rgba(80, 5, 12, 0.10) 62%, transparent 78%),
+                radial-gradient(ellipse 24% 14% at 30% 76%, rgba(120, 10, 20, 0.58) 0%, rgba(80, 5, 12, 0.28) 38%, rgba(80, 5, 12, 0.07) 64%, transparent 77%),
+                radial-gradient(ellipse 18% 11% at 9% 82%, rgba(185, 28, 28, 0.36) 0%, rgba(120, 10, 20, 0.18) 38%, transparent 72%);
+        }
+
         html {
             overflow-y: scroll;
         }
@@ -102,11 +135,20 @@
             background-color: rgba(30, 41, 59, 0.8);
         }
     </style>
+
+    <link href="lib/public-sans/index.css" rel="stylesheet" asp-append-version="true" />
+    <link href="lib/material-symbols-outlined/index.css" rel="stylesheet" asp-append-version="true" />
+    <link rel="stylesheet" href="css/maplibre-gl.css" asp-append-version="true" />
+    <link href="css/app.css" rel="stylesheet" asp-append-version="true" />
+    <link href="SaveNEIN.Client.styles.css" rel="stylesheet" asp-append-version="true" />
+    <link href="css/atmospheric-backgrounds.css" rel="stylesheet" asp-append-version="true" />
+    <link href="css/hero-entry-sequence.css" rel="stylesheet" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" asp-append-version="true" />
 </head>
 
-<body class="bg-slate-900 text-slate-300 antialiased font-display overflow-x-hidden">
+<body class="text-slate-300 antialiased font-display overflow-x-hidden">
     <div id="app">
-        <!-- App content will be injected here -->
+        <div class="startup-hero-backdrop" aria-hidden="true"></div>
     </div>
 
     <div id="blazor-error-ui">
@@ -145,6 +187,16 @@
             }, delayMs);
         };
     </script>
+
+    @* These libraries used to block first paint in <head>. Keeping them in the same
+       dependency order here lets the real hero background paint before they load. *@
+    <script src="js/lib/maplibre-gl.js" asp-append-version="true"></script>
+    <script src="js/lib/pmtiles.js" asp-append-version="true"></script>
+    <script src="js/lib/turf.min.js" asp-append-version="true"></script>
+    <script src="js/lib/chart.js" asp-append-version="true"></script>
+    <script src="js/lib/terra-draw.umd.js" asp-append-version="true"></script>
+    <script src="js/lib/pdf.min.js" asp-append-version="true"></script>
+    <script src="js/lib/page-flip.browser.js" asp-append-version="true"></script>
 
     <script src="js/lib/html2canvas.min.js" asp-append-version="true"></script>
     <script src="js/pdf-helper.js" asp-append-version="true"></script>
