@@ -1,0 +1,99 @@
+@media (max-width: 1023px) {
+    /*
+       Reveal the mobile SaveNEIN logo progressively from left to right with a soft
+       alpha edge. This overrides the older whole-logo opacity/translate animation.
+    */
+    #app #hero-section .hero-mobile-intro::before {
+        opacity: 1 !important;
+        transform: none !important;
+        -webkit-mask-image: linear-gradient(
+            90deg,
+            #000 0%,
+            #000 40%,
+            rgba(0, 0, 0, 0.82) 47%,
+            rgba(0, 0, 0, 0.34) 54%,
+            transparent 62%,
+            transparent 100%
+        );
+        mask-image: linear-gradient(
+            90deg,
+            #000 0%,
+            #000 40%,
+            rgba(0, 0, 0, 0.82) 47%,
+            rgba(0, 0, 0, 0.34) 54%,
+            transparent 62%,
+            transparent 100%
+        );
+        -webkit-mask-size: 250% 100%;
+        mask-size: 250% 100%;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: 100% 0;
+        mask-position: 100% 0;
+        animation: heroMobileLogoLeftToRight 1.25s ease 0.15s forwards !important;
+    }
+
+    /* Begin the copy only after the logo reveal has completed. */
+    #app #hero-section .hero-headline .hero-line:nth-child(1) .hero-animate {
+        animation-delay: 1.5s !important;
+    }
+
+    #app #hero-section .hero-headline .hero-line:nth-child(2) .hero-animate {
+        animation-delay: 2.05s !important;
+    }
+
+    #app #hero-section .hero-headline .hero-line:nth-child(3) .hero-animate {
+        animation-delay: 2.6s !important;
+    }
+
+    #app #hero-section .hero-headline .hero-line:nth-child(4) .hero-animate {
+        animation-delay: 3.15s !important;
+    }
+
+    #app #hero-section .hero-kicker .hero-kicker-part:nth-child(1) .hero-animate {
+        animation-delay: 3.85s !important;
+    }
+
+    #app #hero-section .hero-kicker .hero-kicker-part:nth-child(2) .hero-animate {
+        animation-delay: 4.4s !important;
+    }
+
+    #app #hero-section .hero-mobile-swipe-hint,
+    #app #hero-section .hero-mobile-scroll-hint {
+        animation-delay: 6.05s !important;
+    }
+}
+
+@keyframes heroMobileLogoLeftToRight {
+    from {
+        -webkit-mask-position: 100% 0;
+        mask-position: 100% 0;
+    }
+
+    to {
+        -webkit-mask-position: 0 0;
+        mask-position: 0 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) and (max-width: 1023px) {
+    #app #hero-section .hero-mobile-intro::before {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+        -webkit-mask-image: none !important;
+        mask-image: none !important;
+    }
+
+    #app #hero-section .hero-animate,
+    #app #hero-section .hero-mobile-swipe-hint,
+    #app #hero-section .hero-mobile-scroll-hint {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+
+    #app #hero-section .hero-mobile-scroll-hint {
+        transform: translateX(-50%) !important;
+    }
+}
