@@ -2502,7 +2502,10 @@ window.EconomicCalculator = (function ()
         {
             const subjectCountyFips = String((lastImpactBreakdown && lastImpactBreakdown.countyFips) || (els.inCounty && els.inCounty.value) || "");
             const countyIndex = new Map(getCountyData().map(c => [String(c.geoid || c.id || ""), String(c.name || "").trim()]));
-            const subjectCountyName = (lastImpactBreakdown && lastImpactBreakdown.countyName) || countyIndex.get(subjectCountyFips) || "Selected";
+            const rawSubjectName = (lastImpactBreakdown && lastImpactBreakdown.countyName) || countyIndex.get(subjectCountyFips) || "Allen";
+            const cleanCountyName = String(rawSubjectName).replace(/\s+County$/i, '').trim() || "Allen";
+            const formattedCountyName = `${cleanCountyName} County`;
+            const subjectCountyName = cleanCountyName;
             const subjectStateName = String((lastImpactBreakdown && lastImpactBreakdown.stateName) || "Indiana").trim();
 
             const taxEffRate = agrM > 0 ? (totalRevenue / (agrM * 1000000)) * 100 : 0;
@@ -2575,13 +2578,13 @@ window.EconomicCalculator = (function ()
             const branchResultSummary = cityRevenueApplies
                 ? `The site falls inside the incorporated PLACE boundary for ${municipalityName}, so the municipal-site branch is active and the municipality-directed allocation is activated in this analysis.`
                 : isHostCountySelection
-                    ? `The site is outside any incorporated municipal PLACE boundary in ${hostCountyName} County, so the fallback branch is active and the municipality-directed allocation is 0.0% / ${fmtM(revenueCity)} in this analysis.`
-                    : `The selected county is outside the active scenario's host-county eligibility area, so host-local allocation rows are inactive and only the non-local recipients remain funded in this analysis.`;
+                    ? `The site is outside any incorporated municipal PLACE boundary in ${formattedCountyName}, so the fallback branch is active and the municipality-directed allocation is 0.0% / ${fmtM(revenueCity)} in this analysis.`
+                    : `${formattedCountyName} is outside the active scenario's host-county eligibility area, so host-local allocation rows are inactive and only the non-local recipients remain funded in this analysis.`;
             const hostFiscalViewSummary = isHostCountySelection
-                ? `${fmtM(hostLocalRevenue)} in host-government revenue compared with ${fmtM(subjectTotalCost)} in selected-county social costs.`
-                : `Inactive for this county under the active tax-allocation scenario.`;
-            const regionalFiscalViewSummary = `${fmtM(revenueRda)} in regional revenue compared with ${fmtM(spilloverTotalCost)} in spillover social costs outside the selected county.`;
-            const consolidatedFiscalViewSummary = `${fmtM(totalRevenue)} in total statewide revenue compared with ${fmtM(stateWideSocialCost)} in total statewide social costs.`;
+                ? `${fmtM(hostLocalRevenue)} in host-government revenue compared with ${fmtM(subjectTotalCost)} in ${formattedCountyName} social costs.`
+                : `Inactive for ${formattedCountyName} under the active tax-allocation scenario.`;
+            const regionalFiscalViewSummary = `${fmtM(revenueRda)} in regional revenue compared with ${fmtM(spilloverTotalCost)} in spillover social costs across the ${otherCountiesCount} neighboring counties outside ${formattedCountyName}.`;
+            const consolidatedFiscalViewSummary = `${fmtM(totalRevenue)} in total statewide revenue compared with ${fmtM(stateWideSocialCost)} in total statewide social costs across all ${otherCountiesCount + 1} assessed counties.`;
 
             let analysisHTML = '';
 
@@ -2660,33 +2663,33 @@ window.EconomicCalculator = (function ()
             let adultPopStr = adultPop > 0 ? adultPop.toLocaleString() : "Unknown";
             if (projectionUsesProjectedAdults)
             {
-                analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${subjectCountyName} County, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) used in this run is ${adultPopStr}, projected from the ${Math.round(countyBaseAdults).toLocaleString()} baseline to ${populationProjection.targetYear}.</li>`;
+                analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${formattedCountyName}, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) used in this run is ${adultPopStr}, projected from the ${Math.round(countyBaseAdults).toLocaleString()} baseline to ${populationProjection.targetYear}.</li>`;
                 analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 50-mile impact radius, representing a projected regional adult population of ${regionalAdults.toLocaleString()} (up from a ${Math.round(regionalBaseAdults).toLocaleString()} baseline).</li>`;
             } else if (projectionHasFutureYear)
             {
-                analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${subjectCountyName} County, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area remains ${adultPopStr} because the selected projection settings do not change the baseline adult count.</li>`;
+                analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${formattedCountyName}, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area remains ${adultPopStr} because the selected projection settings do not change the baseline adult count.</li>`;
                 analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 50-mile impact radius, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
             } else
             {
-                analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${subjectCountyName} County, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area is ${adultPopStr}.</li>`;
+                analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${formattedCountyName}, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area is ${adultPopStr}.</li>`;
                 analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 50-mile impact radius, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
             }
 
             analysisHTML += `<li><strong>Impact Distribution:</strong> This distribution models the increased statistical likelihood of residents developing problem gambling behaviors (Gambling Disorder) based on their geographic proximity to the casino site.
                                             <ul class="list-[circle] pl-8 mt-2 space-y-2">
-                                                <li><strong>High Risk Zone (0-10 miles):</strong> A total of ${t1Pop} county residents are subject to a ${t1Rate} prevalence rate due to immediate proximity.</li>
-                                                <li><strong>Elevated Risk Zone (10-20 miles):</strong> A total of ${t2Pop} county residents are subject to a ${t2Rate} prevalence rate.</li>`;
+                                                <li><strong>High Risk Zone (0-10 miles):</strong> A total of ${t1Pop} ${formattedCountyName} residents are subject to a ${t1Rate} prevalence rate due to immediate proximity.</li>
+                                                <li><strong>Elevated Risk Zone (10-20 miles):</strong> A total of ${t2Pop} ${formattedCountyName} residents are subject to a ${t2Rate} prevalence rate.</li>`;
 
             if (Math.round(t3AdultsCounty) <= 0)
             {
-                analysisHTML += `<li><strong>Baseline Risk Zone (20-50 miles):</strong> The county has effectively zero residents in the baseline band under the 50-mile model cutoff.</li>`;
+                analysisHTML += `<li><strong>Baseline Risk Zone (20-50 miles):</strong> ${formattedCountyName} has effectively zero residents in the baseline band under the 50-mile model cutoff.</li>`;
             } else
             {
-                analysisHTML += `<li><strong>Baseline Risk Zone (20-50 miles):</strong> A total of ${t3Pop} county residents are subject to the baseline ${t3Rate} rate.</li>`;
+                analysisHTML += `<li><strong>Baseline Risk Zone (20-50 miles):</strong> A total of ${t3Pop} ${formattedCountyName} residents are subject to the baseline ${t3Rate} rate.</li>`;
             }
             analysisHTML += `</ul></li>`;
             // Updated conclusion to be clearer
-            analysisHTML += `<li><strong>Prevalence Outcome:</strong> The resulting net effective problem gambler growth rate for the county is ${effRateDisplay} (of the adult population), projecting ${victims.toLocaleString()} new problem gamblers within the county (within 50 miles of the site). Regionally, an additional ${Math.round(otherVictims).toLocaleString()} new problem gamblers are projected in adjacent counties.</li>`;
+            analysisHTML += `<li><strong>Prevalence Outcome:</strong> The resulting net effective problem gambler growth rate for ${formattedCountyName} is ${effRateDisplay} (of the adult population), projecting ${victims.toLocaleString()} new problem gamblers within ${formattedCountyName} (within 50 miles of the site). Regionally, an additional ${Math.round(otherVictims).toLocaleString()} new problem gamblers are projected across the ${otherCountiesCount} adjacent counties.</li>`;
             analysisHTML += `</ul>`;
 
             // 4. Analysis (Split into sections)
@@ -2701,20 +2704,20 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<li><strong>Branch Trigger Result:</strong> ${escapeHtml(branchResultSummary)}</li>`;
             analysisHTML += `<li><strong>Scenario Results:</strong> Under the active ${escapeHtml(scenarioNameWithBill)} allocation scenario, this run yields approximately ${fmtM(revenueState)} to ${scenarioRecipients.stateRecipient}, ${fmtM(revenueCounty)} to ${scenarioRecipients.countyRecipient}, ${fmtM(revenueCity)} to ${cityRevenueApplies ? scenarioRecipients.municipalityRecipient : 'the municipality branch recipient'}, and ${fmtM(revenueRda)} to ${scenarioRecipients.regionalRecipient}.</li>`;
             analysisHTML += isHostCountySelection
-                ? `<li><strong>Statement Revenue Rows:</strong> The Host Government Fiscal View reports ${fmtM(hostLocalRevenue)} in direct host tax revenue, the Regional Revenue vs County Costs view reports ${fmtM(revenueRda)} in regional revenue, and the Consolidated Statement reports ${fmtM(totalRevenue)} in total tax revenue.</li>`
-                : `<li><strong>Statement Revenue Rows:</strong> The Host Government Fiscal View is inactive for this county under the active scenario. The Regional Revenue vs County Costs view reports ${fmtM(revenueRda)} in regional revenue, and the Consolidated Statement reports ${fmtM(totalRevenue)} in total tax revenue.</li>`;
+                ? `<li><strong>Statement Revenue Rows:</strong> The Host Government Fiscal View (${formattedCountyName}) reports ${fmtM(hostLocalRevenue)} in direct host tax revenue, the Regional Revenue vs County Costs view reports ${fmtM(revenueRda)} in regional revenue, and the Consolidated Statement reports ${fmtM(totalRevenue)} in total tax revenue.</li>`
+                : `<li><strong>Statement Revenue Rows:</strong> The Host Government Fiscal View is inactive for ${formattedCountyName} under the active scenario. The Regional Revenue vs County Costs view reports ${fmtM(revenueRda)} in regional revenue, and the Consolidated Statement reports ${fmtM(totalRevenue)} in total tax revenue.</li>`;
             analysisHTML += '</ul>';
 
             // B. SOCIAL COSTS
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Social Cost Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
             analysisHTML += `<li><strong>Data Source:</strong> Baseline social cost valuations are derived from peer-reviewed research by <a href="https://www.senate.ga.gov/committees/Documents/HiddenCostsofGam.pdf" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">Grinols</a> (2011), with values adjusted for 2025 inflation to reflect current economic conditions.</li>`;
-            analysisHTML += `<li><strong>Selected County Cost Stack:</strong> The selected county carries ${fmtM(subjectTotalCost)} in modeled social costs, split between ${fmtM(subjectPublicCost)} in General Taxpayer Services Costs and ${fmtM(subjectPrivateCost)} in Private Sector Costs.</li>`;
-            analysisHTML += `<li><strong>Selected County Cost Breakout:</strong> Within the selected county, Public Health / Treatment accounts for ${fmtM(totalCostHealth)}, Law Enforcement ${fmtM(totalCostCrime)}, Social Services ${fmtM(totalCostSocial)}, Civil Legal ${fmtM(totalCostLegal)}, Abused Dollars ${fmtM(totalCostAbused)}, and Lost Employment ${fmtM(totalCostEmployment)}.</li>`;
+            analysisHTML += `<li><strong>${formattedCountyName} Cost Stack:</strong> ${formattedCountyName} carries ${fmtM(subjectTotalCost)} in modeled social costs, split between ${fmtM(subjectPublicCost)} in General Taxpayer Services Costs and ${fmtM(subjectPrivateCost)} in Private Sector Costs.</li>`;
+            analysisHTML += `<li><strong>${formattedCountyName} Cost Breakout:</strong> Within ${formattedCountyName}, Public Health / Treatment accounts for ${fmtM(totalCostHealth)}, Law Enforcement ${fmtM(totalCostCrime)}, Social Services ${fmtM(totalCostSocial)}, Civil Legal ${fmtM(totalCostLegal)}, Abused Dollars ${fmtM(totalCostAbused)}, and Lost Employment ${fmtM(totalCostEmployment)}.</li>`;
             analysisHTML += otherCountiesCount > 0
-                ? `<li><strong>Regional Spillover Costs:</strong> A total of ${otherCountiesCount} additional same-state counties inside the 50-mile footprint carry a combined ${fmtM(otherTotalCost)} in spillover social costs, split between ${fmtM(otherTotals.public)} in General Taxpayer Services Costs and ${fmtM(otherTotals.private)} in Private Sector Costs. Those detailed breakouts appear only in the regional statement.</li>`
+                ? `<li><strong>Regional Spillover Costs:</strong> A total of ${otherCountiesCount} additional same-state counties inside the 50-mile footprint carry a combined ${fmtM(otherTotalCost)} in spillover social costs, split between ${fmtM(otherTotals.public)} in General Taxpayer Services Costs and ${fmtM(otherTotals.private)} in Private Sector Costs. Those detailed breakouts appear in the regional statement.</li>`
                 : `<li><strong>Regional Spillover Costs:</strong> No additional same-state counties currently register modeled spillover costs inside the 50-mile footprint, so the regional statement has no spillover burden to offset.</li>`;
-            analysisHTML += `<li><strong>Consolidated Social Cost Total:</strong> Combining the selected county with all same-state spillover counties produces ${fmtM(stateWideSocialCost)} in total modeled social costs.</li>`;
+            analysisHTML += `<li><strong>Consolidated Social Cost Total:</strong> Combining ${formattedCountyName} with all ${otherCountiesCount} same-state spillover counties produces ${fmtM(stateWideSocialCost)} in total modeled social costs.</li>`;
 
             analysisHTML += '</ul>';
 
@@ -2722,10 +2725,10 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Net Economic Impact Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 text-slate-300">';
             analysisHTML += isHostCountySelection
-                ? `<li><strong>Host Government Fiscal View:</strong> The host statement compares ${fmtM(hostLocalRevenue)} in direct host tax revenue against ${fmtM(subjectTotalCost)} in selected-county social costs, producing a host net impact of ${fmtDiffM(hostLocalNetBalance)}.</li>`
-                : `<li><strong>Host Government Fiscal View:</strong> This statement is inactive for the selected county because the active tax-allocation scenario does not assign host-local revenue there.</li>`;
-            analysisHTML += `<li><strong>Regional Revenue vs County Costs:</strong> The regional statement offsets ${fmtM(revenueRda)} in regional revenue against ${fmtM(spilloverTotalCost)} in spillover social costs across ${otherCountiesCount} counties, producing a regional net impact of ${fmtDiffM(regionalNetAfterSpillover)}.</li>`;
-            analysisHTML += `<li><strong>Consolidated Statement:</strong> The consolidated statement offsets ${fmtM(totalRevenue)} in total tax revenue against ${fmtM(stateWideSocialCost)} in total modeled social costs, producing a consolidated net impact of ${fmtDiffM(stateWideNetBalance)}.</li>`;
+                ? `<li><strong>Host Government Fiscal View (${formattedCountyName}):</strong> The host statement compares ${fmtM(hostLocalRevenue)} in direct host tax revenue against ${fmtM(subjectTotalCost)} in ${formattedCountyName} social costs, producing a host net impact of ${fmtDiffM(hostLocalNetBalance)}.</li>`
+                : `<li><strong>Host Government Fiscal View (${formattedCountyName}):</strong> This statement is inactive for ${formattedCountyName} because the active tax-allocation scenario does not assign host-local revenue there.</li>`;
+            analysisHTML += `<li><strong>Regional Revenue vs County Costs:</strong> The regional statement offsets ${fmtM(revenueRda)} in regional revenue against ${fmtM(spilloverTotalCost)} in spillover social costs across ${otherCountiesCount} neighboring counties, producing a regional net impact of ${fmtDiffM(regionalNetAfterSpillover)}.</li>`;
+            analysisHTML += `<li><strong>Consolidated Statement:</strong> The consolidated statement offsets ${fmtM(totalRevenue)} in total tax revenue against ${fmtM(stateWideSocialCost)} in total modeled social costs across all ${otherCountiesCount + 1} assessed counties, producing a consolidated net impact of ${fmtDiffM(stateWideNetBalance)}.</li>`;
 
             if (stateWideNetBalance < 0)
             {
@@ -2740,27 +2743,27 @@ window.EconomicCalculator = (function ()
             const consolidatedRatioVal = (totalRevenue > 0) ? (stateWideSocialCost / totalRevenue) : null;
 
             const hostRatioText = hostRatioVal !== null
-                ? `For every $1 in host-government revenue, the selected-county model projects $${hostRatioVal.toFixed(2)} in social costs.`
-                : `No ratio is available because the active scenario assigns no host-government revenue for this location.`;
+                ? `For every $1 in host-government revenue, the ${formattedCountyName} model projects $${hostRatioVal.toFixed(2)} in social costs.`
+                : `No ratio is available because the active scenario assigns no host-government revenue for ${formattedCountyName}.`;
             const regionalRatioText = regionalRatioVal !== null
-                ? `For every $1 in regional revenue, the spillover model projects $${regionalRatioVal.toFixed(2)} in social costs.`
+                ? `For every $1 in regional revenue, the ${otherCountiesCount}-county spillover model projects $${regionalRatioVal.toFixed(2)} in social costs across the neighboring region.`
                 : `No ratio is available because the active scenario assigns no regional revenue.`;
             const consolidatedRatioText = consolidatedRatioVal !== null
-                ? `For every $1 in total tax revenue, the statewide model projects $${consolidatedRatioVal.toFixed(2)} in social costs.`
+                ? `For every $1 in total tax revenue, the statewide consolidated model projects $${consolidatedRatioVal.toFixed(2)} in social costs across all ${otherCountiesCount + 1} assessed counties.`
                 : `No ratio is available because this scenario produces no modeled tax revenue.`;
 
             let ratioExplanation = '';
             if (regionalRatioVal !== null && consolidatedRatioVal !== null && regionalRatioVal > consolidatedRatioVal * 2)
             {
                 const hostContextSnippet = (hostRatioVal !== null && hostRatioVal > consolidatedRatioVal * 1.5)
-                    ? ` Similarly, the host-government ratio ($${hostRatioVal.toFixed(2)} per $1) is elevated because the host county absorbs the concentrated 0–10 mile urban core impacts while the state retains the majority of progressive wagering tax brackets.`
+                    ? ` Similarly, the host-government ratio ($${hostRatioVal.toFixed(2)} per $1) is elevated because ${formattedCountyName} absorbs the concentrated 0–10 mile urban core impacts while the state retains the majority of progressive wagering tax brackets.`
                     : '';
 
-                ratioExplanation = `<li><strong>Ratio Variance Dynamics:</strong> The substantial divergence between the regional ratio ($${regionalRatioVal.toFixed(2)} per $1) and the consolidated ratio ($${consolidatedRatioVal.toFixed(2)} per $1) results from the geographic distribution of population density relative to statutory tax distribution. Placing the casino in ${escapeHtml(subjectCountyName)} County—a densely populated regional hub—means the immediate 0–20 mile high-risk impact zones encompass large population corridors across ${otherCountiesCount} neighboring counties, creating significant aggregate spillover costs. Because regional funds receive only a modest, fractional allocation of total gaming revenue, the resulting cost burden per dollar of regional revenue appears disproportionately high.${hostContextSnippet}</li>`;
+                ratioExplanation = `<li><strong>Ratio Variance Dynamics:</strong> The substantial divergence between the regional ratio ($${regionalRatioVal.toFixed(2)} per $1) and the consolidated ratio ($${consolidatedRatioVal.toFixed(2)} per $1) results from the geographic distribution of population density relative to statutory tax distribution. Placing the casino in ${formattedCountyName}—a densely populated regional hub—means the immediate 0–20 mile high-risk impact zones encompass large population corridors across ${otherCountiesCount} neighboring counties, creating significant aggregate spillover costs. Because regional funds receive only a modest, fractional allocation of total gaming revenue, the resulting cost burden per dollar of regional revenue appears disproportionately high.${hostContextSnippet}</li>`;
             }
             else if (hostRatioVal !== null && consolidatedRatioVal !== null && hostRatioVal > consolidatedRatioVal * 1.5)
             {
-                ratioExplanation = `<li><strong>Ratio Variance Dynamics:</strong> The host-government ratio ($${hostRatioVal.toFixed(2)} per $1) is higher than the consolidated statewide ratio ($${consolidatedRatioVal.toFixed(2)} per $1) because the host municipality absorbs the densest concentration of immediate 0–10 mile proximity costs (such as public health, emergency services, and local economic disruption), whereas the state retains the majority of wagering tax collections through progressive statutory brackets rather than remitting them directly to the host government.</li>`;
+                ratioExplanation = `<li><strong>Ratio Variance Dynamics:</strong> The ${formattedCountyName} host-government ratio ($${hostRatioVal.toFixed(2)} per $1) is higher than the consolidated statewide ratio ($${consolidatedRatioVal.toFixed(2)} per $1) because the host municipality absorbs the densest concentration of immediate 0–10 mile proximity costs (such as public health, emergency services, and local economic disruption), whereas the state retains the majority of wagering tax collections through progressive statutory brackets rather than remitting them directly to the host government.</li>`;
             }
 
             analysisHTML += `<li><strong>Cost-to-Revenue Ratios:</strong>
@@ -2936,17 +2939,14 @@ window.EconomicCalculator = (function ()
         const scenarioLabels = resolveTaxAllocationLabels(activeTaxScenario, {
             subjectStateName,
             hostCountyName: subjectCountyName,
-            municipalityName
-        });
-
-        if (!rows.length)
+               if (!rows.length)
         {
             hostContainer.innerHTML = `<div class="p-4 text-sm text-slate-500 italic text-center">Select a county on the map to see cost distribution.</div>`;
             regionalContainer.innerHTML = '';
             consolidatedContainer.innerHTML = '';
             if (hostSubtitleEl)
             {
-                hostSubtitleEl.textContent = 'Shows host-local revenue against the selected county’s direct modeled costs.';
+                hostSubtitleEl.textContent = `Shows host-local revenue against ${formattedCountyName}’s direct modeled costs.`;
             }
             if (regionalExpandAllEl)
             {
@@ -2969,6 +2969,7 @@ window.EconomicCalculator = (function ()
             const normalized = String(countyName || '')
                 .trim()
                 .toLowerCase()
+                .replace(/\s+county$/i, '')
                 .replace(/\s+/g, ' ');
             const titleCased = normalized.replace(/\b([a-z])/g, char => char.toUpperCase());
             return `${titleCased || 'County'} County Social Costs`;
@@ -2977,7 +2978,7 @@ window.EconomicCalculator = (function ()
         const subjectPublicCost = Number((rowMap.get('gen_sub') || {}).countyCost || 0);
         const subjectPrivateCost = Number((rowMap.get('private_sub') || {}).countyCost || 0);
         const subjectTotalCost = subjectPublicCost + subjectPrivateCost;
-        const subjectCountyLabel = subjectCountyName || 'Selected County';
+        const subjectCountyLabel = formattedCountyName;
         const cityRevenueRow = rowMap.get('city_revenue') || null;
         const countyRevenueRow = rowMap.get('county_revenue') || null;
         const hostRevenueRow = rowMap.get('host_local_revenue_sub') || null;
@@ -3173,7 +3174,7 @@ window.EconomicCalculator = (function ()
                 ${sectionRow('Revenue')}
                 ${hostMunicipalityRowMarkup}
                 <tr ${stripedRowAttrs(hostCountyRowIndex)}>
-                    <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(countyRevenueRow && countyRevenueRow.label || `${subjectCountyLabel} County Revenue`))}</td>
+                    <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(countyRevenueRow && countyRevenueRow.label || `${subjectCountyLabel} Revenue`))}</td>
                     ${moneyCell(Number(countyRevenueRow && countyRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
                 </tr>
                 <tr ${headerToneRowAttrs}>
@@ -3189,7 +3190,7 @@ window.EconomicCalculator = (function ()
             </tbody>`
             : `<tbody>
                 <tr class="border-t border-slate-800/60">
-                    <td colspan="2" class="px-3 py-4 text-base text-slate-400 italic">${escapeText(`${scenarioDisplayName} does not apply a host-government allocation to the selected county.`)}</td>
+                    <td colspan="2" class="px-3 py-4 text-base text-slate-400 italic">${escapeText(`${scenarioDisplayName} does not apply a host-government allocation to ${formattedCountyName}.`)}</td>
                 </tr>
             </tbody>`;
 
@@ -3225,7 +3226,7 @@ window.EconomicCalculator = (function ()
                 ${moneyCell(Number(cityRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
             </tr>` : ''}
             <tr ${stripedRowAttrs(cityRevenueRow ? 1 : 0)}>
-                <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(countyRevenueRow && countyRevenueRow.label || `${subjectCountyLabel} County Revenue`))}</td>
+                <td class="px-3 py-2 text-slate-100 font-semibold">${escapeText(String(countyRevenueRow && countyRevenueRow.label || `${subjectCountyLabel} Revenue`))}</td>
                 ${moneyCell(Number(countyRevenueRow && countyRevenueRow.revenue || 0), fmtM, 'text-emerald-400')}
             </tr>
             <tr ${stripedRowAttrs(cityRevenueRow ? 2 : 1)}>
@@ -3271,10 +3272,10 @@ window.EconomicCalculator = (function ()
         if (hostSubtitleEl)
         {
             hostSubtitleEl.textContent = !isHostCountySelection
-                ? `${scenarioDisplayName} is configured for a different host-county eligibility area, so the host-government table is inactive for this county.`
+                ? `${scenarioDisplayName} is configured for a different host-county eligibility area, so the host-government table is inactive for ${formattedCountyName}.`
                 : cityRevenueApplies
-                    ? `Shows direct revenue to ${municipalityName} and ${subjectCountyLabel} County government under the ${scenarioDisplayName} allocation scenario.`
-                    : `Shows the unincorporated fallback branch of the ${scenarioDisplayName} allocation scenario against ${subjectCountyLabel} County’s direct modeled costs.`;
+                    ? `Shows direct revenue to ${municipalityName} and ${formattedCountyName} government under the ${scenarioDisplayName} allocation scenario.`
+                    : `Shows the unincorporated fallback branch of the ${scenarioDisplayName} allocation scenario against ${formattedCountyName}’s direct modeled costs.`;
         }
         if (regionalExpandAllEl)
         {
@@ -3295,12 +3296,12 @@ window.EconomicCalculator = (function ()
         if (noteEl)
         {
             noteEl.textContent = !isHostCountySelection
-                ? `Baseline rate: ${baselineRateDisplay}%. Active tax-allocation scenario: ${scenarioDisplayName}. The selected county is outside this scenario's host-county eligibility area, so only the non-local recipients remain active.`
+                ? `Baseline rate: ${baselineRateDisplay}%. Active tax-allocation scenario: ${scenarioDisplayName}. ${formattedCountyName} is outside this scenario's host-county eligibility area, so only the non-local recipients remain active.`
                 : selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID && !taxScenarioValidation.valid
                     ? `Baseline rate: ${baselineRateDisplay}%. Custom tax-allocation inputs are currently invalid, so the statements continue showing the last valid custom allocation until every branch totals 100%. Municipality-directed allocations still depend on incorporated PLACE containment.`
                 : cityRevenueApplies
                     ? `Baseline rate: ${baselineRateDisplay}%. Active tax-allocation scenario: ${scenarioDisplayName}. Because the site falls inside the incorporated-place boundary for ${municipalityName}, the municipal branch is active. Municipality-directed allocations depend on actual PLACE containment, not just county selection.`
-                    : `Baseline rate: ${baselineRateDisplay}%. Active tax-allocation scenario: ${scenarioDisplayName}. Because the site is outside any incorporated-place boundary in ${subjectCountyLabel} County, the unincorporated fallback branch is active and no municipality carve-out is applied.`;
+                    : `Baseline rate: ${baselineRateDisplay}%. Active tax-allocation scenario: ${scenarioDisplayName}. Because the site is outside any incorporated-place boundary in ${formattedCountyName}, the unincorporated fallback branch is active and no municipality carve-out is applied.`;
         }
     }
 
