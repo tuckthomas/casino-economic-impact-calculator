@@ -114,7 +114,7 @@ window.MapLibreImpactMap = (function ()
 
     // Current basemap
     let currentBasemap = 'offline';
-    let mapDarkMode = true; // Default to dark mode for streets/terrain
+    let mapDarkMode = false; // Default to false so Streets/Terrain show their intended light colors
 
     // Basemap configurations
     const BASEMAPS = {
@@ -159,25 +159,6 @@ window.MapLibreImpactMap = (function ()
             darkStyle: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
             lightStyle: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
             get style() { return mapDarkMode ? this.darkStyle : this.lightStyle; }
-        },
-        hybrid: {
-            name: 'Hybrid',
-            icon: 'layers',
-            style: {
-                version: 8,
-                sources: {
-                    'satellite-tiles': {
-                        type: 'raster',
-                        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-                        tileSize: 256
-                    },
-                    'labels': {
-                        type: 'vector',
-                        url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
-                    }
-                },
-                layers: [{ id: 'satellite-layer', type: 'raster', source: 'satellite-tiles' }]
-            }
         }
     };
 
@@ -2022,6 +2003,8 @@ window.MapLibreImpactMap = (function ()
 
         Object.entries(BASEMAPS).forEach(([key, config]) =>
         {
+            if (key === 'offline') return; // Do not show offline option in the switcher UI
+
             const card = document.createElement('button');
             card.className = `layer-card ${key === currentBasemap ? 'active' : ''}`;
             card.dataset.basemap = key;
@@ -2071,20 +2054,19 @@ window.MapLibreImpactMap = (function ()
             style.textContent = `
                 .layer-card {
                     display: flex;
-                    flex-direction: column;
+                    flex-direction: row;
                     align-items: center;
                     justify-content: center;
-                    width: 52px;
-                    height: 52px;
-                    background: rgba(15, 23, 42, 0.85);
-                    backdrop-filter: blur(8px);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 8px;
-                    color: rgba(255, 255, 255, 0.7);
+                    height: 30px;
+                    padding: 0 12px;
+                    gap: 6px;
+                    background: rgba(2, 6, 23, 0.4);
+                    backdrop-filter: blur(4px);
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                    border-radius: 0.5rem;
+                    color: white;
                     cursor: pointer;
                     transition: all 0.2s ease;
-                    font-size: 9px;
-                    gap: 2px;
                 }
                 .layer-card:hover {
                     background: rgba(30, 41, 59, 0.95);
