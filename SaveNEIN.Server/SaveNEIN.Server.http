@@ -1,0 +1,6 @@
+@SaveNEIN.Server_HostAddress = http://localhost:5109
+
+GET {{SaveNEIN.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

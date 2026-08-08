@@ -1,10 +1,10 @@
 <div align="center">
 
   <picture>
-    <img alt="Save Northeast Indiana Logo" src="SaveFW.Client/wwwroot/assets/SAVENEIN.svg" width="200">
+    <img alt="Save Northeast Indiana Logo" src="SaveNEIN.Client/wwwroot/assets/SAVENEIN.svg" width="200">
   </picture>
 
-  # Save Fort Wayne
+  # Save Northeast Indiana
   ### Protect Our Future
 
   <p>
@@ -35,7 +35,7 @@
 
 ## Project Overview
 
-Save Fort Wayne is an interactive open-source platform designed to educate citizens, policymakers, and researchers. It provides deterministic financial modeling and geospatial analysis regarding casino impacts on community character and fiscal health.
+Save Northeast Indiana (SaveNEIN) is an interactive open-source platform designed to educate citizens, policymakers, and researchers. It provides deterministic financial modeling and geospatial analysis regarding casino impacts on community character and fiscal health.
 
 ### Core Objectives
 *   **Public Education:** Uncover documented social costs including addiction, crime, and wealth extraction.
@@ -48,22 +48,22 @@ Save Fort Wayne is an interactive open-source platform designed to educate citiz
 ## Repository Structure
 
 ```text
-📁 SaveFW
-├── 📁 SaveFW.Client        # Blazor WebAssembly UI
+📁 SaveNEIN
+├── 📁 SaveNEIN.Client      # Blazor WebAssembly UI
 │   ├── 📁 Pages            # Razor Components (Hero, Map, EconomicImpact, etc.)
 │   └── 📁 wwwroot          # Static assets and modular JavaScript
-├── 📁 SaveFW.Server        # ASP.NET Core host + API
+├── 📁 SaveNEIN.Server      # ASP.NET Core host + API
 │   ├── 📁 Controllers      # Census, map, PDF, and policy endpoints
 │   ├── 📁 Data             # DbContext, migrations, seed/init logic
 │   ├── 📁 Services         # TIGER ingestion, Valhalla integration, modeling services
 │   └── 📄 Program.cs       # Runtime pipeline and app wiring
-├── 📁 SaveFW.Shared        # Shared contracts/models
-├── 📁 dev                  # Local dev watcher scripts
+├── 📁 SaveNEIN.Shared      # Shared contracts/models
+├── 📁 scripts/dev          # Local dev lifecycle & watcher scripts
 ├── 📁 docs                 # Plans, runbooks, methodology, examples
 ├── 📁 infra/valhalla       # Valhalla config + tile inputs
-├── 📄 docker-compose.yml   # Production stack (app, db, valhalla, cloudbeaver)
+├── 📄 docker-compose.yml   # Development stack (app, db, valhalla, cloudbeaver)
 ├── 📄 Dockerfile           # Production image build
-└── 📄 SaveFW.sln           # Solution entry point
+└── 📄 SaveNEIN.sln         # Solution entry point
 ```
 
 ---
@@ -75,7 +75,7 @@ The core of the platform is an interactive financial model that allows citizens 
 <br /><br />
 
 ## Programmatic Economic Analysis
-Moving beyond "AI estimates" or "black box" consulting studies, SaveFW employs a deterministic, rule-based analysis. This system processes user inputs against fixed mathematical formulas derived from peer-reviewed economic literature (Grinols, Welte, et al.). By basing the logic on established academic precedents, the platform ensures that every result is reproducible, transparent, and mathematically verifiable. This provides a "Programmatic Fact Check" that updates instantly as variables change, removing human bias from the calculation.
+Moving beyond "AI estimates" or "black box" consulting studies, SaveNEIN employs a deterministic, rule-based analysis. This system processes user inputs against fixed mathematical formulas derived from peer-reviewed economic literature (Grinols, Welte, et al.). By basing the logic on established academic precedents, the platform ensures that every result is reproducible, transparent, and mathematically verifiable. This provides a "Programmatic Fact Check" that updates instantly as variables change, removing human bias from the calculation.
 <br /><br />
 
 ## Economic Impact Simulator
@@ -118,11 +118,11 @@ This project is built using a modern .NET 10 distributed architecture:
 
 # Installation
 
-The easiest way to run Save Fort Wayne is using **Docker**. This ensures the application, database, and all dependencies run exactly as intended without installing anything else on your machine.
+The easiest way to run Save Northeast Indiana is using **Docker**. This ensures the application, database, and all dependencies run exactly as intended without installing anything else on your machine.
 
 ## System Requirements
 
-This project now includes a **Valhalla** routing engine for offline isochrone generation. This adds specific hardware requirements, particularly during the initial graph build process.
+This project includes a **Valhalla** routing engine for offline isochrone generation. This adds specific hardware requirements, particularly during the initial graph build process.
 
 | Resource | Minimum | Recommended | Notes |
 | :--- | :--- | :--- | :--- |
@@ -173,7 +173,7 @@ Once **Docker** is installed, simply clone the repo and start the containers. Th
 ```bash
 # 1. Clone the repository
 git clone https://github.com/tuckthomas/casino-economic-impact-calculator.git
-cd casino-economic-impact-calculator/SaveFW
+cd casino-economic-impact-calculator
 
 # 2. Start the application
 docker compose up --build -d
@@ -195,7 +195,7 @@ If you wish to modify code locally, run the app outside Docker, or use hot reloa
 
 ```bash
 # 1. Ensure shared backend services are running (db + valhalla)
-docker compose up -d savefw-db valhalla
+docker compose up -d savenein-db valhalla
 
 # 2. Start the local dev watcher (port 5000)
 npm run dev
@@ -230,7 +230,7 @@ Managed via `package.json` and built using `npm run build:css` / `copy-libs`.
 | **@fontsource-variable/material-symbols-outlined** | ^5.2.30 | Iconography (Variable Font) |
 
 ### .NET Packages (Server)
-Managed via NuGet in `SaveFW.Server.csproj`.
+Managed via NuGet in `SaveNEIN.Server.csproj`.
 
 | Package | Version | Purpose |
 | :--- | :--- | :--- |
@@ -266,7 +266,7 @@ This project is shared openly to encourage community involvement. We invite deve
 # Contact
 
 For inquiries, feedback, or to join the coalition, please reach out to:
-outreach@savefw.com
+outreach@savenein.com
 
 # Data and Sources
 
@@ -278,7 +278,7 @@ Social cost modeling is derived from established academic research:
 ---
 
 <div align="center">
-  <p><em>A volunteer effort by concerned residents of Allen County.</em></p>
+  <p><em>A volunteer effort by concerned residents of Northeast Indiana.</em></p>
   <p>
     <a href="https://savenein.com"><strong>Visit Live Site</strong></a>
   </p>

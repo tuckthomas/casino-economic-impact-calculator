@@ -5,7 +5,7 @@ and how to reproduce or extend the run.
 
 ## Current Allen County configuration
 
-Source of truth: `SaveFW.Server/appsettings.json`
+Source of truth: `SaveNEIN.Server/appsettings.json`
 
 - County: Allen County, IN (`state_fips=18`, `name=Allen`)
 - Grid spacing: 8,000 meters
@@ -17,7 +17,7 @@ Source of truth: `SaveFW.Server/appsettings.json`
 ## How to run
 
 ```bash
-cd /root/SaveFW/SaveFW.Server
+cd /opt/save-nein/app/SaveNEIN.Server
 /root/.dotnet/dotnet run -- --run-allen-isochrones
 ```
 

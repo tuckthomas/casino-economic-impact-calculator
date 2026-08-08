@@ -1,7 +1,7 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const root = path.resolve('SaveFW.Client');
+const root = path.resolve('SaveNEIN.Client');
 const fix = process.argv.includes('--fix');
 const allowedExtensions = new Set(['.razor', '.js', '.css', '.html']);
 const ignoredSegments = [

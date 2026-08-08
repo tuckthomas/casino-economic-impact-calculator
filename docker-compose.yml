@@ -1,27 +1,27 @@
 services:
-  savefw-db:
+  savenein-db:
     image: postgis/postgis:18-3.6
-    container_name: savefw-db
+    container_name: savenein-db
     network_mode: "host"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password # TODO: Change this
-      POSTGRES_DB: savefw
+      POSTGRES_DB: savenein
     volumes:
       - postgres_data:/var/lib/postgresql
 
-  savefw-db-gui:
+  savenein-db-gui:
     image: dbeaver/cloudbeaver:latest
-    container_name: savefw-db-gui
+    container_name: savenein-db-gui
     network_mode: "host"
     volumes:
       - cloudbeaver_data:/opt/cloudbeaver/workspace
     depends_on:
-      - savefw-db
+      - savenein-db
 
   valhalla:
     image: ghcr.io/nilsnolde/docker-valhalla/valhalla:latest
-    container_name: savefw_valhalla
+    container_name: savenein_valhalla
     network_mode: "host"
     environment:
       - tile_urls=https://download.geofabrik.de/north-america/us/indiana-latest.osm.pbf https://download.geofabrik.de/north-america/us/ohio-latest.osm.pbf https://download.geofabrik.de/north-america/us/michigan-latest.osm.pbf https://download.geofabrik.de/north-america/us/illinois-latest.osm.pbf https://download.geofabrik.de/north-america/us/kentucky-latest.osm.pbf
@@ -36,17 +36,17 @@ services:
       - ./infra/valhalla/osm:/osm:ro
     restart: unless-stopped
 
-  savefw-app:
+  savenein-app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: savefw-app
+    container_name: savenein-app
     network_mode: "host"
     environment:
-      - ConnectionStrings__DefaultConnection=Host=127.0.0.1;Database=savefw;Username=postgres;Password=password
+      - ConnectionStrings__DefaultConnection=Host=127.0.0.1;Database=savenein;Username=postgres;Password=password
       - ASPNETCORE_URLS=http://0.0.0.0:80
     depends_on:
-      - savefw-db
+      - savenein-db
 
 volumes:
   postgres_data:

@@ -1,6 +1,6 @@
-# SaveFW Project Overview
+# SaveNEIN Project Overview
 
-**Save Fort Wayne** is a data-driven, grassroots open-source platform (AGPL-3.0) designed to educate citizens, policymakers, and researchers about the hidden economic and social costs of proposed casino expansions.
+**Save Northeast Indiana (SaveNEIN)** is a data-driven, grassroots open-source platform (AGPL-3.0) designed to educate citizens, policymakers, and researchers about the hidden economic and social costs of proposed casino expansions in Northeast Indiana.
 
 ## Core Objectives
 - **Public Education**: Expose documented social costs like addiction, crime, and wealth extraction.

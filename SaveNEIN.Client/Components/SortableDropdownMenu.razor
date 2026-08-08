@@ -1,0 +1,128 @@
+@using SaveNEIN.Shared
+@namespace SaveNEIN.Client.Components
+
+<div class="relative">
+    <!-- Trigger -->
+    <button @onclick="ToggleMenu" type="button" id="@(Id)-trigger"
+        class="w-full bg-slate-900/95 border border-slate-600 text-slate-100 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm hover:bg-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 group relative z-[200]">
+        <span class="font-medium flex items-center gap-2">
+            <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-400 transition-colors">@Icon</span>
+            <span id="@(Id)-display">@(SelectedItem?.Text ?? Placeholder)</span>
+        </span>
+        <span class="material-symbols-outlined text-slate-400 transition-transform duration-300 @(isOpen ? "rotate-180" : "")">expand_more</span>
+    </button>
+
+    <!-- Overlay to close on click outside -->
+    @if (isOpen)
+    {
+        <div class="fixed inset-0 z-[9990]" @onclick="CloseMenu"></div>
+    }
+
+    <!-- Menu -->
+    @if (isOpen)
+    {
+        <div id="@(Id)-menu" class="absolute top-full left-0 w-full mt-2 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden transform origin-top transition-all duration-200 z-[9999]">
+            <div class="p-3 border-b border-slate-700">
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                    <input type="text" @bind="searchTerm" @bind:event="oninput" placeholder="Search..."
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500">
+                </div>
+                <div class="mt-2 flex gap-2">
+                    <button @onclick='() => Sort("alpha")' class="flex-1 text-sm font-bold uppercase tracking-wide px-2 py-1 rounded-md border border-slate-700 text-slate-300 hover:bg-slate-800 @(sortMode == "alpha" ? "bg-slate-800 text-white" : "")">
+                        Sort A-Z @(sortMode == "alpha" ? (sortAsc ? "↓" : "↑") : "")
+                    </button>
+                    <button @onclick='() => Sort("pop")' class="flex-1 text-sm font-bold uppercase tracking-wide px-2 py-1 rounded-md border border-slate-700 text-slate-300 hover:bg-slate-800 @(sortMode == "pop" ? "bg-slate-800 text-white" : "")">
+                        Sort Pop @(sortMode == "pop" ? (sortAsc ? "↑" : "↓") : "")
+                    </button>
+                </div>
+            </div>
+            <div id="@(Id)-options" class="max-h-60 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                @if (!FilteredItems.Any())
+                {
+                    <div class="p-4 text-center text-sm text-slate-400">No options found.</div>
+                }
+                else
+                {
+                    @foreach (var item in FilteredItems)
+                    {
+                        <div @onclick="() => Select(item)" class="px-4 py-3 text-sm text-slate-200 hover:bg-slate-800 hover:text-blue-300 cursor-pointer transition-colors flex items-center justify-between group">
+                            <span class="font-medium">@item.Text</span>
+                            <span class="text-sm text-white font-mono bg-slate-700 px-2 py-0.5 rounded transition-colors">@item.Badge</span>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; } = "dropdown";
+    [Parameter] public string Placeholder { get; set; } = "Select...";
+    [Parameter] public string Icon { get; set; } = "list";
+    [Parameter] public List<DropdownItem> Items { get; set; } = new();
+    [Parameter] public EventCallback<DropdownItem> OnSelected { get; set; }
+    [Parameter] public string? SelectedValue { get; set; }
+
+    private bool isOpen = false;
+    private string searchTerm = "";
+    private string sortMode = "alpha";
+    private bool sortAsc = true;
+
+    private DropdownItem? SelectedItem => Items.FirstOrDefault(i => i.Value == SelectedValue);
+
+    private IEnumerable<DropdownItem> FilteredItems
+    {
+        get
+        {
+            var query = Items.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                query = query.Where(i => i.Text.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (sortMode == "alpha")
+            {
+                query = sortAsc ? query.OrderBy(i => i.Text) : query.OrderByDescending(i => i.Text);
+            }
+            else // pop
+            {
+                // Population is usually Descending by default (High to Low)
+                // But let's respect sortAsc.
+                // If user clicks "Sort Pop", default to Descending?
+                // Logic in Sort(): if mode changes, sortAsc = true.
+                // Let's make "pop" default to DESC (Large to Small) if sortAsc is true?
+                // Or just stick to standard. Asc = Small to Large.
+                // Usually lists are Large to Small.
+                query = sortAsc ? query.OrderBy(i => i.OrderValue) : query.OrderByDescending(i => i.OrderValue);
+            }
+            return query;
+        }
+    }
+
+    private void ToggleMenu() => isOpen = !isOpen;
+    private void CloseMenu() => isOpen = false;
+
+    private void Sort(string mode)
+    {
+        if (sortMode == mode)
+        {
+            sortAsc = !sortAsc;
+        }
+        else
+        {
+            sortMode = mode;
+            // Default directions
+            if (mode == "pop") sortAsc = false; // Default high to low
+            else sortAsc = true; // Default A-Z
+        }
+    }
+
+    private async Task Select(DropdownItem item)
+    {
+        SelectedValue = item.Value;
+        isOpen = false;
+        await OnSelected.InvokeAsync(item);
+    }
+}

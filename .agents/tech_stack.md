@@ -1,6 +1,6 @@
-# SaveFW Tech Stack
+# SaveNEIN Tech Stack
 
-## Frontend (SaveFW.Client)
+## Frontend (SaveNEIN.Client)
 - **Framework**: Blazor WebAssembly (.NET 10)
 - **Styling**: Tailwind CSS (compiled via CLI, offline-first approach)
 - **Maps**: MapLibre GL JS (GPU-accelerated vector maps), Turf.js (geospatial analysis)
@@ -8,7 +8,7 @@
 - **PDF Generation**: html2canvas, QuestPDF (backend)
 - **Offline Protocol**: PMTiles.js
 
-## Backend (SaveFW.Server)
+## Backend (SaveNEIN.Server)
 - **Framework**: ASP.NET Core Web API (.NET 10)
 - **ORM**: Entity Framework Core 10
 - **Database Provider**: Npgsql (PostgreSQL) with NetTopologySuite (PostGIS)

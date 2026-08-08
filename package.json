@@ -1,7 +1,7 @@
 {
-  "name": "savefw",
+  "name": "savenein",
   "version": "0.9.1",
-  "description": "SaveFW - Economic Impact Analysis",
+  "description": "SaveNEIN - Economic Impact Analysis",
   "scripts": {
     "dev": "./scripts/dev/dev-start.sh --foreground",
     "dev:start": "./scripts/dev/dev-start.sh",
@@ -10,8 +10,8 @@
     "dev:status": "./scripts/dev/dev-status.sh",
     "setup:git-hooks": "git config core.hooksPath .githooks",
     "check:ui-text": "node scripts/check-ui-text-size.mjs",
-    "build:css": "BROWSERSLIST_IGNORE_OLD_DATA=true tailwindcss -i ./SaveFW.Client/Styles/app.css -o ./SaveFW.Client/wwwroot/css/app.css --minify",
-    "copy-libs": "cp node_modules/@turf/turf/turf.min.js SaveFW.Client/wwwroot/js/lib/ && cp node_modules/chart.js/dist/chart.umd.min.js SaveFW.Client/wwwroot/js/lib/chart.js && cp node_modules/html2canvas/dist/html2canvas.min.js SaveFW.Client/wwwroot/js/lib/ && cp -r node_modules/@fontsource-variable/public-sans SaveFW.Client/wwwroot/lib/ && cp -r node_modules/@fontsource-variable/material-symbols-outlined SaveFW.Client/wwwroot/lib/ && cp node_modules/terra-draw/dist/terra-draw.umd.js SaveFW.Client/wwwroot/js/lib/"
+    "build:css": "tailwindcss -i ./SaveNEIN.Client/Styles/app.css -o ./SaveNEIN.Client/wwwroot/css/app.css --minify",
+    "copy-libs": "node scripts/copy-libs.mjs"
   },
   "dependencies": {
     "@fontsource-variable/material-symbols-outlined": "^5.2.30",
