@@ -93,37 +93,23 @@
 
             </div>
 
-            <!-- Map Container -->
-            <div class="relative w-full h-[600px] mb-6 rounded-2xl overflow-hidden group border border-slate-700 shadow-2xl">
-                <!-- Three-Step Navigation Mechanism -->
-                <div id="map-navigation-overlay" class="absolute top-4 left-1/2 -translate-x-1/2 z-[90] w-auto sm:w-full max-w-[200px] sm:max-w-xl px-1 sm:px-4 pointer-events-none">
-                    <div class="bg-slate-950/40 backdrop-blur-sm p-2 rounded-2xl border border-white/5 pointer-events-auto">
-                        <div class="grid grid-cols-3 gap-3">
-                            <!-- Step 1: Nationwide -->
-                            <div class="flex flex-col gap-1.5 group cursor-pointer" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(1)">
-                                <div id="map-nav-bar-1"
-                                    class="h-1.5 w-full bg-blue-500 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]">
-                                </div>
-                                <span id="map-nav-label-1"
-                                    class="text-sm sm:text-sm font-bold text-blue-400 uppercase tracking-widest text-center transition-colors duration-300"><span class="sm:hidden">Ntl.</span><span class="hidden sm:inline">Nationwide</span></span>
-                            </div>
-                            <!-- Step 2: State -->
-                            <div class="flex flex-col gap-1.5 group cursor-pointer" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(2)">
-                                <div id="map-nav-bar-2"
-                                    class="h-1.5 w-full bg-slate-700 rounded-full transition-all duration-300"></div>
-                                <span id="map-nav-label-2"
-                                    class="text-sm sm:text-sm font-bold text-slate-600 uppercase tracking-widest text-center transition-colors duration-300"><span class="sm:hidden">St.</span><span class="hidden sm:inline">State</span></span>
-                            </div>
-                            <!-- Step 3: County -->
-                            <div class="flex flex-col gap-1.5 group cursor-pointer" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(3)">
-                                <div id="map-nav-bar-3"
-                                    class="h-1.5 w-full bg-slate-700 rounded-full transition-all duration-300"></div>
-                                <span id="map-nav-label-3"
-                                    class="text-sm sm:text-sm font-bold text-slate-600 uppercase tracking-widest text-center transition-colors duration-300">County</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Map Container: full-width bleed on mobile, card-contained on sm+ -->
+            <div class="-mx-8 sm:mx-0 relative w-[calc(100%+4rem)] sm:w-full h-[500px] sm:h-[600px] mb-6 rounded-none sm:rounded-2xl overflow-hidden group border-y sm:border border-slate-700 shadow-2xl">
+                <!-- Contextual Back Buttons (hidden until state/county is selected) -->
+                <!-- Back to National: shown once a state is selected (step >= 2) -->
+                <button id="map-back-national-btn" type="button"
+                    onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(1)"
+                    class="hidden absolute top-3 left-3 z-[90] bg-slate-950/80 hover:bg-slate-900 border border-slate-700/80 rounded-full pl-2 pr-3 py-1.5 shadow-lg backdrop-blur-md flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-all pointer-events-auto">
+                    <span class="material-symbols-outlined text-[16px] text-slate-400">arrow_back</span>
+                    <span class="font-medium text-sm">National</span>
+                </button>
+                <!-- Back to State: shown once a county is selected (step 3) -->
+                <button id="map-back-state-btn" type="button"
+                    onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(2)"
+                    class="hidden absolute top-3 left-3 z-[90] bg-slate-950/80 hover:bg-slate-900 border border-slate-700/80 rounded-full pl-2 pr-3 py-1.5 shadow-lg backdrop-blur-md flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-all pointer-events-auto">
+                    <span class="material-symbols-outlined text-[16px] text-slate-400">arrow_back</span>
+                    <span id="map-back-state-label" class="font-medium text-sm">State</span>
+                </button>
 
                 <!-- Interactive In-Map Step Guidance Overlay -->
                 <div id="map-step-guidance" class="absolute bottom-5 left-1/2 -translate-x-1/2 z-[85] w-[94%] sm:w-auto max-w-lg transition-all duration-500 transform translate-y-0 opacity-100 pointer-events-none">

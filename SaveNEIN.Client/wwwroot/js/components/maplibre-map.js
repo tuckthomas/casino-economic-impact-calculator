@@ -109,6 +109,9 @@ window.MapLibreImpactMap = (function ()
     let guidanceFadeTimer = null;
     let guidanceDismissed = false;
 
+    // Remembered state name for back-button label at county step
+    let currentStateName = null;
+
     // Current basemap
     let currentBasemap = 'offline';
     let mapDarkMode = true; // Default to dark mode for streets/terrain
@@ -4882,48 +4885,49 @@ window.MapLibreImpactMap = (function ()
         setRiskZoneMode // expose
     };
 
-    let guidanceDismissed = false;
-    let guidanceFadeTimer = null;
-
     function updateMapNavUI(step, contextName)
     {
-        // 1. Update top 3-step navigation bar
-        const bar1 = document.getElementById('map-nav-bar-1');
-        const bar2 = document.getElementById('map-nav-bar-2');
-        const bar3 = document.getElementById('map-nav-bar-3');
-        const lbl1 = document.getElementById('map-nav-label-1');
-        const lbl2 = document.getElementById('map-nav-label-2');
-        const lbl3 = document.getElementById('map-nav-label-3');
+        // 1. Show/hide contextual back buttons
+        const backNationalBtn = document.getElementById('map-back-national-btn');
+        const backStateBtn    = document.getElementById('map-back-state-btn');
+        const backStateLabel  = document.getElementById('map-back-state-label');
 
-        if (bar1 && bar2 && bar3)
+        if (backNationalBtn && backStateBtn)
         {
             if (step === 1)
             {
-                bar1.className = 'h-1.5 w-full bg-blue-500 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]';
-                bar2.className = 'h-1.5 w-full bg-slate-700 rounded-full transition-all duration-300';
-                bar3.className = 'h-1.5 w-full bg-slate-700 rounded-full transition-all duration-300';
-                if (lbl1) lbl1.className = 'text-sm sm:text-sm font-bold text-blue-400 uppercase tracking-widest text-center transition-colors duration-300';
-                if (lbl2) lbl2.className = 'text-sm sm:text-sm font-bold text-slate-600 uppercase tracking-widest text-center transition-colors duration-300';
-                if (lbl3) lbl3.className = 'text-sm sm:text-sm font-bold text-slate-600 uppercase tracking-widest text-center transition-colors duration-300';
+                // At national level: no back buttons
+                backNationalBtn.classList.add('hidden');
+                backStateBtn.classList.add('hidden');
             }
             else if (step === 2)
             {
-                bar1.className = 'h-1.5 w-full bg-blue-500/60 rounded-full transition-all duration-300';
-                bar2.className = 'h-1.5 w-full bg-cyan-400 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(34,211,238,0.5)]';
-                bar3.className = 'h-1.5 w-full bg-slate-700 rounded-full transition-all duration-300';
-                if (lbl1) lbl1.className = 'text-sm sm:text-sm font-bold text-blue-300 uppercase tracking-widest text-center transition-colors duration-300';
-                if (lbl2) lbl2.className = 'text-sm sm:text-sm font-bold text-cyan-400 uppercase tracking-widest text-center transition-colors duration-300';
-                if (lbl3) lbl3.className = 'text-sm sm:text-sm font-bold text-slate-600 uppercase tracking-widest text-center transition-colors duration-300';
+                // At state level: show "← National", hide "← State"
+                backNationalBtn.classList.remove('hidden');
+                backStateBtn.classList.add('hidden');
             }
             else if (step === 3)
             {
-                bar1.className = 'h-1.5 w-full bg-blue-500/50 rounded-full transition-all duration-300';
-                bar2.className = 'h-1.5 w-full bg-cyan-500/60 rounded-full transition-all duration-300';
-                bar3.className = 'h-1.5 w-full bg-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(52,211,153,0.5)]';
-                if (lbl1) lbl1.className = 'text-sm sm:text-sm font-bold text-blue-300 uppercase tracking-widest text-center transition-colors duration-300';
-                if (lbl2) lbl2.className = 'text-sm sm:text-sm font-bold text-cyan-300 uppercase tracking-widest text-center transition-colors duration-300';
-                if (lbl3) lbl3.className = 'text-sm sm:text-sm font-bold text-emerald-400 uppercase tracking-widest text-center transition-colors duration-300';
+                // At county level: show "← [State name]", hide "← National"
+                backNationalBtn.classList.add('hidden');
+                backStateBtn.classList.remove('hidden');
+                if (backStateLabel && contextName)
+                {
+                    // contextName at step 3 is the county name; we want the state name
+                    // Fall back to storing it from step 2 call
+                    // If a separate stateName is available in module scope, use it
+                    if (typeof currentStateName !== 'undefined' && currentStateName)
+                    {
+                        backStateLabel.textContent = currentStateName;
+                    }
+                }
             }
+        }
+
+        // Store state name when we enter step 2
+        if (step === 2 && contextName)
+        {
+            currentStateName = contextName;
         }
 
         // 2. Update in-map guidance card
