@@ -853,7 +853,7 @@ window.EconomicCalculator = (function ()
         const fmt = (v) => '$' + v.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
         breakdown.push({ label: "Adjusted Gross Revenue (AGR)", val: fmt(agr), note: "", type: 'header' });
-        breakdown.push({ label: "Supplemental Tax (3.5%)", val: fmt(supplementalTax), note: "Off the top", type: 'add' });
+        breakdown.push({ label: "Supplemental Tax (3.5%)", val: fmt(supplementalTax), note: "Initial 3.5% AGR levy", type: 'add' });
         breakdown.push({ label: "Free Play Deduction", val: fmt(freePlayDeduction), note: "First $7MM Exempt", type: 'info' });
         breakdown.push({ label: "Taxable AGR", val: fmt(taxableAGR), note: "AGR - $7MM", type: 'sub-header' });
 
@@ -2623,7 +2623,7 @@ window.EconomicCalculator = (function ()
             // 2. Assumptions (Sub-header + Bullets)
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Assumptions</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
-            analysisHTML += `<li><strong>Tax Allocation Scenario:</strong> This analysis applies the ${escapeHtml(scenarioNameWithBill)} ${scenarioModeLabel} tax-allocation scenario. It changes only how modeled public revenue is distributed after total tax revenue is estimated; the social-cost model and victim-rate assumptions remain unchanged.</li>`;
+            analysisHTML += `<li><strong>Tax Allocation Scenario:</strong> This analysis applies the ${escapeHtml(scenarioNameWithBill)} ${scenarioModeLabel} tax-allocation scenario. Selecting this scenario alters only the distribution of public revenue among state and local recipients after total taxes are calculated; the social-cost model and problem-gambling prevalence estimates remain completely independent and unchanged.</li>`;
             analysisHTML += `<li><strong>Applied Revenue Breakout:</strong> Under the active ${allocationBranch === 'municipal' ? 'municipal-site' : 'fallback'} branch of ${escapeHtml(scenarioNameWithBill)}, the model applies the following recipient shares: ${escapeHtml(allocationBreakoutSummary)}.</li>`;
             analysisHTML += selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID
                 ? `<li><strong>Custom Mode:</strong> Because this analysis uses the Custom scenario, the active branch percentages shown above are user-specified values, and each regular-tax and supplemental-tax branch must sum to 100% before those allocations are applied.</li>`
@@ -2695,7 +2695,7 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Tax Revenue Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
             analysisHTML += `<li><strong>Revenue Base Terms:</strong> Casino tax discussions often refer to Gross Gaming Revenue (GGR) or Adjusted Gross Revenue (AGR). In this model, AGR is the taxable revenue base used to compute the modeled public tax liability. For this analysis, the AGR input is ${fmtM(agrM * 1000000)}.</li>`;
-            analysisHTML += `<li><strong>Current State Tax Model:</strong> SaveNEIN currently applies Indiana's commercial-casino tax structure. Under the current model specification, AGR first receives a 3.5% supplemental tax off the top, then the first $7.0MM is exempted before the regular wagering-tax brackets are applied.</li>`;
+            analysisHTML += `<li><strong>Current State Tax Model:</strong> SaveNEIN applies Indiana's commercial-casino tax structure. Under the current model specification, an initial 3.5% supplemental wagering tax is assessed on total AGR before deducting the $7.0MM statutory free-play allowance, after which the regular tiered wagering-tax brackets are applied to the remaining taxable AGR.</li>`;
             analysisHTML += `<li><strong>Indiana Bracket Logic:</strong> After the supplemental tax and the $7.0MM deduction, the regular wagering-tax schedule applies tiered rates. In the current model, the first $25.0MM bracket is taxed at 5% when AGR stays below $75.0MM and at 15% once AGR reaches $75.0MM or more; higher brackets then step through 20%, 25%, 30%, 35%, and 40% as AGR rises.</li>`;
             analysisHTML += `<li><strong>Computed Tax Result:</strong> Applying that Indiana tax structure to ${fmtM(agrM * 1000000)} of AGR produces ${fmtM(supplementalTax)} in supplemental tax, ${fmtM(regularTax)} in regular wagering tax, and ${fmtM(totalRevenue)} in total modeled public tax revenue. That implies an effective tax rate of ${taxEffRate.toFixed(2)}% on AGR.</li>`;
             analysisHTML += `<li><strong>Branch Trigger Result:</strong> ${escapeHtml(branchResultSummary)}</li>`;
