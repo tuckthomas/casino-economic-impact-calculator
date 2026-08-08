@@ -11,7 +11,7 @@
         'economic-engine': [
             {
                 title: 'Local Businesses Lost',
-                content: 'The primary economic argument for the Fort Wayne casino is that it will generate "new" money. This assumes it functions as a tourist destination. However, the Spectrum Study (2025) confirms that nearly 95% of visitors live within 60–90 minutes, defining it as a "convenience" venue. This triggers the <strong>Substitution Effect</strong>: money is not imported; it is simply diverted from local restaurants, theaters, and retail to the casino, creating a net loss for the existing economy.',
+                content: 'The primary economic argument for the proposed Northeast Indiana casino is that it will generate "new" money. This assumes it functions as a tourist destination. However, the Spectrum Study (2025) confirms that nearly 95% of visitors live within 60–90 minutes, defining it as a "convenience" venue. This triggers the <strong>Substitution Effect</strong>: money is not imported; it is simply diverted from local restaurants, theaters, and retail to the casino, creating a net loss for the existing economy.',
                 source: 'https://www.stlouisfed.org/community-development/publications/bridges/casinos-and-economic-development-a-look-at-the-issues'
             },
             {

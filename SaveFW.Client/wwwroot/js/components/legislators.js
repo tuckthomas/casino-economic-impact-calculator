@@ -58,11 +58,11 @@ window.Legislators = (function() {
         let body = "";
 
         if (topic === 'economic') {
-            body = `Dear Representative,\n\nI am writing to urge you to OPPOSE the proposed casino expansion in Fort Wayne. The economic promises ignore the 'Substitution Effect'—money spent at the casino is money diverted from existing local businesses. We cannot afford a project that extracts wealth from our community and leaves us with the social costs of bankruptcy and addiction.\n\nPlease protect our local economy and vote NO.`;
+            body = `Dear Representative,\n\nI am writing to urge you to OPPOSE the proposed casino expansion in Northeast Indiana. The economic promises ignore the 'Substitution Effect'—money spent at the casino is money diverted from existing local businesses. We cannot afford a project that extracts wealth from our community and leaves us with the social costs of bankruptcy and addiction.\n\nPlease protect our local economy and vote NO.`;
         } else if (topic === 'crime') {
-            body = `Dear Representative,\n\nI am deeply concerned about the public safety risks associated with the proposed casino. Statistics show that casinos bring increased crime, human trafficking, and domestic violence to host communities. Fort Wayne families deserve safe neighborhoods, not a hub for predatory gambling.\n\nPlease prioritize our safety and vote NO.`;
+            body = `Dear Representative,\n\nI am deeply concerned about the public safety risks associated with the proposed casino. Statistics show that casinos bring increased crime, human trafficking, and domestic violence to host communities. Local families deserve safe neighborhoods, not a hub for predatory gambling.\n\nPlease prioritize our safety and vote NO.`;
         } else if (topic === 'referendum') {
-            body = `Dear Representative,\n\nI believe that a decision with such permanent consequences for Fort Wayne requires a public referendum. Bypassing the voters on an issue that fundamentally changes our city's character is unacceptable.\n\nPlease demand a public vote or vote NO on the casino measure.`;
+            body = `Dear Representative,\n\nI believe that a decision with such permanent consequences for Northeast Indiana requires a public referendum. Bypassing the voters on an issue that fundamentally changes our region's character is unacceptable.\n\nPlease demand a public vote or vote NO on the casino measure.`;
         }
 
         const emails = [currentLegislators.senate?.email, currentLegislators.house?.email].filter(Boolean).join(',');

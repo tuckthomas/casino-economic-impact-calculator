@@ -956,7 +956,7 @@
                                 <h5
                                     class="text-white font-bold uppercase tracking-wider mb-2 flex items-center justify-center gap-2">
                                     <span class="material-symbols-outlined">analytics</span>
-                                    SaveFW's Economic Impact Analysis
+                                    SaveNEIN's Economic Impact Analysis
                                 </h5>
                                 <p class="text-slate-300 leading-relaxed" id="analysis-text">
                                     <!-- Populated by JS -->
@@ -970,7 +970,7 @@
             <div class="mt-12 bg-slate-800 border border-slate-700 rounded-3xl p-4 sm:p-8 shadow-sm">
                 <h4 class="font-bold text-white text-lg mb-6 flex items-center gap-2">
                     <span class="material-symbols-outlined text-blue-500">table_chart</span>
-                    SaveFW's Estimated Analysis
+                    SaveNEIN's Estimated Analysis
                 </h4>
                 <div class="overflow-x-auto rounded-xl border border-slate-700">
                     <table class="w-full text-sm text-left">
@@ -1030,7 +1030,7 @@
                 </h2>
                 <div class="section-heading-description mt-4 text-xl italic text-slate-400 leading-relaxed">
                     <p>
-                        The primary economic argument for the Fort Wayne casino is that it will generate "new" money.
+                        The primary economic argument for the proposed Northeast Indiana casino is that it will generate "new" money.
                         This assumes it functions as a tourist destination. However, in markets lacking high-density
                         attractions, casinos operate as <strong>"convenience gambling"</strong> venues, leading to the
                         <strong>Substitution Effect</strong>.
@@ -1052,8 +1052,8 @@
                         location, <strong>nearly 95% of the revenue is expected to come from the "core market-catchment
                             area" (residents within 90 minutes)</strong>. This statistic mathematically disproves the
                         "tourism" argument. If 95% of the money originates from local pockets, there is no "New Money"
-                        being introduced; it is purely a <strong>wealth transfer</strong> from Fort Wayne families to a
-                        corporate entity, with the city retaining only a small "convenience fee" in the form of tax
+                        being introduced; it is purely a <strong>wealth transfer</strong> from local families to a
+                        corporate entity, with the region retaining only a small "convenience fee" in the form of tax
                         revenue.
                     </p>
 
@@ -1330,7 +1330,7 @@
             {
                 var fileStream = await response.Content.ReadAsStreamAsync();
                 using var streamRef = new DotNetStreamReference(fileStream);
-                await JSRuntime.InvokeVoidAsync("window.PdfHelper.downloadFileFromStream", "SaveFW_Analysis.pdf", streamRef);
+                await JSRuntime.InvokeVoidAsync("window.PdfHelper.downloadFileFromStream", "SaveNEIN_Analysis.pdf", streamRef);
             }
             else
             {
