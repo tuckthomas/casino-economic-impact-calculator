@@ -6,6 +6,7 @@ window.HomeHeader = (() => {
     let isStuck = false;
     let lastActiveLink = null;
     let hideTimer = null;
+    let isNavigating = false;
     const desktopBreakpoint = window.matchMedia("(min-width: 1024px)");
 
     function destroy() {
@@ -32,6 +33,7 @@ window.HomeHeader = (() => {
         lastScrollY = 0;
         isStuck = false;
         lastActiveLink = null;
+        isNavigating = false;
     }
 
     function init() {
@@ -55,6 +57,20 @@ window.HomeHeader = (() => {
                 return target ? { link, target } : null;
             })
             .filter(Boolean);
+
+        sectionLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                isNavigating = true;
+                setHeaderVisibility(true);
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(() => {
+                    isNavigating = false;
+                    if (isStuck && lastScrollY > header.offsetHeight * 2) {
+                        setHeaderVisibility(false);
+                    }
+                }, 3000);
+            });
+        });
 
         const syncHeight = () => {
             spacer.style.setProperty("--home-header-height", `${header.offsetHeight}px`);
@@ -119,11 +135,15 @@ window.HomeHeader = (() => {
 
             if (!active) return;
 
-            const shouldScrollIntoView = instantScroll || active.link !== lastActiveLink;
+            const shouldUpdate = instantScroll || active.link !== lastActiveLink;
             lastActiveLink = active.link;
 
-            if (shouldScrollIntoView) {
+            if (shouldUpdate) {
                 ensureActiveLinkVisible(active.link, instantScroll);
+                const hash = active.link.getAttribute("href");
+                if (hash && window.location.hash !== hash) {
+                    history.replaceState(null, null, hash);
+                }
             }
         };
 
@@ -147,21 +167,26 @@ window.HomeHeader = (() => {
             if (!isStuck) {
                 setHeaderVisibility(true);
                 clearTimeout(hideTimer);
+                isNavigating = false;
             } else if (currentScrollY <= hero.offsetHeight) {
                 setHeaderVisibility(true);
                 clearTimeout(hideTimer);
+                isNavigating = false;
             } else if (scrollDelta > 6 && currentScrollY > header.offsetHeight * 2) {
-                setHeaderVisibility(false);
-                clearTimeout(hideTimer);
+                if (!isNavigating) {
+                    setHeaderVisibility(false);
+                    clearTimeout(hideTimer);
+                }
             } else if (scrollDelta < -4 || currentScrollY <= hero.offsetHeight + revealThreshold) {
-                setHeaderVisibility(true);
-                clearTimeout(hideTimer);
-                
-                // On mobile, auto-hide the header after 2.5s of no scrolling if we're far down the page
-                if (!desktopBreakpoint.matches && currentScrollY > hero.offsetHeight + revealThreshold) {
-                    hideTimer = setTimeout(() => {
-                        setHeaderVisibility(false);
-                    }, 2500);
+                if (!isNavigating) {
+                    setHeaderVisibility(true);
+                    clearTimeout(hideTimer);
+                    
+                    if (currentScrollY > hero.offsetHeight + revealThreshold) {
+                        hideTimer = setTimeout(() => {
+                            setHeaderVisibility(false);
+                        }, 2500);
+                    }
                 }
             }
 
