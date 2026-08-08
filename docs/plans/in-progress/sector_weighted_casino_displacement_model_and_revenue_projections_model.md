@@ -167,7 +167,7 @@
 ### 3.4 Visual representations (Map Markers)
 
 - [ ] Utilize the existing custom SVG map markers for rendering competitor locations on the interactive map.
-  - [ ] Source directory: `SaveFW.Client/wwwroot/assets/existing-locations-map-markers`
+  - [ ] Source directory: `SaveFW.Client/wwwroot/assets/map-markers`
   - [ ] Map `full_service_casino` to `EXISTING_CASINO_MARKER.svg`.
   - [ ] Map `racino` to `EXISTING_CASINO_RACETRACK_MARKER.svg`.
   - [ ] Map standalone racetracks to `EXISTING_RACETRACK_MARKER.svg`.

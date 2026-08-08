@@ -453,16 +453,16 @@ window.MapLibreImpactMap = (function ()
 
             competitors.forEach(comp =>
             {
-                let iconUrl = '/assets/existing-locations-map-markers/EXISTING_CASINO_MARKER.svg'; // fallback
+                let iconUrl = '/assets/map-markers/EXISTING_CASINO_MARKER.svg'; // fallback
                 if (comp.venueType === 'racino')
                 {
-                    iconUrl = '/assets/existing-locations-map-markers/EXISTING_CASINO_RACETRACK_MARKER.svg';
+                    iconUrl = '/assets/map-markers/EXISTING_CASINO_RACETRACK_MARKER.svg';
                 } else if (comp.venueType === 'racetrack_only' || comp.venueType === 'racetrack')
                 {
-                    iconUrl = '/assets/existing-locations-map-markers/EXISTING_RACETRACK_MARKER.svg';
+                    iconUrl = '/assets/map-markers/EXISTING_RACETRACK_MARKER.svg';
                 } else if (comp.venueType === 'tribal')
                 { // Assuming tribal marker logic if applicable
-                    iconUrl = '/assets/existing-locations-map-markers/EXISTING_TRIBAL_CASINO_MARKER.svg';
+                    iconUrl = '/assets/map-markers/EXISTING_TRIBAL_CASINO_MARKER.svg';
                 }
 
                 // Create custom HTML element for marker
@@ -4120,7 +4120,7 @@ window.MapLibreImpactMap = (function ()
             return;
         }
         const el = document.createElement('div');
-        el.style.cssText = 'width:50px;height:88px;cursor:grab;background:url(assets/Casino_Map_Marker.svg) no-repeat bottom center/contain;position:relative;';
+        el.style.cssText = 'width:50px;height:88px;cursor:grab;background:url(/assets/map-markers/Casino_Map_Marker.svg) no-repeat bottom center/contain;position:relative;';
 
 
 
