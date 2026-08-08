@@ -45,6 +45,7 @@ services:
         max-file: "3"
 
   app:
+    image: savenein-app:latest
     build:
       context: ..
       dockerfile: Dockerfile
