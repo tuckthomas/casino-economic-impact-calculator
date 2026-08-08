@@ -1251,13 +1251,17 @@ window.MapLibreImpactMap = (function ()
         t3PopCounty = subjectCounty ? subjectCounty.t3Pop : 0;
     }
 
-    async function updateIsochrones(lngLat)
+    let isochroneTimeout = null;
+    let activeIsochroneSeq = 0;
+
+    async function updateIsochrones(lngLat, debounceMs = 0)
     {
         if (!layersVisible.zones) return;
 
         // If in grid mode, we fetch from our cache instead of Valhalla live
         if (riskZoneMode === 'grid')
         {
+            toggleLoading(true, "Loading Drive-Time Data...");
             try
             {
                 const res = await fetch(`/api/Impact/cached-isochrone?lat=${lngLat.lat}&lon=${lngLat.lng}`);
@@ -1266,7 +1270,7 @@ window.MapLibreImpactMap = (function ()
                     const data = await res.json();
                     // API returns { geoJson: {...}, stats: {...} }
                     const geoJson = data.geoJson || data;
-                    if (map.getSource('impact-grid-isochrones'))
+                    if (map && map.getSource('impact-grid-isochrones'))
                     {
                         map.getSource('impact-grid-isochrones').setData(geoJson);
                     }
@@ -1274,13 +1278,10 @@ window.MapLibreImpactMap = (function ()
                     // Also update population stats if available
                     if (data.stats)
                     {
-                        // stats format: { "15": {total: X, by_county: {fips: Y...}}, ... }
-
                         function getStat(min)
                         {
                             const val = data.stats[min];
                             if (!val) return { total: 0, by_county: {} };
-                            // Handle old format vs new
                             if (typeof val === 'number') return { total: val, by_county: {} };
                             return {
                                 total: val.total || 0,
@@ -1309,7 +1310,6 @@ window.MapLibreImpactMap = (function ()
                             const c30 = (s30.by_county && s30.by_county[fips]) || 0;
                             const c60 = (s60.by_county && s60.by_county[fips]) || 0;
 
-                            // Cumulative to Exclusive
                             const t1 = c15;
                             const t2 = Math.max(0, c30 - c15);
                             const t3 = Math.max(0, c60 - c30);
@@ -1320,21 +1320,9 @@ window.MapLibreImpactMap = (function ()
                             }
                         });
 
-                        // Fallback: If no counties found (e.g. old API), populate current county from totals?
-                        // The getStat fallback tries to handle 'val.county', but let's ensure:
-                        if (allFips.size === 0 && (s15.total > 0 || s30.total > 0 || s60.total > 0))
-                        {
-                            // Fallback logic for safety
-                        }
-
-                        // Update global Regional Totals variables used by calculateImpact
                         t1PopRegional = s15.total;
                         t2PopRegional = Math.max(0, s30.total - s15.total);
                         t3PopRegional = Math.max(0, s60.total - s30.total);
-
-                        // Update Subject County specific Globals (t1PopCounty is used for "Subject County" row)
-                        // If we have data for the subject county in byCounty, use it.
-                        // Otherwise fallback to existing logic (though sXX.county isn't directly available in new schema unless we look it up)
 
                         if (currentCountyFips && byCounty[currentCountyFips])
                         {
@@ -1344,44 +1332,51 @@ window.MapLibreImpactMap = (function ()
                             t3PopCounty = cData.t3Pop;
                         } else
                         {
-                            // Zero out if not found (or should we trust the total-aggregate logic?)
-                            // Current API returns 'by_county' so we should trust it.
                             t1PopCounty = 0;
                             t2PopCounty = 0;
                             t3PopCounty = 0;
                         }
-
-                        // Update global var references for radius mode if they were used? 
-                        // Actually logic above (lines 857-863 in original) updated t1PopRegional etc.
 
                         calculateImpact();
                     }
                 } else
                 {
                     console.warn("No cached isochrone found for this point");
-                    // clear
-                    if (map.getSource('impact-grid-isochrones'))
+                    if (map && map.getSource('impact-grid-isochrones'))
                     {
                         map.getSource('impact-grid-isochrones').setData({ type: 'FeatureCollection', features: [] });
                     }
                 }
             } catch (e) { console.error(e); }
+            finally
+            {
+                toggleLoading(false);
+            }
             return;
         }
 
         if (riskZoneMode !== 'isochrone') return;
 
-        if (isochroneTimeout) clearTimeout(isochroneTimeout);
-        isochroneTimeout = setTimeout(async () =>
+        if (isochroneTimeout)
         {
-            toggleLoading(true, "Calculating Drive-Time Population...");
+            clearTimeout(isochroneTimeout);
+            isochroneTimeout = null;
+        }
+
+        const seq = ++activeIsochroneSeq;
+
+        const performLiveFetch = async () =>
+        {
+            toggleLoading(true, "Calculating Drive-Time Zones...");
             try
             {
                 const response = await fetch(`/api/Impact/live-isochrone?lat=${lngLat.lat}&lon=${lngLat.lng}`, { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Drive-time request failed: ${response.status}`);
 
                 const data = await response.json();
-                if (map.getSource('isochrones'))
+                if (seq !== activeIsochroneSeq) return;
+
+                if (map && map.getSource('isochrones'))
                 {
                     map.getSource('isochrones').setData(data.geoJson);
                 }
@@ -1391,14 +1386,36 @@ window.MapLibreImpactMap = (function ()
             }
             catch (error)
             {
-                console.error('Live drive-time calculation failed:', error);
-                showMapNotification('Drive-time calculation failed. Please try the location again.');
+                if (seq === activeIsochroneSeq)
+                {
+                    console.error('Live drive-time calculation failed:', error);
+                    showMapNotification('Drive-time calculation failed. Please try the location again.');
+                }
             }
             finally
             {
-                toggleLoading(false);
+                if (seq === activeIsochroneSeq)
+                {
+                    toggleLoading(false);
+                }
             }
-        }, 150);
+        };
+
+        if (debounceMs > 0)
+        {
+            return new Promise(resolve =>
+            {
+                isochroneTimeout = setTimeout(async () =>
+                {
+                    await performLiveFetch();
+                    resolve();
+                }, debounceMs);
+            });
+        }
+        else
+        {
+            return await performLiveFetch();
+        }
     }
 
     // === GRID MODE ===
@@ -1792,35 +1809,102 @@ window.MapLibreImpactMap = (function ()
 
     // === UI FUNCTIONS ===
 
-    function toggleLoading(show, text = "Loading...")
+    let loadingCounter = 0;
+
+    function toggleLoading(show, text = "Loading...", force = false)
     {
         const mapEl = document.getElementById('impact-map');
         if (!mapEl) return;
+        const parentContainer = mapEl.parentElement;
+        if (!parentContainer) return;
+
+        if (force)
+        {
+            loadingCounter = show ? 1 : 0;
+        }
+        else if (show)
+        {
+            loadingCounter++;
+        }
+        else
+        {
+            loadingCounter = Math.max(0, loadingCounter - 1);
+        }
+
+        const shouldShow = loadingCounter > 0;
         let overlay = document.getElementById('map-loading-overlay');
 
-        if (!overlay && show)
+        if (!overlay && shouldShow)
         {
             overlay = document.createElement('div');
             overlay.id = 'map-loading-overlay';
-            overlay.className = 'absolute inset-0 z-[500] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300';
-            overlay.innerHTML = `<div class="flex flex-col items-center gap-4"><div class="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div><div class="text-white font-bold" id="map-loading-text">${text}</div></div>`;
-            mapEl.parentElement.appendChild(overlay);
-        }
-        else if (overlay && show) 
-        {
-            // Update text if overlay exists
-            const textEl = document.getElementById('map-loading-text');
-            if (textEl) textEl.textContent = text;
-        }
+            overlay.className = 'absolute inset-0 z-[500] bg-slate-950/75 backdrop-blur-md flex flex-col items-center justify-center gap-4 transition-opacity duration-300 select-none cursor-wait';
+            overlay.setAttribute('aria-busy', 'true');
+            overlay.setAttribute('aria-live', 'polite');
+            overlay.innerHTML = `
+                <div class="relative w-16 h-16 flex items-center justify-center">
+                    <!-- Glowing circular background pulse -->
+                    <div class="absolute inset-0 rounded-full bg-blue-500/15 blur-lg animate-pulse"></div>
+                    <!-- Circular Loading Ring SVG -->
+                    <svg class="w-16 h-16 animate-spin text-blue-500" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="32" cy="32" r="26" stroke="rgba(59, 130, 246, 0.2)" stroke-width="4.5" />
+                        <circle cx="32" cy="32" r="26" stroke="url(#isochrone-spinner-grad)" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="115" stroke-dashoffset="35" />
+                        <defs>
+                            <linearGradient id="isochrone-spinner-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#93c5fd" />
+                                <stop offset="50%" stop-color="#3b82f6" />
+                                <stop offset="100%" stop-color="#1d4ed8" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <!-- Center icon -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-blue-400 text-xl animate-pulse">speed</span>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center gap-1 text-center px-4 max-w-xs">
+                    <div class="text-white font-bold text-sm tracking-wide" id="map-loading-text">${escapeHtml(text)}</div>
+                    <div class="text-sm text-blue-300/90 font-medium">Please wait while drive-time zones render...</div>
+                </div>
+            `;
 
-        if (overlay)
-        {
-            overlay.style.opacity = show ? '1' : '0';
-            overlay.style.pointerEvents = show ? 'auto' : 'none';
-            if (!show) 
+            // Block all mouse, pointer, wheel, drag, and touch interactions on the map
+            ['click', 'dblclick', 'mousedown', 'mouseup', 'mousemove', 'wheel', 'touchstart', 'touchend', 'touchmove', 'contextmenu', 'pointerdown', 'pointerup', 'pointermove'].forEach(evt =>
             {
-                setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 300);
-            }
+                overlay.addEventListener(evt, (e) =>
+                {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }, { passive: false });
+            });
+
+            parentContainer.appendChild(overlay);
+
+            // Smooth fade-in
+            overlay.style.opacity = '0';
+            requestAnimationFrame(() =>
+            {
+                if (overlay) overlay.style.opacity = '1';
+            });
+        }
+        else if (overlay && shouldShow)
+        {
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
+            const textEl = document.getElementById('map-loading-text');
+            if (textEl && text) textEl.textContent = text;
+        }
+        else if (overlay && !shouldShow)
+        {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+            setTimeout(() =>
+            {
+                if (loadingCounter === 0 && overlay && overlay.parentNode)
+                {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            }, 300);
         }
     }
 
@@ -3369,7 +3453,7 @@ window.MapLibreImpactMap = (function ()
                     {
                         updateCircles(newPos);
                         calculateImpact();
-                        if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(newPos);
+                        if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(newPos, 0);
                     }
                 }
                 else 
@@ -4015,8 +4099,8 @@ window.MapLibreImpactMap = (function ()
             activePrefetches = [];
         }
 
-        // Show loading immediately when county is clicked
-        toggleLoading(true, "Loading County...");
+        // Show loading immediately when county is clicked with force=true
+        toggleLoading(true, "Loading County & Drive-Time Zones...", true);
 
         try
         {
@@ -4066,18 +4150,15 @@ window.MapLibreImpactMap = (function ()
                 markerPosition = { lng: center[0], lat: center[1] };
                 updateMarker(markerPosition);
                 updateMarker(markerPosition);
-                // updateCircles(markerPosition); // Handled by setRiskZoneMode below
 
-                // Live Valhalla drive-time is the default. Cached grids remain an
-                // optional optimization when a populated cache is available.
-                console.log('[SelectCounty] Loading live drive-time zones');
+                // Set mode to isochrone and compute drive-time zones
+                toggleLoading(true, "Calculating Drive-Time Zones...");
                 await setRiskZoneMode('isochrone');
 
                 // Fit to 50-mile circle around center
                 const circle50 = createCircleGeoJSON([center[0], center[1]], CIRCLE_RADII.tier3);
 
-                // Wait for zoom animation to complete before hiding loading
-                // Use a race with timeout in case move doesn't fire
+                // Wait for zoom animation to complete
                 await new Promise(resolve =>
                 {
                     const timer = setTimeout(resolve, 2000);
@@ -4106,8 +4187,8 @@ window.MapLibreImpactMap = (function ()
         }
         finally
         {
-            // Always hide loading when done
-            toggleLoading(false);
+            // Force hide loading when entire selection workflow completes
+            toggleLoading(false, null, true);
         }
     }
 
@@ -4121,8 +4202,6 @@ window.MapLibreImpactMap = (function ()
         }
         const el = document.createElement('div');
         el.style.cssText = 'width:50px;height:88px;cursor:grab;background:url(/assets/map-markers/Casino_Map_Marker.svg) no-repeat bottom center/contain;position:relative;';
-
-
 
         // Click to zoom handler
         el.addEventListener('click', (e) =>
@@ -4230,13 +4309,13 @@ window.MapLibreImpactMap = (function ()
 
                     // In grid mode we update dynamically only when snapping at dragend
                     // In radius mode we update isochrones dynamically
-                    if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(pos);
+                    if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(pos, 250);
                     return; // Exit early, calculateImpact will be called after context loads
                 }
             }
 
             calculateImpact();
-            if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(pos);
+            if (layersVisible.zones && riskZoneMode === 'isochrone') updateIsochrones(pos, 250);
         });
 
         marker.on('dragstart', () => { el.style.cursor = 'grabbing'; markerDragging = true; });
@@ -4250,6 +4329,10 @@ window.MapLibreImpactMap = (function ()
             if (riskZoneMode === 'grid')
             {
                 await snapMarkerToNearestGridPoint();
+            }
+            else if (riskZoneMode === 'isochrone' && markerPosition)
+            {
+                await updateIsochrones(markerPosition, 0);
             }
         });
     }
