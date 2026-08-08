@@ -16,7 +16,10 @@
 }
 
 .home-sticky-header-shell {
-    background: #0f172a;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     isolation: isolate;
     position: relative;
     transform: translateY(0);
