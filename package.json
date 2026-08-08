@@ -10,7 +10,7 @@
     "dev:status": "./scripts/dev/dev-status.sh",
     "setup:git-hooks": "git config core.hooksPath .githooks",
     "check:ui-text": "node scripts/check-ui-text-size.mjs",
-    "build:css": "tailwindcss --config ./SaveNEIN.Client/tailwind.config.js -i ./SaveNEIN.Client/Styles/app.css -o ./SaveNEIN.Client/wwwroot/css/app.css --minify",
+    "build:css": "tailwindcss -i ./SaveNEIN.Client/Styles/app.css -o ./SaveNEIN.Client/wwwroot/css/app.css --minify",
     "copy-libs": "node scripts/copy-libs.mjs"
   },
   "dependencies": {
