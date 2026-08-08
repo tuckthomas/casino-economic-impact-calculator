@@ -33,7 +33,7 @@
                 
                 <!-- Footer with Navigation -->
                 <div class="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
-                    <AppButton OnButtonClick="Prev" Icon="arrow_back_ios_new">
+                    <AppButton OnButtonClick="Prev" Icon="arrow_back_ios_new" Class="bg-red-600 hover:bg-red-700 text-white sm:w-28">
                         <span class="hidden sm:inline">Previous</span>
                     </AppButton>
                     
@@ -41,7 +41,7 @@
                     <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">@(CurrentIndex + 1) of @CurrentItems.Count</span>
                     
                     <!-- Next Button -->
-                    <AppButton OnButtonClick="Next" Class="bg-red-600 hover:bg-red-700 text-white flex-row-reverse">
+                    <AppButton OnButtonClick="Next" Class="bg-red-600 hover:bg-red-700 text-white flex-row-reverse sm:w-28">
                         <span class="hidden sm:inline">Next</span>
                         <span class="material-symbols-outlined text-[18px]">arrow_forward_ios</span>
                     </AppButton>
