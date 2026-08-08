@@ -37,7 +37,7 @@ If you need to work on the .NET code without running the app entirely in Docker:
 
 ## Agent Process Safety Rules
 
-When working in local dev mode, agents must use the repo-managed scripts in `/root/SaveFW/dev/` and must not freestyle process control.
+When working in local dev mode, agents must use the repo-managed scripts in `scripts/dev/` and must not freestyle process control.
 
 - Allowed commands:
   - `npm run dev`
@@ -45,13 +45,13 @@ When working in local dev mode, agents must use the repo-managed scripts in `/ro
   - `npm run dev:stop`
   - `npm run dev:restart`
   - `npm run dev:status`
-  - direct invocation of the matching `dev/dev-*.sh` scripts
+  - direct invocation of the matching `scripts/dev/dev-*.sh` scripts
 - Forbidden behavior:
   - do not use ad hoc `kill`, `pkill`, `killall`, or broad process-name matching to manage local dev
   - do not stop processes by port owner unless that pid matches this repo's recorded pidfile
   - do not touch Docker, Docker Compose, Podman, containerd, kubepods, or any containerized process when fixing local dev
-  - do not stop any `SaveFW.Server`, `dotnet`, `npm`, or `node` process unless it is the exact pid recorded by `/root/SaveFW/dev/.local-dev-server.pid`
-- The `dev/dev-stop.sh` and `dev/dev-restart.sh` scripts are the only approved stop/restart path for the local watcher.
+  - do not stop any `SaveFW.Server`, `dotnet`, `npm`, or `node` process unless it is the exact pid recorded by `scripts/dev/.local-dev-server.pid`
+- The `scripts/dev/dev-stop.sh` and `scripts/dev/dev-restart.sh` scripts are the only approved stop/restart path for the local watcher.
 - If the local app serves stale or missing hashed `_framework` assets, use the repo-managed restart flow only. Do not kill unrelated processes.
 - If port `5000` is occupied by an unmanaged or containerized process, agents must refuse to stop it automatically and report that fact instead.
 - Do not run `dotnet build SaveFW.Server/SaveFW.Server.csproj` in parallel with an active watcher unless the watcher is first stopped through the repo-managed scripts.

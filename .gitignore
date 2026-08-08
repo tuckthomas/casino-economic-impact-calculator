@@ -30,5 +30,5 @@ valhalla_tiles.tar
 .DS_Store
 Thumbs.db
 *.log
-dev/.local-dev-server.pid
-dev/.dotnet-watch-home/
+scripts/dev/.local-dev-server.pid
+scripts/dev/.dotnet-watch-home/

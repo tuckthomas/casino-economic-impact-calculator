@@ -44,7 +44,7 @@ resolve_dotnet_watch_ws_hostname() {
 }
 
 readonly DEV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly REPO_ROOT="$(cd "${DEV_DIR}/.." && pwd)"
+readonly REPO_ROOT="$(cd "${DEV_DIR}/../.." && pwd)"
 readonly PIDFILE="${DEV_DIR}/.local-dev-server.pid"
 readonly LOGFILE="${DEV_DIR}/local-dev-server.log"
 readonly DOTNET_WATCH_HOME="${DEV_DIR}/.dotnet-watch-home"
