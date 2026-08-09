@@ -26,10 +26,10 @@ jobs:
           client = Path('SaveNEIN.Server/Controllers/ClientLogController.cs')
           text = client.read_text(encoding='utf-8')
           old = '        _logger.LogInformation($"[CLIENT-LOG] {entry.Message}");'
-          new = '''        var safeMessage = entry.Message
-              .Replace("\\r", string.Empty)
-              .Replace("\\n", string.Empty);
-          _logger.LogInformation("[CLIENT-LOG] {ClientMessage}", safeMessage);'''
+          new = ('        var safeMessage = entry.Message\n'
+                 '            .Replace("\\r", string.Empty)\n'
+                 '            .Replace("\\n", string.Empty);\n'
+                 '        _logger.LogInformation("[CLIENT-LOG] {ClientMessage}", safeMessage);')
           if text.count(old) != 1:
               raise SystemExit(f'Expected one ClientLogController sink, found {text.count(old)}')
           client.write_text(text.replace(old, new), encoding='utf-8')
@@ -38,51 +38,21 @@ jobs:
           text = impact.read_text(encoding='utf-8')
 
           replacements = [
-              (
-                  '''    {
-        _logger.LogInformation($"[ImpactController] 1. Request received for {fips} (Lite: {lite})");
-        try''',
-                  '''    {
-        var safeFipsForLog = fips
-            .Replace("\\r", string.Empty)
-            .Replace("\\n", string.Empty);
-        _logger.LogInformation("[ImpactController] 1. Request received for {Fips} (Lite: {Lite})", safeFipsForLog, lite);
-        try'''
-              ),
-              (
-                  '            _logger.LogWarning($"[ImpactController] No data found for {fips}");',
-                  '            _logger.LogWarning("[ImpactController] No data found for {Fips}", safeFipsForLog);'
-              ),
-              (
-                  '        _logger.LogError(ex, $"[ImpactController] Error in GetCountyContext for {fips}");',
-                  '        _logger.LogError(ex, "[ImpactController] Error in GetCountyContext for {Fips}", safeFipsForLog);'
-              ),
-              (
-                  '''    {
-        try
-        {
-            // Defaults align with appsettings for now''',
-                  '''    {
-        var safeStateFipsForLog = (stateFips ?? "18")
-            .Replace("\\r", string.Empty)
-            .Replace("\\n", string.Empty);
-        var safeTitleForLog = (title ?? "Allen")
-            .Replace("\\r", string.Empty)
-            .Replace("\\n", string.Empty);
-
-        try
-        {
-            // Defaults align with appsettings for now'''
-              ),
-              (
-                  '            _logger.LogError(ex, $"[ImpactController] Error in GetGridPoints for {title}, {stateFips}");',
-                  '            _logger.LogError(ex, "[ImpactController] Error in GetGridPoints for {CountyTitle}, {StateFips}", safeTitleForLog, safeStateFipsForLog);'
-              )
+              ('    {\n        _logger.LogInformation($"[ImpactController] 1. Request received for {fips} (Lite: {lite})");\n        try',
+               '    {\n        var safeFipsForLog = fips\n            .Replace("\\r", string.Empty)\n            .Replace("\\n", string.Empty);\n        _logger.LogInformation("[ImpactController] 1. Request received for {Fips} (Lite: {Lite})", safeFipsForLog, lite);\n        try'),
+              ('            _logger.LogWarning($"[ImpactController] No data found for {fips}");',
+               '            _logger.LogWarning("[ImpactController] No data found for {Fips}", safeFipsForLog);'),
+              ('        _logger.LogError(ex, $"[ImpactController] Error in GetCountyContext for {fips}");',
+               '        _logger.LogError(ex, "[ImpactController] Error in GetCountyContext for {Fips}", safeFipsForLog);'),
+              ('    {\n        try\n        {\n            // Defaults align with appsettings for now',
+               '    {\n        var safeStateFipsForLog = (stateFips ?? "18")\n            .Replace("\\r", string.Empty)\n            .Replace("\\n", string.Empty);\n        var safeTitleForLog = (title ?? "Allen")\n            .Replace("\\r", string.Empty)\n            .Replace("\\n", string.Empty);\n\n        try\n        {\n            // Defaults align with appsettings for now'),
+              ('            _logger.LogError(ex, $"[ImpactController] Error in GetGridPoints for {title}, {stateFips}");',
+               '            _logger.LogError(ex, "[ImpactController] Error in GetGridPoints for {CountyTitle}, {StateFips}", safeTitleForLog, safeStateFipsForLog);')
           ]
 
           for old, new in replacements:
               if text.count(old) != 1:
-                  raise SystemExit(f'Expected one ImpactController replacement, found {text.count(old)} for: {old[:80]}')
+                  raise SystemExit(f'Expected one ImpactController replacement, found {text.count(old)}')
               text = text.replace(old, new, 1)
 
           impact.write_text(text, encoding='utf-8')
