@@ -68,12 +68,20 @@ namespace SaveNEIN.Server.Data
             await using var conn = new NpgsqlConnection(connString);
             await conn.OpenAsync();
 
+            var placeSchemaChanged = await TigerPlaceSchema.EnsureMunicipalityLookupContractAsync(conn);
+            if (placeSchemaChanged)
+            {
+                _logger.LogWarning(
+                    "TigerSeeder: Existing TIGER PLACE schema was missing municipality lookup fields. Required states will be reingested before startup.");
+            }
+
             foreach (var stateFips in requiredStateFips)
             {
-                if (!await HasUsablePlaceDataForStateAsync(conn, stateFips))
+                var needsRefresh = placeSchemaChanged || !await HasUsablePlaceDataForStateAsync(conn, stateFips);
+                if (needsRefresh)
                 {
                     _logger.LogInformation(
-                        "TigerSeeder: Required municipality PLACE data for state {StateFips} is not ready. Ingesting before application startup...",
+                        "TigerSeeder: Required municipality PLACE data for state {StateFips} is not endpoint-ready. Reingesting before application startup...",
                         stateFips);
                     await _ingestionService.IngestPlacesForState(stateFips);
                 }
@@ -81,12 +89,14 @@ namespace SaveNEIN.Server.Data
                 if (!await HasUsablePlaceDataForStateAsync(conn, stateFips))
                 {
                     throw new InvalidOperationException(
-                        $"TIGER PLACE data for required state {stateFips} is still unavailable after ingestion. " +
+                        $"TIGER PLACE data for required state {stateFips} is still not endpoint-ready after ingestion. " +
                         "The application cannot safely evaluate municipal tax-allocation containment.");
                 }
 
+                await VerifyMunicipalityLookupContractAsync(conn, stateFips);
+
                 _logger.LogInformation(
-                    "TigerSeeder: Required municipality PLACE data for state {StateFips} is ready.",
+                    "TigerSeeder: Required municipality PLACE data for state {StateFips} is endpoint-ready.",
                     stateFips);
             }
         }
@@ -198,11 +208,11 @@ namespace SaveNEIN.Server.Data
                 }
 
                 // Check/Ingest Address Ranges
-                // Since tiger_address_ranges doesn't have a state column, we use a simple "HasData" check 
+                // Since tiger_address_ranges doesn't have a state column, we use a simple "HasData" check
                 // to prevent re-ingesting 9GB of data on every startup.
                 // To force a re-seed, the user must TRUNCATE/DROP the tiger_address_ranges table.
             }
-            
+
             // Address-range ingestion currently targets the legacy lowercase-column schema,
             // while EF creates the newer TigerAddressRange entity schema. Keep the importer
             // opt-in until those two representations are reconciled.
@@ -241,17 +251,69 @@ namespace SaveNEIN.Server.Data
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM tiger_places
-                    WHERE state_fp = @fips
-                      AND funcstat = 'A'
-                      AND geom IS NOT NULL
-                      AND NOT ST_IsEmpty(geom)
-                );
+                SELECT
+                    EXISTS (
+                        SELECT 1
+                        FROM tiger_places
+                        WHERE state_fp = @fips
+                          AND funcstat = 'A'
+                          AND geoid IS NOT NULL
+                          AND name IS NOT NULL
+                          AND aland IS NOT NULL
+                          AND geom IS NOT NULL
+                          AND NOT ST_IsEmpty(geom)
+                          AND ST_SRID(geom) = 4326
+                          AND ST_IsValid(geom)
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM tiger_places
+                        WHERE state_fp = @fips
+                          AND funcstat = 'A'
+                          AND (
+                              geoid IS NULL
+                              OR name IS NULL
+                              OR aland IS NULL
+                              OR geom IS NULL
+                              OR ST_IsEmpty(geom)
+                              OR ST_SRID(geom) <> 4326
+                              OR NOT ST_IsValid(geom)
+                          )
+                    );
             ";
             cmd.Parameters.AddWithValue("fips", stateFips);
             return (bool?)await cmd.ExecuteScalarAsync() == true;
+        }
+
+        private async Task VerifyMunicipalityLookupContractAsync(NpgsqlConnection conn, string stateFips)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                WITH sample AS (
+                    SELECT ST_PointOnSurface(geom) AS pt
+                    FROM tiger_places
+                    WHERE state_fp = @fips
+                      AND funcstat = 'A'
+                    ORDER BY geoid
+                    LIMIT 1
+                )
+                SELECT place.geoid
+                FROM sample
+                JOIN tiger_places AS place
+                  ON place.state_fp = @fips
+                 AND place.funcstat = 'A'
+                 AND ST_Covers(place.geom, sample.pt)
+                ORDER BY COALESCE(place.aland, 0) ASC, place.geoid
+                LIMIT 1;
+            ";
+            cmd.Parameters.AddWithValue("fips", stateFips);
+
+            var result = await cmd.ExecuteScalarAsync();
+            if (result == null || result == DBNull.Value)
+            {
+                throw new InvalidOperationException(
+                    $"TIGER PLACE data for required state {stateFips} cannot execute the municipality containment lookup contract.");
+            }
         }
 
         private async Task<bool> HasData(NpgsqlConnection conn, string tableName)
@@ -318,15 +380,15 @@ namespace SaveNEIN.Server.Data
                     CREATE INDEX IF NOT EXISTS idx_{tableName}_geom_simplified
                     ON {tableName} USING GIST (geom_simplified);
                 ";
-                
-                if (tableName == "census_block_groups") 
+
+                if (tableName == "census_block_groups")
                 {
                     cmd.CommandText += $@"
-                        CREATE INDEX IF NOT EXISTS idx_{tableName}_geoid 
+                        CREATE INDEX IF NOT EXISTS idx_{tableName}_geoid
                         ON {tableName} (geoid text_pattern_ops);
                     ";
                 }
-                
+
                 await cmd.ExecuteNonQueryAsync();
             }
 
