@@ -8,11 +8,7 @@
         <label class="text-sm font-medium text-slate-400">@Label</label>
         @if (!string.IsNullOrEmpty(Tooltip))
         {
-            <div class="relative flex items-center">
-                <span class="material-symbols-outlined text-slate-400 text-[16px] cursor-help hover:text-blue-500 transition-colors"
-                      onmouseenter="TooltipPortal.show(this, '@Tooltip.Replace("'", "\\'").Replace("\"", "&quot;")')"
-                      onmouseleave="TooltipPortal.hide()">info</span>
-            </div>
+            <AppTooltip Text="@Tooltip" AriaLabel="@($"More information about {Label}")" />
         }
     </div>
     @if (!string.IsNullOrEmpty(Description))
@@ -27,11 +23,11 @@
                     aria-hidden="true"
                     tabindex="-1"
                     class="hidden">
+                <option value="@CustomPresetValue">Custom</option>
                 @foreach (var preset in PresetOptions)
                 {
                     <option value="@preset.Value">@preset.Label</option>
                 }
-                <option value="@CustomPresetValue">Custom</option>
             </select>
             <div class="relative block">
                 <button type="button"
@@ -49,6 +45,12 @@
                 {
                     <div class="fixed inset-0 z-[110]" aria-hidden="true" @onclick="CloseDesktopPresetMenu"></div>
                     <div id="preset-menu-@Id" role="listbox" class="sfw-custom-select-menu mt-2">
+                        <button type="button"
+                                class="sfw-custom-select-option @(string.Equals(selectedPresetValue, CustomPresetValue, StringComparison.Ordinal) ? "is-active" : "")"
+                                @onclick="(() => SelectDesktopPresetAsync(CustomPresetValue))">
+                            Custom
+                        </button>
+                        <div role="separator" aria-hidden="true" class="mx-2 my-1 border-t border-slate-700"></div>
                         @foreach (var preset in PresetOptions)
                         {
                             var isActive = string.Equals(selectedPresetValue, preset.Value, StringComparison.Ordinal);
@@ -58,11 +60,6 @@
                                 @preset.Label
                             </button>
                         }
-                        <button type="button"
-                                class="sfw-custom-select-option @(string.Equals(selectedPresetValue, CustomPresetValue, StringComparison.Ordinal) ? "is-active" : "")"
-                                @onclick="(() => SelectDesktopPresetAsync(CustomPresetValue))">
-                            Custom
-                        </button>
                     </div>
                 }
             </div>

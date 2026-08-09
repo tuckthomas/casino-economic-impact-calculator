@@ -266,11 +266,11 @@ window.EconomicCalculator = (function ()
         }
 
         const options = [
+            { id: TAX_ALLOCATION_SCENARIO_CUSTOM_ID, label: 'Custom' },
             ...getPresetTaxScenarios().map(scenario => ({
                 id: scenario.id,
                 label: scenario.billName ? `${scenario.label} (${scenario.billName})` : scenario.label
-            })),
-            { id: TAX_ALLOCATION_SCENARIO_CUSTOM_ID, label: 'Custom' }
+            }))
         ];
 
         scenarioSelect.innerHTML = options.map(option =>
@@ -285,7 +285,7 @@ window.EconomicCalculator = (function ()
         }
         if (scenarioMenu)
         {
-            scenarioMenu.innerHTML = options.map(option => `
+            scenarioMenu.innerHTML = options.map((option, index) => `
                 <button type="button"
                     role="option"
                     aria-selected="${option.id === selectedTaxScenarioId ? 'true' : 'false'}"
@@ -293,6 +293,7 @@ window.EconomicCalculator = (function ()
                     class="sfw-custom-select-option ${option.id === selectedTaxScenarioId ? 'is-active' : ''}">
                     ${escapeHtml(option.label)}
                 </button>
+                ${index === 0 ? '<div role="separator" aria-hidden="true" class="mx-2 my-1 border-t border-slate-700"></div>' : ''}
             `).join('');
             scenarioMenu.classList.add('hidden');
         }
@@ -3460,14 +3461,14 @@ window.EconomicCalculator = (function ()
 
     function toggleOtherCounties()
     {
-        hideTooltip();
+        window.AppTooltip && window.AppTooltip.hide();
         otherCountiesExpanded = !otherCountiesExpanded;
         calculate();
     }
 
     function toggleStatementExpandAll()
     {
-        hideTooltip();
+        window.AppTooltip && window.AppTooltip.hide();
         statementExpandAll = !statementExpandAll;
         if (lastNetImpactTableModel)
         {
@@ -3477,7 +3478,7 @@ window.EconomicCalculator = (function ()
 
     function toggleStatementCounty(tableKey, countyKey)
     {
-        hideTooltip();
+        window.AppTooltip && window.AppTooltip.hide();
         if (statementExpandAll) statementExpandAll = false;
         const key = [tableKey, countyKey].map(part => String(part || '')).join('::');
         statementExpandedCounties[key] = !statementExpandedCounties[key];
@@ -3489,7 +3490,7 @@ window.EconomicCalculator = (function ()
 
     function toggleStatementGroup(tableKey, countyKey, groupKey)
     {
-        hideTooltip();
+        window.AppTooltip && window.AppTooltip.hide();
         if (statementExpandAll) statementExpandAll = false;
         const countyStateKey = [tableKey, countyKey].map(part => String(part || '')).join('::');
         const groupStateKey = [tableKey, countyKey, groupKey].map(part => String(part || '')).join('::');
@@ -3501,59 +3502,9 @@ window.EconomicCalculator = (function ()
         }
     }
 
-    let globalTooltip = null;
     let otherCountiesToggleEl = null;
     let otherCountiesToggleState = null;
     let otherCountiesToggleResizeBound = false;
-    function ensureGlobalTooltip()
-    {
-        if (globalTooltip) return;
-        globalTooltip = document.createElement('div');
-        globalTooltip.id = 'economic-calculator-global-tooltip';
-        globalTooltip.className = 'fixed hidden pointer-events-none z-[10000] w-64 p-3 bg-slate-900 text-white text-sm rounded-lg shadow-2xl border border-slate-700 font-normal whitespace-normal transition-opacity duration-200 opacity-0';
-        document.body.appendChild(globalTooltip);
-        // Hide tooltip on any scroll event to prevent sticking
-        window.addEventListener('scroll', () => hideTooltip(), true);
-    }
-
-    function showTooltip(e, text)
-    {
-        ensureGlobalTooltip();
-        globalTooltip.textContent = text;
-        globalTooltip.classList.remove('hidden');
-        // Force reflow
-        void globalTooltip.offsetWidth;
-        globalTooltip.classList.add('opacity-100');
-        moveTooltip(e);
-    }
-
-    function hideTooltip()
-    {
-        if (!globalTooltip) return;
-        globalTooltip.classList.remove('opacity-100');
-        globalTooltip.classList.add('opacity-0');
-        setTimeout(() => { if (globalTooltip.classList.contains('opacity-0')) globalTooltip.classList.add('hidden'); }, 200);
-    }
-
-    function moveTooltip(e)
-    {
-        if (!globalTooltip) return;
-        const x = e.clientX;
-        const y = e.clientY;
-        const width = globalTooltip.offsetWidth;
-        const height = globalTooltip.offsetHeight;
-        const padding = 15;
-
-        let left = x + padding;
-        let top = y - height - padding;
-
-        // Boundary check
-        if (left + width > window.innerWidth) left = x - width - padding;
-        if (top < 0) top = y + padding;
-
-        globalTooltip.style.left = `${left}px`;
-        globalTooltip.style.top = `${top}px`;
-    }
 
     function positionOtherCountiesToggle()
     {
@@ -3620,21 +3571,23 @@ window.EconomicCalculator = (function ()
         const buttonClass = 'absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 rounded-full border border-slate-500 bg-slate-900 text-slate-200 hover:text-white hover:border-slate-300 hover:bg-slate-700 shadow-[0_4px_0_rgba(0,0,0,0.35)] transition-colors text-sm font-bold leading-none flex items-center justify-center pointer-events-auto px-1 z-10';
         const activePress = "this.style.transform='translate(-50%, -45%)'; this.style.boxShadow='0 1px 0 rgba(0,0,0,0.35)';";
         const activeRelease = "this.style.transform='translate(-50%, -50%)'; this.style.boxShadow='0 4px 0 rgba(0,0,0,0.35)';";
-        const hideTooltip = "window.EconomicCalculator && window.EconomicCalculator.hideTooltip && window.EconomicCalculator.hideTooltip();";
-
         otherCountiesToggleEl.innerHTML = `
             <span class="${lineClass}"></span>
             <button type="button"
+                aria-label="${expanded ? 'Hide' : 'View'} county cost details"
                 onclick="window.EconomicCalculator && window.EconomicCalculator.toggleOtherCounties && window.EconomicCalculator.toggleOtherCounties()"
-                onmouseenter="window.EconomicCalculator && window.EconomicCalculator.showTooltip && window.EconomicCalculator.showTooltip(event, 'Click to ${label} each of the ${count} counties costs.')"
-                onmouseleave="${hideTooltip} ${activeRelease}"
-                onmousemove="window.EconomicCalculator && window.EconomicCalculator.moveTooltip && window.EconomicCalculator.moveTooltip(event)"
                 onmousedown="${activePress}"
                 onmouseup="${activeRelease}"
                 onmouseleave="${activeRelease}"
                 style="transform: translate(-50%, -50%);"
                 class="${buttonClass}">${expanded ? '−' : '+'}</button>
         `;
+
+        const toggleButtonEl = otherCountiesToggleEl.querySelector('button');
+        if (toggleButtonEl && window.AppTooltip)
+        {
+            window.AppTooltip.attach(toggleButtonEl, `Click to ${label} each of the ${count} counties costs.`);
+        }
     }
 
     return {
@@ -3648,9 +3601,6 @@ window.EconomicCalculator = (function ()
         toggleStatementExpandAll: toggleStatementExpandAll,
         toggleStatementCounty: toggleStatementCounty,
         toggleStatementGroup: toggleStatementGroup,
-        showTooltip: showTooltip,
-        hideTooltip: hideTooltip,
-        moveTooltip: moveTooltip,
         getLastCalculationData: () => lastCalculationResult,
         renderTaxAllocationScenarioControls: renderTaxAllocationScenarioControls
     };

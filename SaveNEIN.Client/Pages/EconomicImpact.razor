@@ -791,7 +791,7 @@
                         </h3>
                         <button id="btn-generate-pdf" @onclick="GeneratePdf" 
                                 class="bg-red-600 hover:bg-red-500 text-white p-2 rounded-lg shadow-md transition-all transform active:scale-95 border border-red-400/20 flex items-center justify-center w-10 h-10 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:hover:bg-slate-600 disabled:shadow-none disabled:active:scale-100" 
-                                title="Download PDF Report"
+                                aria-label="Download PDF Report"
                                 disabled="@_isGeneratingPdf">
                             @if (_isGeneratingPdf)
                             {
@@ -802,6 +802,7 @@
                                 <span class="material-symbols-outlined text-2xl">picture_as_pdf</span>
                             }
                         </button>
+        <AppTooltip TargetId="btn-generate-pdf" Text="Download PDF Report" />
                     </div>
 
 
