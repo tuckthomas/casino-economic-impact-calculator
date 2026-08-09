@@ -562,17 +562,14 @@ window.EconomicCalculator = (function ()
         }
         catch (err)
         {
-            console.warn('[Calculator] Municipality lookup failed:', err);
+            console.error('[Calculator] Municipality lookup failed; tax allocation cannot be evaluated safely:', err);
 
             if (seq !== municipalityLookupSeq)
             {
                 return impactDetail.municipality || null;
             }
 
-            lastMunicipalityLookupKey = lookupKey;
-            lastMunicipalityLookupValue = fallback;
-            impactDetail.municipality = { ...fallback };
-            return impactDetail.municipality;
+            throw err;
         }
     }
 
@@ -2924,6 +2921,8 @@ window.EconomicCalculator = (function ()
         const baselineRateDisplay = Number.isFinite(baselineRate) ? baselineRate.toFixed(1) : "—";
 
         const subjectCountyName = String((model && model.subjectCountyName) || "").trim();
+        const cleanSubjectCountyName = subjectCountyName.replace(/\s+County$/i, '').trim();
+        const formattedCountyName = `${cleanSubjectCountyName || 'Subject'} County`;
         const subjectCountyFips = String((model && model.subjectCountyFips) || "").trim();
         const subjectStateName = String((model && model.subjectStateName) || "").trim();
         const municipalityContext = (model && model.municipality) ? model.municipality : null;
