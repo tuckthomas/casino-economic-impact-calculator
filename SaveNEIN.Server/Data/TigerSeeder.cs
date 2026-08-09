@@ -1,7 +1,9 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Npgsql;
+using SaveNEIN.Server.Configuration;
 using SaveNEIN.Server.Services;
 
 namespace SaveNEIN.Server.Data
@@ -11,6 +13,7 @@ namespace SaveNEIN.Server.Data
         private readonly TigerIngestionService _ingestionService;
         private readonly ILogger<TigerSeeder> _logger;
         private readonly IConfiguration _config;
+        private readonly TaxAllocationOptions _taxAllocationOptions;
         private static readonly string[] BlockGroupStateFips = new[]
         {
             "18", "39", "26", // Launch region first: Indiana, Ohio, Michigan.
@@ -23,11 +26,69 @@ namespace SaveNEIN.Server.Data
         };
         private static readonly string[] PopulationStateFips = { "18", "39", "26" };
 
-        public TigerSeeder(TigerIngestionService ingestionService, ILogger<TigerSeeder> logger, IConfiguration config)
+        public TigerSeeder(
+            TigerIngestionService ingestionService,
+            ILogger<TigerSeeder> logger,
+            IConfiguration config,
+            IOptions<TaxAllocationOptions> taxAllocationOptions)
         {
             _ingestionService = ingestionService;
             _logger = logger;
             _config = config;
+            _taxAllocationOptions = taxAllocationOptions.Value;
+        }
+
+        /// <summary>
+        /// Ensures the TIGER PLACE data required by active municipal tax-allocation scenarios
+        /// exists before the application begins serving requests. Municipality containment is
+        /// part of the fiscal model, so this dataset is a correctness dependency rather than
+        /// optional background map data.
+        /// </summary>
+        public async Task EnsureRequiredMunicipalityPlaceDataAsync()
+        {
+            var requiredStateFips = _taxAllocationOptions
+                .GetMunicipalEligibleCountyFips()
+                .Select(countyFips => countyFips[..2])
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(stateFips => stateFips, StringComparer.Ordinal)
+                .ToArray();
+
+            if (requiredStateFips.Length == 0)
+            {
+                _logger.LogInformation("TigerSeeder: No municipality PLACE readiness states are configured.");
+                return;
+            }
+
+            var connString = _config.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(connString))
+            {
+                throw new InvalidOperationException("DefaultConnection is required to verify municipality PLACE data readiness.");
+            }
+
+            await using var conn = new NpgsqlConnection(connString);
+            await conn.OpenAsync();
+
+            foreach (var stateFips in requiredStateFips)
+            {
+                if (!await HasUsablePlaceDataForStateAsync(conn, stateFips))
+                {
+                    _logger.LogInformation(
+                        "TigerSeeder: Required municipality PLACE data for state {StateFips} is not ready. Ingesting before application startup...",
+                        stateFips);
+                    await _ingestionService.IngestPlacesForState(stateFips);
+                }
+
+                if (!await HasUsablePlaceDataForStateAsync(conn, stateFips))
+                {
+                    throw new InvalidOperationException(
+                        $"TIGER PLACE data for required state {stateFips} is still unavailable after ingestion. " +
+                        "The application cannot safely evaluate municipal tax-allocation containment.");
+                }
+
+                _logger.LogInformation(
+                    "TigerSeeder: Required municipality PLACE data for state {StateFips} is ready.",
+                    stateFips);
+            }
         }
 
         public async Task EnsureSeededAsync()
@@ -169,6 +230,28 @@ namespace SaveNEIN.Server.Data
 
             // 4. Ensure simplified geometry columns exist and are populated (visualization only)
             await EnsureSimplifiedGeometriesAsync(conn);
+        }
+
+        private async Task<bool> HasUsablePlaceDataForStateAsync(NpgsqlConnection conn, string stateFips)
+        {
+            if (!await TableExists(conn, "tiger_places"))
+            {
+                return false;
+            }
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM tiger_places
+                    WHERE state_fp = @fips
+                      AND funcstat = 'A'
+                      AND geom IS NOT NULL
+                      AND NOT ST_IsEmpty(geom)
+                );
+            ";
+            cmd.Parameters.AddWithValue("fips", stateFips);
+            return (bool?)await cmd.ExecuteScalarAsync() == true;
         }
 
         private async Task<bool> HasData(NpgsqlConnection conn, string tableName)

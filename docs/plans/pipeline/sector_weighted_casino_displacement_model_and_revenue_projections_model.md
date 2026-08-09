@@ -2,7 +2,7 @@
 
 ## Governing AI Agent Implementation Checklist
 
-> **Status:** In progress. This document supersedes the earlier Northeast-Indiana-specific revenue heuristic plan and the first gravity-model expansion.
+> **Status:** Pipeline / Not Started. This document supersedes the earlier Northeast-Indiana-specific revenue heuristic plan and the first gravity-model expansion.
 >
 > **Primary objective:** Build a transparent, empirically calibrated, nationally reusable casino gravity and economic-impact engine that can evaluate a proposed casino or major gaming development anywhere in the United States. The engine must estimate site-specific gaming revenue, patron origins, market expansion, cannibalization, repatriation/leakage, tourism and through-traffic demand, sector displacement, fiscal effects, employment effects, and downstream social/economic costs. The same immutable model run must power the interactive web application, APIs, sensitivity analysis, and a server-generated full analytical report comparable in structure and rigor to professional casino feasibility and impact studies.
 >
@@ -380,6 +380,101 @@ Primary source:
   - [ ] resident vs tourism vs through-traffic components.
 - [ ] Use configurable top-N thresholds and group immaterial residual origins as `Other origins` only after preserving the full detail in data/export.
 - [ ] For the current Indiana scenario, Allen, DeKalb, Steuben, Michigan, and Ohio may naturally appear because they contribute material demand. They must appear because the model finds them, not because report code knows their names.
+
+## 6.5 Optional higher-resolution block-group modeling and ZIP/ZCTA reporting
+
+Block-group resolution is a supported analytical mode, not a mandatory universal internal geography. Use it when the additional spatial precision is supported by the available inputs, validation results, and acceptable runtime. Do not force ZIP/ZCTA-native data through a synthetic block-group allocation merely for apparent precision.
+
+### Origin-resolution governance
+
+- [ ] Make origin resolution explicit and versioned in the scenario/model-run configuration.
+- [ ] Support at minimum:
+  - [ ] ZCTA/ZIP-compatible origins for nationally available ZIP-level demand inputs such as IRS SOI AGI;
+  - [ ] Census block-group origins for higher-resolution demographic and accessibility analysis;
+  - [ ] tract/county origins where data availability or performance warrants coarser resolution.
+- [ ] Do not make raw Census blocks the primary demand-origin target unless a later validated requirement justifies the added complexity.
+- [ ] Do not use Valhalla isochrone grid points or other arbitrary routing grid marks as demand origins.
+- [ ] Select a production default resolution from empirical validation and performance evidence rather than assuming finer geography is automatically more accurate.
+- [ ] Permit different validated demand specifications to use different native source resolutions while preserving a common aggregation/reporting contract.
+
+### Block-group analytical mode
+
+- [ ] Define the canonical Census/block-group source tables and snapshot versions used when block-group mode is active.
+- [ ] Use a defensible representative point for each block group, preferably population-weighted where feasible rather than a naive geometric centroid when the distinction is material.
+- [ ] Derive legal-gaming-age-eligible population at the block-group level from the same age-bin methodology used elsewhere in this plan.
+- [ ] Apply scenario-year population projections consistently at block-group level when block-group mode is selected.
+- [ ] Preserve provenance for any income, gaming-intensity, or other demand modifier allocated from a coarser geography to block groups.
+- [ ] Do not imply that a coarse ZIP-level variable becomes genuinely block-group-specific merely because it was allocated downward.
+- [ ] Calculate origin-to-proposed-site and origin-to-incumbent travel impedance using the same network-travel framework as all other origin resolutions.
+- [ ] Run the actual gravity/share calculation at block-group level when block-group mode is selected, then aggregate outputs upward only after origin-level allocation is complete.
+
+### ZIP/ZCTA crosswalk and aggregation
+
+- [ ] Treat USPS ZIP Codes and Census ZCTAs as distinct concepts and name them accurately in technical outputs.
+- [ ] Define and version the authoritative crosswalk used to map block groups into ZIP/ZCTA-compatible reporting.
+- [ ] Document boundary cases in which a block group intersects more than one ZIP/ZCTA reporting area.
+- [ ] If a many-to-many allocation is required, define the weighting basis explicitly, such as population-weighted or residential-address-weighted allocation where supported.
+- [ ] Preserve enough crosswalk detail to reproduce every reported ZIP/ZCTA total from the underlying origin results.
+- [ ] Aggregate block-group results to:
+  - [ ] ZIP/ZCTA-compatible summaries;
+  - [ ] county/parish equivalents;
+  - [ ] state/territory;
+  - [ ] configured local/regional study areas;
+  - [ ] national or cross-border totals where applicable.
+- [ ] Require all aggregation levels to reconcile mathematically to the same underlying model-run totals, subject only to explicitly documented rounding.
+
+### API and data-contract requirements
+
+- [ ] Design model-result contracts so the same backend can return summary and detailed origin results without separate economic formulas.
+- [ ] Make ZIP/ZCTA-compatible summaries the normal human-readable reporting payload where appropriate.
+- [ ] Support optional block-group detail for audit, expert analysis, and drill-down when the underlying run used block-group origins.
+- [ ] Decide whether block-group detail is:
+  - [ ] returned inline for small result sets;
+  - [ ] paged;
+  - [ ] fetched on demand when a ZIP/ZCTA is expanded;
+  - [ ] available only through a detailed export for very large runs.
+- [ ] Preserve complete underlying origin results in the immutable `ModelRun` or associated result tables even when the default API/UI response is aggregated.
+- [ ] Do not expose synthetic block-group detail when the underlying model actually ran at ZIP/ZCTA resolution.
+
+### Web and report presentation
+
+- [ ] Use ZIP/ZCTA-compatible summaries as the default public-facing origin view when they provide the clearest understandable geography.
+- [ ] Allow expandable ZIP/ZCTA rows, cards, map selections, or equivalent drill-down to contributing block groups when the underlying run supports it.
+- [ ] Show enough block-group detail to audit a result without overwhelming the normal interface.
+- [ ] Do not expose raw Census blocks in the initial drill-down design.
+- [ ] Clearly state the actual computational origin resolution used by the run.
+- [ ] Clearly distinguish:
+  - [ ] computational origin geography;
+  - [ ] source-data geography;
+  - [ ] display/reporting geography.
+- [ ] If a value was allocated from a coarser geography before block-group modeling, disclose that limitation in methodology text rather than implying unsupported precision.
+
+### Performance and validation
+
+- [ ] Benchmark ZCTA/ZIP-compatible, block-group, and any coarser supported origin modes on representative urban, suburban, and rural markets.
+- [ ] Measure:
+  - [ ] origin count;
+  - [ ] origin-facility route count;
+  - [ ] travel-matrix storage;
+  - [ ] model execution time;
+  - [ ] memory usage;
+  - [ ] API payload size;
+  - [ ] UI drill-down latency where applicable.
+- [ ] Compare a ZIP/ZCTA-native run with a block-group run aggregated back to ZIP/ZCTA for the same market and parameter set.
+- [ ] Quantify whether the finer resolution materially improves:
+  - [ ] incumbent back-testing;
+  - [ ] candidate-site differentiation;
+  - [ ] patron-origin accuracy;
+  - [ ] boundary-area treatment;
+  - [ ] downstream fiscal/social-impact allocation.
+- [ ] Do not make block-group mode the default merely because it produces different results; require demonstrable validation or analytical value that justifies the added computational cost and any down-allocation assumptions.
+- [ ] Add reconciliation tests confirming:
+  - [ ] block-group totals aggregate correctly to ZIP/ZCTA;
+  - [ ] ZIP/ZCTA totals aggregate correctly to county/state/region totals;
+  - [ ] projected eligible population is applied consistently at the selected origin resolution;
+  - [ ] UI/report drill-down totals reconcile with summary totals;
+  - [ ] crosswalk edge cases do not duplicate or omit demand.
+- [ ] Document known limitations including centroid/representative-point assignment, ZIP/ZCTA crosswalk uncertainty, source-resolution mismatch, and any allocated-down demand variables.
 
 ---
 

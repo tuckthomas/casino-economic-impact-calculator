@@ -1920,7 +1920,8 @@ window.MapLibreImpactMap = (function ()
         // Fullscreen toggle button - TOP RIGHT corner of map container's parent (which has position: relative)
         const fsBtn = document.createElement('button');
         fsBtn.id = 'fs-toggle-btn';
-        fsBtn.title = 'Toggle Fullscreen';
+        fsBtn.setAttribute('aria-label', 'Toggle Fullscreen');
+        window.AppTooltip && window.AppTooltip.attach(fsBtn, 'Toggle Fullscreen');
         fsBtn.style.cssText = 'position: absolute; top: 12px; right: 12px; z-index: 70;';
         fsBtn.className = 'bg-slate-950/40 backdrop-blur-sm w-[30px] h-[30px] flex items-center justify-center rounded-lg shadow-lg border border-white/5 text-white hover:bg-slate-900/60 transition-colors cursor-pointer';
         fsBtn.innerHTML = '<span class="material-symbols-outlined text-xl leading-none">fullscreen</span>';
@@ -1959,8 +1960,8 @@ window.MapLibreImpactMap = (function ()
                     btn.innerHTML = '<span class="material-symbols-outlined text-xl leading-none">fullscreen_exit</span>';
                     if (map)
                     {
-                        map.scrollZoom.enable();
-                        // Resize map to fit new fullscreen container dimensions
+                        // Fullscreen changes only the map container geometry. Interaction
+                        // handlers must retain their existing state across the transition.
                         setTimeout(() => map.resize(), 100);
                     }
                     console.log('[Map] Entered fullscreen mode');
@@ -1969,8 +1970,8 @@ window.MapLibreImpactMap = (function ()
                     btn.innerHTML = '<span class="material-symbols-outlined text-xl leading-none">fullscreen</span>';
                     if (map)
                     {
-                        map.scrollZoom.disable();
-                        // Resize map to fit original container dimensions
+                        // Resize map to fit original container dimensions without changing
+                        // scrollZoom or any other interaction handler state.
                         setTimeout(() => map.resize(), 100);
                     }
                     console.log('[Map] Exited fullscreen mode');
@@ -1992,7 +1993,8 @@ window.MapLibreImpactMap = (function ()
         // Layer toggle button
         const layerBtn = document.createElement('button');
         layerBtn.id = 'layer-toggle-btn';
-        layerBtn.title = 'Change Map Style';
+        layerBtn.setAttribute('aria-label', 'Change Map Style');
+        window.AppTooltip && window.AppTooltip.attach(layerBtn, 'Change Map Style');
         layerBtn.className = 'bg-slate-950/40 backdrop-blur-sm w-[30px] h-[30px] flex items-center justify-center rounded-lg shadow-lg border border-white/5 text-white hover:bg-slate-900/60 transition-colors cursor-pointer';
         layerBtn.innerHTML = '<span class="material-symbols-outlined text-xl leading-none">layers</span>';
 
@@ -2008,7 +2010,7 @@ window.MapLibreImpactMap = (function ()
             const card = document.createElement('button');
             card.className = `layer-card ${key === currentBasemap ? 'active' : ''}`;
             card.dataset.basemap = key;
-            card.title = config.name;
+            window.AppTooltip && window.AppTooltip.attach(card, config.name);
             card.innerHTML = `
                 <span class="material-symbols-outlined">${config.icon}</span>
                 <span class="layer-card-label">${config.name}</span>
@@ -2134,16 +2136,25 @@ window.MapLibreImpactMap = (function ()
         {
             darkModeToggle.disabled = !darkModeSupported;
             darkModeToggle.checked = darkModeSupported ? mapDarkMode : false;
-            darkModeToggle.closest('.toggle-row')?.classList.toggle('is-disabled', !darkModeSupported);
-            darkModeToggle.closest('.toggle-row')?.setAttribute('title', darkModeSupported ? '' : 'Dark mode is available on Streets and Terrain basemaps.');
+            const darkModeRow = darkModeToggle.closest('.toggle-row');
+            darkModeRow?.classList.toggle('is-disabled', !darkModeSupported);
+            if (darkModeRow && window.AppTooltip)
+            {
+                if (darkModeSupported) window.AppTooltip.detach(darkModeRow);
+                else window.AppTooltip.attach(darkModeRow, 'Dark mode is available on Streets and Terrain basemaps.');
+            }
         }
 
         if (terrainToggle)
         {
             terrainToggle.checked = false;
             terrainToggle.disabled = true;
-            terrainToggle.closest('.toggle-row')?.classList.add('is-disabled');
-            terrainToggle.closest('.toggle-row')?.setAttribute('title', '3D terrain is not available in the current map configuration.');
+            const terrainRow = terrainToggle.closest('.toggle-row');
+            terrainRow?.classList.add('is-disabled');
+            if (terrainRow && window.AppTooltip)
+            {
+                window.AppTooltip.attach(terrainRow, '3D terrain is not available in the current map configuration.');
+            }
         }
 
         if (buildingsToggle)
@@ -2155,8 +2166,13 @@ window.MapLibreImpactMap = (function ()
 
             buildingsToggle.disabled = !buildingsSupported;
             buildingsToggle.checked = buildingsSupported ? layersVisible.buildings3d : false;
-            buildingsToggle.closest('.toggle-row')?.classList.toggle('is-disabled', !buildingsSupported);
-            buildingsToggle.closest('.toggle-row')?.setAttribute('title', buildingsSupported ? '' : '3D buildings require the Streets or Terrain basemap.');
+            const buildingsRow = buildingsToggle.closest('.toggle-row');
+            buildingsRow?.classList.toggle('is-disabled', !buildingsSupported);
+            if (buildingsRow && window.AppTooltip)
+            {
+                if (buildingsSupported) window.AppTooltip.detach(buildingsRow);
+                else window.AppTooltip.attach(buildingsRow, '3D buildings require the Streets or Terrain basemap.');
+            }
         }
 
         if (riskLabelToggle && legend)
@@ -2170,7 +2186,8 @@ window.MapLibreImpactMap = (function ()
         // Hamburger button
         const menuBtn = document.createElement('button');
         menuBtn.id = 'map-menu-btn';
-        menuBtn.title = 'Layer Options';
+        menuBtn.setAttribute('aria-label', 'Layer Options');
+        window.AppTooltip && window.AppTooltip.attach(menuBtn, 'Layer Options');
         menuBtn.style.cssText = 'position: absolute; top: 12px; left: 12px; z-index: 70;';
         menuBtn.className = 'bg-slate-950/40 backdrop-blur-sm w-[30px] h-[30px] flex items-center justify-center rounded-lg shadow-lg border border-white/5 text-white hover:bg-slate-900/60 transition-colors cursor-pointer';
         menuBtn.innerHTML = '<span class="material-symbols-outlined text-xl leading-none">menu</span>';
@@ -4434,7 +4451,7 @@ window.MapLibreImpactMap = (function ()
         const toggleBtn = document.createElement('button');
         toggleBtn.id = 'draw-toggle-btn';
         toggleBtn.type = 'button';
-        toggleBtn.title = 'Drawing Tools';
+        window.AppTooltip && window.AppTooltip.attach(toggleBtn, 'Drawing Tools');
         toggleBtn.setAttribute('aria-label', 'Toggle drawing tools');
         toggleBtn.setAttribute('aria-expanded', 'false');
         toggleBtn.setAttribute('aria-controls', 'drawing-panel');
@@ -4464,7 +4481,7 @@ window.MapLibreImpactMap = (function ()
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'draw-tool-btn w-8 h-8 flex items-center justify-center rounded hover:bg-slate-700/50 text-slate-300 transition-colors';
-            btn.title = m.title;
+            window.AppTooltip && window.AppTooltip.attach(btn, m.title);
             btn.setAttribute('aria-label', m.title);
             btn.innerHTML = `<span class="material-symbols-outlined text-sm">${m.icon}</span>`;
 

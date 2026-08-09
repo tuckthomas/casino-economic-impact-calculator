@@ -205,10 +205,34 @@ window.PdfHelper = {
                     const nested = clone.querySelectorAll('ul, ol');
                     nested.forEach(n => n.remove());
 
-                    let liText = clone.innerHTML;
-                    liText = liText.replace(/<(strong|b)>(.*?)<\/\1>/gi, "**$2**");
-                    liText = liText.replace(/<[^>]+>/g, ""); // Strip other tags
-                    liText = liText.trim();
+                    const toMarkdownText = (node) =>
+                    {
+                        return Array.from(node.childNodes).map(childNode =>
+                        {
+                            if (childNode.nodeType === Node.TEXT_NODE)
+                            {
+                                return childNode.textContent || "";
+                            }
+
+                            if (childNode.nodeType !== Node.ELEMENT_NODE)
+                            {
+                                return "";
+                            }
+
+                            const tagName = childNode.tagName;
+                            if (tagName === 'UL' || tagName === 'OL')
+                            {
+                                return "";
+                            }
+
+                            const childText = toMarkdownText(childNode);
+                            return tagName === 'STRONG' || tagName === 'B'
+                                ? `**${childText}**`
+                                : childText;
+                        }).join('');
+                    };
+
+                    const liText = toMarkdownText(clone).replace(/\s+/g, ' ').trim();
 
                     if (liText)
                     {

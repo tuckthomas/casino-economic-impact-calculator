@@ -9,7 +9,18 @@
     object-position: center;
 }
 
+/* Keep deliberate breathing room above and below the oversized headline.
+   This is explicit rather than relying on utility padding because the very
+   tight headline line-height makes the visible glyphs extend beyond the
+   text box and can make the lower clearance appear collapsed. */
+.tribal-impact-banner > div {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+}
+
 .tribal-impact-title {
+    margin: 0;
+    padding-bottom: 0.08em;
     font-size: clamp(2.6rem, 7vw, 6.25rem);
     line-height: 0.9;
     letter-spacing: -0.02em;
@@ -20,6 +31,11 @@
 }
 
 @media (max-width: 639px) {
+    .tribal-impact-banner > div {
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+    }
+
     .tribal-impact-banner-image {
         object-position: 74% center;
     }
@@ -38,6 +54,6 @@
     }
 
     .tribal-impact-banner-image {
-        height: auto;
+        height: 100%;
     }
 }

@@ -1,4 +1,4 @@
-name: UI text-size guard
+name: Tooltip component guard
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  check-ui-text:
+  check-tooltips:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -19,5 +19,5 @@ jobs:
         with:
           node-version: 20
 
-      - name: Reject tiny UI text
-        run: npm run check:ui-text
+      - name: Enforce canonical tooltips
+        run: npm run check:tooltips

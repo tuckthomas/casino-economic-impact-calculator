@@ -1,9 +1,10 @@
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">SaveNEIN</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+        <button id="nav-menu-toggle" aria-label="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
+        <AppTooltip TargetId="nav-menu-toggle" Text="Navigation menu" />
     </div>
 </div>
 
