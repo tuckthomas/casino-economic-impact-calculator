@@ -1,0 +1,39 @@
+name: One-off UI audit
+
+on:
+  push:
+    branches:
+      - agent/issues-10-11-ui-standardization
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit tooltip and custom dropdown patterns
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== TOOLTIP PATTERNS ==='
+          rg -n --hidden \
+            -g '!SaveNEIN.Client/wwwroot/js/lib/**' \
+            -g '!SaveNEIN.Client/wwwroot/css/**' \
+            -g '!node_modules/**' \
+            -e 'TooltipPortal' \
+            -e 'title\s*=' \
+            -e 'data-tooltip' \
+            -e 'aria-describedby' \
+            -e 'cursor-help' \
+            -e 'tooltip' \
+            SaveNEIN.Client SaveNEIN.Server || true
+
+          echo '=== CUSTOM DROPDOWN / SELECT PATTERNS ==='
+          rg -n --hidden \
+            -g '!SaveNEIN.Client/wwwroot/js/lib/**' \
+            -g '!node_modules/**' \
+            -e '>Custom<' \
+            -e "'Custom'" \
+            -e '"Custom"' \
+            -e '__custom__' \
+            -e 'custom.*option' \
+            SaveNEIN.Client SaveNEIN.Server || true
