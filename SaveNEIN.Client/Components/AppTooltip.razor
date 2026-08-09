@@ -5,9 +5,9 @@
 {
     <span @ref="hostRef" class="@HostClass">
         <button type="button"
-      class="@TriggerClass"
-      aria-label="@AriaLabel">
-  <span class="material-symbols-outlined text-[16px] leading-none" aria-hidden="true">@Icon</span>
+                class="@TriggerClass"
+                aria-label="@AriaLabel">
+            <span class="material-symbols-outlined text-[16px] leading-none" aria-hidden="true">@Icon</span>
         </button>
     </span>
 }
@@ -26,16 +26,16 @@
     {
         if (string.IsNullOrWhiteSpace(Text))
         {
-  return;
+            return;
         }
 
         if (!string.IsNullOrWhiteSpace(TargetId))
         {
-  await JSRuntime.InvokeVoidAsync("AppTooltip.attachById", TargetId, Text);
+            await JSRuntime.InvokeVoidAsync("AppTooltip.attachById", TargetId, Text);
         }
         else
         {
-  await JSRuntime.InvokeVoidAsync("AppTooltip.attach", hostRef, Text);
+            await JSRuntime.InvokeVoidAsync("AppTooltip.attach", hostRef, Text);
         }
     }
 
@@ -43,14 +43,14 @@
     {
         try
         {
-  if (!string.IsNullOrWhiteSpace(TargetId))
-  {
-      await JSRuntime.InvokeVoidAsync("AppTooltip.detachById", TargetId);
-  }
-  else
-  {
-      await JSRuntime.InvokeVoidAsync("AppTooltip.detach", hostRef);
-  }
+            if (!string.IsNullOrWhiteSpace(TargetId))
+            {
+                await JSRuntime.InvokeVoidAsync("AppTooltip.detachById", TargetId);
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("AppTooltip.detach", hostRef);
+            }
         }
         catch (JSDisconnectedException)
         {
