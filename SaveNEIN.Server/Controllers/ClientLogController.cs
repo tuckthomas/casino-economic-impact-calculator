@@ -16,7 +16,7 @@ public class ClientLogController : ControllerBase
     [HttpPost]
     public IActionResult Log([FromBody] LogEntry entry)
     {
-        _logger.LogInformation($"[CLIENT-LOG] {entry.Message}");
+        _logger.LogInformation("[CLIENT-LOG] Client message received ({MessageLength} characters)", entry.Message.Length);
         return Ok();
     }
 

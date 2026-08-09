@@ -212,7 +212,6 @@ public class ImpactController : ControllerBase
     [HttpGet("county-context/{fips}")]
     public async Task<IActionResult> GetCountyContext(string fips, [FromQuery] bool lite = false)
     {
-        _logger.LogInformation($"[ImpactController] 1. Request received for {fips} (Lite: {lite})");
         try
         {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -293,7 +292,7 @@ public class ImpactController : ControllerBase
 
         if (jsonResult == null || jsonResult == DBNull.Value) 
         {
-            _logger.LogWarning($"[ImpactController] No data found for {fips}");
+            _logger.LogWarning("[ImpactController] No county context data found");
             return NotFound();
         }
 
@@ -309,7 +308,7 @@ public class ImpactController : ControllerBase
     }
     catch (Exception ex)
     {
-        _logger.LogError(ex, $"[ImpactController] Error in GetCountyContext for {fips}");
+        _logger.LogError(ex, "[ImpactController] Error in GetCountyContext");
         return StatusCode(500, new { error = ex.Message });
     }
 }
@@ -353,7 +352,7 @@ public class ImpactController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"[ImpactController] Error in GetGridPoints for {title}, {stateFips}");
+            _logger.LogError(ex, "[ImpactController] Error in GetGridPoints");
             return StatusCode(500, new { error = ex.Message });
         }
     }
