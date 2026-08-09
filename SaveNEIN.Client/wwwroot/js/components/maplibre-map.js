@@ -1959,8 +1959,8 @@ window.MapLibreImpactMap = (function ()
                     btn.innerHTML = '<span class="material-symbols-outlined text-xl leading-none">fullscreen_exit</span>';
                     if (map)
                     {
-                        map.scrollZoom.enable();
-                        // Resize map to fit new fullscreen container dimensions
+                        // Fullscreen changes only the map container geometry. Interaction
+                        // handlers must retain their existing state across the transition.
                         setTimeout(() => map.resize(), 100);
                     }
                     console.log('[Map] Entered fullscreen mode');
@@ -1969,8 +1969,8 @@ window.MapLibreImpactMap = (function ()
                     btn.innerHTML = '<span class="material-symbols-outlined text-xl leading-none">fullscreen</span>';
                     if (map)
                     {
-                        map.scrollZoom.disable();
-                        // Resize map to fit original container dimensions
+                        // Resize map to fit original container dimensions without changing
+                        // scrollZoom or any other interaction handler state.
                         setTimeout(() => map.resize(), 100);
                     }
                     console.log('[Map] Exited fullscreen mode');
