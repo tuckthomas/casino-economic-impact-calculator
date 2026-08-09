@@ -2526,9 +2526,9 @@ window.EconomicCalculator = (function ()
             const t1Pop = Math.round(t1AdultsCounty).toLocaleString();
             const t2Pop = Math.round(t2AdultsCounty).toLocaleString();
             const t3Pop = Math.round(t3AdultsCounty).toLocaleString();
-            const t1Rate = document.getElementById('rate-t1') ? document.getElementById('rate-t1').textContent : "-%";
-            const t2Rate = document.getElementById('rate-t2') ? document.getElementById('rate-t2').textContent : "-%";
-            const t3Rate = document.getElementById('rate-t3') ? document.getElementById('rate-t3').textContent : "-%";
+            const t1Rate = `${(rate * 2 + baselineIncrease).toFixed(2)}%`;
+            const t2Rate = `${(rate * 1.5 + baselineIncrease).toFixed(2)}%`;
+            const t3Rate = `${(rate + baselineIncrease).toFixed(2)}%`;
             const effRateDisplay = `${gamblerGrowthRate.toFixed(2)}%`;
 
             const regionalImpact = lastImpactBreakdown && lastImpactBreakdown.regional ? lastImpactBreakdown.regional : {};
