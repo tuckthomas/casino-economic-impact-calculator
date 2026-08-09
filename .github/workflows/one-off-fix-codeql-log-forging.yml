@@ -35,8 +35,8 @@ jobs:
           text = impact.read_text(encoding='utf-8')
           replacements = [
               (
-                  '_logger.LogInformation($"[ImpactController] 1. Request received for {fips} (Lite: {lite})");',
-                  '_logger.LogInformation("[ImpactController] 1. County context request received (Lite: {Lite})", lite);'
+                  '        _logger.LogInformation($"[ImpactController] 1. Request received for {fips} (Lite: {lite})");\n',
+                  ''
               ),
               (
                   '_logger.LogWarning($"[ImpactController] No data found for {fips}");',
@@ -88,7 +88,7 @@ jobs:
                   for result in run.get('results', []):
                       if result.get('ruleId') == 'cs/log-forging':
                           loc = result.get('locations', [{}])[0].get('physicalLocation', {})
-                          hits.append((loc.get('artifactLocation', {}).get('uri'), loc.get('region', {}).get('startLine')))
+                          hits.append((loc.get('artifactLocation', {}).get('uri'), loc.get('region', {}).get('startLine'), result.get('message', {}).get('text')))
           if hits:
               raise SystemExit(f'cs/log-forging still present: {hits}')
           print('No cs/log-forging results remain.')
