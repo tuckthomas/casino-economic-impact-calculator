@@ -1,0 +1,58 @@
+name: One-off execute UI standardization
+
+on:
+  push:
+    branches:
+      - agent/issues-10-11-ui-standardization
+
+jobs:
+  execute:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Execute audited patch
+        shell: python
+        run: |
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/one-off-issues-10-11-fix.yml').read_text(encoding='utf-8')
+          workflow = workflow.replace("'''.replace(/^          /gm, ''))", "'''.replace('          ', ''))")
+
+          section = workflow.index('      - name: Apply UI standardization')
+          start = workflow.index('        run: |\n', section) + len('        run: |\n')
+          end = workflow.index('\n      - name: Validate tooltip policy', start)
+          block = workflow[start:end]
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in block.splitlines())
+          exec(compile(script, 'audited-ui-standardization.py', 'exec'))
+
+          # The audited patch creates the permanent tooltip guard, but Actions tokens
+          # cannot push workflow-file changes. Leave that file for the connector-side
+          # cleanup commit after source validation succeeds.
+          Path('.github/workflows/tooltip-guard.yml').unlink(missing_ok=True)
+
+          # Do not stage deletion of this temporary audit workflow from an Actions token.
+          # Connector-side cleanup removes all one-off workflows after validation.
+          import subprocess
+          subprocess.run(['git', 'restore', '.github/workflows/one-off-ui-audit.yml'], check=True)
+
+      - name: Validate tooltip and UI policies
+        run: |
+          npm run check:tooltips
+          npm run check:ui-text
+
+      - name: Build release
+        run: dotnet build SaveNEIN.Server/SaveNEIN.Server.csproj -c Release
+
+      - name: Commit validated source changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(ui): standardize custom options and tooltips"
+          git push
