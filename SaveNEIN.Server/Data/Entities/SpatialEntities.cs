@@ -45,22 +45,6 @@ public class IsochroneCache
     public MultiPolygon Geom { get; set; } = null!;
 }
 
-[Table("site_scores")]
-public class SiteScore
-{
-    [Key]
-    public long Id { get; set; }
-    public int CountyId { get; set; }
-    public double Lat { get; set; }
-    public double Lon { get; set; }
-    public int Minutes { get; set; }
-    public double PopEst { get; set; }
-    public double? IncomeEst { get; set; }
-    public double Score { get; set; }
-    public DateTime ComputedAt { get; set; }
-    public string? SourceHash { get; set; }
-}
-
 /// <summary>
 /// Address points from NAD (National Address Database) and OpenAddresses.
 /// Supports deduplication via source identity fields and incremental updates.
@@ -193,7 +177,7 @@ public class TigerAddressRange
 
 /// <summary>
 /// Reference dataset of existing casinos and casino-like gambling venues.
-/// Used for competition-aware location scoring and revenue heuristics.
+/// Used by the calibrated competitive universe and facility-attraction model.
 /// </summary>
 [Table("casino_competitors")]
 public class CasinoCompetitor
@@ -208,9 +192,51 @@ public class CasinoCompetitor
     public string Name { get; set; } = string.Empty;
     
     [Required]
-    [MaxLength(2)]
+    [MaxLength(10)]
     [Column("state")]
     public string State { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(160)]
+    [Column("stable_venue_id")]
+    public string StableVenueId { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(3)]
+    [Column("country_code")]
+    public string CountryCode { get; set; } = "USA";
+
+    [MaxLength(60)]
+    [Column("facility_regime")]
+    public string? FacilityRegime { get; set; }
+
+    [MaxLength(80)]
+    [Column("regulatory_status")]
+    public string? RegulatoryStatus { get; set; }
+
+    [Column("jurisdiction_id")]
+    public int? JurisdictionId { get; set; }
+
+    [MaxLength(240)]
+    [Column("regulator_name")]
+    public string? RegulatorName { get; set; }
+
+    [MaxLength(160)]
+    [Column("regulator_license_id")]
+    public string? RegulatorLicenseId { get; set; }
+
+    [MaxLength(240)]
+    [Column("tribal_nation_name")]
+    public string? TribalNationName { get; set; }
+
+    [Column("opened_on")]
+    public DateOnly? OpenedOn { get; set; }
+
+    [Column("closed_on")]
+    public DateOnly? ClosedOn { get; set; }
+
+    [Column("dataset_snapshot_id")]
+    public Guid DatasetSnapshotId { get; set; }
     
     [MaxLength(100)]
     [Column("county")]
@@ -254,28 +280,72 @@ public class CasinoCompetitor
     
     // Competition/feature fields
     [Column("has_slots")]
-    public bool HasSlots { get; set; }
+    public bool? HasSlots { get; set; }
     [Column("has_table_games")]
-    public bool HasTableGames { get; set; }
+    public bool? HasTableGames { get; set; }
     [Column("has_poker")]
-    public bool HasPoker { get; set; }
+    public bool? HasPoker { get; set; }
     [Column("has_sportsbook")]
-    public bool HasSportsbook { get; set; }
+    public bool? HasSportsbook { get; set; }
     [Column("has_racetrack")]
-    public bool HasRacetrack { get; set; }
+    public bool? HasRacetrack { get; set; }
     [Column("has_hotel")]
-    public bool HasHotel { get; set; }
+    public bool? HasHotel { get; set; }
     [Column("has_restaurants")]
-    public bool HasRestaurants { get; set; }
+    public bool? HasRestaurants { get; set; }
     [Column("has_entertainment")]
-    public bool HasEntertainment { get; set; }
+    public bool? HasEntertainment { get; set; }
     [Column("has_loyalty_program")]
-    public bool HasLoyaltyProgram { get; set; }
+    public bool? HasLoyaltyProgram { get; set; }
     [Column("has_resort_amenities")]
-    public bool HasResortAmenities { get; set; }
-    
-    [Column("estimated_competition_weight")]
-    public double? EstimatedCompetitionWeight { get; set; }
+    public bool? HasResortAmenities { get; set; }
+
+    [Column("gaming_positions")]
+    public int? GamingPositions { get; set; }
+
+    [Column("slot_vlt_positions")]
+    public int? SlotOrVltPositions { get; set; }
+
+    [Column("table_game_count")]
+    public int? TableGameCount { get; set; }
+
+    [Column("poker_table_count")]
+    public int? PokerTableCount { get; set; }
+
+    [Column("gaming_floor_square_feet")]
+    public int? GamingFloorSquareFeet { get; set; }
+
+    [Column("hotel_room_count")]
+    public int? HotelRoomCount { get; set; }
+
+    [Column("event_capacity")]
+    public int? EventCapacity { get; set; }
+
+    [Column("food_beverage_venue_count")]
+    public int? FoodBeverageVenueCount { get; set; }
+
+    [Column("development_cost")]
+    public decimal? DevelopmentCost { get; set; }
+
+    [Column("development_cost_dollar_year")]
+    public int? DevelopmentCostDollarYear { get; set; }
+
+    [MaxLength(80)]
+    [Column("access_context")]
+    public string? AccessContext { get; set; }
+
+    [Column("limited_access_distance_miles")]
+    public double? LimitedAccessDistanceMiles { get; set; }
+
+    [Column("has_interchange_access")]
+    public bool? HasInterchangeAccess { get; set; }
+
+    [MaxLength(40)]
+    [Column("market_orientation")]
+    public string? MarketOrientation { get; set; }
+
+    [Column("is_border_market")]
+    public bool? IsBorderMarket { get; set; }
 
     [Column("geom", TypeName = "geometry(Point, 4326)")]
     public Point Geom { get; set; } = null!;

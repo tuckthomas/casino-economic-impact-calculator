@@ -17,11 +17,7 @@
   "dependencies": {
     "@fontsource-variable/material-symbols-outlined": "^5.2.30",
     "@fontsource-variable/public-sans": "^5.2.7",
-    "@turf/turf": "^7.3.1",
-    "browserslist": "^4.28.1",
-    "chart.js": "^4.5.1",
-    "html2canvas": "^1.4.1",
-    "terra-draw": "^1.22.0"
+    "browserslist": "^4.28.1"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

@@ -1,0 +1,20 @@
+{
+  "id": "section-34",
+  "title": "32. National data-provider architecture",
+  "requirements": [
+    "REQ-874-a8efbf4a",
+    "REQ-875-18111560",
+    "REQ-876-5966ea31",
+    "REQ-877-c5a5a402",
+    "REQ-878-477a1e80",
+    "REQ-879-beb7649f",
+    "REQ-880-4121e415",
+    "REQ-881-f9e22c77",
+    "REQ-882-8966bb8c",
+    "REQ-883-be8cf548",
+    "REQ-884-95609dda"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

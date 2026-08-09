@@ -12,6 +12,11 @@ public static class DbInitializer
         // 1. Ensure database is created
         await db.Database.EnsureCreatedAsync();
 
+        // Existing databases are not altered by EnsureCreated. Apply the additive,
+        // idempotent gravity-model foundation before querying or seeding its tables.
+        await ModelFoundationInitializer.ApplySchemaAsync(db);
+        await ModelFoundationInitializer.SeedAsync(db);
+
         // 1b. Initialize Address Points infrastructure (views, functions)
         await InitializeAddressPointsInfrastructure(db);
 
@@ -125,9 +130,6 @@ public static class DbInitializer
                 await db.Legislators.AddRangeAsync(legislators);
             }
         }
-
-        // 4. Seed Casino Competitors
-        await CasinoCompetitorSeeder.SeedAsync(db);
 
         await db.SaveChangesAsync();
     }

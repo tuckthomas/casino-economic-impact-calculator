@@ -1,0 +1,29 @@
+{
+  "id": "section-30",
+  "title": "28. API and service-layer architecture",
+  "requirements": [
+    "REQ-760-15e4cb53",
+    "REQ-761-162257a1",
+    "REQ-762-aef9e92c",
+    "REQ-763-41295f32",
+    "REQ-764-fd7a5895",
+    "REQ-765-2054eecf",
+    "REQ-766-df6e1f08",
+    "REQ-767-fc9d6cf9",
+    "REQ-768-c341811c",
+    "REQ-769-9d904d30",
+    "REQ-770-04cf3890",
+    "REQ-771-e5396364",
+    "REQ-772-eb09c00e",
+    "REQ-773-d98b7979",
+    "REQ-774-5a2b3e9a",
+    "REQ-775-c8b27f64",
+    "REQ-776-b5e33335",
+    "REQ-777-59bded86",
+    "REQ-778-9971f654",
+    "REQ-779-c7d8438c"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

@@ -1,0 +1,19 @@
+{
+  "id": "section-32",
+  "title": "30. UI result architecture",
+  "requirements": [
+    "REQ-857-42ca291b",
+    "REQ-858-457b2f0e",
+    "REQ-859-fe3a360e",
+    "REQ-860-97b22579",
+    "REQ-861-12ec911b",
+    "REQ-862-7b7983a5",
+    "REQ-863-6d9a14e0",
+    "REQ-864-05eba4f8",
+    "REQ-865-bbe1ba84",
+    "REQ-866-c4dd3e9f"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

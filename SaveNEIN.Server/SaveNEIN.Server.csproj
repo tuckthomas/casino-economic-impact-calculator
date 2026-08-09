@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -24,6 +24,41 @@
   <ItemGroup>
     <ProjectReference Include="..\SaveNEIN.Shared\SaveNEIN.Shared.csproj" />
     <ProjectReference Include="..\SaveNEIN.Client\SaveNEIN.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>SaveNEIN.Server.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\docs\migrations\005_casino_competitors.sql"
+                      Link="Data\Migrations\005_casino_competitors.sql" />
+    <EmbeddedResource Include="..\docs\migrations\006_gravity_model_foundation.sql"
+                      Link="Data\Migrations\006_gravity_model_foundation.sql" />
+    <EmbeddedResource Include="..\docs\migrations\007_model_data_foundation.sql"
+                      Link="Data\Migrations\007_model_data_foundation.sql" />
+    <EmbeddedResource Include="..\docs\migrations\008_gravity_engine.sql"
+                      Link="Data\Migrations\008_gravity_engine.sql" />
+    <EmbeddedResource Include="..\docs\migrations\009_market_expansion.sql"
+                      Link="Data\Migrations\009_market_expansion.sql" />
+    <EmbeddedResource Include="..\docs\migrations\010_tourism_traffic_capacity_ramp.sql"
+                      Link="Data\Migrations\010_tourism_traffic_capacity_ramp.sql" />
+    <EmbeddedResource Include="..\docs\migrations\011_comprehensive_impact_accounting.sql"
+                      Link="Data\Migrations\011_comprehensive_impact_accounting.sql" />
+    <EmbeddedResource Include="..\docs\migrations\012_validation_and_calibration.sql"
+                      Link="Data\Migrations\012_validation_and_calibration.sql" />
+    <EmbeddedResource Include="..\docs\migrations\013_stored_run_reports.sql"
+                      Link="Data\Migrations\013_stored_run_reports.sql" />
+    <EmbeddedResource Include="..\docs\migrations\014_indiana_benchmark_evidence.sql"
+                      Link="Data\Migrations\014_indiana_benchmark_evidence.sql" />
+    <EmbeddedResource Include="..\docs\migrations\015_sensitivity_analyses.sql"
+                      Link="Data\Migrations\015_sensitivity_analyses.sql" />
+    <EmbeddedResource Include="..\docs\migrations\016_local_economic_inventory.sql"
+                      Link="Data\Migrations\016_local_economic_inventory.sql" />
+    <EmbeddedResource Include="..\docs\migrations\017_nullable_facility_evidence_flags.sql"
+                      Link="Data\Migrations\017_nullable_facility_evidence_flags.sql" />
   </ItemGroup>
 
 </Project>

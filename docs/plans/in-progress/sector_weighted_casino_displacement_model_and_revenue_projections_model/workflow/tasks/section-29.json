@@ -1,0 +1,24 @@
+{
+  "id": "section-29",
+  "title": "27. Net economic-impact accounting",
+  "requirements": [
+    "REQ-745-80c46108",
+    "REQ-746-2482f58f",
+    "REQ-747-1d01785d",
+    "REQ-748-c2e2ac45",
+    "REQ-749-9751c17f",
+    "REQ-750-c60adc44",
+    "REQ-751-aa69d21b",
+    "REQ-752-f51d920b",
+    "REQ-753-1ade81f6",
+    "REQ-754-cff40b06",
+    "REQ-755-a76aca43",
+    "REQ-756-2f9df964",
+    "REQ-757-ab52baf5",
+    "REQ-758-256151a3",
+    "REQ-759-eba484ce"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

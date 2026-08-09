@@ -1,0 +1,16 @@
+{
+  "id": "section-33",
+  "title": "31. Scenario and sensitivity engine",
+  "requirements": [
+    "REQ-867-1756511a",
+    "REQ-868-a61596b0",
+    "REQ-869-5ee234b1",
+    "REQ-870-7f5ced81",
+    "REQ-871-852d2cbe",
+    "REQ-872-0c224bed",
+    "REQ-873-fad3f092"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

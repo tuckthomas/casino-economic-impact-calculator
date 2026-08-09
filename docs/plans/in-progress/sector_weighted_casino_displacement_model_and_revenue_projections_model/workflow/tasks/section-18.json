@@ -1,0 +1,17 @@
+{
+  "id": "section-18",
+  "title": "16. Tourism and destination demand",
+  "requirements": [
+    "REQ-598-1cbc8ee6",
+    "REQ-599-48178d97",
+    "REQ-600-5bb41943",
+    "REQ-601-78cfd92f",
+    "REQ-602-5a14060c",
+    "REQ-603-833752be",
+    "REQ-604-8ab45194",
+    "REQ-605-0d7078ad"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

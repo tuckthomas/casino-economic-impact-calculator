@@ -1,0 +1,19 @@
+{
+  "id": "section-22",
+  "title": "20. Capacity and feasibility checks",
+  "requirements": [
+    "REQ-641-7e772d59",
+    "REQ-642-9c5cf64b",
+    "REQ-411-13f201a4-643",
+    "REQ-644-3df7eabb",
+    "REQ-645-cafbdfc5",
+    "REQ-646-56ee001a",
+    "REQ-647-a994479c",
+    "REQ-648-6fd6c4ef",
+    "REQ-649-e60c12f5",
+    "REQ-650-fc67d08b"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

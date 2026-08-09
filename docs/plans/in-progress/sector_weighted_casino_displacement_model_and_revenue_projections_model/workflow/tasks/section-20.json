@@ -1,0 +1,22 @@
+{
+  "id": "section-20",
+  "title": "18. Baseline vs with-project market equilibrium",
+  "requirements": [
+    "REQ-618-d417413c",
+    "REQ-619-68795fe8",
+    "REQ-620-91cf7e1c",
+    "REQ-621-ec55feb4",
+    "REQ-622-a225d06b",
+    "REQ-623-28d2328c",
+    "REQ-624-0f0039a4",
+    "REQ-625-038a80fa",
+    "REQ-626-5c7d29b8",
+    "REQ-627-dad9333b",
+    "REQ-628-7e6d611e",
+    "REQ-629-acea0ef5",
+    "REQ-630-0124ed21"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

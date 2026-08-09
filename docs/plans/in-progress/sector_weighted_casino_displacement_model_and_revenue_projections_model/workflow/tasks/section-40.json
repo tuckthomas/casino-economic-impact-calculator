@@ -1,0 +1,26 @@
+{
+  "id": "section-40",
+  "title": "38. Non-negotiable failure conditions",
+  "requirements": [
+    "REQ-994-2af39e86",
+    "REQ-995-ee7e39f8",
+    "REQ-996-5fba214e",
+    "REQ-997-b732fcca",
+    "REQ-998-98927083",
+    "REQ-999-2583e8f0",
+    "REQ-1000-1a7697f7",
+    "REQ-1001-7ddff1e7",
+    "REQ-1002-44eebc81",
+    "REQ-1003-44d77de6",
+    "REQ-1004-0b611b72",
+    "REQ-1005-52b3b495",
+    "REQ-1006-21593bc0",
+    "REQ-1007-95482b88",
+    "REQ-1008-c830c9b2",
+    "REQ-1009-0777efdc",
+    "REQ-1010-8a2418e0"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

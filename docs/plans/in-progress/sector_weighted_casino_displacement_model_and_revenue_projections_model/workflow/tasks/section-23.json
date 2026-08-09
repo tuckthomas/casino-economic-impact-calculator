@@ -1,0 +1,19 @@
+{
+  "id": "section-23",
+  "title": "21. Ramp-up and stabilization",
+  "requirements": [
+    "REQ-651-2d07a63d",
+    "REQ-652-23ad734f",
+    "REQ-653-6531bd11",
+    "REQ-654-135f2452",
+    "REQ-655-c7a2501f",
+    "REQ-656-af3b7589",
+    "REQ-657-5057dd0b",
+    "REQ-658-49509775",
+    "REQ-659-4ca1a896",
+    "REQ-660-49c39ea5"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

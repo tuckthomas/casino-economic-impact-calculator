@@ -1,0 +1,15 @@
+{
+  "id": "section-16",
+  "title": "14. Outside option and incomplete market capture",
+  "requirements": [
+    "REQ-582-a20cb75a",
+    "REQ-583-1f2c5b38",
+    "REQ-584-4ec3b0f3",
+    "REQ-585-fa70875d",
+    "REQ-586-2022e7b0",
+    "REQ-587-f14ea315"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

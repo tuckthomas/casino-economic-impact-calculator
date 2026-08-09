@@ -139,7 +139,6 @@
     <link rel="preload" href="assets/SaveNEIN_SVG_Dark_Mode_Small.svg" as="image" type="image/svg+xml" />
     <link href="lib/public-sans/index.css" rel="stylesheet" asp-append-version="true" />
     <link href="lib/material-symbols-outlined/index.css" rel="stylesheet" asp-append-version="true" />
-    <link rel="stylesheet" href="css/maplibre-gl.css" asp-append-version="true" />
     <link href="css/app.css" rel="stylesheet" asp-append-version="true" />
     <link href="SaveNEIN.Client.styles.css" rel="stylesheet" asp-append-version="true" />
     <link href="css/atmospheric-backgrounds.css" rel="stylesheet" asp-append-version="true" />
@@ -189,34 +188,22 @@
         };
     </script>
 
-    @* These libraries used to block first paint in <head>. Keeping them in the same
-       dependency order here lets the real hero background paint before they load. *@
-    <script src="js/lib/maplibre-gl.js" asp-append-version="true"></script>
-    <script src="js/lib/pmtiles.js" asp-append-version="true"></script>
-    <script src="js/lib/turf.min.js" asp-append-version="true"></script>
-    <script src="js/lib/chart.js" asp-append-version="true"></script>
-    <script src="js/lib/terra-draw.umd.js" asp-append-version="true"></script>
+    @* Report-viewer libraries load after first paint. *@
     <script src="js/lib/pdf.min.js" asp-append-version="true"></script>
     <script src="js/lib/page-flip.browser.js" asp-append-version="true"></script>
 
-    <script src="js/lib/html2canvas.min.js" asp-append-version="true"></script>
-    <script src="js/pdf-helper.js" asp-append-version="true"></script>
     <script src="js/components/slot-machine.js" asp-append-version="true"></script>
     <script src="js/components/adaptive-toast.js" asp-append-version="true"></script>
-    <script src="js/components/maplibre-map.js" asp-append-version="true"></script>
     <script src="js/components/legislators.js" asp-append-version="true"></script>
     <script src="js/components/image-modal.js" asp-append-version="true"></script>
     <script src="js/components/modals.js" asp-append-version="true"></script>
     <script src="js/components/flipbook.js" asp-append-version="true"></script>
     <script src="js/components/toc.js" asp-append-version="true"></script>
     <script src="js/components/reveal.js" asp-append-version="true"></script>
-    <script src="js/components/charts.js" asp-append-version="true"></script>
     <script src="js/components/tooltip-portal.js" asp-append-version="true"></script>
     <script src="js/components/slider-input-logic.js" asp-append-version="true"></script>
     <script src="js/components/slider-input-group-logic.js" asp-append-version="true"></script>
     <script src="js/components/home-header.js" asp-append-version="true"></script>
-    <script src="js/economics/calculator.js" asp-append-version="true"></script>
-    <script src="js/economics/substitution.js" asp-append-version="true"></script>
 
     @* Start Blazor only after every JS interop module is available. Version every boot resource
        with the compiled client MVID so a deployment cannot reuse an older boot manifest. *@

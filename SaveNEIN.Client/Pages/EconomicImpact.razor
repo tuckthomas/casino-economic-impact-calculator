@@ -1,1363 +1,1327 @@
-@inject IJSRuntime JSRuntime
 @inject HttpClient Http
-@using SaveNEIN.Shared
-@using SaveNEIN.Client.Pages
+@using System.Globalization
 
-    <section class="bg-[#0f172a] relative overflow-hidden" id="economic-analysis">
-        <div class="economic-analysis-body mx-auto max-w-7xl px-0 pt-24 pb-24 sm:pt-28 sm:pb-28 lg:px-8">
-            <div class="economic-analysis-section-content">
-                <div class="section-heading-block economic-analysis-section-heading mb-12 text-center max-w-4xl mx-auto" id="economic-analysis-header">
-                    <span class="text-blue-500 font-bold tracking-wider uppercase text-sm mb-2 block">Economic
-                        Analysis</span>
-                    <h2 class="text-3xl font-black tracking-tight text-white sm:text-4xl">
-                        ECONOMIC <span class="text-blue-500">IMPACT</span> CALCULATOR
-                    </h2>
-                    <p class="section-heading-description mt-4 text-xl italic text-slate-400 font-medium w-full max-w-none md:max-w-2xl md:mx-auto">
-                        Interactive modeling of the social and financial impact on counties and states.
-                    </p>
+<section class="model-workbench" id="economic-analysis" aria-labelledby="model-workbench-title">
+    <div class="model-workbench-shell">
+        <header class="model-workbench-heading">
+            <span class="model-eyebrow">Canonical economic model</span>
+            <h2 id="model-workbench-title">Stored-run casino impact workbench</h2>
+            <p>
+                Configure a versioned scenario, run the server-side gravity model, and compare immutable results.
+                Revenue is calculated from origin demand and Valhalla drive times—there is no browser-side AGR multiplier.
+            </p>
+        </header>
+
+        @if (_loading)
+        {
+            <div class="model-status" role="status">Loading model catalog and sealed data snapshots…</div>
+        }
+        else if (_configuration is null)
+        {
+            <div class="model-alert model-alert-error" role="alert">
+                <strong>Model configuration unavailable.</strong>
+                <span>@(_error ?? "The server did not return a model catalog.")</span>
+                <button type="button" @onclick="LoadAsync">Retry</button>
+            </div>
+        }
+        else
+        {
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="model-alert model-alert-error" role="alert">
+                    <strong>Scenario could not run.</strong>
+                    <span>@_error</span>
                 </div>
+            }
 
-                <div class="economic-analysis-content">
-                    <div class="economic-analysis-opening-shell">
-                        <div class="economic-analysis-opening">
-                            <Map />
+            <div class="model-workbench-grid">
+                <aside class="model-panel model-input-panel" aria-label="Scenario inputs">
+                    <div class="model-panel-heading">
+                        <div>
+                            <span class="model-step">1</span>
+                            <h3>Scenario definition</h3>
+                        </div>
+                        <span class="model-version">@_configuration.ModelVersion</span>
+                    </div>
+
+                    <div class="model-form-grid">
+                        <label class="model-field model-field-wide">
+                            <span>Scenario name</span>
+                            <input @bind="_form.ScenarioName" maxlength="120" />
+                        </label>
+
+                        <label class="model-field">
+                            <span>Host jurisdiction</span>
+                            <select @bind="_form.JurisdictionCode" @bind:after="OnJurisdictionChangedAsync">
+                                <option value="">Select jurisdiction</option>
+                                @foreach (var jurisdiction in _configuration.Jurisdictions.Where(item => item.Kind != "federal"))
+                                {
+                                    <option value="@jurisdiction.Code">@jurisdiction.Name (@jurisdiction.Code)</option>
+                                }
+                            </select>
+                        </label>
+
+                        <label class="model-field">
+                            <span>Development program</span>
+                            <select @bind="_form.DevelopmentProgramId">
+                                <option value="">Select program</option>
+                                @foreach (var program in _configuration.DevelopmentPrograms)
+                                {
+                                    <option value="@program.Id">@program.Name · v@program.Version</option>
+                                }
+                            </select>
+                        </label>
+
+                        <label class="model-field">
+                            <span>Candidate latitude</span>
+                            <input type="number" min="-90" max="90" step="0.000001" @bind="_form.CandidateLatitude" />
+                        </label>
+
+                        <label class="model-field">
+                            <span>Candidate longitude</span>
+                            <input type="number" min="-180" max="180" step="0.000001" @bind="_form.CandidateLongitude" />
+                        </label>
+                    </div>
+
+                    <div class="model-subsection">
+                        <div class="model-subsection-heading">
+                            <div>
+                                <span class="model-step">2</span>
+                                <h3>Immutable data inputs</h3>
+                            </div>
+                            <span class="model-count">@_origins.Count origins</span>
+                        </div>
+
+                        <div class="model-form-grid">
+                            <label class="model-field">
+                                <span>Origin geography</span>
+                                <select @bind="_form.OriginGeographySnapshotId" @bind:after="LoadOriginsAsync">
+                                    <option value="">Select snapshot</option>
+                                    @foreach (var snapshot in Snapshots("origin-geography"))
+                                    {
+                                        <option value="@snapshot.Id">@SnapshotLabel(snapshot)</option>
+                                    }
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Age population</span>
+                                <select @bind="_form.AgePopulationSnapshotId">
+                                    <option value="">Select snapshot</option>
+                                    @foreach (var snapshot in Snapshots("age-population"))
+                                    {
+                                        <option value="@snapshot.Id">@SnapshotLabel(snapshot)</option>
+                                    }
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Income / AGI</span>
+                                <select @bind="_form.IncomeSnapshotId">
+                                    <option value="">Select snapshot</option>
+                                    @foreach (var snapshot in Snapshots("income"))
+                                    {
+                                        <option value="@snapshot.Id">@SnapshotLabel(snapshot)</option>
+                                    }
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Casino competitors</span>
+                                <select @bind="_form.CompetitorSnapshotId">
+                                    <option value="">Select snapshot</option>
+                                    @foreach (var snapshot in Snapshots("competitors"))
+                                    {
+                                        <option value="@snapshot.Id">@SnapshotLabel(snapshot)</option>
+                                    }
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Observed performance</span>
+                                <select @bind="_form.ObservedPerformanceSnapshotId" @bind:after="ApplySnapshotYears">
+                                    <option value="">Select snapshot</option>
+                                    @foreach (var snapshot in Snapshots("observed-performance"))
+                                    {
+                                        <option value="@snapshot.Id">@SnapshotLabel(snapshot)</option>
+                                    }
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Tourism (optional)</span>
+                                <select @bind="_form.TourismSnapshotId" @bind:after="LoadTourismAsync">
+                                    <option value="">No tourism snapshot</option>
+                                    @foreach (var snapshot in Snapshots("tourism"))
+                                    {
+                                        <option value="@snapshot.Id">@SnapshotLabel(snapshot)</option>
+                                    }
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Traffic (optional)</span>
+                                <select @bind="_form.TrafficSnapshotId" @bind:after="LoadTrafficAsync">
+                                    <option value="">No traffic snapshot</option>
+                                    @foreach (var snapshot in Snapshots("traffic"))
+                                    {
+                                        <option value="@snapshot.Id">@SnapshotLabel(snapshot)</option>
+                                    }
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Local sector inventory (optional)</span>
+                                <select @bind="_form.LocalEconomicInventorySnapshotId">
+                                    <option value="">Use parameterized sector priors</option>
+                                    @foreach (var snapshot in Snapshots("local-economic-inventory"))
+                                    {
+                                        <option value="@snapshot.Id">@SnapshotLabel(snapshot)</option>
+                                    }
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Origin state/territory code</span>
+                                <input @bind="_form.OriginStateCode" @bind:after="LoadOriginsAsync" maxlength="10" />
+                            </label>
+                        </div>
+
+                        <div class="model-data-summary">
+                            <span><strong>@_origins.Count</strong> ZCTA/flexible origins selected</span>
+                            <span><strong>@_tourism.Count</strong> tourism observations selected</span>
+                            <span><strong>@_traffic.Count</strong> traffic corridors selected</span>
                         </div>
                     </div>
 
-                    <div class="economic-analysis-content-shell">
-                    <!-- Calculator Grid -->
-                    <div class="flex flex-col gap-12 mb-16 pb-24">
-
-            <!-- Controls Card -->
-            <div id="calculator-controls"
-                class="economic-chart-card w-full">
-                <h3 class="text-xl font-bold text-slate-300 dark:text-white mb-2">
-                    <span class="material-symbols-outlined text-blue-500">tune</span>
-                    Economic Inputs
-                </h3>
-                <div class="space-y-5">
-                    <!-- County is selected through the Map component above -->
-                    <!-- Simulator Trigger -->
-                    <div class="-mb-8">
-                        <button onclick="openSimulatorModal()"
-                            class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/20 border border-blue-400/30 flex items-center justify-between group transition-all transform active:scale-95 mt-10">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-white/20 p-2 rounded-lg">
-                                    <span class="material-symbols-outlined text-white">science</span>
-                                </div>
-                                <div class="text-left">
-                                    <div class="uppercase tracking-wide text-sm font-bold text-blue-100 mb-0.5">Quick
-                                        Start</div>
-                                    <div class="text-lg leading-none">Run Scenario Simulator</div>
-                                </div>
+                    <div class="model-subsection">
+                        <div class="model-subsection-heading">
+                            <div>
+                                <span class="model-step">3</span>
+                                <h3>Model assumptions</h3>
                             </div>
-                            <span
-                                class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                        </button>
-
-                        <div class="relative flex py-8 items-center justify-center mt-10">
-                            <div class="absolute inset-0 flex items-center" aria-hidden="true">
-                                <div class="w-full border-t border-slate-700"></div>
-                            </div>
-                            <div class="relative flex justify-center">
-                                <button @onclick="ToggleManualControls" id="btn-manual-toggle"
-                                    class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-2 px-6 rounded-full border border-purple-400/30 flex items-center gap-2 transition-all text-sm uppercase tracking-wider group shadow-lg active:scale-95">
-                                    <span>Adjust Variables Manually</span>
-                                    <span
-                                        class="material-symbols-outlined group-hover:translate-y-1 transition-transform text-lg @(_manualControlsExpanded ? "rotate-180" : "")">expand_more</span>
-                                </button>
-                            </div>
+                            <button class="model-link-button" type="button" @onclick="ToggleAdvanced">
+                                @(_showAdvanced ? "Hide advanced" : "Show advanced")
+                            </button>
                         </div>
 
-                        <!-- Collapsible Manual Controls -->
-                        <div id="manual-controls"
-                            class="rounded-2xl px-4 sm:px-6 py-8 transition-all duration-500 ease-in-out @(_manualControlsExpanded ? "max-h-[8000px] opacity-100 overflow-visible" : "max-h-0 opacity-0 overflow-hidden")">
+                        <div class="model-form-grid">
+                            <label class="model-field">
+                                <span>Scenario preset</span>
+                                <select @bind="_form.ScenarioParameterSetId">
+                                    <option value="">System/base values</option>
+                                    @foreach (var set in _configuration.ParameterSets.Where(set => set.Scope == "scenario"))
+                                    {
+                                        <option value="@set.Id">@set.Name · @set.Version</option>
+                                    }
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Demand specification</span>
+                                <select @bind="_form.DemandSpecification">
+                                    <option value="agi-share">AGI-share demand</option>
+                                    <option value="eligible-adult-per-capita">Eligible-adult per capita</option>
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Facility attraction</span>
+                                <select @bind="_form.AttractionSpecification">
+                                    <option value="observed-ggr">Observed-GGR mass</option>
+                                    <option value="structural">Structural facility mass</option>
+                                </select>
+                            </label>
+                            <label class="model-field">
+                                <span>Travel-friction form</span>
+                                <select @bind="_form.FrictionForm">
+                                    <option value="inverse-power">Inverse power (beta)</option>
+                                    <option value="exponential">Exponential decay</option>
+                                </select>
+                            </label>
+                        </div>
 
-                        <div class="economic-chart-card mb-8">
-                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                <div class="max-w-3xl">
-                                    <h4 class="flex items-center gap-2 text-lg font-bold text-white">
-                                        <span class="material-symbols-outlined text-cyan-400">account_balance</span>
-                                        Tax Allocation Scenario
-                                    </h4>
-                                    <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                                        Choose the tax-allocation regime that determines how public revenue is distributed. This changes only the revenue split logic, not the social-cost model.
-                                    </p>
-                                </div>
-                                <div class="w-full max-w-sm">
-                                    <label for="tax-allocation-scenario-select" class="mb-2 block text-sm font-bold uppercase tracking-wide text-slate-300">
-                                        Active Scenario
+                        <div class="model-parameter-grid">
+                            @foreach (var definition in StandardDefinitions())
+                            {
+                                @ParameterEditor(definition)
+                            }
+                        </div>
+
+                        @if (_showAdvanced)
+                        {
+                            <div class="model-advanced" aria-label="Advanced model parameters">
+                                <div class="model-advanced-toolbar">
+                                    <label class="model-field">
+                                        <span>Filter parameters</span>
+                                        <input @bind="_parameterSearch" placeholder="beta, social cost, traffic…" />
                                     </label>
-                                    <select id="tax-allocation-scenario-select"
-                                        aria-hidden="true"
-                                        tabindex="-1"
-                                        class="hidden">
-                                    </select>
-                                    <div class="relative block">
-                                        <button type="button"
-                                            id="tax-allocation-scenario-trigger"
-                                            class="sfw-modern-select sfw-modern-select-trigger w-full px-4 py-3 text-base font-semibold"
-                                            aria-label="Active tax allocation scenario"
-                                            aria-haspopup="listbox"
-                                            aria-expanded="false"
-                                            aria-controls="tax-allocation-scenario-menu">
-                                            <span id="tax-allocation-scenario-trigger-label" class="truncate">Loading scenarios...</span>
-                                            <span id="tax-allocation-scenario-trigger-icon" class="material-symbols-outlined text-[18px] transition-transform" aria-hidden="true">expand_more</span>
-                                        </button>
-                                        <div id="tax-allocation-scenario-menu" role="listbox"
-                                            class="sfw-custom-select-menu hidden mt-2"></div>
-                                    </div>
+                                    <button type="button" class="model-secondary-button" @onclick="ResetOverrides">Reset all overrides</button>
+                                </div>
+                                <div class="model-parameter-grid">
+                                    @foreach (var definition in AdvancedDefinitions())
+                                    {
+                                        @ParameterEditor(definition)
+                                    }
                                 </div>
                             </div>
-                            <p id="tax-allocation-scenario-summary" class="mt-4 text-sm leading-relaxed text-slate-400"></p>
-                            <div id="tax-allocation-validation" class="hidden"></div>
-                            <div id="tax-allocation-custom-editor" class="mt-6 grid gap-4"></div>
-                        </div>
-                        
-                        <!-- Revenue Potential Alert (Populated by JS) -->
-                        <div id="revenue-potential-alert" class="hidden mb-6 p-4 rounded-xl border-l-4">
-                            <div class="flex items-start gap-3">
-                                <span class="material-symbols-outlined mt-0.5 text-xl" id="revenue-alert-icon">info</span>
-                                <div>
-                                    <h4 class="font-bold text-white mb-1" id="revenue-alert-title">Location Assessment</h4>
-                                    <p class="text-sm text-slate-300" id="revenue-alert-message">Assessing relative revenue potential...</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- AGR Input -->
-                        <div class="border-b border-slate-700 pb-8">
-                            <PresetInput Id="agr" Label="Adjusted Gross Revenue (AGR)" Value="204.3"
-                                         MinValue="0" MaxValue="1000" Step="0.01"
-                                         InputType="MoneyMM" DecimalPlaces="2"
-                                         MajorTickInterval="200" MinorTickInterval="50"
-                                         MarkerColor="green"
-                                         Tooltip="Total gambling losses from all players, before taxes and expenses."
-                                         Markers='@(new List<SliderMarker> { new() { Label="Default", Value=204.3, TooltipDescription="Spectrum Gaming Projection" } })' />
-
-                            <!-- AGR Sensitivity Presets -->
-                            <div class="mt-16 mb-4">
-                                <label class="text-sm font-bold text-slate-300 mb-2 block">Steuben County Benchmark AGR Scenarios</label>
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                    <button type="button" data-agr-preset="steubenLow" onclick="window.applyAgrPreset(188.6, 'Steuben Low', 'steubenLow')" class="text-sm py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white transition-colors">Steuben Low (188.6)</button>
-                                    <button type="button" data-agr-preset="steubenBase" onclick="window.applyAgrPreset(203.1, 'Steuben Base', 'steubenBase')" class="text-sm py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white transition-colors">Steuben Base (203.1)</button>
-                                    <button type="button" data-agr-preset="steubenHigh" onclick="window.applyAgrPreset(214.0, 'Steuben High', 'steubenHigh')" class="text-sm py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white transition-colors">Steuben High (214.0)</button>
-                                </div>
-                                <p class="text-sm text-slate-400 mt-4 italic">
-                                    <strong>Methodology Note:</strong> These benchmark presets are Steuben County market-feasibility GGR/AGR scenarios from the A.M. Steinberg Advisors study (March 5, 2026). They are provided for scenario testing and do not represent validated economic-impact conclusions.
-                                </p>
-
-                                <details class="mt-4 rounded-lg border border-slate-700 bg-slate-900/60 p-3 text-sm text-slate-300">
-                                    <summary class="cursor-pointer font-semibold text-slate-200">What does the ZIP-by-ZIP switching model mean?</summary>
-                                    <div class="mt-3 space-y-2 text-slate-300 leading-relaxed">
-                                        <p><strong>ZIP Demand Pool:</strong> An estimate of gambling demand from each ZIP code based on adult population and scenario inputs.</p>
-                                        <p><strong>Venue Utility Score:</strong> A relative attractiveness score that goes up for stronger casino offerings and down as travel distance increases.</p>
-                                        <p><strong>Share Allocation:</strong> For each ZIP code, the model splits demand across the proposed casino and existing competitors based on relative utility.</p>
-                                        <p><strong>Projected GGR/AGR:</strong> The model sums the proposed site's ZIP-level shares into a scenario estimate. Treat this as directional scenario analysis, not a precise forecast.</p>
-                                    </div>
-                                </details>
-                            </div>
-
-                            <!-- Tax Details (Always Visible) -->
-                            <div id="tax-details-container"
-                                class="bg-slate-900/80 rounded-lg p-4 mt-20 text-sm font-mono text-slate-300 border border-slate-700 shadow-inner">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
-
-                        <!-- Revenue Input -->
-                        <div class="border-b border-slate-700 pb-8 mt-8">
-                            <PresetInput Id="revenue" Label="Tax Revenue" Value="61.21"
-                                         MinValue="0" MaxValue="400" Step="0.01"
-                                         InputType="MoneyMM" DecimalPlaces="2"
-                                         MajorTickInterval="100" MinorTickInterval="25"
-                                         MarkerColor="green"
-                                         Tooltip="The portion of AGR collected by the state and local government."
-                                         Markers='@(new List<SliderMarker> { new() { Label="Default", Value=61.21, TooltipDescription="Spectrum Gaming Projection" } })' />
-                        </div>
-
-                        <div class="pt-6 mt-10 rounded-xl border border-slate-700 bg-slate-900/60 p-4">
-                            <label class="text-base font-bold text-white block mb-2">Revenue Allocation Model</label>
-                            <p class="text-sm text-slate-400 italic">
-                                Use the Tax Allocation Scenario controls below to choose which public-revenue split is applied after total tax revenue is estimated. Municipality-directed allocations depend on incorporated PLACE containment, not just county selection.
-                            </p>
-                            <input type="hidden" value="0" id="input-allocation" aria-hidden="true">
-                        </div>
-
-                        <!-- Social Cost Input -->
-                        <div class="pb-10">
-                            <div class="mb-4 mt-10">
-                                <label class="text-base font-bold text-white block mb-2">Social Cost
-                                    Variables (Per Problem Gambler)</label>
-                                <div class="flex justify-between items-baseline mb-2 bg-slate-800 p-2 rounded-lg">
-                                    <span class="text-sm font-bold text-slate-500 uppercase">Total Cost</span>
-                                    <span class="text-red-500 font-bold font-mono text-lg"
-                                        id="val-cost-total">$13,203</span>
-                                </div>
-                                <p class="text-sm text-slate-400 italic mb-4">Default values based on Grinols (2011)
-                                    ($9,393) adjusted for 2025 inflation ($13,205).</p>
-                            </div>
-
-                            <div class="space-y-12 pl-2">
-                                <PresetInput Id="cost-crime" Label="Crime Costs" Value="1625" 
-                                             MinValue="0" MaxValue="10000" Step="1"
-                                             InputType="Currency" DecimalPlaces="0"
-                                             MajorTickInterval="2000" MinorTickInterval="500"
-                                             Tooltip="Includes costs for police, adjudication, and incarceration related to gambling-induced crime." 
-                                             Markers='@(new List<SliderMarker> { new() { Label="Default", Value=1625, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
-
-                                <PresetInput Id="cost-business" Label="Lost Employment" Value="4051" 
-                                             MinValue="0" MaxValue="10000" Step="1"
-                                             InputType="Currency" DecimalPlaces="0"
-                                             MajorTickInterval="2000" MinorTickInterval="500"
-                                             Tooltip="Economic losses due to lost productivity, absenteeism, and unemployment." 
-                                             Markers='@(new List<SliderMarker> { new() { Label="Default", Value=4051, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
-
-                                <PresetInput Id="cost-bankruptcy" Label="Bankruptcy" Value="431" 
-                                             MinValue="0" MaxValue="10000" Step="1"
-                                             InputType="Currency" DecimalPlaces="0"
-                                             MajorTickInterval="2000" MinorTickInterval="500"
-                                             Tooltip="Legal costs and resource drain associated with filings, debts, and civil proceedings." 
-                                             Markers='@(new List<SliderMarker> { new() { Label="Default", Value=431, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
-
-                                <PresetInput Id="cost-illness" Label="Illness" Value="1328" 
-                                             MinValue="0" MaxValue="10000" Step="1"
-                                             InputType="Currency" DecimalPlaces="0"
-                                             MajorTickInterval="2000" MinorTickInterval="500"
-                                             Tooltip="Healthcare costs for treating stress-related disorders, depression, and anxiety." 
-                                             Markers='@(new List<SliderMarker> { new() { Label="Default", Value=1328, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
-
-                                <PresetInput Id="cost-services" Label="Social Services" Value="713" 
-                                             MinValue="0" MaxValue="10000" Step="1"
-                                             InputType="Currency" DecimalPlaces="0"
-                                             MajorTickInterval="2000" MinorTickInterval="500"
-                                             Tooltip="Public costs for unemployment benefits, welfare programs, and social safety nets." 
-                                             Markers='@(new List<SliderMarker> { new() { Label="Default", Value=713, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
-
-                                <PresetInput Id="cost-abused" Label="Abused Dollars" Value="5055" 
-                                             MinValue="0" MaxValue="10000" Step="1"
-                                             InputType="Currency" DecimalPlaces="0"
-                                             MajorTickInterval="2000" MinorTickInterval="500"
-                                             Tooltip="Financial impact of 'borrowed' or stolen family funds, plus divorce and domestic instability costs." 
-                                             Markers='@(new List<SliderMarker> { new() { Label="Default", Value=5055, TooltipDescription="This is the inflation-adjusted default value based on Grinols (2011)." } })' />
-                            </div>
-
-                            <!-- Tax Revenue Calculation -->
-                            <div id="calc-tax-revenue-container"
-                                class="hidden mt-20 mb-6 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600">
-                                <div
-                                    class="text-sm text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
-                                    Tax Revenue Calculation</div>
-	                                        <div
-	                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-	                                            <div class="flex flex-col items-center">
-	                                                <span
-                                            class="text-slate-500 uppercase font-bold mb-1 text-center">Adjusted
-                                            Gross Revenue</span>
-                                        <span class="text-white font-mono font-bold" id="calc-agr">-</span>
-                                    </div>
-                                    <div class="text-slate-500 font-bold mb-3">×</div>
-                                    <div class="flex flex-col items-center">
-                                        <span
-                                            class="text-slate-500 uppercase font-bold mb-1 text-center">Effective
-                                            Tax Rate</span>
-                                        <span class="text-white font-mono font-bold" id="calc-tax-rate">-</span>
-                                    </div>
-                                    <div class="text-slate-500 font-bold mb-3">=</div>
-                                    <div class="flex flex-col items-center">
-                                        <span class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                            Estimated Tax Revenue</span>
-                                        <span class="text-white font-mono font-bold" id="calc-tax-total">-</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Calculation Breakdown -->
-                            <div id="calc-problem-gambler-container"
-                                class="hidden mb-6 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600">
-                                <div
-                                    class="text-sm text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
-                                    Problem Gambler Calculation</div>
-                                <div
-                                    class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                    <div class="flex flex-col items-center">
-                                        <span class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                            Population</span>
-                                        <span class="text-white font-mono font-bold" id="calc-pop">-</span>
-                                    </div>
-                                    <div class="text-slate-500 font-bold mb-3">×</div>
-                                    <div class="flex flex-col items-center">
-                                        <span
-                                            class="text-slate-500 uppercase font-bold mb-1 text-center">Effective
-                                            Rate</span>
-                                        <span class="text-white font-mono font-bold" id="calc-rate">-</span>
-                                    </div>
-                                    <div class="text-slate-500 font-bold mb-3">=</div>
-                                    <div class="flex flex-col items-center">
-                                        <span class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                            Problem Gamblers</span>
-                                        <span class="text-white font-mono font-bold" id="calc-result">-</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Detailed Social Cost Breakdown -->
-                            <div id="detailed-breakdown-empty-state" class="p-8 text-center bg-slate-800/30 rounded-xl border border-dashed border-slate-700 mt-16 mb-8">
-                                <p class="text-slate-500 text-sm italic">
-                                    Breakdown details will be populated once a location is selected.
-                                </p>
-                            </div>
-
-                            <div id="detailed-breakdown-content" class="hidden mb-8 relative z-10 bg-slate-900/50 rounded-xl p-4 border border-slate-600">
-                                <div
-                                    class="text-sm text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
-                                    Detailed Social Cost Breakdown — Subject County
-                                </div>
-
-                                <div class="space-y-6 mb-8">
-                                    <!-- 1. Public Health -->
-                                    <div>
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Public
-                                            Health (Base-Case Public Health Burden)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-health-victims">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-health-per">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-health-total">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 2. Social Services -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Social
-                                            Services (Welfare, Unemployment)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-social-victims">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-social-per">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-social-total">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 3. Criminal Justice -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Law
-                                            Enforcement (Police, Courts, Jail)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-crime-victims">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-crime-per">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-crime-total">-</span>
-                                            </div>
-                                        </div>
-	                                    </div>
-
-                                    <!-- 4. Civil Legal -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Civil
-                                            Legal (Courts, Bankruptcy)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-legal-victims">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-legal-per">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-legal-total">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 5. Abused Dollars -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Abused
-                                            Dollars (Household Loss)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-abused-victims">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-abused-per">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-abused-total">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 6. Lost Employment -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Lost
-                                            Employment (Productivity)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-employment-victims">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-employment-per">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-employment-total">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 7. Total Social Cost -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Total
-                                            Social Cost</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-break-total-victims">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-total-cost-per">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-3">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-white font-mono font-bold"
-                                                    id="calc-total-cost-combined">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-	                            </div>
-
-                                <div
-                                    class="text-sm text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
-                                    Detailed Social Cost Breakdown — Other Counties (Same State, ≤50 mi)
-                                </div>
-
-                                <div class="space-y-6">
-                                    <!-- 1. Public Health -->
-                                    <div>
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Public
-                                            Health (Base-Case Public Health Burden)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-health-victims-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-health-per-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-health-total-other">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 2. Social Services -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Social
-                                            Services (Welfare, Unemployment)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-social-victims-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-social-per-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-social-total-other">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 3. Criminal Justice -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Law
-                                            Enforcement (Police, Courts, Jail)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-crime-victims-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-crime-per-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-crime-total-other">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 4. Civil Legal -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Civil
-                                            Legal (Courts, Bankruptcy)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-legal-victims-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-legal-per-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-legal-total-other">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 5. Abused Dollars -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Abused
-                                            Dollars (Household Loss)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-abused-victims-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-abused-per-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-abused-total-other">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 6. Lost Employment -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Lost
-                                            Employment (Productivity)</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-employment-victims-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-employment-per-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-employment-total-other">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 7. Total Social Cost -->
-                                    <div class="border-t border-slate-700/50 pt-4">
-                                        <div class="text-slate-500 uppercase font-bold mb-2 text-center">Total
-                                            Social Cost</div>
-                                        <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">New
-                                                    Problem Gamblers</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-break-total-victims-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">×</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Cost/Problem
-                                                    Gambler</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-total-cost-per-other">-</span>
-                                            </div>
-                                            <div class="text-slate-500 font-bold mb-2">=</div>
-                                            <div class="flex flex-col items-center">
-                                                <span
-                                                    class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                                    Cost</span>
-                                                <span class="text-slate-200 font-mono font-bold"
-                                                    id="calc-total-cost-combined-other">-</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        }
                     </div>
-                    <!-- County Selection -->
 
-            </div> <!-- Close manual-controls -->
-        </div> <!-- Close -mb-8 -->
-    </div> <!-- Close space-y-5 -->
-</div> <!-- Close calculator-controls -->
-
-            <!-- Results Card -->
-            <div class="space-y-6">
-                <div class="economic-chart-card w-full relative z-10">
-
-                    <div class="flex justify-between items-center mb-2 relative z-50">
-                        <h3 class="text-xl font-bold text-slate-300 dark:text-white" id="deficit-title">
-                            <span class="material-symbols-outlined text-blue-500">calculate</span>
-                            Deficit Calculation
-                        </h3>
-                        <button id="btn-generate-pdf" @onclick="GeneratePdf" 
-                                class="bg-red-600 hover:bg-red-500 text-white p-2 rounded-lg shadow-md transition-all transform active:scale-95 border border-red-400/20 flex items-center justify-center w-10 h-10 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:hover:bg-slate-600 disabled:shadow-none disabled:active:scale-100" 
-                                aria-label="Download PDF Report"
-                                disabled="@_isGeneratingPdf">
-                            @if (_isGeneratingPdf)
-                            {
-                                <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            }
-                            else
-                            {
-                                <span class="material-symbols-outlined text-2xl">picture_as_pdf</span>
-                            }
+                    <div class="model-run-actions">
+                        <button class="model-primary-button" type="button" disabled="@(!CanRun || _running)" @onclick="RunScenarioAsync">
+                            @(_running ? "Running Valhalla + impact pipeline…" : "Run and store scenario")
                         </button>
-        <AppTooltip TargetId="btn-generate-pdf" Text="Download PDF Report" />
+                        <span>@RunReadiness</span>
+                    </div>
+                </aside>
+
+                <main class="model-results" aria-live="polite">
+                    <div class="model-panel-heading model-results-heading">
+                        <div>
+                            <span class="model-step">4</span>
+                            <h3>Stored-run results</h3>
+                        </div>
+                        @if (_latestRun is not null)
+                        {
+                            <span class="model-run-id">@_latestRun.ModelRunId</span>
+                        }
                     </div>
 
+                    @if (_latestRun is null)
+                    {
+                        <div class="model-empty-state">
+                            <span class="material-symbols-outlined" aria-hidden="true">database</span>
+                            <h3>No scenario run in this session</h3>
+                            <p>Complete the required data selections and run the authoritative backend model.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <section class="model-result-hero">
+                            <span>Stabilized annual GGR</span>
+                            <strong>@Money(_latestRun.StabilizedTotalGgr)</strong>
+                            <p>@_latestRun.Status · @_latestRun.ComputationalOriginType.ToUpperInvariant() origins · @_latestRun.RoutingGraphHash[..Math.Min(12, _latestRun.RoutingGraphHash.Length)] routing graph</p>
+                        </section>
 
+                        <div class="model-metric-grid">
+                            @Metric("Resident GGR", Money(_latestRun.ProposedResidentGgr))
+                            @Metric("Tourism GGR", Money(_latestRun.TourismGgr))
+                            @Metric("Traffic GGR", Money(_latestRun.TrafficGgr))
+                            @Metric("Local displacement", Money(_latestRun.LocalDiscretionaryDisplacement), "negative")
+                            @Metric("Gross gaming tax", Money(_latestRun.GrossGamingTax))
+                            @Metric("Gross social cost", Money(_latestRun.GrossSocialCost), "negative")
+                            @Metric("Net permanent jobs", Number(_latestRun.NetPermanentJobs), Tone(_latestRun.NetPermanentJobs))
+                            @Metric("Net host-local impact", Money(_latestRun.NetHostLocalImpact), Tone(_latestRun.NetHostLocalImpact))
+                            @Metric("Net host-state impact", Money(_latestRun.NetHostStateImpact), Tone(_latestRun.NetHostStateImpact))
+                        </div>
 
-                    <!-- Split Balance Sheet -->
-                    <div class="relative z-10 bg-slate-900/50 rounded-2xl p-6 border border-slate-600 mb-6 font-sans">
-                        
-                        <!-- Net Economic Impact Table Structure -->
-                        <div id="net-impact-empty-state" class="flex flex-col items-center justify-center py-12 text-center">
-                            <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50 max-w-md mx-auto">
-                                <span class="material-symbols-outlined text-slate-500 text-4xl mb-3">map_search</span>
-                                <h4 class="text-slate-300 font-bold mb-2">Analysis Pending Location Selection</h4>
-                                <p class="text-slate-400 text-sm mb-6">
-                                    Please select a county on the map above to initialize the Net Economic Impact Analysis model.
-                                </p>
-                                <button onclick="document.getElementById('impact-map').scrollIntoView({ behavior: 'smooth', block: 'center' })"
-                                    class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg shadow-blue-500/20 text-sm flex items-center justify-center gap-2 mx-auto">
-                                    <span class="material-symbols-outlined text-[18px]">location_on</span>
-                                    Select Location on Map
+                        <section class="model-decomposition">
+                            <h4>Revenue source decomposition</h4>
+                            @foreach (var source in _latestRun.ProposedCaptureBySource.OrderByDescending(item => item.Value))
+                            {
+                                <div class="model-bridge-row">
+                                    <span>@Humanize(source.Key)</span>
+                                    <strong>@Money(source.Value)</strong>
+                                </div>
+                            }
+                        </section>
+
+                        @if (_latestRun.Warnings.Count > 0)
+                        {
+                            <details class="model-warning-list">
+                                <summary>@_latestRun.Warnings.Count model warning(s)</summary>
+                                <ul>
+                                    @foreach (var warning in _latestRun.Warnings)
+                                    {
+                                        <li>@warning</li>
+                                    }
+                                </ul>
+                            </details>
+                        }
+
+                        <section class="model-report-actions" aria-label="Full analytical report">
+                            <div>
+                                <h4>Full stored-run report</h4>
+                                <p>Generate PDF, accessible HTML, JSON, and CSV from this finalized run without recalculating the model.</p>
+                            </div>
+                            <button type="button" class="model-primary-button" disabled="@_generatingReport" @onclick="GenerateReportAsync">
+                                @(_generatingReport ? "Rendering server report…" : "Generate full report")
+                            </button>
+                            @if (_reportArtifact is not null)
+                            {
+                                <nav class="model-report-downloads" aria-label="Report downloads">
+                                    <a href="@_reportArtifact.PdfUrl" target="_blank" rel="noopener">PDF</a>
+                                    <a href="@_reportArtifact.HtmlUrl" target="_blank" rel="noopener">HTML</a>
+                                    <a href="@_reportArtifact.JsonUrl" target="_blank" rel="noopener">JSON</a>
+                                    <a href="@_reportArtifact.CsvUrl">CSV</a>
+                                </nav>
+                            }
+                        </section>
+
+                        <section class="model-sensitivity" aria-labelledby="model-sensitivity-title">
+                            <div class="model-subsection-heading">
+                                <div>
+                                    <span class="model-step">5</span>
+                                    <h3 id="model-sensitivity-title">Server-run sensitivity</h3>
+                                </div>
+                                <span class="model-count">@SelectedSensitivityRunCount full runs</span>
+                            </div>
+                            <p class="model-muted">
+                                Each low and high point reruns Valhalla, gravity allocation, and the complete impact pipeline. No final-output multiplier is used.
+                            </p>
+
+                            <label class="model-field model-sensitivity-metric">
+                                <span>Tornado output metric</span>
+                                <select @bind="_sensitivityMetric">
+                                    <option value="stabilized-total-ggr">Stabilized total GGR</option>
+                                    <option value="gross-gaming-tax">Gross gaming tax</option>
+                                    <option value="gross-social-cost">Gross social cost</option>
+                                    <option value="local-discretionary-displacement">Local discretionary displacement</option>
+                                    <option value="net-permanent-jobs">Net permanent jobs</option>
+                                    <option value="net-host-local-impact">Net host-local impact</option>
+                                    <option value="net-host-state-impact">Net host-state impact</option>
+                                </select>
+                            </label>
+
+                            <div class="model-sensitivity-ranges">
+                                @foreach (var range in _sensitivityRanges)
+                                {
+                                    <div class="model-sensitivity-range">
+                                        <label class="model-sensitivity-toggle">
+                                            <input type="checkbox" @bind="range.Selected" />
+                                            <span>
+                                                <strong>@range.DisplayName</strong>
+                                                <small>@range.ParameterKey · baseline @range.BaseValue.ToString("G6", CultureInfo.InvariantCulture) @range.Units</small>
+                                            </span>
+                                        </label>
+                                        <label>
+                                            <span>Low</span>
+                                            <input type="number" step="@range.Step" @bind="range.LowValue" aria-label="Low value for @range.DisplayName" />
+                                        </label>
+                                        <label>
+                                            <span>High</span>
+                                            <input type="number" step="@range.Step" @bind="range.HighValue" aria-label="High value for @range.DisplayName" />
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+
+                            <button type="button" class="model-secondary-button model-sensitivity-run" disabled="@(!CanRunSensitivity || _runningSensitivity)" @onclick="RunSensitivityAsync">
+                                @(_runningSensitivity ? $"Running {SelectedSensitivityRunCount} complete models…" : "Run and store sensitivity")
+                            </button>
+
+                            @if (_sensitivityResult is not null)
+                            {
+                                <div class="model-sensitivity-table-shell">
+                                    <table class="model-sensitivity-table">
+                                        <caption>
+                                            Tornado table · @_sensitivityResult.OutputMetric · analysis @_sensitivityResult.SensitivityAnalysisId
+                                        </caption>
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Parameter</th>
+                                                <th scope="col">Low result</th>
+                                                <th scope="col">Baseline</th>
+                                                <th scope="col">High result</th>
+                                                <th scope="col">Full range</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var row in _sensitivityResult.Tornado)
+                                            {
+                                                <tr>
+                                                    <th scope="row">@Humanize(row.ParameterKey)</th>
+                                                    <td>@SensitivityValue(row.LowMetricValue)<small>@SignedSensitivityDelta(row.LowDelta)</small></td>
+                                                    <td>@SensitivityValue(row.BaseMetricValue)</td>
+                                                    <td>@SensitivityValue(row.HighMetricValue)<small>@SignedSensitivityDelta(row.HighDelta)</small></td>
+                                                    <td>@SensitivityValue(row.TotalRange)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button type="button" class="model-secondary-button model-sensitivity-run" disabled="@_generatingReport" @onclick="GenerateSensitivityReportAsync">
+                                    @(_generatingReport ? "Rendering sensitivity report…" : "Generate report with sensitivity exhibit")
                                 </button>
+                            }
+                        </section>
+                    }
+
+                    <section class="model-comparison" id="economic-analysis-part-2">
+                        <div class="model-subsection-heading">
+                            <div>
+                                <span class="model-step">6</span>
+                                <h3>Immutable scenario comparison</h3>
                             </div>
+                            <button type="button" class="model-secondary-button" disabled="@(_comparisonSelection.Count < 2 || _comparing)" @onclick="CompareAsync">
+                                @(_comparing ? "Loading…" : "Compare selected")
+                            </button>
                         </div>
 
-                        <div id="net-impact-content" class="hidden">
-                            <div class="text-sm text-slate-200 uppercase tracking-widest font-bold mb-2 text-center">
-                                Net Economic Impact
+                        @if (_recentRuns.Count == 0)
+                        {
+                            <p class="model-muted">No stored runs are available yet.</p>
+                        }
+                        else
+                        {
+                            <div class="model-run-list">
+                                @foreach (var run in _recentRuns)
+                                {
+                                    <label>
+                                        <input type="checkbox" checked="@_comparisonSelection.Contains(run.Id)" @onchange="args => ToggleComparison(run.Id, args)" />
+                                        <span>
+                                            <strong>@run.ScenarioName</strong>
+                                            <small>@run.CreatedAtUtc.ToLocalTime().ToString("g") · @run.Status</small>
+                                        </span>
+                                    </label>
+                                }
                             </div>
+                        }
 
-                            <p class="text-sm text-slate-400 leading-relaxed mb-6 px-4 text-left">
-                                The statements below use the active tax-allocation scenario to distribute public revenue, while the social-cost model stays fixed. Public-health and other host-area burdens are shown where they are incurred, and same-state spillover costs are shown separately.
-                            </p>
-
-                            <div class="economic-chart-card mt-5">
-                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                    <div class="max-w-2xl">
-                                        <h4 class="flex items-center gap-2 text-lg font-bold text-white">
-                                            <span class="material-symbols-outlined text-emerald-400">location_city</span>
-                                            Host Government Fiscal View
-                                        </h4>
-                                        <p id="net-impact-host-subtitle" class="mt-2 text-sm leading-relaxed text-slate-400">
-                                            Shows host-local revenue against the selected county’s direct modeled costs.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="overflow-x-auto rounded-xl border border-slate-700 bg-slate-950/40 mt-6">
-                                    <div id="net-impact-host-table" class="w-full">
-                                        <div class="p-4 text-sm text-slate-500 italic text-center">
-                                            Select a county on the map to see cost distribution.
-                                        </div>
-                                    </div>
-                                </div>
+                        @if (_comparison.Count >= 2)
+                        {
+                            <div class="model-comparison-table-shell">
+                                <table class="model-comparison-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Metric</th>
+                                            @foreach (var run in _comparison)
+                                            {
+                                                <th scope="col">@run.ScenarioName</th>
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @ComparisonRow("Stabilized GGR", run => Money(run.StabilizedTotalGgr))
+                                        @ComparisonRow("Resident GGR", run => Money(run.TotalWithProjectResidentGgr))
+                                        @ComparisonRow("Tourism GGR", run => Money(run.TourismGgr))
+                                        @ComparisonRow("Traffic GGR", run => Money(run.TrafficGgr))
+                                        @ComparisonRow("Local displacement", run => Money(run.LocalDiscretionaryDisplacement))
+                                        @ComparisonRow("Gross gaming tax", run => Money(run.GrossGamingTax))
+                                        @ComparisonRow("Gross social cost", run => Money(run.GrossSocialCost))
+                                        @ComparisonRow("Net permanent jobs", run => Number(run.NetPermanentJobs))
+                                        @ComparisonRow("Net host-local impact", run => Money(run.NetHostLocalImpact))
+                                        @ComparisonRow("Net host-state impact", run => Money(run.NetHostStateImpact))
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="economic-chart-card mt-5">
-                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                    <div class="max-w-2xl">
-                                        <h4 class="flex items-center gap-2 text-lg font-bold text-white">
-                                            <span class="material-symbols-outlined text-blue-400">hub</span>
-                                            Regional Revenue vs County Costs
-                                        </h4>
-                                        <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                                            Shows only regional revenue, then expandable county cost sections.
-                                        </p>
-                                    </div>
-                                    <div class="economic-chart-toggle-group">
-                                        <button type="button" id="net-impact-regional-expand-all"
-                                            class="economic-chart-toggle">
-                                            Expand All Regional Rows
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="overflow-x-auto rounded-xl border border-slate-700 bg-slate-950/40 mt-6">
-                                    <div id="net-impact-regional-table" class="w-full"></div>
-                                </div>
-                            </div>
-                            <div class="economic-chart-card mt-5">
-                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                    <div class="max-w-2xl">
-                                        <h4 class="flex items-center gap-2 text-lg font-bold text-white">
-                                            <span class="material-symbols-outlined text-amber-400">receipt_long</span>
-                                            Consolidated Statement
-                                        </h4>
-                                        <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                                            Lists every revenue source and one consolidated cost row per county without repeating the detailed breakout shown above.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="overflow-x-auto rounded-xl border border-slate-700 bg-slate-950/40 mt-6">
-                                    <div id="net-impact-consolidated-table" class="w-full"></div>
-                                </div>
-                            </div>
-                            <p class="mt-2 text-sm text-slate-500 italic text-left" id="net-impact-note"></p>
-
-                            <div class="economic-chart-card mt-8">
-                                <div class="mt-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                    <div class="max-w-2xl">
-                                        <h4 class="flex items-center gap-2 text-lg font-bold text-white">
-                                            <span class="material-symbols-outlined text-blue-400">show_chart</span>
-                                            AGR Sensitivity Curve
-                                        </h4>
-                                        <p class="text-sm leading-relaxed text-slate-400">
-                                            This curve applies Indiana’s tiered tax schedule plus non-linear social-cost scaling, so the breakeven crossing and current scenario are easier to interpret.
-                                        </p>
-                                    </div>
-                                    <div class="economic-chart-toggle-group" role="tablist" aria-label="Sensitivity series mode">
-                                        <button type="button" id="sensitivity-series-mode-host" data-sensitivity-series-mode="host"
-                                            class="economic-chart-toggle is-active" aria-pressed="true">
-                                            Host Net
-                                        </button>
-                                        <button type="button" id="sensitivity-series-mode-regional" data-sensitivity-series-mode="regional"
-                                            class="economic-chart-toggle" aria-pressed="false">
-                                            Regional Net
-                                        </button>
-                                        <button type="button" id="sensitivity-series-mode-consolidated" data-sensitivity-series-mode="consolidated"
-                                            class="economic-chart-toggle" aria-pressed="false">
-                                            Consolidated Net
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="economic-chart-canvas-shell mt-6">
-                                    <canvas id="net-impact-sensitivity-chart" aria-label="AGR sensitivity chart"></canvas>
-                                </div>
-                                <div id="net-impact-sensitivity-summary" class="economic-chart-summary-grid mt-5"></div>
-                            </div>
-
-		                        <!-- Progress Bar -->
-		                        <div class="relative z-10 mt-8 mb-4">
-	                            <div class="flex justify-between text-base font-bold mb-2">
-	                                <span class="text-emerald-500">Consolidated Revenue Covered</span>
-                                <span class="text-red-500">Statewide Uncovered Cost</span>
-                            </div>
-                            <div class="w-full bg-red-500/60 rounded-full h-4 overflow-hidden border border-slate-700">
-                                <div class="bg-emerald-500 h-full transition-all duration-500" style="width: 35%"
-                                    id="res-bar"></div>
-                            </div>
-                            <p class="mt-4 text-center text-base text-slate-300 italic" id="res-footer">
-                                Consolidated tax revenue covers only <strong class="text-white text-lg">35%</strong> of statewide modeled costs.
-                            </p>
-                        </div>
-
-                        <!-- Programmatic Analysis & Disclaimer -->
-                        <div class="mt-6 pt-4 border-t border-slate-700">
-                            <div id="analysis-empty-state" class="p-8 text-center bg-slate-800/30 rounded-xl border border-dashed border-slate-700">
-                                <p class="text-slate-500 text-sm italic">
-                                    Summary analysis will be generated once a location is selected.
-                                </p>
-                            </div>
-
-                            <div id="analysis-content" class="hidden rounded-lg p-4 mb-4">
-                                <h5
-                                    class="text-white font-bold uppercase tracking-wider mb-2 flex items-center justify-center gap-2">
-                                    <span class="material-symbols-outlined">analytics</span>
-                                    SaveNEIN's Economic Impact Analysis
-                                </h5>
-                                <p class="text-slate-300 leading-relaxed" id="analysis-text">
-                                    <!-- Populated by JS -->
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-
-        <!--
-            <div class="mt-12 bg-slate-800 border border-slate-700 rounded-3xl p-4 sm:p-8 shadow-sm">
-                <h4 class="font-bold text-white text-lg mb-6 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-blue-500">table_chart</span>
-                    SaveNEIN's Estimated Analysis
-                </h4>
-                <div class="overflow-x-auto rounded-xl border border-slate-700">
-                    <table class="w-full text-sm text-left">
-                        <thead
-                            class="bg-slate-950 text-slate-300 uppercase text-sm font-bold border-b border-slate-700">
-                            <tr>
-                                <th class="px-6 py-4">Projection Model</th>
-                                <th class="px-6 py-4 text-center">New Problem Gamblers</th>
-                                <th class="px-6 py-4 text-center">Annual Social Cost</th>
-                                <th class="px-6 py-4 text-right">Net Annual Deficit</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-700 bg-slate-800">
-                            <tr class="hover:bg-slate-700/50 transition-colors">
-                                <td class="px-6 py-4 font-bold text-white">Low End Estimate</td>
-                                <td class="px-6 py-4 text-center font-mono text-white">5,872
-                                </td>
-                                <td class="px-6 py-4 text-center font-mono text-red-500">$77.5 Million</td>
-                                <td class="px-6 py-4 text-right font-black text-red-600 font-mono">-$50.0 Million
-                                </td>
-                            </tr>
-                            <tr class="hover:bg-slate-700/50 transition-colors">
-                                <td class="px-6 py-4 font-bold text-white">High End Estimate
-                                </td>
-                                <td class="px-6 py-4 text-center font-mono text-white">
-                                    12,918
-                                </td>
-                                <td class="px-6 py-4 text-center font-mono text-red-500">$170.5 Million</td>
-                                <td class="px-6 py-4 text-right font-black text-red-600 font-mono">-$143.0 Million
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <p class="mt-4 text-sm text-slate-400 text-center">
-                    Based on local population (391,449), problem gambling rates of 1.5% to 3.3% within 20 miles of a
-                    casino, and social costs adjusted for inflation.
-                </p>
+                        }
+                    </section>
+                </main>
             </div>
-            -->
-        <!-- End Table -->
-                </div>
-            </div>
+        }
+    </div>
+</section>
 
-
-        </div> <!-- Close Calculator Grid -->
-    </div> <!-- Close mx-auto container -->
-
-        <!-- PART II: THE MYTH OF NET GROWTH (Moved Here) -->
-        <div class="economic-analysis-content-shell mt-24 border-t border-slate-700 pt-24">
-            <!-- Header -->
-            <div class="section-heading-block economic-analysis-section-heading mb-12 text-center max-w-4xl mx-auto" id="economic-analysis-part-2">
-                <span class="text-blue-500 font-bold tracking-wider uppercase text-base">Economic Analysis - Part
-                    II</span>
-                <h2 class="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl leading-tight">
-                    THE MYTH OF <br><span class="text-blue-500">NET GROWTH</span>
-                </h2>
-                <div class="section-heading-description mt-4 text-xl italic text-slate-400 leading-relaxed">
-                    <p>
-                        The primary economic argument for the proposed Northeast Indiana casino is that it will generate "new" money.
-                        This assumes it functions as a tourist destination. However, in markets lacking high-density
-                        attractions, casinos operate as <strong>"convenience gambling"</strong> venues, leading to the
-                        <strong>Substitution Effect</strong>.
-                    </p>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-12">
-            <div
-                class="economic-chart-card w-full backdrop-blur-sm relative overflow-hidden">
-                <div class="text-left relative z-10">
-                    <h4 class="text-white font-bold mb-4 flex items-center gap-2 text-xl">
-                        <span class="material-symbols-outlined text-blue-500 text-3xl">analytics</span>
-                        Evidence: Spectrum Study (2025)
-                    </h4>
-                    <p class="mb-4 text-slate-400">
-                        A critical analysis of the Spectrum Study (2025) provides the most definitive evidence against
-                        the "Economic Engine" narrative. The study's own data admits that for a Northeast Indiana
-                        location, <strong>nearly 95% of the revenue is expected to come from the "core market-catchment
-                            area" (residents within 90 minutes)</strong>. This statistic mathematically disproves the
-                        "tourism" argument. If 95% of the money originates from local pockets, there is no "New Money"
-                        being introduced; it is purely a <strong>wealth transfer</strong> from local families to a
-                        corporate entity, with the region retaining only a small "convenience fee" in the form of tax
-                        revenue.
-                    </p>
-
-                    <h4 class="text-white font-bold mt-6 mb-4 flex items-center gap-2 text-xl">
-                        <span class="material-symbols-outlined text-red-500 text-3xl">block</span>
-                        Market Saturation & Competitive Landscape
-                    </h4>
-                    <p class="mb-4 text-slate-400">
-                        To function as a genuine destination, a venue must offer a unique value proposition that
-                        transcends local alternatives. However, the Northeast Indiana market is already saturated by
-                        established competitors:
-                    </p>
-                    <ul class="list-disc pl-5 space-y-2 mb-6 text-slate-400">
-                        <li><strong>South Bend:</strong> Four Winds</li>
-                        <li><strong>Toledo:</strong> Hollywood Casino</li>
-                        <li><strong>Battle Creek:</strong> FireKeepers</li>
-                        <li><strong>Indianapolis:</strong> Horseshoe (Shelbyville)</li>
-                    </ul>
-                    <p class="font-bold text-white border-l-4 border-blue-500 pl-4 py-1">
-                        Conclusion: Given the proximity of these established gaming centers, a standard regional casino
-                        lacks the requisite differentiation to attract significant external tourism, as potential
-                        visitors are already served by closer facilities.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Interactive Substitution Visualizer -->
-            <div
-                class="economic-chart-card w-full backdrop-blur-sm relative overflow-hidden">
-                <!-- Background accent -->
-                <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl p-6">
-                </div>
-
-                <div class="text-center mb-10 relative z-10">
-
-                    <h3 class="text-2xl font-bold text-white flex items-center justify-center gap-3">
-                        <span class="material-symbols-outlined text-emerald-400 text-3xl">account_balance_wallet</span>
-                        Household Discretionary Budget: $500/mo
-                    </h3>
-                    <p class="text-slate-400 text-base mt-3 w-full max-w-none sm:max-w-2xl sm:mx-auto">
-                        See how the local economy suffers when spending shifts. The total household budget for
-                        entertainment is fixed.
-                        When a casino enters, it doesn't create new money; it eats into existing categories.
-                    </p>
-                </div>
-
-                <div class="grid md:grid-cols-2 gap-12 items-center relative z-10">
-                    <!-- Before -->
-                    <div class="flex flex-col items-center">
-                        <h4 class="text-white font-bold mb-6 flex items-center gap-2">
-                            <span class="bg-slate-700 text-slate-200 text-sm px-2 py-1 rounded">Current State</span>
-                            Before Casino
-                        </h4>
-                        <div class="w-64 h-64 relative">
-                            <canvas id="chartBefore"></canvas>
-                        </div>
-                        <div class="mt-6 text-center">
-                            <p class="text-base font-medium text-emerald-400">100% Local Circulation</p>
-                            <p class="text-sm text-slate-500 mt-1">Money recirculates 5-7 times in the local economy.
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- After -->
-                    <div class="flex flex-col items-center relative">
-                        <h4 class="text-white font-bold mb-6 flex items-center gap-2">
-                            <span
-                                class="bg-red-900/30 text-red-400 text-sm px-2 py-1 rounded border border-red-900/50">Future
-                                State</span>
-                            After Casino
-                        </h4>
-
-                        <div class="w-64 h-64 relative">
-                            <canvas id="chartAfter"></canvas>
-                        </div>
-                        <div class="mt-6 text-center">
-                            <p class="text-base font-medium text-red-400">25-30% Wealth Extraction</p>
-                            <p class="text-sm text-slate-500 mt-1">Casino profits are exported to external investors.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Legend -->
-                <div
-                    class="mt-10 flex flex-wrap justify-center gap-6 text-sm font-medium text-slate-400 border-t border-slate-700/50 pt-6">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full bg-[#3b82f6]"></div> Retail (Clothes, Hobbies)
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full bg-[#8b5cf6]"></div> Dining & Restaurants
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full bg-[#10b981]"></div> Local Entertainment
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full bg-[#f97316]"></div> Savings
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full bg-[#ef4444]"></div> Casino Loss
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chart.js and Logic -->
-            <div class="grid lg:grid-cols-2 gap-8 items-start">
-                <!-- Left Column: The Data -->
-                <div>
-                    <!-- Substitution Effect Card -->
-                    <div class="economic-chart-card w-full backdrop-blur-sm h-full">
-                        <h3 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                            <span class="material-symbols-outlined text-blue-500">sync_problem</span>
-                            Mechanics of the Substitution Effect
-                        </h3>
-                        <p class="text-slate-400 mb-6 leading-relaxed">
-                            For a casino to generate net growth, it must function as an "export" industry—bringing
-                            in
-                            outside dollars. If it merely recirculates local capital, the net impact is neutral or
-                            negative.
-                            <br><br>
-                            Research by the <strong>Federal Reserve Bank of St. Louis</strong> notes that in
-                            mid-sized urban
-                            areas, casinos often correlate with a <em>stagnation or decrease</em> in local retail
-                            sales. The
-                            casino acts as a gravitational well, absorbing liquidity that formerly supported small
-                            businesses.
-                        </p>
-
-                        <!-- Data Callout -->
-                        <div class="bg-red-900/20 border-l-4 border-red-500 p-6 rounded-r-xl mb-8">
-                            <h4 class="text-lg font-bold text-red-500 mb-2">"243" Coefficient</h4>
-                            <p class="text-slate-300 text-base">
-                                For every <strong>$1,000 increase</strong> in casino revenue, businesses within a
-                                10-30 mile
-                                radius experience a <strong>loss of approximately $243</strong> in sales.
-                            </p>
-                        </div>
-
-                        <!-- Displacement Table -->
-                        <div class="overflow-x-auto rounded-xl border border-slate-700">
-                            <table class="w-full text-left text-base text-slate-400">
-                                <thead class="bg-slate-900 text-slate-300 uppercase font-bold text-sm">
-                                    <tr>
-                                        <th class="px-6 py-4">Metric</th>
-                                        <th class="px-6 py-4">Value</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-700 bg-slate-800">
-                                    <tr>
-                                        <td class="px-6 py-4 font-medium text-white">Projected Casino AGR</td>
-                                        <td class="px-6 py-4 text-emerald-400 font-bold">$204.3M</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="px-6 py-4 font-medium text-white">Displacement Coefficient</td>
-                                        <td class="px-6 py-4 text-orange-400 font-bold">24.3%</td>
-                                    </tr>
-                                    <tr class="bg-red-900/10">
-                                        <td class="px-6 py-4 font-bold text-white">Projected Local Loss</td>
-                                        <td class="px-6 py-4 text-red-500 font-black">($49.6M)</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column: The Context -->
-                <div class="space-y-6">
-                    <!-- Factory vs Restaurant -->
-                    <div class="grid sm:grid-cols-2 gap-4">
-                        <div class="economic-chart-card border-l-4 border-red-500 w-full shadow-sm">
-                            <div class="text-red-500 font-bold uppercase tracking-widest text-sm mb-2">Fallacy
-                            </div>
-                            <h3 class="text-lg font-bold text-white mb-2">"Economic Development"</h3>
-                            <p class="text-slate-400 text-sm leading-relaxed">
-                                Proponents claim the casino expands the economic pie, ignoring the reality of
-                                convenience gaming.
-                            </p>
-                        </div>
-                        <div class="economic-chart-card border-l-4 border-emerald-500 w-full shadow-sm">
-                            <div class="text-emerald-500 font-bold uppercase tracking-widest text-sm mb-2">The
-                                Reality</div>
-                            <h3 class="text-lg font-bold text-white mb-2">Factory vs. Restaurant</h3>
-                            <p class="text-slate-400 text-sm leading-relaxed">
-                                A local casino merely competes for the <strong>existing pool</strong> of
-                                entertainment dollars like a restaurant.
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Recession Risk -->
-                    <div class="economic-chart-card border-l-4 border-yellow-500 w-full shadow-sm">
-                        <h3 class="text-xl font-bold text-white mb-2">Recessionary Vulnerability</h3>
-                        <p class="text-slate-400 text-base mb-4 leading-relaxed">
-                            During the 2007-2012 Recession, retail sales in casino-hosting economies <strong>grew 3x
-                                slower</strong> (2.4%) than in non-casino economies (8.6%).
-                        </p>
-                        <p class="text-white italic font-medium text-base">
-                            "Introducing a casino introduces a structural weakness apparent during recession."
-                        </p>
-                    </div>
-
-                    <!-- Economic Monoculture -->
-                    <div class="economic-chart-card border-l-4 border-blue-500 w-full shadow-sm">
-                        <h3 class="text-xl font-bold text-white mb-2">Economic Monoculture</h3>
-
-                        <p class="text-slate-400 text-base leading-relaxed">
-                            The casino acts as an invasive species, displacing diverse local businesses and creating
-                            a <strong>single point of failure</strong>.
-                        </p>
-                    </div>
-                </div>
-                </div>
-
-                </div>
-            </div>
-	        </div>
-	        </div>
-	        </div>
-
-	    </section>
-
-<EconomicModals />
 @code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private static readonly string[] StandardParameterKeys =
+    [
+        "gravity.beta",
+        "gravity.alpha",
+        "demand.regional_intensity_multiplier",
+        "market_expansion.accessibility_elasticity",
+        "tourism.capture_rate",
+        "traffic.intercept_rate",
+        "displacement.eligible_base_share",
+        "displacement.coefficient",
+        "social_cost.prevalence",
+        "ramp.first_year_share",
+        "ramp.second_year_share"
+    ];
+    private static readonly string[] SensitivityParameterKeys =
+    [
+        "gravity.beta",
+        "gravity.alpha",
+        "demand.regional_intensity_multiplier",
+        "tourism.capture_rate",
+        "traffic.intercept_rate",
+        "displacement.eligible_base_share",
+        "displacement.coefficient",
+        "social_cost.prevalence"
+    ];
+    private static readonly string[] DefaultSensitivityParameterKeys =
+    [
+        "gravity.beta",
+        "demand.regional_intensity_multiplier",
+        "displacement.coefficient",
+        "social_cost.prevalence"
+    ];
+
+    private ModelConfiguration? _configuration;
+    private readonly ScenarioForm _form = new();
+    private readonly Dictionary<string, double> _overrides = new(StringComparer.Ordinal);
+    private readonly List<OriginOption> _origins = [];
+    private readonly List<TourismObservation> _tourism = [];
+    private readonly List<TrafficObservation> _traffic = [];
+    private readonly List<RecentRun> _recentRuns = [];
+    private readonly HashSet<Guid> _comparisonSelection = [];
+    private readonly List<ComparisonRun> _comparison = [];
+    private readonly List<SensitivityRangeForm> _sensitivityRanges = [];
+    private RunResult? _latestRun;
+    private RunRequest? _lastRunRequest;
+    private bool _loading = true;
+    private bool _running;
+    private bool _showAdvanced;
+    private bool _comparing;
+    private bool _generatingReport;
+    private bool _runningSensitivity;
+    private string? _error;
+    private string _parameterSearch = string.Empty;
+    private ReportArtifact? _reportArtifact;
+    private SensitivityAnalysisResult? _sensitivityResult;
+    private string _sensitivityMetric = "net-host-local-impact";
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
     {
-        if (firstRender)
+        _loading = true;
+        _error = null;
+        try
         {
-            await Task.Delay(500); // Wait for DOM
-            try { await JSRuntime.InvokeVoidAsync("window.EconomicCalculator.init"); } catch (Exception e) { Console.WriteLine($"Calc Init: {e.Message}"); }
-            try { await JSRuntime.InvokeVoidAsync("window.initSubstitutionCharts"); } catch (Exception e) { Console.WriteLine($"Chart Init: {e.Message}"); }
-        }
-    }
-    // Helpers for safety, though HTML controls logic
-    private string FmtM(double val) { return "$" + (val / 1_000_000).ToString("F1") + "MM"; }
-    private string FmtDiff(double val) { return (val >= 0 ? "+$" : "-$") + Math.Abs(val / 1_000_000).ToString("F1") + "MM"; }
-    private string NetClass(double val) { return val >= 0 ? "text-emerald-400" : "text-red-500"; }
-    
-    private bool _manualControlsExpanded = false;
-    private void ToggleManualControls() => _manualControlsExpanded = !_manualControlsExpanded;
-
-    private bool _isGeneratingPdf = false;
-
-    private async Task GeneratePdf()
-    {
-        if (_isGeneratingPdf) return;
-        _isGeneratingPdf = true;
-        StateHasChanged();
-
-        try 
-        {
-            // 1. Capture Map Image
-            var base64Map = await JSRuntime.InvokeAsync<string>("window.PdfHelper.captureMapAndGenerate", "impact-map");
-            
-            // 2. Scrape Data
-            var data = await JSRuntime.InvokeAsync<ReportDataScraped>("window.PdfHelper.getReportData");
-            
-            if (data == null) data = new ReportDataScraped();
-
-            // 3. Send to Server
-            var request = new 
+            _configuration = await Http.GetFromJsonAsync<ModelConfiguration>("api/gravity-model-configuration");
+            if (_configuration is null)
             {
-                MapImageBase64 = base64Map,
-                AnalysisText = data.AnalysisText,
-                MainTable = data.MainTable,
-                BreakdownTable = data.BreakdownTable,
-                BreakdownOtherTable = data.BreakdownOtherTable,
-                SubjectCountyName = data.SubjectCountyName
-            };
-            
-            var response = await Http.PostAsJsonAsync("api/report/generate", request);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var fileStream = await response.Content.ReadAsStreamAsync();
-                using var streamRef = new DotNetStreamReference(fileStream);
-                await JSRuntime.InvokeVoidAsync("window.PdfHelper.downloadFileFromStream", "SaveNEIN_Analysis.pdf", streamRef);
+                throw new InvalidOperationException("The model catalog response was empty.");
             }
-            else
-            {
-                Console.WriteLine("PDF Generation failed: " + response.StatusCode);
-            }
+            ApplyCatalogDefaults();
+            await LoadOriginsAsync();
+            await LoadTourismAsync();
+            await LoadTrafficAsync();
+            await LoadRecentRunsAsync();
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-             Console.WriteLine($"PDF Error: {ex.Message}");
+            _error = exception.Message;
+            _configuration = null;
         }
         finally
         {
-            _isGeneratingPdf = false;
-            StateHasChanged();
+            _loading = false;
         }
     }
 
-    public class ReportDataScraped 
+    private void ApplyCatalogDefaults()
     {
-        public string? SubjectCountyName { get; set; }
-        public string? AnalysisText { get; set; }
-        public TableData? MainTable { get; set; }
-        public List<List<string>> BreakdownTable { get; set; } = new();
-        public List<List<string>> BreakdownOtherTable { get; set; } = new();
+        if (_configuration is null)
+        {
+            return;
+        }
+        var jurisdiction = _configuration.Jurisdictions.FirstOrDefault(item => item.Kind == "state")
+                           ?? _configuration.Jurisdictions.FirstOrDefault(item => item.Kind != "federal");
+        _form.JurisdictionCode = jurisdiction?.Code ?? string.Empty;
+        _form.OriginStateCode = StateCode(_form.JurisdictionCode);
+        _form.DevelopmentProgramId = _configuration.DevelopmentPrograms.FirstOrDefault()?.Id;
+        _form.OriginGeographySnapshotId = LatestSnapshotId("origin-geography");
+        _form.AgePopulationSnapshotId = LatestSnapshotId("age-population");
+        _form.IncomeSnapshotId = LatestSnapshotId("income");
+        _form.CompetitorSnapshotId = LatestSnapshotId("competitors");
+        _form.ObservedPerformanceSnapshotId = LatestSnapshotId("observed-performance");
+        _form.TourismSnapshotId = LatestSnapshotId("tourism");
+        _form.TrafficSnapshotId = LatestSnapshotId("traffic");
+        _form.NationalParameterSetId = _configuration.ParameterSets.FirstOrDefault(set => set.Scope == "national")?.Id;
+        ApplyJurisdictionParameterSet();
+        _form.ScenarioParameterSetId = _configuration.ParameterSets.FirstOrDefault(set => set.ScenarioKind == "base")?.Id;
+        ApplySnapshotYears();
     }
 
-    public class TableData
+    private async Task OnJurisdictionChangedAsync()
     {
-        public List<string> Headers { get; set; } = new();
-        public List<List<string>> Rows { get; set; } = new();
+        _form.OriginStateCode = StateCode(_form.JurisdictionCode);
+        ApplyJurisdictionParameterSet();
+        await LoadOriginsAsync();
+    }
+
+    private void ApplyJurisdictionParameterSet()
+    {
+        if (_configuration is null)
+        {
+            return;
+        }
+        var jurisdiction = _configuration.Jurisdictions.FirstOrDefault(item => item.Code == _form.JurisdictionCode);
+        _form.JurisdictionParameterSetId = _configuration.ParameterSets
+            .FirstOrDefault(set => set.Scope == "jurisdiction" && set.JurisdictionId == jurisdiction?.Id)?.Id;
+    }
+
+    private async Task LoadOriginsAsync()
+    {
+        _origins.Clear();
+        if (_form.OriginGeographySnapshotId is not { } snapshotId)
+        {
+            return;
+        }
+        var url = $"api/gravity-model-configuration/origins?datasetSnapshotId={snapshotId}&take=10000";
+        if (!string.IsNullOrWhiteSpace(_form.OriginStateCode))
+        {
+            url += $"&stateCode={Uri.EscapeDataString(_form.OriginStateCode.Trim().ToUpperInvariant())}";
+        }
+        var response = await Http.GetFromJsonAsync<OriginResponse>(url);
+        if (response is not null)
+        {
+            _origins.AddRange(response.Origins);
+        }
+    }
+
+    private async Task LoadTourismAsync()
+    {
+        _tourism.Clear();
+        if (_form.TourismSnapshotId is not { } snapshotId)
+        {
+            return;
+        }
+        var rows = await Http.GetFromJsonAsync<List<TourismObservation>>(
+            $"api/gravity-model-configuration/tourism-observations?datasetSnapshotId={snapshotId}");
+        if (rows is not null)
+        {
+            _tourism.AddRange(rows);
+        }
+    }
+
+    private async Task LoadTrafficAsync()
+    {
+        _traffic.Clear();
+        if (_form.TrafficSnapshotId is not { } snapshotId)
+        {
+            return;
+        }
+        var rows = await Http.GetFromJsonAsync<List<TrafficObservation>>(
+            $"api/gravity-model-configuration/traffic-observations?datasetSnapshotId={snapshotId}");
+        if (rows is not null)
+        {
+            _traffic.AddRange(rows);
+        }
+    }
+
+    private async Task LoadRecentRunsAsync()
+    {
+        _recentRuns.Clear();
+        var runs = await Http.GetFromJsonAsync<List<RecentRun>>("api/gravity-model-runs?take=20");
+        if (runs is not null)
+        {
+            _recentRuns.AddRange(runs);
+        }
+    }
+
+    private async Task RunScenarioAsync()
+    {
+        if (!CanRun)
+        {
+            return;
+        }
+        _running = true;
+        _error = null;
+        try
+        {
+            var observedSnapshot = FindSnapshot(_form.ObservedPerformanceSnapshotId!.Value)!;
+            var request = new RunRequest
+            {
+                ScenarioName = _form.ScenarioName.Trim(),
+                JurisdictionCode = _form.JurisdictionCode,
+                DevelopmentProgramId = _form.DevelopmentProgramId!.Value,
+                CandidateLatitude = _form.CandidateLatitude!.Value,
+                CandidateLongitude = _form.CandidateLongitude!.Value,
+                OriginGeographySnapshotId = _form.OriginGeographySnapshotId!.Value,
+                AgePopulationSnapshotId = _form.AgePopulationSnapshotId!.Value,
+                IncomeSnapshotId = _form.IncomeSnapshotId!.Value,
+                CompetitorSnapshotId = _form.CompetitorSnapshotId!.Value,
+                ObservedPerformanceSnapshotId = _form.ObservedPerformanceSnapshotId!.Value,
+                StableOriginIds = _origins.Select(origin => origin.StableOriginId).ToArray(),
+                CompetitorIds = [],
+                PopulationObservationYear = FindSnapshot(_form.AgePopulationSnapshotId!.Value)?.PeriodEnd.Year ?? observedSnapshot.PeriodEnd.Year,
+                IncomeTaxYear = FindSnapshot(_form.IncomeSnapshotId!.Value)?.PeriodEnd.Year ?? observedSnapshot.PeriodEnd.Year,
+                EffectiveOn = observedSnapshot.PeriodEnd,
+                FacilityRegime = _form.FacilityRegime,
+                DemandSpecification = _form.DemandSpecification,
+                AttractionSpecification = _form.AttractionSpecification,
+                FrictionForm = _form.FrictionForm,
+                ObservedMetricKey = _form.ObservedMetricKey,
+                ObservedPeriodStart = observedSnapshot.PeriodStart,
+                ObservedPeriodEnd = observedSnapshot.PeriodEnd,
+                NationalParameterSetId = _form.NationalParameterSetId,
+                JurisdictionParameterSetId = _form.JurisdictionParameterSetId,
+                ScenarioParameterSetId = _form.ScenarioParameterSetId,
+                UserOverrides = _overrides.Select(item => new ParameterOverrideRequest(item.Key, item.Value)).ToArray(),
+                CostingProfile = "auto",
+                CompetitorPrefilterMiles = 300,
+                TourismSnapshotId = _tourism.Count == 0 ? null : _form.TourismSnapshotId,
+                TourismObservationIds = _tourism.Count == 0 ? null : _tourism.Select(item => item.StableObservationId).ToArray(),
+                TrafficSnapshotId = _traffic.Count == 0 ? null : _form.TrafficSnapshotId,
+                TrafficCorridors = _traffic.Count == 0
+                    ? null
+                    : _traffic.Select(item => new TrafficSelectionRequest(item.StableObservationId, 0.5, 1)).ToArray(),
+                ImpactGeography = new ImpactGeographyRequest("host-state", _form.JurisdictionCode),
+                LocalEconomicInventorySnapshotId = _form.LocalEconomicInventorySnapshotId
+            };
+            using var response = await Http.PostAsJsonAsync("api/gravity-model-runs", request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"{(int)response.StatusCode} {response.ReasonPhrase}: {detail}");
+            }
+            _latestRun = await response.Content.ReadFromJsonAsync<RunResult>()
+                         ?? throw new InvalidOperationException("The model run completed without a result body.");
+            _lastRunRequest = request;
+            ResetSensitivityRanges();
+            _sensitivityResult = null;
+            await LoadRecentRunsAsync();
+            _comparisonSelection.Add(_latestRun.ModelRunId);
+            _reportArtifact = null;
+        }
+        catch (Exception exception)
+        {
+            _error = exception.Message;
+        }
+        finally
+        {
+            _running = false;
+        }
+    }
+
+    private async Task RunSensitivityAsync()
+    {
+        if (!CanRunSensitivity || _lastRunRequest is null)
+        {
+            return;
+        }
+        _runningSensitivity = true;
+        _error = null;
+        try
+        {
+            var selected = _sensitivityRanges.Where(range => range.Selected).ToArray();
+            var request = new SensitivityAnalysisRequest(
+                $"interactive-{Guid.NewGuid():N}",
+                "1",
+                $"{_lastRunRequest.ScenarioName} one-at-a-time sensitivity",
+                _sensitivityMetric,
+                _lastRunRequest,
+                selected.Select(range => new SensitivityParameterRangeRequest(
+                    range.ParameterKey,
+                    range.LowValue,
+                    range.HighValue)).ToArray());
+            using var response = await Http.PostAsJsonAsync("api/model-sensitivity", request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"{(int)response.StatusCode} {response.ReasonPhrase}: {detail}");
+            }
+            _sensitivityResult = await response.Content.ReadFromJsonAsync<SensitivityAnalysisResult>()
+                                 ?? throw new InvalidOperationException("Sensitivity execution completed without a result body.");
+            await LoadRecentRunsAsync();
+        }
+        catch (Exception exception)
+        {
+            _error = exception.Message;
+        }
+        finally
+        {
+            _runningSensitivity = false;
+        }
+    }
+
+    private void ResetSensitivityRanges()
+    {
+        _sensitivityRanges.Clear();
+        if (_configuration is null)
+        {
+            return;
+        }
+        foreach (var key in SensitivityParameterKeys)
+        {
+            var definition = _configuration.ParameterDefinitions.FirstOrDefault(item => item.Key == key);
+            if (definition is null)
+            {
+                continue;
+            }
+            var baseline = ParameterValue(definition);
+            var step = definition.UiStep ?? Math.Max(Math.Abs(baseline) * 0.1, 0.01);
+            var low = definition.RecommendedMinimum ?? baseline - step * 2;
+            var high = definition.RecommendedMaximum ?? baseline + step * 2;
+            low = Math.Min(low, baseline);
+            high = Math.Max(high, baseline);
+            if (definition.ComputationalMinimum is { } minimum) low = Math.Max(low, minimum);
+            if (definition.ComputationalMaximum is { } maximum) high = Math.Min(high, maximum);
+            if (low >= high)
+            {
+                low = Math.Max(definition.ComputationalMinimum ?? double.MinValue, baseline - step);
+                high = Math.Min(definition.ComputationalMaximum ?? double.MaxValue, baseline + step);
+            }
+            _sensitivityRanges.Add(new SensitivityRangeForm
+            {
+                ParameterKey = key,
+                DisplayName = definition.DisplayName,
+                Units = definition.Units,
+                BaseValue = baseline,
+                LowValue = low,
+                HighValue = high,
+                Step = step,
+                Selected = DefaultSensitivityParameterKeys.Contains(key, StringComparer.Ordinal)
+            });
+        }
+    }
+
+    private async Task GenerateReportAsync()
+    {
+        if (_latestRun is null)
+        {
+            return;
+        }
+        await GenerateReportForRunAsync(_latestRun.ModelRunId, null, _form.ScenarioName.Trim());
+    }
+
+    private async Task GenerateSensitivityReportAsync()
+    {
+        if (_sensitivityResult is null || _lastRunRequest is null)
+        {
+            return;
+        }
+        await GenerateReportForRunAsync(
+            _sensitivityResult.BaselineModelRunId,
+            _sensitivityResult.SensitivityAnalysisId,
+            $"{_lastRunRequest.ScenarioName} sensitivity baseline");
+    }
+
+    private async Task GenerateReportForRunAsync(Guid modelRunId, Guid? sensitivityAnalysisId, string scenarioName)
+    {
+        _generatingReport = true;
+        _error = null;
+        try
+        {
+            using var response = await Http.PostAsJsonAsync(
+                $"api/model-runs/{modelRunId:D}/reports",
+                new ReportOptions($"Casino revenue and economic-impact analysis — {scenarioName}", null, 20, "USD", sensitivityAnalysisId));
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"{(int)response.StatusCode} {response.ReasonPhrase}: {detail}");
+            }
+            _reportArtifact = await response.Content.ReadFromJsonAsync<ReportArtifact>()
+                              ?? throw new InvalidOperationException("The report completed without artifact metadata.");
+        }
+        catch (Exception exception)
+        {
+            _error = exception.Message;
+        }
+        finally
+        {
+            _generatingReport = false;
+        }
+    }
+
+    private async Task CompareAsync()
+    {
+        if (_comparisonSelection.Count < 2)
+        {
+            return;
+        }
+        _comparing = true;
+        _error = null;
+        try
+        {
+            var query = string.Join("&", _comparisonSelection.Select(id => $"modelRunIds={id}"));
+            var runs = await Http.GetFromJsonAsync<List<ComparisonRun>>($"api/gravity-model-runs/comparison?{query}");
+            _comparison.Clear();
+            if (runs is not null)
+            {
+                _comparison.AddRange(runs);
+            }
+        }
+        catch (Exception exception)
+        {
+            _error = exception.Message;
+        }
+        finally
+        {
+            _comparing = false;
+        }
+    }
+
+    private void ToggleComparison(Guid id, ChangeEventArgs args)
+    {
+        if (args.Value is true || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_comparisonSelection.Count < 10)
+            {
+                _comparisonSelection.Add(id);
+            }
+        }
+        else
+        {
+            _comparisonSelection.Remove(id);
+        }
+    }
+
+    private void ToggleAdvanced() => _showAdvanced = !_showAdvanced;
+    private void ResetOverrides() => _overrides.Clear();
+
+    private IEnumerable<ParameterDefinition> StandardDefinitions()
+    {
+        if (_configuration is null)
+        {
+            return [];
+        }
+
+        return _configuration.ParameterDefinitions
+            .Where(definition => StandardParameterKeys.Contains(definition.Key, StringComparer.Ordinal))
+            .OrderBy(definition => Array.IndexOf(StandardParameterKeys, definition.Key));
+    }
+
+    private IEnumerable<ParameterDefinition> AdvancedDefinitions()
+    {
+        if (_configuration is null)
+        {
+            return [];
+        }
+        return _configuration.ParameterDefinitions
+            .Where(definition => !StandardParameterKeys.Contains(definition.Key, StringComparer.Ordinal))
+            .Where(definition => string.IsNullOrWhiteSpace(_parameterSearch) ||
+                                 definition.Key.Contains(_parameterSearch, StringComparison.OrdinalIgnoreCase) ||
+                                 definition.DisplayName.Contains(_parameterSearch, StringComparison.OrdinalIgnoreCase) ||
+                                 definition.Category.Contains(_parameterSearch, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(definition => definition.Category)
+            .ThenBy(definition => definition.DisplayName);
+    }
+
+    private RenderFragment ParameterEditor(ParameterDefinition Definition) => builder =>
+    {
+        var sequence = 0;
+        var value = ParameterValue(Definition);
+        var overridden = _overrides.ContainsKey(Definition.Key);
+        var outside = Definition.RecommendedMinimum is { } minimum && value < minimum ||
+                      Definition.RecommendedMaximum is { } maximum && value > maximum;
+        builder.OpenElement(sequence++, "label");
+        builder.AddAttribute(sequence++, "class", $"model-parameter{(overridden ? " is-overridden" : "")}{(outside ? " is-outside-range" : "")}");
+        builder.OpenElement(sequence++, "span");
+        builder.AddContent(sequence++, Definition.DisplayName);
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "input");
+        builder.AddAttribute(sequence++, "type", "number");
+        builder.AddAttribute(sequence++, "step", Definition.UiStep ?? 0.01);
+        if (Definition.ComputationalMinimum is { } hardMinimum) builder.AddAttribute(sequence++, "min", hardMinimum);
+        if (Definition.ComputationalMaximum is { } hardMaximum) builder.AddAttribute(sequence++, "max", hardMaximum);
+        builder.AddAttribute(sequence++, "value", value.ToString(CultureInfo.InvariantCulture));
+        builder.AddAttribute(sequence++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetOverride(Definition, args.Value?.ToString())));
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "small");
+        builder.AddContent(sequence++, $"{Definition.Units} · recommended {Range(Definition)}");
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "em");
+        builder.AddContent(sequence++, outside ? "Outside recommended range" : overridden ? "Custom override" : ParameterSource(Definition.Key));
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private RenderFragment Metric(string Label, string Value, string? Tone = null) => builder =>
+    {
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", $"model-metric {Tone}");
+        builder.OpenElement(2, "span");
+        builder.AddContent(3, Label);
+        builder.CloseElement();
+        builder.OpenElement(4, "strong");
+        builder.AddContent(5, Value);
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private RenderFragment ComparisonRow(string Label, Func<ComparisonRun, string> Value) => builder =>
+    {
+        builder.OpenElement(0, "tr");
+        builder.OpenElement(1, "th");
+        builder.AddAttribute(2, "scope", "row");
+        builder.AddContent(3, Label);
+        builder.CloseElement();
+        var sequence = 4;
+        foreach (var run in _comparison)
+        {
+            builder.OpenElement(sequence++, "td");
+            builder.AddContent(sequence++, Value(run));
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+    };
+
+    private void SetOverride(ParameterDefinition definition, string? rawValue)
+    {
+        if (double.TryParse(rawValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+        {
+            _overrides[definition.Key] = value;
+        }
+    }
+
+    private double ParameterValue(ParameterDefinition definition)
+    {
+        if (_overrides.TryGetValue(definition.Key, out var userValue))
+        {
+            return userValue;
+        }
+        var selectedSets = new[]
+        {
+            _form.ScenarioParameterSetId,
+            _form.JurisdictionParameterSetId,
+            _form.NationalParameterSetId
+        };
+        foreach (var setId in selectedSets)
+        {
+            var setValue = _configuration?.ParameterSetValues.FirstOrDefault(value =>
+                value.ParameterSetId == setId && value.ParameterKey == definition.Key);
+            if (setValue is not null)
+            {
+                return setValue.Value;
+            }
+        }
+        return definition.SystemDefaultValue;
+    }
+
+    private string ParameterSource(string key)
+    {
+        var selectedSets = new[]
+        {
+            _form.ScenarioParameterSetId,
+            _form.JurisdictionParameterSetId,
+            _form.NationalParameterSetId
+        };
+        foreach (var setId in selectedSets)
+        {
+            if (_configuration?.ParameterSetValues.Any(value => value.ParameterSetId == setId && value.ParameterKey == key) == true)
+            {
+                return _configuration.ParameterSets.First(set => set.Id == setId).Name;
+            }
+        }
+        return "System fallback";
+    }
+
+    private IEnumerable<SnapshotOption> Snapshots(string kind) =>
+        _configuration?.Snapshots.Where(snapshot => snapshot.DatasetKey == kind) ?? [];
+
+    private Guid? LatestSnapshotId(string kind) => Snapshots(kind).FirstOrDefault()?.Id;
+    private SnapshotOption? FindSnapshot(Guid id) => _configuration?.Snapshots.FirstOrDefault(snapshot => snapshot.Id == id);
+    private static string SnapshotLabel(SnapshotOption snapshot) => $"{snapshot.Period} · {snapshot.RowCount:N0} rows · {snapshot.ValidationState}";
+    private static string StateCode(string jurisdictionCode) => jurisdictionCode.Split('-', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? string.Empty;
+    private void ApplySnapshotYears() { }
+
+    private bool CanRun =>
+        !string.IsNullOrWhiteSpace(_form.ScenarioName) &&
+        !string.IsNullOrWhiteSpace(_form.JurisdictionCode) &&
+        _form.DevelopmentProgramId.HasValue &&
+        _form.CandidateLatitude is >= -90 and <= 90 &&
+        _form.CandidateLongitude is >= -180 and <= 180 &&
+        _form.OriginGeographySnapshotId.HasValue &&
+        _form.AgePopulationSnapshotId.HasValue &&
+        _form.IncomeSnapshotId.HasValue &&
+        _form.CompetitorSnapshotId.HasValue &&
+        _form.ObservedPerformanceSnapshotId.HasValue &&
+        _origins.Count > 0;
+
+    private bool CanRunSensitivity =>
+        _latestRun is not null && _lastRunRequest is not null &&
+        _sensitivityRanges.Any(range => range.Selected) &&
+        _sensitivityRanges.Where(range => range.Selected).All(range =>
+            double.IsFinite(range.LowValue) && double.IsFinite(range.HighValue) &&
+            range.LowValue < range.HighValue && range.LowValue <= range.BaseValue && range.BaseValue <= range.HighValue);
+
+    private int SelectedSensitivityRunCount => 1 + 2 * _sensitivityRanges.Count(range => range.Selected);
+
+    private string RunReadiness => CanRun
+        ? "Ready to create an immutable run."
+        : "Select required snapshots, a program, valid coordinates, and at least one origin.";
+
+    private static string Money(decimal? value) => value.HasValue ? value.Value.ToString("C0", CultureInfo.CurrentCulture) : "—";
+    private static string Number(double? value) => value.HasValue ? value.Value.ToString("N1", CultureInfo.CurrentCulture) : "—";
+    private static string Tone(decimal value) => value >= 0 ? "positive" : "negative";
+    private static string Tone(double value) => value >= 0 ? "positive" : "negative";
+    private static string Humanize(string value) => CultureInfo.CurrentCulture.TextInfo.ToTitleCase(value.Replace('-', ' '));
+    private string SensitivityValue(decimal value) => _sensitivityMetric == "net-permanent-jobs"
+        ? value.ToString("N1", CultureInfo.CurrentCulture)
+        : Money(value);
+    private string SignedSensitivityDelta(decimal value)
+    {
+        var formatted = SensitivityValue(Math.Abs(value));
+        return value switch
+        {
+            > 0 => $"+{formatted}",
+            < 0 => $"−{formatted}",
+            _ => "no change"
+        };
+    }
+    private static string Range(ParameterDefinition definition) =>
+        definition.RecommendedMinimum is null && definition.RecommendedMaximum is null
+            ? "not established"
+            : $"{definition.RecommendedMinimum?.ToString(CultureInfo.InvariantCulture) ?? "−∞"}–{definition.RecommendedMaximum?.ToString(CultureInfo.InvariantCulture) ?? "+∞"}";
+
+    private sealed class ScenarioForm
+    {
+        public string ScenarioName { get; set; } = $"Scenario {DateTime.Now:yyyy-MM-dd HH:mm}";
+        public string JurisdictionCode { get; set; } = string.Empty;
+        public string OriginStateCode { get; set; } = string.Empty;
+        public Guid? DevelopmentProgramId { get; set; }
+        public double? CandidateLatitude { get; set; }
+        public double? CandidateLongitude { get; set; }
+        public Guid? OriginGeographySnapshotId { get; set; }
+        public Guid? AgePopulationSnapshotId { get; set; }
+        public Guid? IncomeSnapshotId { get; set; }
+        public Guid? CompetitorSnapshotId { get; set; }
+        public Guid? ObservedPerformanceSnapshotId { get; set; }
+        public Guid? TourismSnapshotId { get; set; }
+        public Guid? TrafficSnapshotId { get; set; }
+        public Guid? LocalEconomicInventorySnapshotId { get; set; }
+        public long? NationalParameterSetId { get; set; }
+        public long? JurisdictionParameterSetId { get; set; }
+        public long? ScenarioParameterSetId { get; set; }
+        public string FacilityRegime { get; set; } = "commercial-casino";
+        public string DemandSpecification { get; set; } = "agi-share";
+        public string AttractionSpecification { get; set; } = "observed-ggr";
+        public string FrictionForm { get; set; } = "inverse-power";
+        public string ObservedMetricKey { get; set; } = "casino-win";
+    }
+
+    private sealed class ModelConfiguration
+    {
+        public string ModelVersion { get; set; } = string.Empty;
+        public List<JurisdictionOption> Jurisdictions { get; set; } = [];
+        public List<SnapshotOption> Snapshots { get; set; } = [];
+        public List<DevelopmentProgramOption> DevelopmentPrograms { get; set; } = [];
+        public List<ParameterDefinition> ParameterDefinitions { get; set; } = [];
+        public List<ParameterSetOption> ParameterSets { get; set; } = [];
+        public List<ParameterSetValueOption> ParameterSetValues { get; set; } = [];
+    }
+
+    private sealed class JurisdictionOption { public int Id { get; set; } public string Code { get; set; } = string.Empty; public string Name { get; set; } = string.Empty; public string Kind { get; set; } = string.Empty; }
+    private sealed class SnapshotOption { public Guid Id { get; set; } public string DatasetKey { get; set; } = string.Empty; public string Period { get; set; } = string.Empty; public DateOnly PeriodStart { get; set; } public DateOnly PeriodEnd { get; set; } public long RowCount { get; set; } public string ValidationState { get; set; } = string.Empty; }
+    private sealed class DevelopmentProgramOption { public Guid Id { get; set; } public string Name { get; set; } = string.Empty; public string Version { get; set; } = string.Empty; }
+    private sealed class ParameterDefinition { public string Key { get; set; } = string.Empty; public string Category { get; set; } = string.Empty; public string DisplayName { get; set; } = string.Empty; public string Units { get; set; } = string.Empty; public double SystemDefaultValue { get; set; } public double? ComputationalMinimum { get; set; } public double? ComputationalMaximum { get; set; } public double? RecommendedMinimum { get; set; } public double? RecommendedMaximum { get; set; } public double? UiStep { get; set; } }
+    private sealed class ParameterSetOption { public long Id { get; set; } public string Name { get; set; } = string.Empty; public string Scope { get; set; } = string.Empty; public int? JurisdictionId { get; set; } public string? ScenarioKind { get; set; } public string Version { get; set; } = string.Empty; }
+    private sealed class ParameterSetValueOption { public long ParameterSetId { get; set; } public string ParameterKey { get; set; } = string.Empty; public double Value { get; set; } }
+    private sealed class OriginResponse { public int Total { get; set; } public List<OriginOption> Origins { get; set; } = []; }
+    private sealed class OriginOption { public string StableOriginId { get; set; } = string.Empty; }
+    private sealed class TourismObservation { public string StableObservationId { get; set; } = string.Empty; }
+    private sealed class TrafficObservation { public string StableObservationId { get; set; } = string.Empty; }
+    private sealed record ParameterOverrideRequest(string Key, double Value);
+    private sealed record TrafficSelectionRequest(string StableObservationId, double RelevantDirectionShare, double InterchangeAccessibilityModifier);
+    private sealed record ImpactGeographyRequest(string ScopeKind, string ScopeCode, IReadOnlyCollection<string>? LocalOriginIds = null);
+    private sealed record ReportOptions(
+        string? Title,
+        string? PreparedFor,
+        int TopOriginCount,
+        string CurrencyCode,
+        Guid? SensitivityAnalysisId = null);
+    private sealed record ReportArtifact(
+        Guid Id,
+        Guid ModelRunId,
+        string TemplateVersion,
+        DateTime GeneratedAtUtc,
+        string HtmlUrl,
+        string PdfUrl,
+        string JsonUrl,
+        string CsvUrl);
+    private sealed record SensitivityParameterRangeRequest(string ParameterKey, double LowValue, double HighValue);
+    private sealed record SensitivityAnalysisRequest(
+        string AnalysisKey,
+        string Version,
+        string Name,
+        string OutputMetric,
+        RunRequest BaseRunRequest,
+        IReadOnlyCollection<SensitivityParameterRangeRequest> ParameterRanges);
+
+    private sealed class SensitivityRangeForm
+    {
+        public string ParameterKey { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string Units { get; set; } = string.Empty;
+        public double BaseValue { get; set; }
+        public double LowValue { get; set; }
+        public double HighValue { get; set; }
+        public double Step { get; set; }
+        public bool Selected { get; set; }
+    }
+
+    private sealed class SensitivityAnalysisResult
+    {
+        public Guid SensitivityAnalysisId { get; set; }
+        public string OutputMetric { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public Guid BaselineModelRunId { get; set; }
+        public decimal BaselineMetricValue { get; set; }
+        public List<SensitivityTornadoRow> Tornado { get; set; } = [];
+    }
+
+    private sealed class SensitivityTornadoRow
+    {
+        public string ParameterKey { get; set; } = string.Empty;
+        public double LowParameterValue { get; set; }
+        public double BaseParameterValue { get; set; }
+        public double HighParameterValue { get; set; }
+        public decimal LowMetricValue { get; set; }
+        public decimal BaseMetricValue { get; set; }
+        public decimal HighMetricValue { get; set; }
+        public decimal LowDelta { get; set; }
+        public decimal HighDelta { get; set; }
+        public decimal TotalRange { get; set; }
+    }
+
+    private sealed class RunRequest
+    {
+        public string ScenarioName { get; set; } = string.Empty;
+        public string JurisdictionCode { get; set; } = string.Empty;
+        public Guid DevelopmentProgramId { get; set; }
+        public double CandidateLatitude { get; set; }
+        public double CandidateLongitude { get; set; }
+        public Guid OriginGeographySnapshotId { get; set; }
+        public Guid AgePopulationSnapshotId { get; set; }
+        public Guid IncomeSnapshotId { get; set; }
+        public Guid CompetitorSnapshotId { get; set; }
+        public Guid ObservedPerformanceSnapshotId { get; set; }
+        public IReadOnlyCollection<string> StableOriginIds { get; set; } = [];
+        public IReadOnlyCollection<int> CompetitorIds { get; set; } = [];
+        public int PopulationObservationYear { get; set; }
+        public int IncomeTaxYear { get; set; }
+        public DateOnly EffectiveOn { get; set; }
+        public string FacilityRegime { get; set; } = string.Empty;
+        public string DemandSpecification { get; set; } = string.Empty;
+        public string AttractionSpecification { get; set; } = string.Empty;
+        public string FrictionForm { get; set; } = string.Empty;
+        public string ObservedMetricKey { get; set; } = string.Empty;
+        public DateOnly ObservedPeriodStart { get; set; }
+        public DateOnly ObservedPeriodEnd { get; set; }
+        public long? NationalParameterSetId { get; set; }
+        public long? JurisdictionParameterSetId { get; set; }
+        public long? ScenarioParameterSetId { get; set; }
+        public IReadOnlyCollection<ParameterOverrideRequest> UserOverrides { get; set; } = [];
+        public string CostingProfile { get; set; } = "auto";
+        public double CompetitorPrefilterMiles { get; set; }
+        public Guid? TourismSnapshotId { get; set; }
+        public IReadOnlyCollection<string>? TourismObservationIds { get; set; }
+        public Guid? TrafficSnapshotId { get; set; }
+        public IReadOnlyCollection<TrafficSelectionRequest>? TrafficCorridors { get; set; }
+        public ImpactGeographyRequest? ImpactGeography { get; set; }
+        public IReadOnlyCollection<int>? ExcludedCompetitorIds { get; set; }
+        public Guid? LocalEconomicInventorySnapshotId { get; set; }
+    }
+
+    private sealed class RunResult
+    {
+        public Guid ModelRunId { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string ComputationalOriginType { get; set; } = string.Empty;
+        public string RoutingGraphHash { get; set; } = string.Empty;
+        public decimal ProposedResidentGgr { get; set; }
+        public decimal TourismGgr { get; set; }
+        public decimal TrafficGgr { get; set; }
+        public decimal StabilizedTotalGgr { get; set; }
+        public decimal LocalDiscretionaryDisplacement { get; set; }
+        public decimal GrossGamingTax { get; set; }
+        public decimal GrossSocialCost { get; set; }
+        public double NetPermanentJobs { get; set; }
+        public decimal NetHostLocalImpact { get; set; }
+        public decimal NetHostStateImpact { get; set; }
+        public Dictionary<string, decimal> ProposedCaptureBySource { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public List<string> Warnings { get; set; } = [];
+    }
+
+    private sealed class RecentRun { public Guid Id { get; set; } public string ScenarioName { get; set; } = string.Empty; public string Status { get; set; } = string.Empty; public DateTime CreatedAtUtc { get; set; } }
+    private sealed class ComparisonRun
+    {
+        public Guid Id { get; set; }
+        public string ScenarioName { get; set; } = string.Empty;
+        public decimal? TotalWithProjectResidentGgr { get; set; }
+        public decimal? TourismGgr { get; set; }
+        public decimal? TrafficGgr { get; set; }
+        public decimal? StabilizedTotalGgr { get; set; }
+        public double? NetPermanentJobs { get; set; }
+        public decimal? GrossGamingTax { get; set; }
+        public decimal? GrossSocialCost { get; set; }
+        public decimal? LocalDiscretionaryDisplacement { get; set; }
+        public decimal? NetHostLocalImpact { get; set; }
+        public decimal? NetHostStateImpact { get; set; }
     }
 }

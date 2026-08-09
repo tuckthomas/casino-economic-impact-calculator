@@ -1,0 +1,27 @@
+{
+  "id": "section-09",
+  "title": "7. Resident demand models",
+  "requirements": [
+    "REQ-342-80ab44d5",
+    "REQ-343-30c46b04",
+    "REQ-344-e532172c",
+    "REQ-345-2e88a23b",
+    "REQ-346-9a7ab43a",
+    "REQ-347-0f6f7dc1",
+    "REQ-348-e6ded27b",
+    "REQ-343-30c46b04-349",
+    "REQ-350-86a86806",
+    "REQ-351-7a87efef",
+    "REQ-352-b9c7d925",
+    "REQ-353-4289ca79",
+    "REQ-354-cc704a3a",
+    "REQ-355-68008e66",
+    "REQ-356-d4ff3aa5",
+    "REQ-357-99ca032a",
+    "REQ-358-ea4c3a1e",
+    "REQ-359-47c3fb81"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

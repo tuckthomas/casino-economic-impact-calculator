@@ -50,21 +50,93 @@ builder.Services.AddScoped<TigerSeeder>();
 
 // Register Census Ingestion Service
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.CensusIngestionService>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.CensusAcsProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.CensusAcsProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.CensusAcsAgePopulationProvider>();
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.CensusAcsMedianIncomeProvider>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.CensusZctaOriginProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.CensusZctaOriginProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.CensusZctaOriginProvider>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.IrsSoiProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.IrsSoiProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IrsSoiExactCodeZctaIncomeProvider>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.IndianaGamingCommissionProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.IndianaGamingCommissionProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IndianaGamingCommissionMonthlyRevenueProvider>();
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IndianaGamingCommissionFacilityInventoryProvider>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.IllinoisGamingBoardProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.IllinoisGamingBoardProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IllinoisGamingBoardRevenueProvider>();
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IllinoisGamingBoardFacilityInventoryProvider>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.MichiganGamingFacilityProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.MichiganGamingFacilityProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.MichiganGamingFacilityInventoryProvider>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingRegulatorPerformanceProvider>(serviceProvider =>
+    serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.IndianaGamingCommissionMonthlyRevenueProvider>());
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingRegulatorPerformanceProvider>(serviceProvider =>
+    serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.IllinoisGamingBoardRevenueProvider>());
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>
+    serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.IndianaGamingCommissionFacilityInventoryProvider>());
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>
+    serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.IllinoisGamingBoardFacilityInventoryProvider>());
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>
+    serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.MichiganGamingFacilityInventoryProvider>());
+builder.Services.AddScoped<SaveNEIN.Server.Services.Providers.CompositeGamingRegulatorPerformanceProvider>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Providers.CompositeGamingFacilityInventoryProvider>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.IndianaDepartmentOfTransportationProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.IndianaDepartmentOfTransportationProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IndianaDepartmentOfTransportationAadtProvider>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.IndianaTourismProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.IndianaTourismProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IndianaDestinationDevelopmentPersonTripsProvider>();
 
 // Register Isochrone Seeding Service
 builder.Services.AddScoped<SaveNEIN.Server.Services.IsochroneSeedingService>();
 
-// Register Competition Scoring Service
-builder.Services.AddScoped<SaveNEIN.Server.Services.CompetitionScoringService>();
-
-// Register Revenue Heuristic Service
-builder.Services.AddScoped<SaveNEIN.Server.Services.RevenueHeuristicService>();
-
-// Register ZIP switching model service
-builder.Services.AddScoped<SaveNEIN.Server.Services.ZipSwitchingModelService>();
-
-// Register Workers
-// builder.Services.AddHostedService<SaveNEIN.Server.Workers.ScoringWorker>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IModelParameterService, SaveNEIN.Server.Services.ModelParameterService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IJurisdictionProfileService, SaveNEIN.Server.Services.JurisdictionProfileService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingAgeResolver, SaveNEIN.Server.Services.GamingAgeResolver>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingTaxCalculator, SaveNEIN.Server.Services.GamingTaxCalculator>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.ILocalRevenueShareCalculator, SaveNEIN.Server.Services.LocalRevenueShareCalculator>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGeneralFiscalRuleResolver, SaveNEIN.Server.Services.GeneralFiscalRuleResolver>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IModelParameterSetService, SaveNEIN.Server.Services.ModelParameterSetService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IModelRunService, SaveNEIN.Server.Services.ModelRunService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IDataSnapshotService, SaveNEIN.Server.Services.DataSnapshotService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IModelDataIngestionService, SaveNEIN.Server.Services.ModelDataIngestionService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IProviderSnapshotIngestionService, SaveNEIN.Server.Services.ProviderSnapshotIngestionService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IOriginEligiblePopulationService, SaveNEIN.Server.Services.OriginEligiblePopulationService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IOriginDemandService, SaveNEIN.Server.Services.Gravity.OriginDemandService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IDevelopmentProgramService, SaveNEIN.Server.Services.Gravity.DevelopmentProgramService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ICompetitiveUniverseService, SaveNEIN.Server.Services.Gravity.CompetitiveUniverseService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IFacilityAttractivenessService, SaveNEIN.Server.Services.Gravity.FacilityAttractivenessService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ITravelMatrixService, SaveNEIN.Server.Services.Gravity.TravelMatrixService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IGravityModelService, SaveNEIN.Server.Services.Gravity.GravityModelService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IMarketEquilibriumService, SaveNEIN.Server.Services.Gravity.MarketEquilibriumService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IAccessibilityExpansionService, SaveNEIN.Server.Services.Gravity.AccessibilityExpansionService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ITourismDemandService, SaveNEIN.Server.Services.Gravity.TourismDemandService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ITrafficInterceptService, SaveNEIN.Server.Services.Gravity.TrafficInterceptService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ICapacityDiagnosticService, SaveNEIN.Server.Services.Gravity.CapacityDiagnosticService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IRampScheduleService, SaveNEIN.Server.Services.Gravity.RampScheduleService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ICannibalizationAccountingService, SaveNEIN.Server.Services.Gravity.CannibalizationAccountingService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ILocalEconomicInventoryWeightService, SaveNEIN.Server.Services.Gravity.LocalEconomicInventoryWeightService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IDisplacementModelService, SaveNEIN.Server.Services.Gravity.DisplacementModelService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IEmploymentImpactService, SaveNEIN.Server.Services.Gravity.EmploymentImpactService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IFiscalImpactService, SaveNEIN.Server.Services.Gravity.FiscalImpactService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ISocialCostService, SaveNEIN.Server.Services.Gravity.SocialCostService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.INetImpactService, SaveNEIN.Server.Services.Gravity.NetImpactService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IGravityModelExecutionService, SaveNEIN.Server.Services.Gravity.GravityModelExecutionService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.IValidationMetricsService, SaveNEIN.Server.Services.Validation.ValidationMetricsService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.ICalibrationSearchService, SaveNEIN.Server.Services.Validation.CalibrationSearchService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.IComparableMarketModelService, SaveNEIN.Server.Services.Validation.ComparableMarketModelService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.IBenchmarkOutputReader, SaveNEIN.Server.Services.Validation.BenchmarkOutputReader>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.IValidationEvaluationService, SaveNEIN.Server.Services.Validation.ValidationEvaluationService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.IIncumbentBacktestCalibrationService, SaveNEIN.Server.Services.Validation.IncumbentBacktestCalibrationService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.ISensitivityAnalysisService, SaveNEIN.Server.Services.Validation.SensitivityAnalysisService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Reports.ICasinoImpactReportModelFactory, SaveNEIN.Server.Services.Reports.CasinoImpactReportModelFactory>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Reports.IHtmlReportRenderer, SaveNEIN.Server.Services.Reports.HtmlReportRenderer>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Reports.IPdfReportRenderer, SaveNEIN.Server.Services.Reports.PdfReportRenderer>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Reports.ICsvReportRenderer, SaveNEIN.Server.Services.Reports.CsvReportRenderer>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Reports.IReportArtifactService, SaveNEIN.Server.Services.Reports.ReportArtifactService>();
 
 var app = builder.Build();
 

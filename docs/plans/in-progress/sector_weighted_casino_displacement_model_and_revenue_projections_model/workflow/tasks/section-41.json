@@ -1,0 +1,19 @@
+{
+  "id": "section-41",
+  "title": "39. Final directive to the implementing AI agent",
+  "requirements": [
+    "REQ-1011-1263ea79",
+    "REQ-1012-731d41fc",
+    "REQ-1013-3956d4e5",
+    "REQ-1014-cedfbad2",
+    "REQ-1015-89a40879",
+    "REQ-1016-757db603",
+    "REQ-1017-a2cefa9f",
+    "REQ-1018-257f5896",
+    "REQ-1019-50f4559c",
+    "REQ-1020-cd91f084"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

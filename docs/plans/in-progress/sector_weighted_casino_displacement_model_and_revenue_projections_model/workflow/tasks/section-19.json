@@ -1,0 +1,21 @@
+{
+  "id": "section-19",
+  "title": "17. Highway and through-traffic intercept",
+  "requirements": [
+    "REQ-606-fe69ee59",
+    "REQ-607-d73e62e7",
+    "REQ-608-7c53fe27",
+    "REQ-609-e41671ee",
+    "REQ-610-5ac95236",
+    "REQ-611-597d43d1",
+    "REQ-612-84e919f8",
+    "REQ-613-53dfbce9",
+    "REQ-614-e2f85962",
+    "REQ-615-b9fe1791",
+    "REQ-616-5d09f15c",
+    "REQ-617-44e26020"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}

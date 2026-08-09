@@ -212,6 +212,23 @@ npm run dev:restart
 
 > **Note:** Frontend dependency copy/build (`copy-libs`, Tailwind compile) is integrated into the project build/watch flow.
 
+### Versioned model-data providers
+
+The gravity model does not read live third-party data during a model run. Provider adapters first create a source-catalog record and an immutable, sealed dataset snapshot; finalized runs then reference those exact snapshot IDs.
+
+The Census ACS 5-year adapters currently support national ZCTA age bins (`B01001`) and median household income (`B19013`). Configure the required Census API key outside source control:
+
+```powershell
+$env:CensusAcs__ApiKey = '<Census Data API key>'
+```
+
+Provider ingestion is available at:
+
+- `POST /api/model-data/providers/census-acs/zcta-age-population`
+- `POST /api/model-data/providers/census-acs/zcta-median-household-income`
+
+Both endpoints require an existing sealed origin-geography snapshot. They use stable IDs such as `USA-ZCTA-46802`; the adapters deliberately identify Census ZCTAs as statistical geographies and do not silently treat them as USPS ZIP Codes. ACS median household income is also kept distinct from IRS adjusted gross income.
+
 ## Dependencies & Offline Support
 
 This application is designed to run **fully offline**. All critical external assets—including CSS frameworks, JavaScript libraries, Fonts, and Map Tiles—have been localized or vendored to ensure zero dependency on external CDNs during runtime. This architecture guarantees stability, privacy, and performance even in isolated environments.
@@ -222,10 +239,6 @@ Managed via `package.json` and built using `npm run build:css` / `copy-libs`.
 | Package | Version | Purpose |
 | :--- | :--- | :--- |
 | **tailwindcss** | ^3.4.0 | Utility-first CSS framework (Built via CLI) |
-| **@turf/turf** | ^7.3.1 | Geospatial analysis engine (Client-side) |
-| **chart.js** | ^4.5.1 | Interactive charts and graphs |
-| **html2canvas** | ^1.4.1 | Canvas generation for PDF reports |
-| **terra-draw** | ^1.22.0 | Map drawing primitives and adapter |
 | **@fontsource-variable/public-sans** | ^5.2.7 | Typography (Variable Font) |
 | **@fontsource-variable/material-symbols-outlined** | ^5.2.30 | Iconography (Variable Font) |
 

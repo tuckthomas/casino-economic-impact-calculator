@@ -134,8 +134,6 @@
     <link href="lib/public-sans/index.css" rel="stylesheet" />
     <link href="lib/material-symbols-outlined/index.css" rel="stylesheet" />
 
-    <link rel="stylesheet" href="css/maplibre-gl.css" />
-
     <!-- Custom Styles -->
     <link href="css/app.css?v=20260808-hero-fix-2" rel="stylesheet" />
     <link href="SaveNEIN.Client.styles.css?v=20260808-tribal-banner-2" rel="stylesheet" />
@@ -155,34 +153,23 @@
         <span class="dismiss">🗙</span>
     </div>
 
-    <!-- Heavy libraries are kept in dependency order but moved out of <head> so first paint is not blocked. -->
-    <script src="js/lib/maplibre-gl.js"></script>
-    <script src="js/lib/pmtiles.js"></script>
-    <script src="js/lib/turf.min.js"></script>
-    <script src="js/lib/chart.js"></script>
-    <script src="js/lib/terra-draw.umd.js"></script>
+    <!-- Report-viewer libraries are loaded after first paint. -->
     <script src="js/lib/pdf.min.js"></script>
     <script src="js/lib/page-flip.browser.js"></script>
 
     <!-- Custom Modules -->
-    <script src="js/lib/html2canvas.min.js"></script>
-    <script src="js/pdf-helper.js"></script>
     <script src="js/components/slot-machine.js"></script>
     <script src="js/components/adaptive-toast.js"></script>
-    <script src="js/components/maplibre-map.js?v=20260808-hero-fix-2"></script>
     <script src="js/components/legislators.js"></script>
     <script src="js/components/image-modal.js"></script>
     <script src="js/components/modals.js"></script>
     <script src="js/components/flipbook.js"></script>
     <script src="js/components/toc.js"></script>
     <script src="js/components/reveal.js?v=20260808-tribal-repeat-1"></script>
-    <script src="js/components/charts.js"></script>
     <script src="js/components/tooltip-portal.js"></script>
     <script src="js/components/slider-input-logic.js"></script>
     <script src="js/components/slider-input-group-logic.js"></script>
     <script src="js/components/home-header.js"></script>
-    <script src="js/economics/calculator.js?v=20260807-simulator-flow"></script>
-    <script src="js/economics/substitution.js"></script>
 
     <!-- Start Blazor only after every JS interop module is available. -->
     <script src="_framework/blazor.webassembly.js"></script>

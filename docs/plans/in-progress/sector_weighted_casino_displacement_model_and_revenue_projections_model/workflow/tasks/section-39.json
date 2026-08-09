@@ -1,0 +1,29 @@
+{
+  "id": "section-39",
+  "title": "37. Production acceptance criteria",
+  "requirements": [
+    "REQ-974-161e28c2",
+    "REQ-975-c7956771",
+    "REQ-976-bbcbce29",
+    "REQ-977-593886cf",
+    "REQ-978-fbbbb737",
+    "REQ-979-e37c8cb5",
+    "REQ-980-d83f2d55",
+    "REQ-981-7f3099ca",
+    "REQ-982-2dbf2cdf",
+    "REQ-983-6b2e87f9",
+    "REQ-984-fc734c61",
+    "REQ-985-4eef3b37",
+    "REQ-986-f9c346f7",
+    "REQ-987-2018cabb",
+    "REQ-988-e9dea42a",
+    "REQ-989-1d897a80",
+    "REQ-990-700dd0b3",
+    "REQ-991-d2be2e3a",
+    "REQ-992-f18d0e00",
+    "REQ-993-bad1f47d"
+  ],
+  "dependencies": [],
+  "state": "pending",
+  "evidence": []
+}
