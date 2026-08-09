@@ -20,6 +20,7 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import subprocess
 
           workflow = Path('.github/workflows/one-off-issues-10-11-fix.yml').read_text(encoding='utf-8')
           workflow = workflow.replace("'''.replace(/^          /gm, ''))", "'''.replace('          ', ''))")
@@ -31,14 +32,26 @@ jobs:
           script = '\n'.join(line[10:] if line.startswith('          ') else line for line in block.splitlines())
           exec(compile(script, 'audited-ui-standardization.py', 'exec'))
 
+          # Two additional map-option rows also used native title tooltips and were
+          # identified by the guard after the first audited pass.
+          map_path = Path('SaveNEIN.Client/wwwroot/js/components/maplibre-map.js')
+          map_text = map_path.read_text(encoding='utf-8')
+          dark_old = "            darkModeToggle.closest('.toggle-row')?.classList.toggle('is-disabled', !darkModeSupported);\n            darkModeToggle.closest('.toggle-row')?.setAttribute('title', darkModeSupported ? '' : 'Dark mode is available on Streets and Terrain basemaps.');"
+          dark_new = "            const darkModeRow = darkModeToggle.closest('.toggle-row');\n            darkModeRow?.classList.toggle('is-disabled', !darkModeSupported);\n            if (darkModeRow && window.AppTooltip)\n            {\n                if (darkModeSupported) window.AppTooltip.detach(darkModeRow);\n                else window.AppTooltip.attach(darkModeRow, 'Dark mode is available on Streets and Terrain basemaps.');\n            }"
+          terrain_old = "            terrainToggle.closest('.toggle-row')?.classList.add('is-disabled');\n            terrainToggle.closest('.toggle-row')?.setAttribute('title', '3D terrain is not available in the current map configuration.');"
+          terrain_new = "            const terrainRow = terrainToggle.closest('.toggle-row');\n            terrainRow?.classList.add('is-disabled');\n            if (terrainRow && window.AppTooltip)\n            {\n                window.AppTooltip.attach(terrainRow, '3D terrain is not available in the current map configuration.');\n            }"
+          if map_text.count(dark_old) != 1:
+              raise SystemExit(f'Dark-mode tooltip migration expected one match, found {map_text.count(dark_old)}')
+          if map_text.count(terrain_old) != 1:
+              raise SystemExit(f'Terrain tooltip migration expected one match, found {map_text.count(terrain_old)}')
+          map_text = map_text.replace(dark_old, dark_new, 1).replace(terrain_old, terrain_new, 1)
+          map_path.write_text(map_text, encoding='utf-8')
+
           # The audited patch creates the permanent tooltip guard, but Actions tokens
-          # cannot push workflow-file changes. Leave that file for the connector-side
-          # cleanup commit after source validation succeeds.
+          # cannot push workflow-file changes. The connector-side cleanup commit adds it.
           Path('.github/workflows/tooltip-guard.yml').unlink(missing_ok=True)
 
           # Do not stage deletion of this temporary audit workflow from an Actions token.
-          # Connector-side cleanup removes all one-off workflows after validation.
-          import subprocess
           subprocess.run(['git', 'restore', '.github/workflows/one-off-ui-audit.yml'], check=True)
 
       - name: Validate tooltip and UI policies
