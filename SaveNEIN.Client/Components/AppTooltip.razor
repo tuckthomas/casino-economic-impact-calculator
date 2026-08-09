@@ -1,0 +1,59 @@
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+@if (string.IsNullOrWhiteSpace(TargetId))
+{
+    <span @ref="hostRef" class="@HostClass">
+        <button type="button"
+      class="@TriggerClass"
+      aria-label="@AriaLabel">
+  <span class="material-symbols-outlined text-[16px] leading-none" aria-hidden="true">@Icon</span>
+        </button>
+    </span>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+    [Parameter] public string? TargetId { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "More information";
+    [Parameter] public string Icon { get; set; } = "info";
+    [Parameter] public string HostClass { get; set; } = "inline-flex items-center";
+    [Parameter] public string TriggerClass { get; set; } = "inline-flex items-center justify-center rounded-sm text-slate-400 hover:text-blue-500 transition-colors cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60";
+
+    private ElementReference hostRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (string.IsNullOrWhiteSpace(Text))
+        {
+  return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(TargetId))
+        {
+  await JSRuntime.InvokeVoidAsync("AppTooltip.attachById", TargetId, Text);
+        }
+        else
+        {
+  await JSRuntime.InvokeVoidAsync("AppTooltip.attach", hostRef, Text);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+  if (!string.IsNullOrWhiteSpace(TargetId))
+  {
+      await JSRuntime.InvokeVoidAsync("AppTooltip.detachById", TargetId);
+  }
+  else
+  {
+      await JSRuntime.InvokeVoidAsync("AppTooltip.detach", hostRef);
+  }
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+}

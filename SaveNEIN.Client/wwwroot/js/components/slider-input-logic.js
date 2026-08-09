@@ -90,7 +90,11 @@ window.SliderInputLogic = (function ()
                 textInput.classList.toggle('sfw-value-readonly', isReadOnly);
                 textInput.classList.toggle('sfw-value-editable', !isReadOnly);
                 textInput.setAttribute('aria-readonly', isReadOnly ? 'true' : 'false');
-                textInput.title = isReadOnly ? 'Select Custom to edit' : '';
+                if (window.AppTooltip)
+                {
+                    if (isReadOnly) window.AppTooltip.attach(textInput, 'Select Custom to edit');
+                    else window.AppTooltip.detach(textInput);
+                }
             };
 
             const emitSyncEvent = () =>

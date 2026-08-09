@@ -11,7 +11,8 @@
     "setup:git-hooks": "git config core.hooksPath .githooks",
     "check:ui-text": "node scripts/check-ui-text-size.mjs",
     "build:css": "tailwindcss -i ./SaveNEIN.Client/Styles/app.css -o ./SaveNEIN.Client/wwwroot/css/app.css --minify",
-    "copy-libs": "node scripts/copy-libs.mjs"
+    "copy-libs": "node scripts/copy-libs.mjs",
+    "check:tooltips": "node scripts/check-tooltips.mjs"
   },
   "dependencies": {
     "@fontsource-variable/material-symbols-outlined": "^5.2.30",

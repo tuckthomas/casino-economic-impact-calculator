@@ -13,11 +13,12 @@
     class="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 flex flex-col items-center justify-center p-4 md:p-8">
 
     <!-- Download Button -->
-    <a href="assets/Independent_Analysis_Allen_County_Casino.pdf" download target="_blank"
+    <a id="flipbook-download-pdf" href="assets/Independent_Analysis_Allen_County_Casino.pdf" download target="_blank"
         class="absolute top-4 right-16 z-50 p-3 text-white hover:text-emerald-400 transition-colors bg-black/40 hover:bg-black/60 backdrop-blur rounded-full flex items-center justify-center border border-white/10"
-        title="Download PDF">
+        aria-label="Download PDF">
         <span class="material-symbols-outlined text-2xl">download</span>
     </a>
+    <AppTooltip TargetId="flipbook-download-pdf" Text="Download PDF" />
 
     <!-- Close Button -->
     <button onclick="closeFlipbook()"
@@ -26,16 +27,18 @@
     </button>
 
     <!-- Navigation Buttons -->
-    <button onclick="if(flipbookInstance) flipbookInstance.flipPrev()"
+    <button id="flipbook-prev-page" aria-label="Previous Page" onclick="if(flipbookInstance) flipbookInstance.flipPrev()"
         class="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-50 p-4 text-white hover:text-emerald-400 transition-all bg-black/30 hover:bg-black/60 backdrop-blur-sm rounded-full hidden md:flex items-center justify-center group shadow-lg border border-white/5 hover:scale-110"
-        title="Previous Page">
+>
         <span class="material-symbols-outlined text-4xl group-hover:-translate-x-1 transition-transform shadow-sm">arrow_back_ios_new</span>
     </button>
-    <button onclick="if(flipbookInstance) flipbookInstance.flipNext()"
+    <AppTooltip TargetId="flipbook-prev-page" Text="Previous Page" />
+    <button id="flipbook-next-page" aria-label="Next Page" onclick="if(flipbookInstance) flipbookInstance.flipNext()"
         class="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-50 p-4 text-white hover:text-emerald-400 transition-all bg-black/30 hover:bg-black/60 backdrop-blur-sm rounded-full hidden md:flex items-center justify-center group shadow-lg border border-white/5 hover:scale-110"
-        title="Next Page">
+>
         <span class="material-symbols-outlined text-4xl group-hover:translate-x-1 transition-transform shadow-sm">arrow_forward_ios</span>
     </button>
+    <AppTooltip TargetId="flipbook-next-page" Text="Next Page" />
 
     <!-- Book Container -->
     <!-- Reduced max-h to 75vh and increased padding to prevent page cutoff -->
