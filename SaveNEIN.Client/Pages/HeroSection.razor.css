@@ -44,7 +44,7 @@
 }
 
 .hero-desktop-learn-more-text {
-    font-size: 0.78rem;
+    font-size: 0.875rem;
     line-height: 1;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -58,32 +58,21 @@
     animation-play-state: paused;
 }
 
-@media (min-width: 1024px) {
-    .hero-desktop-learn-more {
-        animation: heroDesktopLearnMoreIn 0.55s ease 3.7s forwards;
-    }
-}
-
 .hero-mobile-swipe-hint,
 .hero-mobile-scroll-hint {
     display: none;
-}
-
-.hero-slot-shell {
-    max-width: 54rem;
-    margin-top: 1.5rem;
-    transform: scale(0.88);
-    transform-origin: top center;
 }
 
 .hero-visual-stage {
     width: 100%;
 }
 
-@media (min-width: 1024px) {
-    .hero-visual-stage {
-        width: 55%;
-    }
+.hero-slot-shell {
+    width: min(100%, 46rem);
+    max-width: 46rem;
+    margin-top: 0;
+    transform: scale(0.9);
+    transform-origin: center center;
 }
 
 .hero-line,
@@ -95,39 +84,616 @@
     margin-top: 0.15rem;
 }
 
+.modern-slot-machine {
+    --slot-cabinet: #4b0e18;
+    --slot-cabinet-deep: #23070d;
+    --slot-cabinet-mid: #681423;
+    --slot-trim: #e11d2e;
+    --slot-trim-hot: #ff3348;
+    --slot-seam: #12080b;
+    --slot-screen: #07111d;
+    --slot-cell: #f7f4ef;
+    --slot-ink: #16181d;
+    --slot-truth: #8f1522;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    padding: clamp(3.8rem, 8vw, 5.2rem) clamp(0.85rem, 2.2vw, 1.4rem) clamp(1rem, 2.5vw, 1.5rem);
+    border: 2px solid rgba(255, 75, 94, 0.58);
+    border-radius: clamp(2.5rem, 6vw, 4.5rem) clamp(2.5rem, 6vw, 4.5rem) 1.8rem 1.8rem;
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 9%, transparent 88%, rgba(255, 255, 255, 0.05)),
+        radial-gradient(ellipse 72% 34% at 50% 3%, rgba(255, 70, 88, 0.22), transparent 65%),
+        linear-gradient(145deg, #71192a 0%, var(--slot-cabinet) 28%, #320912 72%, #1b0509 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        inset 0 -24px 38px rgba(8, 0, 3, 0.42),
+        inset 12px 0 22px rgba(255, 73, 91, 0.05),
+        0 0 0 6px rgba(39, 4, 10, 0.92),
+        0 0 0 8px rgba(207, 24, 44, 0.28),
+        0 28px 70px rgba(0, 0, 0, 0.55),
+        0 0 42px rgba(162, 17, 36, 0.25);
+    isolation: isolate;
+}
+
+.modern-slot-machine::before {
+    content: "";
+    position: absolute;
+    inset: 0.55rem;
+    border: 2px solid rgba(255, 48, 68, 0.62);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: 0 0 8px rgba(255, 28, 52, 0.55), inset 0 0 10px rgba(255, 28, 52, 0.18);
+    opacity: 0.7;
+    transition: opacity 0.25s ease, box-shadow 0.25s ease;
+}
+
+.modern-slot-machine::after {
+    content: "";
+    position: absolute;
+    inset: 1.05rem 1.2rem auto;
+    height: 18%;
+    border-radius: 50%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.modern-slot-machine.is-spinning::before {
+    opacity: 1;
+    animation: modernSlotTrimChase 0.9s linear infinite;
+}
+
+.modern-slot-machine.is-result::before {
+    opacity: 1;
+    box-shadow: 0 0 16px rgba(255, 35, 58, 0.95), 0 0 34px rgba(255, 35, 58, 0.42), inset 0 0 12px rgba(255, 35, 58, 0.35);
+}
+
+.modern-slot-machine.is-credit-alarm::before {
+    opacity: 1;
+    animation: modernSlotAlarmPulse 0.52s ease-in-out infinite alternate;
+}
+
+.modern-slot-siren {
+    position: absolute;
+    left: 50%;
+    top: -2.2rem;
+    width: clamp(4.6rem, 11vw, 6.2rem);
+    height: clamp(4.6rem, 11vw, 6.2rem);
+    transform: translateX(-50%);
+    z-index: 12;
+    filter: drop-shadow(0 12px 15px rgba(0, 0, 0, 0.55));
+}
+
+.modern-slot-siren-cap,
+.modern-slot-siren-lens,
+.modern-slot-siren-base {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: block;
+}
+
+.modern-slot-siren-cap {
+    top: 0;
+    width: 62%;
+    height: 13%;
+    border-radius: 50% 50% 22% 22%;
+    background: linear-gradient(180deg, #30070c, #110204);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.modern-slot-siren-lens {
+    top: 8%;
+    width: 70%;
+    height: 58%;
+    border: 2px solid rgba(255, 120, 130, 0.45);
+    border-radius: 48% 48% 38% 38%;
+    background: linear-gradient(90deg, transparent 42%, rgba(255, 255, 255, 0.24) 50%, transparent 58%), radial-gradient(circle at 50% 52%, #ff485b 0%, #d3132a 35%, #740d19 72%, #36060c 100%);
+    box-shadow: inset 0 0 14px rgba(255, 196, 200, 0.28), 0 0 18px rgba(238, 25, 50, 0.42);
+    overflow: hidden;
+}
+
+.modern-slot-siren-lens::after {
+    content: "";
+    position: absolute;
+    inset: -30%;
+    background: linear-gradient(100deg, transparent 43%, rgba(255, 255, 255, 0.5) 49%, transparent 55%);
+    transform: rotate(-20deg);
+    opacity: 0.22;
+}
+
+.modern-slot-siren-base {
+    bottom: 17%;
+    width: 88%;
+    height: 22%;
+    border-radius: 0.7rem 0.7rem 1rem 1rem;
+    background: linear-gradient(180deg, #2f3238, #111318 62%, #07080b);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.12), 0 5px 9px rgba(0, 0, 0, 0.45);
+}
+
+.modern-slot-siren.is-active .modern-slot-siren-lens {
+    animation: modernSlotSiren 0.48s ease-in-out infinite alternate;
+}
+
+.modern-slot-siren.is-active .modern-slot-siren-lens::after {
+    animation: modernSlotSirenSweep 0.8s linear infinite;
+}
+
+.modern-slot-siren.is-alarm-active .modern-slot-siren-lens {
+    animation: modernSlotAlarmPulse 0.32s ease-in-out infinite alternate;
+}
+
+.modern-slot-upper-display {
+    position: relative;
+    z-index: 2;
+    min-height: clamp(7.4rem, 18vw, 10.2rem);
+    padding: clamp(0.9rem, 2.4vw, 1.35rem) clamp(1rem, 3vw, 1.8rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(8.5rem, 0.8fr);
+    align-items: center;
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+    border: 3px solid #18070b;
+    border-radius: 1.35rem;
+    overflow: hidden;
+    background: radial-gradient(circle at 12% 100%, rgba(190, 18, 45, 0.28), transparent 38%), radial-gradient(circle at 85% 12%, rgba(20, 71, 111, 0.3), transparent 42%), linear-gradient(135deg, #08121f 0%, #050a11 55%, #0b1420 100%);
+    box-shadow: inset 0 0 0 2px rgba(255, 49, 70, 0.18), inset 0 0 26px rgba(0, 0, 0, 0.88), 0 7px 0 #1a060a, 0 11px 18px rgba(0, 0, 0, 0.32);
+}
+
+.modern-slot-screen-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 18%, rgba(255, 255, 255, 0.035) 37%, transparent 55%), radial-gradient(ellipse 55% 25% at 50% 100%, rgba(255, 28, 52, 0.12), transparent 76%);
+}
+
+.modern-slot-logo {
+    position: relative;
+    width: min(100%, 23rem);
+    max-height: 6.2rem;
+    object-fit: contain;
+    object-position: left center;
+    filter: drop-shadow(0 0 12px rgba(220, 38, 38, 0.18));
+}
+
+.modern-slot-screen-copy {
+    position: relative;
+    min-width: 0;
+    padding-left: clamp(0.65rem, 1.5vw, 1rem);
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.modern-slot-screen-kicker,
+.modern-slot-status {
+    display: block;
+    font-size: clamp(0.875rem, 1.2vw, 1rem);
+    line-height: 1.25;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.modern-slot-screen-kicker {
+    color: rgba(203, 213, 225, 0.74);
+    font-weight: 700;
+    margin-bottom: 0.45rem;
+}
+
+.modern-slot-status {
+    color: #fff;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.modern-slot-reel-housing {
+    position: relative;
+    z-index: 2;
+    margin-top: clamp(0.8rem, 2vw, 1.25rem);
+    padding: clamp(0.75rem, 1.8vw, 1.1rem);
+    border: 3px solid var(--slot-seam);
+    border-radius: 1.1rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 15%), linear-gradient(145deg, #26070d, #100408 62%, #2b080f);
+    box-shadow: inset 0 0 0 1px rgba(255, 70, 88, 0.2), inset 0 12px 18px rgba(0, 0, 0, 0.35), 0 8px 17px rgba(0, 0, 0, 0.35);
+}
+
+.modern-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+    overflow: hidden;
+    border: 2px solid #09090b;
+    border-radius: 0.7rem;
+    background: #17191d;
+    box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.modern-slot-column {
+    display: grid;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+    min-width: 0;
+    background: #202126;
+}
+
+.modern-slot-cell {
+    position: relative;
+    min-width: 0;
+    min-height: clamp(5.5rem, 11.5vw, 7rem);
+    padding: clamp(0.5rem, 1.4vw, 0.8rem) clamp(0.35rem, 1vw, 0.65rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.25rem, 0.7vw, 0.45rem);
+    text-align: center;
+    color: var(--slot-ink);
+    background: radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.92), transparent 42%), linear-gradient(180deg, #fffefa 0%, var(--slot-cell) 58%, #e8e3dd 100%);
+    box-shadow: inset 0 0 0 1px rgba(32, 33, 36, 0.1), inset 0 -9px 14px rgba(60, 53, 48, 0.07);
+    overflow: hidden;
+    transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.modern-slot-cell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(115deg, transparent 12%, rgba(255, 255, 255, 0.33) 30%, transparent 47%);
+    opacity: 0.36;
+}
+
+.modern-slot-cell-icon {
+    position: relative;
+    z-index: 1;
+    font-size: clamp(1.8rem, 4.6vw, 2.8rem);
+    line-height: 1;
+    color: #34373e;
+    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 48;
+}
+
+.modern-slot-cell-label {
+    position: relative;
+    z-index: 1;
+    max-width: 100%;
+    font-size: clamp(0.875rem, 1.25vw, 1rem);
+    line-height: 1.08;
+    letter-spacing: 0.025em;
+    font-weight: 850;
+    text-transform: uppercase;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+.modern-slot-cell.is-truth {
+    color: var(--slot-truth);
+    background: radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.98), transparent 40%), linear-gradient(180deg, #fff9f6 0%, #f7e9e6 100%);
+    box-shadow: inset 0 0 0 2px rgba(143, 21, 34, 0.18), inset 0 -10px 18px rgba(143, 21, 34, 0.08);
+}
+
+.modern-slot-cell.is-truth .modern-slot-cell-icon {
+    color: var(--slot-truth);
+}
+
+.modern-slot-column.is-rolling .modern-slot-cell {
+    animation: modernSlotDigitalRoll 0.24s linear infinite;
+}
+
+.modern-slot-column.is-settling .modern-slot-cell:nth-child(2) {
+    animation: modernSlotSettle 0.24s ease-out;
+}
+
+.modern-slot-payline-arrow {
+    position: absolute;
+    top: 50%;
+    width: 0;
+    height: 0;
+    z-index: 6;
+    filter: drop-shadow(0 0 8px rgba(255, 31, 55, 0.7));
+    transform: translateY(-50%);
+}
+
+.modern-slot-payline-arrow-left {
+    left: -0.7rem;
+    border-top: 0.85rem solid transparent;
+    border-bottom: 0.85rem solid transparent;
+    border-left: 1.2rem solid var(--slot-trim-hot);
+}
+
+.modern-slot-payline-arrow-right {
+    right: -0.7rem;
+    border-top: 0.85rem solid transparent;
+    border-bottom: 0.85rem solid transparent;
+    border-right: 1.2rem solid var(--slot-trim-hot);
+}
+
+.modern-slot-control-deck {
+    position: relative;
+    z-index: 2;
+    margin-top: clamp(0.85rem, 2vw, 1.2rem);
+    padding: clamp(0.75rem, 1.7vw, 1rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(8.2rem, 1.25fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: clamp(0.55rem, 1.6vw, 0.95rem);
+    border: 3px solid var(--slot-seam);
+    border-radius: 1.1rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 18%), linear-gradient(145deg, #3d0b15 0%, #1d060b 62%, #100408 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 62, 83, 0.16), inset 0 -9px 16px rgba(0, 0, 0, 0.35);
+}
+
+.modern-slot-coin-insert,
+.modern-slot-spin-button {
+    font-family: inherit;
+    touch-action: manipulation;
+}
+
+.modern-slot-coin-insert {
+    position: relative;
+    min-width: 0;
+    min-height: 6.25rem;
+    padding: 0.72rem 0.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.85rem;
+    display: grid;
+    grid-template-columns: 0.4rem minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    column-gap: 0.55rem;
+    align-items: center;
+    color: #f8fafc;
+    background: linear-gradient(145deg, #15191f, #090b0f 72%);
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.45), inset 0 9px 16px rgba(255, 255, 255, 0.025), 0 5px 10px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.modern-slot-coin-insert:hover:not(:disabled),
+.modern-slot-coin-insert:focus-visible {
+    border-color: rgba(255, 57, 78, 0.78);
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.45), 0 0 0 3px rgba(239, 45, 67, 0.2), 0 0 18px rgba(239, 45, 67, 0.22);
+}
+
+.modern-slot-coin-insert:focus-visible,
+.modern-slot-spin-button:focus-visible {
+    outline: 3px solid #f8fafc;
+    outline-offset: 3px;
+}
+
+.modern-slot-coin-insert:active:not(:disabled) {
+    transform: translateY(2px);
+}
+
+.modern-slot-coin-insert:disabled,
+.modern-slot-spin-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.68;
+}
+
+.modern-slot-coin-led {
+    grid-row: 1 / 3;
+    width: 0.32rem;
+    height: 72%;
+    min-height: 2.8rem;
+    border-radius: 9999px;
+    background: #80111f;
+    box-shadow: 0 0 8px rgba(216, 27, 49, 0.42);
+}
+
+.modern-slot-coin-slot {
+    align-self: end;
+    width: min(100%, 4.5rem);
+    height: 0.48rem;
+    justify-self: center;
+    border-radius: 9999px;
+    background: #020305;
+    border: 1px solid #32363c;
+    box-shadow: inset 0 2px 3px #000, 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.modern-slot-coin-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    font-size: 0.875rem;
+    line-height: 1.08;
+    letter-spacing: 0.04em;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.modern-slot-coin-copy strong {
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.modern-slot-coin-disc {
+    position: absolute;
+    left: 50%;
+    top: 0.7rem;
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid #a7abb2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #25272b;
+    background: radial-gradient(circle at 35% 30%, #f4f4f2, #b9b9b5 48%, #777a80 100%);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.32), 0 3px 5px rgba(0, 0, 0, 0.42);
+    font-size: 0.875rem;
+    font-weight: 900;
+    opacity: 0;
+    transform: translate(-50%, -2.1rem) rotate(-18deg) scale(0.86);
+    pointer-events: none;
+}
+
+.modern-slot-coin-insert.is-inserting .modern-slot-coin-disc {
+    animation: modernSlotCoinInsert 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.modern-slot-coin-insert.is-inserting .modern-slot-coin-led,
+.modern-slot-coin-insert.is-attention .modern-slot-coin-led {
+    background: #ff3348;
+    box-shadow: 0 0 10px rgba(255, 51, 72, 0.9), 0 0 20px rgba(255, 51, 72, 0.38);
+}
+
+.modern-slot-coin-insert.is-attention {
+    animation: modernSlotCoinAttention 0.65s ease-in-out infinite alternate;
+}
+
+.modern-slot-spin-button {
+    min-width: 0;
+    min-height: 6.25rem;
+    padding: 0.8rem 0.65rem;
+    border: 2px solid #ff6375;
+    border-radius: 0.8rem;
+    color: #fff;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 30%), linear-gradient(180deg, #e62942 0%, #aa1125 58%, #690916 100%);
+    box-shadow: inset 0 0 0 2px rgba(80, 2, 12, 0.5), inset 0 8px 12px rgba(255, 255, 255, 0.08), 0 7px 0 #4c0711, 0 10px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(229, 29, 57, 0.3);
+    font-size: clamp(1.3rem, 3vw, 2rem);
+    line-height: 1;
+    letter-spacing: 0.12em;
+    font-weight: 950;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+}
+
+.modern-slot-spin-button:hover:not(:disabled) {
+    filter: brightness(1.08);
+    box-shadow: inset 0 0 0 2px rgba(80, 2, 12, 0.5), 0 7px 0 #4c0711, 0 11px 19px rgba(0, 0, 0, 0.42), 0 0 30px rgba(242, 34, 63, 0.5);
+}
+
+.modern-slot-spin-button:active:not(:disabled) {
+    transform: translateY(5px);
+    box-shadow: inset 0 0 0 2px rgba(80, 2, 12, 0.6), 0 2px 0 #4c0711, 0 4px 8px rgba(0, 0, 0, 0.45);
+}
+
+.modern-slot-credit-bay {
+    min-width: 0;
+    min-height: 6.25rem;
+    padding: 0.72rem 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    color: #dbe4ee;
+    background: linear-gradient(145deg, #15191f, #080a0e 70%);
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.45), inset 0 8px 14px rgba(255, 255, 255, 0.025);
+}
+
+.modern-slot-credit-label {
+    font-size: 0.875rem;
+    line-height: 1;
+    letter-spacing: 0.09em;
+    font-weight: 800;
+}
+
+.modern-slot-credit-value {
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(1.75rem, 4vw, 2.45rem);
+    line-height: 1;
+    color: #ff4055;
+    font-weight: 900;
+    text-shadow: 0 0 12px rgba(255, 42, 65, 0.5);
+}
+
+.modern-slot-return-slot {
+    width: min(75%, 4.4rem);
+    height: 0.42rem;
+    margin-top: 0.35rem;
+    border-radius: 9999px;
+    background: #020305;
+    border: 1px solid #2c3036;
+    box-shadow: inset 0 2px 3px #000;
+}
+
+@keyframes modernSlotDigitalRoll {
+    0% { transform: translateY(-7px); opacity: 0.66; filter: blur(1.2px); }
+    50% { transform: translateY(7px); opacity: 0.9; filter: blur(0.4px); }
+    100% { transform: translateY(-7px); opacity: 0.66; filter: blur(1.2px); }
+}
+
+@keyframes modernSlotSettle {
+    0% { transform: translateY(-8px) scale(0.98); }
+    70% { transform: translateY(2px) scale(1.01); }
+    100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes modernSlotTrimChase {
+    0%, 100% { box-shadow: 0 -3px 13px rgba(255, 36, 59, 0.85), inset 0 0 9px rgba(255, 36, 59, 0.18); }
+    50% { box-shadow: 0 3px 18px rgba(255, 36, 59, 0.95), inset 0 0 14px rgba(255, 36, 59, 0.35); }
+}
+
+@keyframes modernSlotAlarmPulse {
+    from { filter: brightness(0.78); box-shadow: 0 0 7px rgba(255, 33, 56, 0.36); }
+    to { filter: brightness(1.24); box-shadow: 0 0 23px rgba(255, 33, 56, 0.95); }
+}
+
+@keyframes modernSlotSiren {
+    from { filter: brightness(0.82); box-shadow: inset 0 0 14px rgba(255, 196, 200, 0.22), 0 0 13px rgba(238, 25, 50, 0.42); }
+    to { filter: brightness(1.35); box-shadow: inset 0 0 19px rgba(255, 225, 228, 0.5), 0 0 32px rgba(255, 35, 58, 0.95); }
+}
+
+@keyframes modernSlotSirenSweep {
+    from { transform: translateX(-42%) rotate(-20deg); }
+    to { transform: translateX(42%) rotate(-20deg); }
+}
+
+@keyframes modernSlotCoinInsert {
+    0% { opacity: 0; transform: translate(-50%, -2.2rem) rotate(-18deg) scale(0.86); }
+    18% { opacity: 1; }
+    72% { opacity: 1; transform: translate(-50%, 1.2rem) rotate(10deg) scale(0.93); }
+    100% { opacity: 0; transform: translate(-50%, 2.75rem) rotate(18deg) scale(0.66); }
+}
+
+@keyframes modernSlotCoinAttention {
+    from { box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 51, 72, 0.2); }
+    to { box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.45), 0 0 0 3px rgba(255, 51, 72, 0.38), 0 0 20px rgba(255, 51, 72, 0.38); }
+}
+
 @media (min-width: 640px) {
     .hero-slot-shell {
-        transform: scale(1);
+        transform: scale(0.95);
     }
 }
 
 @media (min-width: 1024px) {
+    .hero-visual-stage {
+        width: 55%;
+    }
+
     .hero-slot-shell {
-        max-width: 56rem;
-        margin-top: -5.5rem;
-        transform: scale3d(0.92, 1.14, 1);
-        transform-origin: top center;
+        width: min(100%, 43rem);
+        max-width: 43rem;
+        margin-top: -1.25rem;
+        transform: scale(0.9);
+        transform-origin: center center;
+    }
+
+    .hero-desktop-learn-more {
+        animation: heroDesktopLearnMoreIn 0.55s ease 3.7s forwards;
     }
 }
 
 @media (min-width: 1280px) {
     .hero-slot-shell {
-        max-width: 58rem;
-        margin-top: -6.25rem;
-        transform: scale3d(0.94, 1.22, 1);
+        width: min(100%, 45rem);
+        max-width: 45rem;
+        transform: scale(0.94);
     }
 }
 
 @keyframes heroMobileLogoFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 1023px) {
@@ -155,15 +721,6 @@
     }
 
     #hero-section .hero-layout::-webkit-scrollbar {
-        display: none;
-    }
-
-    #hero-section .hero-slot-shell .lever-container {
-        display: none;
-    }
-
-    #hero-section .reel-controls .reel-btn:first-child,
-    #hero-section .reel-controls .reel-btn:last-child {
         display: none;
     }
 
@@ -218,24 +775,20 @@
         justify-content: center;
         width: 100%;
         min-height: 100svh;
-        padding-top: clamp(1rem, 4vw, 2rem);
-        padding-bottom: clamp(1rem, 4vw, 2rem);
-        padding-left: clamp(0.25rem, 2vw, 0.75rem);
-        padding-right: clamp(0.25rem, 2vw, 0.75rem);
+        padding: clamp(0.75rem, 2.5vw, 1.5rem) clamp(0.25rem, 2vw, 0.75rem);
         z-index: 24;
         pointer-events: auto;
         overflow: hidden;
     }
 
     #hero-section .hero-slot-shell {
-        width: min(100%, 34rem);
+        width: min(94vw, 34rem, calc((100svh - 2rem) * 0.78));
         max-width: 34rem;
-        padding-top: clamp(1rem, 6vw, 2.5rem);
         margin-top: 0;
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
-        transform: scale(0.85) translateY(-1rem);
+        transform: none;
         animation: none;
     }
 
@@ -254,13 +807,12 @@
     }
 
     .hero-mobile-swipe-hint .swipe-text {
-        font-size: 0.58rem;
-        line-height: 1.15;
+        font-size: 0.875rem;
+        line-height: 1.2;
         font-weight: 700;
         letter-spacing: 0.02em;
-        text-transform: none;
         color: rgba(241, 245, 249, 0.9);
-        max-width: min(68vw, 15rem);
+        max-width: min(72vw, 17rem);
         text-align: right;
     }
 
@@ -303,11 +855,11 @@
 
     .hero-mobile-scroll-hint .hero-mobile-scroll-text {
         margin-bottom: 0.35rem;
-        font-size: 0.72rem;
+        font-size: 0.875rem;
         line-height: 1.12;
         text-align: center;
         font-weight: 700;
-        letter-spacing: 0.09em;
+        letter-spacing: 0.07em;
         text-transform: uppercase;
         color: rgba(241, 245, 249, 0.92);
     }
@@ -332,249 +884,172 @@
         flex-shrink: 0;
     }
 
-    .hero-mobile-scroll-hint .hero-mobile-scroll-chevron-icon path {
-        stroke: currentColor;
-        stroke-width: 2.25;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-}
-
-@media (max-width: 640px) {
-    ::deep .slot-machine-wrapper .marker-left {
-        left: 4px;
+    .modern-slot-machine {
+        padding-top: clamp(3.15rem, 11vw, 4rem);
+        padding-left: clamp(0.65rem, 2.5vw, 0.9rem);
+        padding-right: clamp(0.65rem, 2.5vw, 0.9rem);
+        padding-bottom: clamp(0.7rem, 2.5vw, 1rem);
+        border-radius: clamp(2rem, 9vw, 3.3rem) clamp(2rem, 9vw, 3.3rem) 1.35rem 1.35rem;
     }
 
-    ::deep .slot-machine-wrapper .marker-right {
-        right: 4px;
+    .modern-slot-upper-display {
+        min-height: clamp(6.2rem, 25vw, 8rem);
+        grid-template-columns: minmax(0, 1.2fr) minmax(6.5rem, 0.8fr);
+        padding: 0.7rem 0.8rem;
+        gap: 0.55rem;
     }
 
-    ::deep .slot-machine-wrapper .marker-base {
-        width: 15px;
-        height: 24px;
+    .modern-slot-logo {
+        max-height: 4.8rem;
     }
 
-    ::deep .slot-machine-wrapper .marker-tip {
-        width: 15px;
-        height: 19px;
+    .modern-slot-reel-housing {
+        padding: clamp(0.55rem, 2vw, 0.75rem);
+        margin-top: 0.65rem;
     }
 
-    #hero-section .hero-slot-shell .lever-container {
-        right: -2px;
+    .modern-slot-cell {
+        min-height: clamp(4.9rem, 21vw, 6rem);
+        padding: 0.42rem 0.25rem;
     }
 
-    ::deep .slot-machine-wrapper {
-        padding-top: 96px;
+    .modern-slot-cell-icon {
+        font-size: clamp(1.65rem, 8vw, 2.35rem);
     }
 
-    ::deep .slot-machine-wrapper .siren-wrapper {
-        top: -46px;
-        transform: translateX(-50%) scale(0.86);
+    .modern-slot-cell-label {
+        font-size: 0.875rem;
+        letter-spacing: 0.01em;
     }
 
-    ::deep .slot-machine-wrapper .slot-window {
-        height: 252px;
-        margin-bottom: 24px;
+    .modern-slot-control-deck {
+        margin-top: 0.65rem;
+        padding: 0.6rem;
+        gap: 0.45rem;
+        grid-template-columns: minmax(0, 1fr) minmax(6.6rem, 1.1fr) minmax(0, 1fr);
     }
 
-    ::deep .slot-machine-wrapper .marquee-logo {
-        max-width: min(90%, 430px);
-        height: clamp(64px, 16vw, 92px);
-        margin-top: calc(-1 * clamp(90px, 22vw, 110px));
-        margin-bottom: 14px;
+    .modern-slot-coin-insert,
+    .modern-slot-spin-button,
+    .modern-slot-credit-bay {
+        min-height: 5.35rem;
     }
 
-    ::deep .slot-machine-wrapper .marquee-logo img {
-        height: 100%;
-        max-width: 94%;
-        margin-top: 0;
-        object-fit: contain;
+    .modern-slot-spin-button {
+        font-size: clamp(1.1rem, 5.2vw, 1.55rem);
+        letter-spacing: 0.08em;
     }
 
-    ::deep .slot-machine-wrapper .coin-panel {
-        right: 10px;
-        bottom: 22px;
-        transform: scale(0.74);
-        transform-origin: right bottom;
+    .modern-slot-coin-copy,
+    .modern-slot-credit-label {
+        font-size: 0.875rem;
     }
 
-    ::deep .slot-machine-wrapper .casino-lights li {
-        width: 16px;
-        height: 16px;
-        margin-left: -8px;
-        margin-top: -8px;
-        box-shadow: inset -1px -1px 2px rgba(255, 200, 100, 0.3),
-            inset 1px 1px 2px rgba(255, 255, 255, 0.65),
-            0 0 6px 2px rgba(255, 170, 40, 0.55),
-            0 0 11px 4px rgba(255, 120, 0, 0.3);
+    .modern-slot-payline-arrow-left {
+        left: -0.45rem;
     }
 
-    ::deep .hero-slot-shell .lever-knob {
-        width: 34px;
-        height: 34px;
-        top: -18px;
-    }
-
-    ::deep .hero-slot-shell .knob-text {
-        font-size: 6px;
-        line-height: 1.05;
+    .modern-slot-payline-arrow-right {
+        right: -0.45rem;
     }
 }
 
 @media (max-width: 420px) {
-    ::deep .slot-machine-wrapper .marker-left {
-        left: 2px;
+    .modern-slot-upper-display {
+        grid-template-columns: 1fr;
+        text-align: center;
     }
 
-    ::deep .slot-machine-wrapper .marker-right {
-        right: 2px;
+    .modern-slot-logo {
+        width: min(92%, 18rem);
+        justify-self: center;
+        object-position: center;
     }
 
-    ::deep .slot-machine-wrapper .marker-base {
-        width: 13px;
-        height: 20px;
+    .modern-slot-screen-copy {
+        padding-left: 0;
+        padding-top: 0.4rem;
+        border-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
     }
 
-    ::deep .slot-machine-wrapper .marker-tip {
-        width: 13px;
-        height: 16px;
+    .modern-slot-screen-kicker {
+        margin-bottom: 0.2rem;
     }
 
-    #hero-section .hero-slot-shell .lever-container {
-        right: 2px;
+    .modern-slot-cell {
+        min-height: 4.75rem;
     }
 
-    ::deep .slot-machine-wrapper {
-        padding-top: 88px;
+    .modern-slot-control-deck {
+        grid-template-columns: 1fr 1.18fr 1fr;
+        padding: 0.48rem;
+        gap: 0.35rem;
     }
 
-    ::deep .slot-machine-wrapper .siren-wrapper {
-        top: -42px;
-        transform: translateX(-50%) scale(0.8);
+    .modern-slot-coin-insert,
+    .modern-slot-spin-button,
+    .modern-slot-credit-bay {
+        min-height: 5rem;
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
     }
 
-    ::deep .slot-machine-wrapper .slot-window {
-        height: 238px;
-        margin-bottom: 20px;
+    .modern-slot-coin-insert {
+        column-gap: 0.3rem;
     }
 
-    ::deep .slot-machine-wrapper .marquee-logo {
-        max-width: min(88%, 360px);
-        height: clamp(54px, 15vw, 72px);
-        margin-top: calc(-1 * clamp(76px, 21vw, 96px));
-        margin-bottom: 10px;
-    }
-
-    ::deep .slot-machine-wrapper .marquee-logo img {
-        max-width: 92%;
-    }
-
-    ::deep .slot-machine-wrapper .coin-panel {
-        right: 6px;
-        bottom: 18px;
-        transform: scale(0.66);
-    }
-
-    ::deep .slot-machine-wrapper .casino-lights li {
-        width: 14px;
-        height: 14px;
-        margin-left: -7px;
-        margin-top: -7px;
-        box-shadow: inset -1px -1px 2px rgba(255, 200, 100, 0.28),
-            inset 1px 1px 1px rgba(255, 255, 255, 0.6),
-            0 0 5px 2px rgba(255, 170, 40, 0.45),
-            0 0 9px 3px rgba(255, 120, 0, 0.25);
-    }
-
-    ::deep .hero-slot-shell .lever-knob {
-        width: 28px;
-        height: 28px;
-        top: -16px;
-    }
-
-    ::deep .hero-slot-shell .knob-text {
-        font-size: 5px;
-        line-height: 1.05;
+    .modern-slot-coin-copy span {
+        letter-spacing: 0;
     }
 }
 
 @keyframes heroDesktopChevronBob {
-    0% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(4px);
-    }
-
-    100% {
-        transform: translateY(0);
-    }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
 }
 
 @keyframes heroDesktopLearnMoreIn {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes heroSwipeArrowNudge {
-    0% {
-        transform: translateX(0);
-        opacity: 0.78;
-    }
-
-    50% {
-        transform: translateX(7px);
-        opacity: 1;
-    }
-
-    100% {
-        transform: translateX(0);
-        opacity: 0.78;
-    }
+    0%, 100% { transform: translateX(0); opacity: 0.78; }
+    50% { transform: translateX(7px); opacity: 1; }
 }
 
 @keyframes heroMobileSwipeHintIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes heroMobileScrollHintIn {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(10px);
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modern-slot-machine::before,
+    .modern-slot-siren-lens,
+    .modern-slot-siren-lens::after,
+    .modern-slot-column.is-rolling .modern-slot-cell,
+    .modern-slot-column.is-settling .modern-slot-cell:nth-child(2),
+    .modern-slot-coin-insert.is-inserting .modern-slot-coin-disc,
+    .modern-slot-coin-insert.is-attention,
+    .hero-desktop-learn-more-circle,
+    .hero-mobile-swipe-hint .swipe-arrow-svg,
+    .hero-mobile-scroll-hint .hero-mobile-scroll-circle {
+        animation: none !important;
     }
 
-    to {
+    .modern-slot-column.is-rolling .modern-slot-cell {
+        filter: none;
         opacity: 1;
-        transform: translateX(-50%) translateY(0);
+        transform: none;
     }
-}
 
-/* Dynamic Vertical Scaling for Mobile Slot Machine */
-@media (max-width: 1023px) and (max-height: 900px) {
-    #hero-section .hero-slot-shell { transform: scale(0.82) translateY(-2.5rem); }
-}
-@media (max-width: 1023px) and (max-height: 800px) {
-    #hero-section .hero-slot-shell { transform: scale(0.76) translateY(-3.5rem); }
-}
-@media (max-width: 1023px) and (max-height: 700px) {
-    #hero-section .hero-slot-shell { transform: scale(0.68) translateY(-4.5rem); }
-}
-@media (max-width: 1023px) and (max-height: 600px) {
-    #hero-section .hero-slot-shell { transform: scale(0.58) translateY(-5.5rem); }
+    .modern-slot-coin-insert.is-inserting .modern-slot-coin-disc {
+        opacity: 0;
+    }
 }
