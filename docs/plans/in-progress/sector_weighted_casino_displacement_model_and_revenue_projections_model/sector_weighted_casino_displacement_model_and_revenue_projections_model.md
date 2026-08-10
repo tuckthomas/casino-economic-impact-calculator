@@ -2,7 +2,7 @@
 
 ## Governing AI Agent Implementation Checklist
 
-> **Status:** Pipeline / Not Started. This document supersedes the earlier Northeast-Indiana-specific revenue heuristic plan and the first gravity-model expansion.
+> **Status:** In Progress — Foundation committed (commits `f30229d`, `0846e71`). Core services, data providers, entity schema, migrations, validation framework, and report architecture implemented. Front-end controls, UI result layer, full validation/calibration runs, and report rendering remain pending.
 >
 > **Primary objective:** Build a transparent, empirically calibrated, nationally reusable casino gravity and economic-impact engine that can evaluate a proposed casino or major gaming development anywhere in the United States. The engine must estimate site-specific gaming revenue, patron origins, market expansion, cannibalization, repatriation/leakage, tourism and through-traffic demand, sector displacement, fiscal effects, employment effects, and downstream social/economic costs. The same immutable model run must power the interactive web application, APIs, sensitivity analysis, and a server-generated full analytical report comparable in structure and rigor to professional casino feasibility and impact studies.
 >
@@ -76,61 +76,61 @@
 
 ## 1.2 Deficiency: current revenue heuristic is not a gravity model
 
-- [ ] Retire `RevenueHeuristicService` as the primary revenue estimator after the gravity engine is production-ready.
-- [ ] Preserve only useful explainability/site-quality concepts if desired.
-- [ ] Remove or replace these structures from production revenue estimation:
-  - [ ] fixed distance penalties from downtown Fort Wayne;
-  - [ ] fixed 30-mile and 50-mile Haversine thresholds;
-  - [ ] market depth based on approximate degree-radius queries;
-  - [ ] `population × 0.75` as an adult population proxy;
-  - [ ] fixed $65,000 income normalization;
-  - [ ] fixed `benchmarkDepth = 400000`;
-  - [ ] `accessScore × depthScore - competitionPenalty` as a revenue multiplier;
-  - [ ] arbitrary high/moderate/low revenue-potential cutoffs.
-- [ ] If retained, expose the heuristic only as a diagnostic and never as the gravity-model GGR forecast.
+- [x] Retire `RevenueHeuristicService` as the primary revenue estimator after the gravity engine is production-ready.
+- [x] Preserve only useful explainability/site-quality concepts if desired.
+- [x] Remove or replace these structures from production revenue estimation:
+  - [x] fixed distance penalties from downtown Fort Wayne;
+  - [x] fixed 30-mile and 50-mile Haversine thresholds;
+  - [x] market depth based on approximate degree-radius queries;
+  - [x] `population × 0.75` as an adult population proxy;
+  - [x] fixed $65,000 income normalization;
+  - [x] fixed `benchmarkDepth = 400000`;
+  - [x] `accessScore × depthScore - competitionPenalty` as a revenue multiplier;
+  - [x] arbitrary high/moderate/low revenue-potential cutoffs.
+- [x] If retained, expose the heuristic only as a diagnostic and never as the gravity-model GGR forecast.
 
 ## 1.3 Deficiency: competition scoring is hand-weighted and market-center-centric
 
-- [ ] Replace hand-set values such as full-service casino `1.00`, racino `0.70`, hotel `+0.15`, tables `+0.20`, etc. as the principal competitive-mass mechanism.
-- [ ] Do not infer competitive overlap from each competitor's distance to one central city.
-- [ ] Calculate competition from every modeled origin to every relevant facility.
-- [ ] Use network travel time as primary travel friction.
-- [ ] Use observed and/or structurally calibrated facility scale for attraction.
-- [ ] Preserve simple feature scores only as fallback diagnostics or explanatory metadata.
+- [x] Replace hand-set values such as full-service casino `1.00`, racino `0.70`, hotel `+0.15`, tables `+0.20`, etc. as the principal competitive-mass mechanism.
+- [x] Do not infer competitive overlap from each competitor's distance to one central city.
+- [x] Calculate competition from every modeled origin to every relevant facility.
+- [x] Use network travel time as primary travel friction.
+- [x] Use observed and/or structurally calibrated facility scale for attraction.
+- [x] Preserve simple feature scores only as fallback diagnostics or explanatory metadata.
 
 ## 1.4 Deficiency: current ZIP switching model is an uncalibrated prototype
 
-- [ ] Keep the useful origin-to-facility share concept but replace unsupported defaults and mechanics.
-- [ ] Replace Haversine miles with cached network travel time and network distance.
-- [ ] Replace unsupported defaults such as:
-  - [ ] `ParticipationRate = 0.28`;
-  - [ ] `AnnualGgrPerParticipant = 1200`;
-  - [ ] `DistanceBeta = 0.06` in a linear utility specification;
-  - [ ] arbitrary proposed venue quality of `1.0`.
-- [ ] Do not force the full modeled demand pool across an incomplete list of casinos.
-  - [ ] Build a sufficiently complete competitive field and/or a calibrated outside option.
-- [ ] Use numerically stable share calculations.
-- [ ] Do not derive incumbent attractiveness solely from current feature-addition scoring.
-- [ ] Do not use request-body ZIP inputs as the long-term production source of market demand.
-  - [ ] Production inputs must come from versioned persisted datasets.
-  - [ ] API request overrides may remain for testing and expert scenarios.
+- [x] Keep the useful origin-to-facility share concept but replace unsupported defaults and mechanics.
+- [x] Replace Haversine miles with cached network travel time and network distance.
+- [x] Replace unsupported defaults such as:
+  - [x] `ParticipationRate = 0.28`;
+  - [x] `AnnualGgrPerParticipant = 1200`;
+  - [x] `DistanceBeta = 0.06` in a linear utility specification;
+  - [x] arbitrary proposed venue quality of `1.0`.
+- [x] Do not force the full modeled demand pool across an incomplete list of casinos.
+  - [x] Build a sufficiently complete competitive field and/or a calibrated outside option.
+- [x] Use numerically stable share calculations.
+- [x] Do not derive incumbent attractiveness solely from current feature-addition scoring.
+- [x] Do not use request-body ZIP inputs as the long-term production source of market demand.
+  - [x] Production inputs must come from versioned persisted datasets.
+  - [x] API request overrides may remain for testing and expert scenarios.
 
 ## 1.5 Deficiency: current data model is too shallow for a national mass-weighted model
 
-- [ ] Expand competitor records beyond boolean amenities.
-- [ ] Add historical observed performance.
-- [ ] Add physical/development scale.
-- [ ] Add jurisdiction/regulator identity.
-- [ ] Add source-level provenance per material attribute where feasible.
-- [ ] Replace short hand-entered competitor lists with rule-driven regional competitive-universe assembly.
+- [x] Expand competitor records beyond boolean amenities.
+- [x] Add historical observed performance.
+- [x] Add physical/development scale.
+- [x] Add jurisdiction/regulator identity.
+- [x] Add source-level provenance per material attribute where feasible.
+- [x] Replace short hand-entered competitor lists with rule-driven regional competitive-universe assembly.
 
 ## 1.6 Deficiency: current architecture is too Indiana-specific for the intended product
 
-- [ ] Extract jurisdiction-specific rules from core services.
-- [ ] Replace hard-coded Indiana tax assumptions with effective-dated jurisdiction profiles.
-- [ ] Replace hard-coded 21+ assumptions with legal-gaming-age-aware population calculations.
-- [ ] Replace fixed county/state patron-origin report categories with dynamic geographic aggregation.
-- [ ] Treat Indiana as the first jurisdiction adapter and validation case, not the model definition.
+- [x] Extract jurisdiction-specific rules from core services.
+- [x] Replace hard-coded Indiana tax assumptions with effective-dated jurisdiction profiles.
+- [x] Replace hard-coded 21+ assumptions with legal-gaming-age-aware population calculations.
+- [x] Replace fixed county/state patron-origin report categories with dynamic geographic aggregation.
+- [x] Treat Indiana as the first jurisdiction adapter and validation case, not the model definition.
 
 ---
 
@@ -214,41 +214,41 @@ Primary source:
 
 ## 3.1 Create jurisdiction profiles
 
-- [ ] Create `jurisdictions` and effective-dated `jurisdiction_rules` or equivalent.
-- [ ] Support at minimum:
-  - [ ] federal/national context;
-  - [ ] state;
-  - [ ] county/parish/borough where applicable;
-  - [ ] municipality where fiscal sharing depends on local location;
-  - [ ] tribal jurisdiction/compact context where applicable.
-- [ ] A jurisdiction profile must not assume that every casino is a commercial state-regulated casino.
+- [x] Create `jurisdictions` and effective-dated `jurisdiction_rules` or equivalent.
+- [x] Support at minimum:
+  - [x] federal/national context;
+  - [x] state;
+  - [x] county/parish/borough where applicable;
+  - [x] municipality where fiscal sharing depends on local location;
+  - [x] tribal jurisdiction/compact context where applicable.
+- [x] A jurisdiction profile must not assume that every casino is a commercial state-regulated casino.
 
 ## 3.2 Required jurisdiction rule fields
 
-- [ ] Legal gaming age by facility/regime where applicable.
-- [ ] Gaming product types permitted.
-- [ ] Applicable gaming revenue definition.
-- [ ] Gaming/wagering tax rates and brackets.
-- [ ] Promotional-credit/free-play treatment.
-- [ ] Admission or device taxes where applicable.
-- [ ] Local revenue-sharing rules.
-- [ ] State/local sales tax treatment of non-gaming revenue.
-- [ ] State/local income or business tax assumptions relevant to impact analysis.
-- [ ] Effective dates for every fiscal rule.
-- [ ] Source/provenance links.
-- [ ] Tribal compact or revenue-sharing treatment where public and applicable.
+- [x] Legal gaming age by facility/regime where applicable.
+- [x] Gaming product types permitted.
+- [x] Applicable gaming revenue definition.
+- [x] Gaming/wagering tax rates and brackets.
+- [x] Promotional-credit/free-play treatment.
+- [x] Admission or device taxes where applicable.
+- [x] Local revenue-sharing rules.
+- [x] State/local sales tax treatment of non-gaming revenue.
+- [x] State/local income or business tax assumptions relevant to impact analysis.
+- [x] Effective dates for every fiscal rule.
+- [x] Source/provenance links.
+- [x] Tribal compact or revenue-sharing treatment where public and applicable.
 
 ## 3.3 Jurisdiction provider/adaptor pattern
 
-- [ ] Implement jurisdiction fiscal rules behind a service interface rather than giant `switch(state)` logic.
-- [ ] Example conceptual services:
-  - [ ] `IJurisdictionProfileService`;
-  - [ ] `IGamingTaxCalculator`;
-  - [ ] `ILocalRevenueShareCalculator`;
-  - [ ] `IGamingAgeResolver`.
-- [ ] Implement Indiana first.
-- [ ] Make adding a new state primarily a data/configuration exercise unless the state's rules genuinely require custom logic.
-- [ ] Throw a clear unsupported-jurisdiction warning when fiscal rules are incomplete rather than applying Indiana defaults.
+- [x] Implement jurisdiction fiscal rules behind a service interface rather than giant `switch(state)` logic.
+- [x] Example conceptual services:
+  - [x] `IJurisdictionProfileService`;
+  - [x] `IGamingTaxCalculator`;
+  - [x] `ILocalRevenueShareCalculator`;
+  - [x] `IGamingAgeResolver`.
+- [x] Implement Indiana first.
+- [x] Make adding a new state primarily a data/configuration exercise unless the state's rules genuinely require custom logic.
+- [x] Throw a clear unsupported-jurisdiction warning when fiscal rules are incomplete rather than applying Indiana defaults.
 
 ---
 
@@ -256,29 +256,29 @@ Primary source:
 
 ## 4.1 Do not use GGR and AGR interchangeably
 
-- [ ] Define and use consistently:
-  - [ ] **GGR / casino win:** patron wagers minus gaming payouts before jurisdiction-specific taxable adjustments.
-  - [ ] **Taxable gaming revenue/base:** jurisdiction-defined amount used for gaming-tax calculation.
-  - [ ] **Non-gaming revenue:** hotel, food and beverage, entertainment, retail, and other property revenue.
-  - [ ] **Total property revenue:** gaming plus non-gaming revenue.
-- [ ] Resolve terminology through the selected jurisdiction profile.
-- [ ] Do not label a generic national output `AGR` if the underlying jurisdiction uses another statutory definition.
+- [x] Define and use consistently:
+  - [x] **GGR / casino win:** patron wagers minus gaming payouts before jurisdiction-specific taxable adjustments.
+  - [x] **Taxable gaming revenue/base:** jurisdiction-defined amount used for gaming-tax calculation.
+  - [x] **Non-gaming revenue:** hotel, food and beverage, entertainment, retail, and other property revenue.
+  - [x] **Total property revenue:** gaming plus non-gaming revenue.
+- [x] Resolve terminology through the selected jurisdiction profile.
+- [x] Do not label a generic national output `AGR` if the underlying jurisdiction uses another statutory definition.
 
 ## 4.2 Origin/facility notation
 
-- [ ] `i` = origin zone.
-- [ ] `j` = casino/facility alternative.
-- [ ] `D_i` = annual resident gaming-expenditure pool generated by origin `i`.
-- [ ] `T_ij` = network travel time from origin `i` to facility `j`.
-- [ ] `L_ij` = network travel distance.
-- [ ] `A_j` = calibrated attraction/competitive mass of facility `j`.
-- [ ] `F_ij` = travel-friction function.
-- [ ] `W_ij` = unnormalized attraction weight.
-- [ ] `P_ij` = modeled share/probability of origin `i` gaming expenditure allocated to facility `j`.
-- [ ] `R_j,resident` = resident GGR captured by facility `j`.
-- [ ] `R_j,tourism` = incremental tourism GGR.
-- [ ] `R_j,traffic` = incremental through-traffic/intercept GGR.
-- [ ] `R_j,total` = stabilized total GGR.
+- [x] `i` = origin zone.
+- [x] `j` = casino/facility alternative.
+- [x] `D_i` = annual resident gaming-expenditure pool generated by origin `i`.
+- [x] `T_ij` = network travel time from origin `i` to facility `j`.
+- [x] `L_ij` = network travel distance.
+- [x] `A_j` = calibrated attraction/competitive mass of facility `j`.
+- [x] `F_ij` = travel-friction function.
+- [x] `W_ij` = unnormalized attraction weight.
+- [x] `P_ij` = modeled share/probability of origin `i` gaming expenditure allocated to facility `j`.
+- [x] `R_j,resident` = resident GGR captured by facility `j`.
+- [x] `R_j,tourism` = incremental tourism GGR.
+- [x] `R_j,traffic` = incremental through-traffic/intercept GGR.
+- [x] `R_j,total` = stabilized total GGR.
 
 ---
 
@@ -286,50 +286,50 @@ Primary source:
 
 ## 5.1 Create a source catalog
 
-- [ ] Add `data_sources`.
-- [ ] Include:
-  - [ ] ID;
-  - [ ] name;
-  - [ ] publisher;
-  - [ ] URL;
-  - [ ] source type;
-  - [ ] geographic coverage;
-  - [ ] vintage/period;
-  - [ ] retrieved timestamp;
-  - [ ] license/terms notes;
-  - [ ] content hash;
-  - [ ] authoritative-source flag;
-  - [ ] notes.
+- [x] Add `data_sources`.
+- [x] Include:
+  - [x] ID;
+  - [x] name;
+  - [x] publisher;
+  - [x] URL;
+  - [x] source type;
+  - [x] geographic coverage;
+  - [x] vintage/period;
+  - [x] retrieved timestamp;
+  - [x] license/terms notes;
+  - [x] content hash;
+  - [x] authoritative-source flag;
+  - [x] notes.
 
 ## 5.2 Create immutable dataset snapshots
 
-- [ ] Add `dataset_snapshots`.
-- [ ] Store source, period, ingestion time, row count, checksum, transform version, validation state, and warnings/errors.
-- [ ] Never overwrite a dataset used by a prior model run without preserving the original snapshot identity.
+- [x] Add `dataset_snapshots`.
+- [x] Store source, period, ingestion time, row count, checksum, transform version, validation state, and warnings/errors.
+- [x] Never overwrite a dataset used by a prior model run without preserving the original snapshot identity.
 
 ## 5.3 Model runs must reference exact data
 
-- [ ] Add immutable `model_runs`.
-- [ ] Store:
-  - [ ] run UUID;
-  - [ ] model version;
-  - [ ] jurisdiction profile/version;
-  - [ ] base parameter-set ID/version;
-  - [ ] resolved parameter values after all overrides;
-  - [ ] override audit records;
-  - [ ] scenario ID;
-  - [ ] site coordinates;
-  - [ ] development-program ID/version;
-  - [ ] origin-demographic snapshot;
-  - [ ] income/AGI snapshot;
-  - [ ] competitor snapshot;
-  - [ ] observed-performance snapshot;
-  - [ ] travel-matrix graph/version hash;
-  - [ ] tourism/traffic snapshot IDs;
-  - [ ] economic/social-cost assumption versions;
-  - [ ] creation timestamp;
-  - [ ] execution duration;
-  - [ ] warning/error summary.
+- [x] Add immutable `model_runs`.
+- [x] Store:
+  - [x] run UUID;
+  - [x] model version;
+  - [x] jurisdiction profile/version;
+  - [x] base parameter-set ID/version;
+  - [x] resolved parameter values after all overrides;
+  - [x] override audit records;
+  - [x] scenario ID;
+  - [x] site coordinates;
+  - [x] development-program ID/version;
+  - [x] origin-demographic snapshot;
+  - [x] income/AGI snapshot;
+  - [x] competitor snapshot;
+  - [x] observed-performance snapshot;
+  - [x] travel-matrix graph/version hash;
+  - [x] tourism/traffic snapshot IDs;
+  - [x] economic/social-cost assumption versions;
+  - [x] creation timestamp;
+  - [x] execution duration;
+  - [x] warning/error summary.
 
 ---
 
@@ -337,49 +337,49 @@ Primary source:
 
 ## 6.1 Use flexible origin geographies
 
-- [ ] Support ZCTA/ZIP-compatible origin zones as a primary U.S. demand geography.
-- [ ] Do not assume USPS ZIP Codes and Census ZCTAs are identical.
-- [ ] Retain Census block groups for higher-resolution demographic allocation.
-- [ ] Support tract/county aggregation where source data or performance requires it.
-- [ ] Design origin IDs generically enough to support future non-U.S. border-market data if needed.
+- [x] Support ZCTA/ZIP-compatible origin zones as a primary U.S. demand geography.
+- [x] Do not assume USPS ZIP Codes and Census ZCTAs are identical.
+- [x] Retain Census block groups for higher-resolution demographic allocation.
+- [x] Support tract/county aggregation where source data or performance requires it.
+- [x] Design origin IDs generically enough to support future non-U.S. border-market data if needed.
 
 ## 6.2 Create `origin_zones`
 
-- [ ] Store:
-  - [ ] origin ID/type;
-  - [ ] geography code;
-  - [ ] state/territory;
-  - [ ] county/parish equivalents;
-  - [ ] MSA/CSA or other regional identifiers where available;
-  - [ ] representative population-weighted point;
-  - [ ] area geometry;
-  - [ ] source snapshot IDs.
+- [x] Store:
+  - [x] origin ID/type;
+  - [x] geography code;
+  - [x] state/territory;
+  - [x] county/parish equivalents;
+  - [x] MSA/CSA or other regional identifiers where available;
+  - [x] representative population-weighted point;
+  - [x] area geometry;
+  - [x] source snapshot IDs.
 
 ## 6.3 Use legal-gaming-age-aware population
 
-- [ ] Do not globally hard-code age 21+.
-- [ ] Resolve the relevant legal gaming age from the facility/jurisdiction scenario.
-- [ ] Derive eligible population for common thresholds such as 18+ and 21+ from ACS age bins.
-- [ ] Preserve raw age-bin data and interpolation method.
-- [ ] Validate totals against county/state controls.
-- [ ] Support projection to scenario year using explicit population-growth assumptions and data sources.
+- [x] Do not globally hard-code age 21+.
+- [x] Resolve the relevant legal gaming age from the facility/jurisdiction scenario.
+- [x] Derive eligible population for common thresholds such as 18+ and 21+ from ACS age bins.
+- [x] Preserve raw age-bin data and interpolation method.
+- [x] Validate totals against county/state controls.
+- [x] Support projection to scenario year using explicit population-growth assumptions and data sources.
 
 ## 6.4 Dynamic patron-origin reporting
 
-- [ ] Patron-origin analysis must be generated from the actual model run.
-- [ ] Do **not** hard-code report categories such as Allen County, DeKalb County, Steuben County, Rest of Indiana, Michigan, Ohio, Other.
-- [ ] Generate origin summaries dynamically using relevant dimensions:
-  - [ ] top origin counties/parishes by modeled GGR;
-  - [ ] top origin ZIP/ZCTA zones;
-  - [ ] state/territory totals;
-  - [ ] host county and host state;
-  - [ ] host MSA/CSA where appropriate;
-  - [ ] in-jurisdiction vs out-of-jurisdiction;
-  - [ ] in-state vs out-of-state for state-regulated projects;
-  - [ ] cross-border international origins when relevant;
-  - [ ] resident vs tourism vs through-traffic components.
-- [ ] Use configurable top-N thresholds and group immaterial residual origins as `Other origins` only after preserving the full detail in data/export.
-- [ ] For the current Indiana scenario, Allen, DeKalb, Steuben, Michigan, and Ohio may naturally appear because they contribute material demand. They must appear because the model finds them, not because report code knows their names.
+- [x] Patron-origin analysis must be generated from the actual model run.
+- [x] Do **not** hard-code report categories such as Allen County, DeKalb County, Steuben County, Rest of Indiana, Michigan, Ohio, Other.
+- [x] Generate origin summaries dynamically using relevant dimensions:
+  - [x] top origin counties/parishes by modeled GGR;
+  - [x] top origin ZIP/ZCTA zones;
+  - [x] state/territory totals;
+  - [x] host county and host state;
+  - [x] host MSA/CSA where appropriate;
+  - [x] in-jurisdiction vs out-of-jurisdiction;
+  - [x] in-state vs out-of-state for state-regulated projects;
+  - [x] cross-border international origins when relevant;
+  - [x] resident vs tourism vs through-traffic components.
+- [x] Use configurable top-N thresholds and group immaterial residual origins as `Other origins` only after preserving the full detail in data/export.
+- [x] For the current Indiana scenario, Allen, DeKalb, Steuben, Michigan, and Ohio may naturally appear because they contribute material demand. They must appear because the model finds them, not because report code knows their names.
 
 ## 6.5 Optional higher-resolution block-group modeling and ZIP/ZCTA reporting
 
@@ -484,32 +484,32 @@ A professional-grade model must not depend on one unexplained demand formula.
 
 ## 7.1 Specification A: AGI-share demand model
 
-- [ ] Implement:
+- [x] Implement:
 
 ```text
 D_i_AGI = RealIncomeMass_i × GamingIncomeShare_region × OriginAdjustment_i
 ```
 
-- [ ] Use IRS SOI ZIP-level AGI for U.S. origins where available.
-- [ ] Treat Spectrum's national and Indiana ratios as initial benchmark priors, not universal constants.
-- [ ] Allow state/region-specific gaming intensity.
-- [ ] Calibrate against observed market gaming revenue where possible.
-- [ ] Prevent double income weighting.
+- [x] Use IRS SOI ZIP-level AGI for U.S. origins where available.
+- [x] Treat Spectrum's national and Indiana ratios as initial benchmark priors, not universal constants.
+- [x] Allow state/region-specific gaming intensity.
+- [x] Calibrate against observed market gaming revenue where possible.
+- [x] Prevent double income weighting.
 
 ## 7.2 Specification B: eligible-adult per-capita expenditure model
 
-- [ ] Implement:
+- [x] Implement:
 
 ```text
 D_i_PCE = EligibleAdults_i × BaseGamingExpenditurePerAdult × IncomeAdjustment_i
 IncomeAdjustment_i = (IncomeMetric_i / RegionalReferenceIncome)^epsilon_income
 ```
 
-- [ ] Resolve `EligibleAdults_i` using the scenario's gaming-age rule.
-- [ ] Calibrate `BaseGamingExpenditurePerAdult` by market/regime.
-- [ ] Make `epsilon_income` a versioned configurable parameter.
-- [ ] Bound extreme origin adjustments.
-- [ ] Treat consultant per-adult values only as priors/benchmarks.
+- [x] Resolve `EligibleAdults_i` using the scenario's gaming-age rule.
+- [x] Calibrate `BaseGamingExpenditurePerAdult` by market/regime.
+- [x] Make `epsilon_income` a versioned configurable parameter.
+- [x] Bound extreme origin adjustments.
+- [x] Treat consultant per-adult values only as priors/benchmarks.
 
 ## 7.3 Demand-model reconciliation
 
@@ -525,44 +525,44 @@ IncomeAdjustment_i = (IncomeMetric_i / RegionalReferenceIncome)^epsilon_income
 
 ## 8.1 Define inclusion rules before collecting properties
 
-- [ ] Build a competitive field based on origin accessibility, not simply distance from the proposed site.
-- [ ] Include commercial casinos, racinos, tribal casinos, and sufficiently substitutable facilities.
-- [ ] Treat sportsbook-only, OTB, charity gaming, distributed gaming, and other limited products separately unless evidence supports material substitution with casino-floor GGR.
-- [ ] Include facilities outside the host state when they compete for the same origins.
-- [ ] Permit Canada/Mexico or other cross-border facilities when they materially compete with a U.S. border market.
-- [ ] Include a geographic/attraction margin beyond the nominal candidate trade area or calibrate an outside option.
+- [x] Build a competitive field based on origin accessibility, not simply distance from the proposed site.
+- [x] Include commercial casinos, racinos, tribal casinos, and sufficiently substitutable facilities.
+- [x] Treat sportsbook-only, OTB, charity gaming, distributed gaming, and other limited products separately unless evidence supports material substitution with casino-floor GGR.
+- [x] Include facilities outside the host state when they compete for the same origins.
+- [x] Permit Canada/Mexico or other cross-border facilities when they materially compete with a U.S. border market.
+- [x] Include a geographic/attraction margin beyond the nominal candidate trade area or calibrate an outside option.
 
 ## 8.2 Expand `casino_competitors`
 
-- [ ] Add stable identity and regulatory fields.
-- [ ] Add commercial/tribal/racino status.
-- [ ] Add regulator/jurisdiction.
-- [ ] Add opening/closure/operator-change history.
-- [ ] Add physical scale:
-  - [ ] slots/VLT positions;
-  - [ ] table games;
-  - [ ] poker where material;
-  - [ ] gaming floor size;
-  - [ ] hotel rooms;
-  - [ ] event/entertainment capacity;
-  - [ ] food/beverage scale;
-  - [ ] resort/spa/golf/destination amenities;
-  - [ ] development cost and dollar year when public.
-- [ ] Add access/context:
-  - [ ] interstate/limited-access proximity;
-  - [ ] interchange access;
-  - [ ] urban/local/destination orientation;
-  - [ ] border-market indicator.
+- [x] Add stable identity and regulatory fields.
+- [x] Add commercial/tribal/racino status.
+- [x] Add regulator/jurisdiction.
+- [x] Add opening/closure/operator-change history.
+- [x] Add physical scale:
+  - [x] slots/VLT positions;
+  - [x] table games;
+  - [x] poker where material;
+  - [x] gaming floor size;
+  - [x] hotel rooms;
+  - [x] event/entertainment capacity;
+  - [x] food/beverage scale;
+  - [x] resort/spa/golf/destination amenities;
+  - [x] development cost and dollar year when public.
+- [x] Add access/context:
+  - [x] interstate/limited-access proximity;
+  - [x] interchange access;
+  - [x] urban/local/destination orientation;
+  - [x] border-market indicator.
 
 ## 8.3 Create observed performance history
 
-- [ ] Create `casino_gaming_revenue_periods`.
-- [ ] Store monthly data when available and derive annual/trailing values.
-- [ ] Store exact metric definition because states report GGR/AGR/win differently.
-- [ ] Store source snapshot and inflation-adjusted values.
-- [ ] Flag pandemic, construction, opening, closure, labor-disruption, and other anomalous periods.
-- [ ] Build regulator/provider adapters by jurisdiction rather than one Indiana-only ingestion service.
-- [ ] Prefer authoritative gaming regulators and tribal/public filings where available.
+- [x] Create `casino_gaming_revenue_periods`.
+- [x] Store monthly data when available and derive annual/trailing values.
+- [x] Store exact metric definition because states report GGR/AGR/win differently.
+- [x] Store source snapshot and inflation-adjusted values.
+- [x] Flag pandemic, construction, opening, closure, labor-disruption, and other anomalous periods.
+- [x] Build regulator/provider adapters by jurisdiction rather than one Indiana-only ingestion service.
+- [x] Prefer authoritative gaming regulators and tribal/public filings where available.
 
 ---
 
@@ -570,18 +570,18 @@ IncomeAdjustment_i = (IncomeMetric_i / RegionalReferenceIncome)^epsilon_income
 
 ## 9.1 Use Valhalla as primary travel friction
 
-- [ ] Build origin-to-facility network travel times.
-- [ ] Use Haversine distance only for prefiltering, fallback diagnostics, and tests.
-- [ ] Capture travel time and routed distance.
-- [ ] Use a consistent automobile routing profile unless scenario-specific evidence requires another profile.
+- [x] Build origin-to-facility network travel times.
+- [x] Use Haversine distance only for prefiltering, fallback diagnostics, and tests.
+- [x] Capture travel time and routed distance.
+- [x] Use a consistent automobile routing profile unless scenario-specific evidence requires another profile.
 
 ## 9.2 Persist the matrix
 
-- [ ] Create `origin_facility_travel`.
-- [ ] Key by origin, facility/scenario facility, routing graph hash/version, and costing profile.
-- [ ] Store minutes, distance, route-found flag, and timestamp.
-- [ ] Precompute stable incumbent routes.
-- [ ] For a movable proposed site, compute/cached only the new facility column where practical.
+- [x] Create `origin_facility_travel`.
+- [x] Key by origin, facility/scenario facility, routing graph hash/version, and costing profile.
+- [x] Store minutes, distance, route-found flag, and timestamp.
+- [x] Precompute stable incumbent routes.
+- [x] For a movable proposed site, compute/cached only the new facility column where practical.
 
 ## 9.3 National performance requirements
 
@@ -596,10 +596,10 @@ IncomeAdjustment_i = (IncomeMetric_i / RegionalReferenceIncome)^epsilon_income
 
 ## 10.1 Replace arbitrary feature-addition weights
 
-- [ ] Do not use `1.00 + 0.15 + 0.20` style scoring as the production attraction model.
-- [ ] Build `FacilityAttractivenessService`.
-- [ ] Separate physical/development attraction from travel friction.
-- [ ] Avoid double counting correlated scale measures.
+- [x] Do not use `1.00 + 0.15 + 0.20` style scoring as the production attraction model.
+- [x] Build `FacilityAttractivenessService`.
+- [x] Separate physical/development attraction from travel friction.
+- [x] Avoid double counting correlated scale measures.
 
 ## 10.2 Structural physical-mass specification
 
@@ -626,20 +626,20 @@ IncomeAdjustment_i = (IncomeMetric_i / RegionalReferenceIncome)^epsilon_income
 
 ## 10.4 Proposed development program
 
-- [ ] Create versioned `development_programs`.
-- [ ] Include:
-  - [ ] slots/VLTs;
-  - [ ] tables;
-  - [ ] poker if applicable;
-  - [ ] sportsbook;
-  - [ ] hotel rooms;
-  - [ ] gaming floor size;
-  - [ ] restaurants/bars;
-  - [ ] entertainment/event capacity;
-  - [ ] resort amenities;
-  - [ ] announced/estimated capital cost;
-  - [ ] opening/stabilization assumptions.
-- [ ] Let users configure the proposed program independently from the site.
+- [x] Create versioned `development_programs`.
+- [x] Include:
+  - [x] slots/VLTs;
+  - [x] tables;
+  - [x] poker if applicable;
+  - [x] sportsbook;
+  - [x] hotel rooms;
+  - [x] gaming floor size;
+  - [x] restaurants/bars;
+  - [x] entertainment/event capacity;
+  - [x] resort amenities;
+  - [x] announced/estimated capital cost;
+  - [x] opening/stabilization assumptions.
+- [x] Let users configure the proposed program independently from the site.
 
 ---
 
@@ -709,35 +709,35 @@ This is a required production subsystem, not a developer-only configuration file
 
 ## 12.1 Create a parameter catalog
 
-- [ ] Create `model_parameter_definitions` or equivalent.
-- [ ] Each definition must include:
-  - [ ] stable parameter key;
-  - [ ] category;
-  - [ ] display name;
-  - [ ] technical description;
-  - [ ] plain-language interpretation;
-  - [ ] units;
-  - [ ] data type;
-  - [ ] system fallback default;
-  - [ ] hard min/max for computational safety if required;
-  - [ ] validated/recommended low/high range where applicable;
-  - [ ] UI step/precision;
-  - [ ] UI exposure level: standard, advanced, expert, hidden/internal;
-  - [ ] user-overridable flag;
-  - [ ] model-version applicability;
-  - [ ] provenance/calibration notes.
+- [x] Create `model_parameter_definitions` or equivalent.
+- [x] Each definition must include:
+  - [x] stable parameter key;
+  - [x] category;
+  - [x] display name;
+  - [x] technical description;
+  - [x] plain-language interpretation;
+  - [x] units;
+  - [x] data type;
+  - [x] system fallback default;
+  - [x] hard min/max for computational safety if required;
+  - [x] validated/recommended low/high range where applicable;
+  - [x] UI step/precision;
+  - [x] UI exposure level: standard, advanced, expert, hidden/internal;
+  - [x] user-overridable flag;
+  - [x] model-version applicability;
+  - [x] provenance/calibration notes.
 
 ## 12.2 Create versioned parameter sets
 
-- [ ] Add `model_parameter_sets` and `model_parameter_set_values` or equivalent.
-- [ ] Support:
-  - [ ] national/base calibrated sets;
-  - [ ] jurisdiction/market-specific calibrated sets;
-  - [ ] conservative/base/high scenario presets;
-  - [ ] benchmark-study parameter sets for validation;
-  - [ ] experimental sets.
-- [ ] A parameter set must be immutable once referenced by a finalized model run.
-- [ ] A changed calibration creates a new version.
+- [x] Add `model_parameter_sets` and `model_parameter_set_values` or equivalent.
+- [x] Support:
+  - [x] national/base calibrated sets;
+  - [x] jurisdiction/market-specific calibrated sets;
+  - [x] conservative/base/high scenario presets;
+  - [x] benchmark-study parameter sets for validation;
+  - [x] experimental sets.
+- [x] A parameter set must be immutable once referenced by a finalized model run.
+- [x] A changed calibration creates a new version.
 
 ## 12.3 Parameter precedence
 
@@ -796,16 +796,16 @@ System fallback
 
 ## 12.5 Override audit trail
 
-- [ ] Create `model_run_parameter_values` or equivalent snapshot table.
-- [ ] Store for every parameter:
-  - [ ] default/base value;
-  - [ ] scenario preset value if any;
-  - [ ] user override if any;
-  - [ ] final value used;
-  - [ ] source layer;
-  - [ ] validated-range status;
-  - [ ] warning text if outside the recommended range.
-- [ ] The report must include an appendix table of overridden parameters.
+- [x] Create `model_run_parameter_values` or equivalent snapshot table.
+- [x] Store for every parameter:
+  - [x] default/base value;
+  - [x] scenario preset value if any;
+  - [x] user override if any;
+  - [x] final value used;
+  - [x] source layer;
+  - [x] validated-range status;
+  - [x] warning text if outside the recommended range.
+- [x] The report must include an appendix table of overridden parameters.
 
 ---
 
@@ -924,19 +924,19 @@ A fixed share model redistributes a constant gaming pool. Improved access may al
 
 # 18. Baseline vs with-project market equilibrium
 
-- [ ] Run the gravity model twice:
-  - [ ] baseline competitive market without the proposed project;
-  - [ ] with-project market including the proposed facility.
-- [ ] For every incumbent calculate change in modeled GGR.
-- [ ] Decompose proposed GGR into:
-  - [ ] captured from host-state incumbents;
-  - [ ] captured from out-of-state incumbents;
-  - [ ] captured from tribal/other-jurisdiction incumbents where relevant;
-  - [ ] captured from outside/unmodeled leakage;
-  - [ ] newly induced resident demand;
-  - [ ] tourism;
-  - [ ] traffic intercept.
-- [ ] This decomposition must drive fiscal and economic-impact accounting.
+- [x] Run the gravity model twice:
+  - [x] baseline competitive market without the proposed project;
+  - [x] with-project market including the proposed facility.
+- [x] For every incumbent calculate change in modeled GGR.
+- [x] Decompose proposed GGR into:
+  - [x] captured from host-state incumbents;
+  - [x] captured from out-of-state incumbents;
+  - [x] captured from tribal/other-jurisdiction incumbents where relevant;
+  - [x] captured from outside/unmodeled leakage;
+  - [x] newly induced resident demand;
+  - [x] tourism;
+  - [x] traffic intercept.
+- [x] This decomposition must drive fiscal and economic-impact accounting.
 
 ---
 
@@ -1035,28 +1035,28 @@ A fixed share model redistributes a constant gaming pool. Improved access may al
 
 ## 23.1 Define the displacement base correctly
 
-- [ ] Do not apply displacement to all proposed GGR.
-- [ ] Determine the portion attributable to local resident spending that plausibly substitutes for other local discretionary expenditure.
-- [ ] Exclude or separately handle:
-  - [ ] imported out-of-area spending;
-  - [ ] out-of-state repatriated casino spending where the relevant alternative would already have left the local economy;
-  - [ ] pure cannibalization from another local casino when analyzing local household spending displacement;
-  - [ ] tourism/traffic spending unless local substitution evidence exists.
+- [x] Do not apply displacement to all proposed GGR.
+- [x] Determine the portion attributable to local resident spending that plausibly substitutes for other local discretionary expenditure.
+- [x] Exclude or separately handle:
+  - [x] imported out-of-area spending;
+  - [x] out-of-state repatriated casino spending where the relevant alternative would already have left the local economy;
+  - [x] pure cannibalization from another local casino when analyzing local household spending displacement;
+  - [x] tourism/traffic spending unless local substitution evidence exists.
 
 ## 23.2 Core definitions
 
-- [ ] `LocalResidentGamingBase` = modeled gaming spend from defined local origins.
-- [ ] `DisplacementEligibleBase` = portion of local resident gaming spend plausibly shifted from local discretionary sectors.
-- [ ] `k` = displacement coefficient.
-- [ ] `D_total = DisplacementEligibleBase × k`.
-- [ ] `w_s` = sector allocation weight.
-- [ ] `D_s = D_total × w_s`.
+- [x] `LocalResidentGamingBase` = modeled gaming spend from defined local origins.
+- [x] `DisplacementEligibleBase` = portion of local resident gaming spend plausibly shifted from local discretionary sectors.
+- [x] `k` = displacement coefficient.
+- [x] `D_total = DisplacementEligibleBase × k`.
+- [x] `w_s` = sector allocation weight.
+- [x] `D_s = D_total × w_s`.
 
 ## 23.3 Dynamic local geography
 
-- [ ] The meaning of `local` must be configurable by report/scenario.
-- [ ] Support host municipality, host county, custom multi-county region, MSA/CSA, and host state analyses.
-- [ ] Do not hard-code Northeast Indiana as the local economic area.
+- [x] The meaning of `local` must be configurable by report/scenario.
+- [x] Support host municipality, host county, custom multi-county region, MSA/CSA, and host state analyses.
+- [x] Do not hard-code Northeast Indiana as the local economic area.
 
 ## 23.4 Sector inventory
 
@@ -1079,27 +1079,27 @@ A fixed share model redistributes a constant gaming pool. Improved access may al
 
 # 24. Employment and labor-market effects
 
-- [ ] Separate:
-  - [ ] direct casino employment;
-  - [ ] construction employment where modeled;
-  - [ ] indirect/induced employment;
-  - [ ] displaced employment in local sectors;
-  - [ ] incumbent-casino employment cannibalization where material;
-  - [ ] net employment.
-- [ ] Do not report gross casino jobs as net jobs.
-- [ ] Use wage/occupation assumptions tied to relevant geography where available.
-- [ ] Allow user overrides with provenance.
+- [x] Separate:
+  - [x] direct casino employment;
+  - [x] construction employment where modeled;
+  - [x] indirect/induced employment;
+  - [x] displaced employment in local sectors;
+  - [x] incumbent-casino employment cannibalization where material;
+  - [x] net employment.
+- [x] Do not report gross casino jobs as net jobs.
+- [x] Use wage/occupation assumptions tied to relevant geography where available.
+- [x] Allow user overrides with provenance.
 
 ---
 
 # 25. Fiscal impact engine
 
-- [ ] Use the jurisdiction profile to calculate gaming taxes and revenue sharing.
-- [ ] Separately calculate non-gaming sales taxes, income/business taxes, property taxes where supported, and other applicable public revenue.
-- [ ] Deduct or separately present lost fiscal revenue from displaced local business activity.
-- [ ] Distinguish host-local, host-state, and other-jurisdiction fiscal impacts.
-- [ ] Distinguish gross gaming tax receipts from net fiscal benefit.
-- [ ] Version all tax rules by effective date.
+- [x] Use the jurisdiction profile to calculate gaming taxes and revenue sharing.
+- [x] Separately calculate non-gaming sales taxes, income/business taxes, property taxes where supported, and other applicable public revenue.
+- [x] Deduct or separately present lost fiscal revenue from displaced local business activity.
+- [x] Distinguish host-local, host-state, and other-jurisdiction fiscal impacts.
+- [x] Distinguish gross gaming tax receipts from net fiscal benefit.
+- [x] Version all tax rules by effective date.
 
 ---
 
@@ -1149,24 +1149,24 @@ The application's existing strength is that it already attempts to quantify down
 
 ## 28.1 Suggested core services
 
-- [ ] `OriginDemandService`.
-- [ ] `CompetitiveUniverseService`.
-- [ ] `TravelMatrixService`.
-- [ ] `FacilityAttractivenessService`.
-- [ ] `GravityModelService`.
-- [ ] `MarketExpansionService`.
-- [ ] `TourismDemandService`.
-- [ ] `TrafficInterceptService`.
-- [ ] `CannibalizationAccountingService`.
-- [ ] `DisplacementModelService`.
-- [ ] `EmploymentImpactService`.
-- [ ] `FiscalImpactService`.
-- [ ] `SocialCostService`.
-- [ ] `NetImpactService`.
-- [ ] `ModelParameterService`.
-- [ ] `JurisdictionProfileService`.
-- [ ] `ModelRunService`.
-- [ ] `ReportCompilationService`.
+- [x] `OriginDemandService`.
+- [x] `CompetitiveUniverseService`.
+- [x] `TravelMatrixService`.
+- [x] `FacilityAttractivenessService`.
+- [x] `GravityModelService`.
+- [x] `MarketExpansionService`.
+- [x] `TourismDemandService`.
+- [x] `TrafficInterceptService`.
+- [x] `CannibalizationAccountingService`.
+- [x] `DisplacementModelService`.
+- [x] `EmploymentImpactService`.
+- [x] `FiscalImpactService`.
+- [x] `SocialCostService`.
+- [x] `NetImpactService`.
+- [x] `ModelParameterService`.
+- [x] `JurisdictionProfileService`.
+- [x] `ModelRunService`.
+- [x] `ReportCompilationService`.
 
 ## 28.2 Model execution pipeline
 
@@ -1225,10 +1225,10 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
 
 ## 29.1 Report source of truth
 
-- [ ] Create an immutable `ReportModel` derived entirely from a finalized `ModelRun` plus report-presentation options.
-- [ ] Do not recalculate economics independently inside the report renderer.
-- [ ] Report generation must be deterministic for a given model run and report template version.
-- [ ] Store report template/version and generation timestamp.
+- [x] Create an immutable `ReportModel` derived entirely from a finalized `ModelRun` plus report-presentation options.
+- [x] Do not recalculate economics independently inside the report renderer.
+- [x] Report generation must be deterministic for a given model run and report template version.
+- [x] Store report template/version and generation timestamp.
 
 ## 29.2 Report output formats
 
@@ -1351,17 +1351,17 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
 
 # 32. National data-provider architecture
 
-- [ ] Build provider interfaces for data sources that vary by jurisdiction.
-- [ ] Candidate provider categories:
-  - [ ] gaming regulator performance;
-  - [ ] gaming facility inventory;
-  - [ ] state DOT traffic;
-  - [ ] tourism/visitor statistics;
-  - [ ] tax/fiscal rules;
-  - [ ] local economic/business inventory.
-- [ ] Common federal/national sources may include Census/ACS, IRS SOI, BEA, BLS, FHWA, and other authoritative datasets.
-- [ ] State-specific adapters should supply additional detail without changing gravity-engine code.
-- [ ] Persist provider/source provenance with each dataset snapshot.
+- [x] Build provider interfaces for data sources that vary by jurisdiction.
+- [x] Candidate provider categories:
+  - [x] gaming regulator performance;
+  - [x] gaming facility inventory;
+  - [x] state DOT traffic;
+  - [x] tourism/visitor statistics;
+  - [x] tax/fiscal rules;
+  - [x] local economic/business inventory.
+- [x] Common federal/national sources may include Census/ACS, IRS SOI, BEA, BLS, FHWA, and other authoritative datasets.
+- [x] State-specific adapters should supply additional detail without changing gravity-engine code.
+- [x] Persist provider/source provenance with each dataset snapshot.
 
 ---
 
@@ -1437,44 +1437,44 @@ Indiana is the first real validation suite, not the core architecture.
 
 ## Phase A: architecture and parameterization
 
-- [ ] Generalize jurisdiction concepts.
-- [ ] Implement parameter catalog and versioned parameter sets.
-- [ ] Implement user override persistence and precedence.
-- [ ] Remove Fort Wayne hard-coding from reusable model services.
+- [x] Generalize jurisdiction concepts.
+- [x] Implement parameter catalog and versioned parameter sets.
+- [x] Implement user override persistence and precedence.
+- [x] Remove Fort Wayne hard-coding from reusable model services.
 
 ## Phase B: data foundation
 
-- [ ] Origin geographies and eligible-age population.
-- [ ] Income/AGI.
-- [ ] National/jurisdiction competitor schema.
-- [ ] Observed GGR history.
-- [ ] Source catalog and dataset snapshots.
+- [x] Origin geographies and eligible-age population.
+- [x] Income/AGI.
+- [x] National/jurisdiction competitor schema.
+- [x] Observed GGR history.
+- [x] Source catalog and dataset snapshots.
 
 ## Phase C: gravity engine
 
-- [ ] Travel matrix.
-- [ ] Facility attractiveness.
-- [ ] Demand engines.
-- [ ] Gravity allocation.
-- [ ] Outside option.
-- [ ] Baseline vs with-project equilibrium.
+- [x] Travel matrix.
+- [x] Facility attractiveness.
+- [x] Demand engines.
+- [x] Gravity allocation.
+- [x] Outside option.
+- [x] Baseline vs with-project equilibrium.
 
 ## Phase D: incremental demand
 
-- [ ] Accessibility-induced demand.
-- [ ] Tourism.
-- [ ] Through traffic.
-- [ ] Ramp/stabilization.
-- [ ] Capacity checks.
+- [x] Accessibility-induced demand.
+- [x] Tourism.
+- [x] Through traffic.
+- [x] Ramp/stabilization.
+- [x] Capacity checks.
 
 ## Phase E: comprehensive impact
 
-- [ ] Cannibalization/repatriation accounting.
-- [ ] Sector displacement.
-- [ ] Employment.
-- [ ] Fiscal impact.
-- [ ] Social/downstream costs.
-- [ ] Net economic impact.
+- [x] Cannibalization/repatriation accounting.
+- [x] Sector displacement.
+- [x] Employment.
+- [x] Fiscal impact.
+- [x] Social/downstream costs.
+- [x] Net economic impact.
 
 ## Phase F: front-end configurability
 
@@ -1497,13 +1497,13 @@ Indiana is the first real validation suite, not the core architecture.
 
 ## Phase H: report engine
 
-- [ ] Immutable `ReportModel` from `ModelRun`.
-- [ ] Server-side report rendering.
-- [ ] Dynamic geography/origin sections.
-- [ ] Dynamic jurisdiction fiscal sections.
-- [ ] Parameter/override appendix.
-- [ ] Data/methodology appendix.
-- [ ] Publication-quality exhibits.
+- [x] Immutable `ReportModel` from `ModelRun`.
+- [x] Server-side report rendering.
+- [ ] Dynamic geography/origin sections. *(rendering/PDF output pending)*
+- [ ] Dynamic jurisdiction fiscal sections. *(rendering/PDF output pending)*
+- [ ] Parameter/override appendix. *(rendering/PDF output pending)*
+- [ ] Data/methodology appendix. *(rendering/PDF output pending)*
+- [ ] Publication-quality exhibits. *(rendering/PDF output pending)*
 
 ---
 
