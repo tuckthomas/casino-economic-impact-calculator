@@ -283,10 +283,72 @@ outreach@savenein.com
 
 # Data and Sources
 
+
+## Dependencies & Offline Support
+
+This application is designed to run **fully offline**. All critical external assets—including CSS frameworks, JavaScript libraries, Fonts, and Map Tiles—have been localized or vendored to ensure zero dependency on external CDNs during runtime. This architecture guarantees stability, privacy, and performance even in isolated environments.
+
+### NPM Packages (Frontend)
+Managed via `package.json` and built using `npm run build:css` / `copy-libs`.
+
+| Package | Version | Purpose |
+| :--- | :--- | :--- |
+| **tailwindcss** | ^3.4.0 | Utility-first CSS framework (Built via CLI) |
+| **@fontsource-variable/public-sans** | ^5.2.7 | Typography (Variable Font) |
+| **@fontsource-variable/material-symbols-outlined** | ^5.2.30 | Iconography (Variable Font) |
+
+### .NET Packages (Server)
+Managed via NuGet in `SaveNEIN.Server.csproj`.
+
+| Package | Version | Purpose |
+| :--- | :--- | :--- |
+| **Npgsql.EntityFrameworkCore.PostgreSQL** | 10.0.0 | Database Provider for PostgreSQL |
+| **Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite** | 10.0.0 | Spatial Support (PostGIS) |
+| **NetTopologySuite.IO.ShapeFile** | 2.1.0 | SHP File Ingestion (Census Data) |
+| **NetTopologySuite.IO.Esri.Shapefile** | 1.2.0 | Extended Shapefile Support |
+| **QuestPDF** | 2025.12.1 | PDF Report Generation |
+| **Microsoft.AspNetCore.Components.WebAssembly.Server** | 10.0.1 | Blazor Server Hosting |
+| **Microsoft.EntityFrameworkCore.Design** | 10.0.1 | EF Core Migration Tooling |
+| **Microsoft.AspNetCore.OpenApi** | 9.0.11 | Swagger/OpenAPI Generation |
+
+### Vendored Libraries
+These libraries are manually included in `wwwroot/js/lib` or `wwwroot/css` to avoid external fetch requests.
+
+| Library | Version | Purpose |
+| :--- | :--- | :--- |
+| **MapLibre GL JS** | v4.x | GPU-accelerated vector maps |
+| **PMTiles.js** | v2.x | Offline vector tile protocol for Protomaps |
+| **PDF.js** | v3.x | Client-side PDF rendering |
+| **PageFlip** | v2.x | Flipbook animation effect |
+
+---
+
+# Open Source and Contributions
+
+This project is shared openly to encourage community involvement. We invite developers and data scientists to:
+
+1.  Improve the Calculator: Refine social cost algorithms and add granular data points.
+2.  Enhance Visualizations: Expand mapping and charting capabilities.
+3.  Audit Sources: Ensure the latest research is reflected in the platform models.
+
+# Contact
+
+For inquiries, feedback, or to join the coalition, please reach out to:
+outreach@savenein.com
+
+# Data and Sources
+
 Social cost modeling is derived from established academic research:
 *   Grinols (2011): Social cost per problem gambler calculations (adjusted for 2025 inflation).
 *   Welte et al.: Proximity-based multipliers for gambling addiction risk.
 *   Spectrum Gaming: Comparison of state-commissioned revenue projections.
+
+---
+
+# License
+
+- **Base Platform & Web Application**: Licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](file:///m:/SaveNEIN/LICENSE.md).
+- **Advanced Economic Modeling Subsystem**: The gravity modeling engine, sector-weighted displacement calculator, Census ACS ingestion, backtest calibration, sensitivity analysis, stored report generators, and associated database migrations are licensed under the [PolyForm Noncommercial License 1.0.0](file:///m:/SaveNEIN/LICENSE-MODEL.md). Commercial use, monetization, paid consulting, or commercial hosting of the modeling engine without a commercial license is strictly prohibited.
 
 ---
 

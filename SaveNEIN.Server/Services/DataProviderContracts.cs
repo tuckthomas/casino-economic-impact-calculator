@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+// SaveNEIN Advanced Economic Modeling Subsystem
+// Copyright (C) 2026 Save Fort Wayne Contributors & Model Authors
+// Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
+
 namespace SaveNEIN.Server.Services;
 
 public sealed record ProviderFetchRequest(

@@ -4,3 +4,5 @@ set -eu
 npm run check:ui-text
 
 npm run check:tooltips
+
+npm run check:model-license

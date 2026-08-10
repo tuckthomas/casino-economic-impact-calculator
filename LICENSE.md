@@ -10,12 +10,18 @@ of this license document, but changing it is not allowed.
 ## Preamble
 
 Save Fort Wayne - A data-driven platform exposing the hidden economic and social costs of proposed casino expansions.
-Copyright (C) 2026  Save Fort Wayne Contributors
+Copyright (C) 2026  Save Fort Wayne Contributors & Model Authors
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+### Subsystem Dual-Licensing Notice
+
+1. **Base Platform & Web Application Core**:
+   This portion of the program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+2. **Advanced Economic Modeling Subsystem**:
+   The gravity modeling engine, sector-weighted displacement calculator, Census ACS ingestion, backtest calibration, sensitivity analysis, stored report generators, and associated database migrations (see [LICENSE-MODEL.md](file:///m:/SaveNEIN/LICENSE-MODEL.md) for full scope) are licensed under the **PolyForm Noncommercial License 1.0.0**. Commercial use, monetization, paid consulting, or commercial hosting of the modeling engine without a commercial license is strictly prohibited.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -24,6 +30,7 @@ GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 The GNU Affero General Public License is a free, copyleft license for
 software and other kinds of works, specifically designed to ensure

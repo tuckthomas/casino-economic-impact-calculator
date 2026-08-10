@@ -1,3 +1,8 @@
+-- SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+-- SaveNEIN Advanced Economic Modeling Subsystem
+-- Copyright (C) 2026 Save Fort Wayne Contributors & Model Authors
+-- Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
+
 -- 015_sensitivity_analyses.sql
 -- Immutable one-at-a-time sensitivity studies backed by complete stored model runs.
 
