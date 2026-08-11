@@ -7,67 +7,63 @@
 }
 
 .hero-desktop-learn-more {
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: auto;
-    margin: 0.5rem auto 0;
+    gap: 0.45rem;
+    color: rgba(241, 245, 249, 0.92);
     text-decoration: none;
+    margin: 0.5rem auto 0;
+    align-self: center;
+    cursor: pointer;
+    text-align: center;
     opacity: 0;
     transform: translateY(8px);
-    cursor: pointer;
-    transition: transform 0.2s ease, filter 0.2s ease;
+    transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .hero-desktop-learn-more:hover {
-    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.35));
+    color: #ffffff;
 }
 
-.hero-desktop-learn-more-svg {
-    width: 6.8rem;
-    height: 6.8rem;
-    overflow: visible;
+.hero-desktop-learn-more:hover .hero-desktop-learn-more-circle {
+    transform: translateY(2px);
+    border-color: rgba(255, 255, 255, 0.95);
+    background: rgba(225, 29, 46, 0.25);
+    box-shadow: 0 0 16px rgba(225, 29, 46, 0.35);
+    animation-play-state: paused;
 }
 
-.hero-desktop-learn-more-curved-text {
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.18em;
-    fill: rgba(241, 245, 249, 0.92);
+.hero-desktop-learn-more-text {
+    font-size: 0.875rem;
+    line-height: 1;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    font-family: inherit;
-    transition: fill 0.2s ease;
+    font-weight: 800;
+    color: inherit;
+    transition: color 0.2s ease;
 }
 
-.hero-desktop-learn-more:hover .hero-desktop-learn-more-curved-text {
-    fill: #ffffff;
-}
-
-.hero-desktop-learn-more-circle-bg {
-    fill: rgba(15, 23, 42, 0.4);
-    stroke: rgba(241, 245, 249, 0.8);
-    stroke-width: 2;
-    transition: stroke 0.2s ease, fill 0.2s ease;
-}
-
-.hero-desktop-learn-more:hover .hero-desktop-learn-more-circle-bg {
-    stroke: #ffffff;
-    fill: rgba(225, 29, 46, 0.22);
+.hero-desktop-learn-more-circle {
+    width: 2.85rem;
+    height: 2.85rem;
+    border-radius: 9999px;
+    border: 2px solid rgba(241, 245, 249, 0.75);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.35);
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    animation: heroDesktopChevronBob 1.6s ease-in-out infinite;
 }
 
 .hero-desktop-learn-more-chevron {
-    stroke: rgba(241, 245, 249, 0.95);
-    stroke-width: 2.5;
-    fill: none;
-}
-
-.hero-desktop-learn-more-btn-group {
-    animation: heroDesktopChevronBob 1.6s ease-in-out infinite;
-    transform-origin: 60px 68px;
-}
-
-.hero-desktop-learn-more:hover .hero-desktop-learn-more-btn-group {
-    animation-play-state: paused;
+    width: 1.25rem;
+    height: 1.25rem;
+    display: block;
+    color: inherit;
+    flex-shrink: 0;
 }
 
 .hero-mobile-swipe-hint,
