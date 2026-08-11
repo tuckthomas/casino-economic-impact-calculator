@@ -485,12 +485,13 @@ if ((!validateIncumbentCalibration && !validateMichiganProviderBundle && !valida
 }
 
 var validationDatabase = validateProviderIngestion ? args[1] : args[0];
-var requiredDatabasePrefix = validateProviderIngestion
-    ? validateIncumbentCalibration
-        ? "savenein_calibration_validation_"
-        : "savenein_provider_validation_"
-    : "savenein_gravity_validation_";
-if (!validationDatabase.StartsWith(requiredDatabasePrefix, StringComparison.Ordinal) ||
+var hasRequiredDatabasePrefix = validateProviderIngestion
+    ? validationDatabase.StartsWith(
+        validateIncumbentCalibration ? "savenein_calibration_validation_" : "savenein_provider_validation_",
+        StringComparison.Ordinal)
+    : validationDatabase.StartsWith("savenein_gravity_validation_", StringComparison.Ordinal) ||
+      validationDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal);
+if (!hasRequiredDatabasePrefix ||
     validationDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
 {
     throw new ArgumentException("Unsafe validation database name.");

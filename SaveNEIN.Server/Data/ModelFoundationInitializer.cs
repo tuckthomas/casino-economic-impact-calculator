@@ -176,6 +176,19 @@ public static class ModelFoundationInitializer
 
         var definitionsByKey = await db.ModelParameterDefinitions
             .ToDictionaryAsync(definition => definition.Key, StringComparer.Ordinal, cancellationToken);
+        foreach (var seededDefinition in definitions)
+        {
+            var storedDefinition = definitionsByKey[seededDefinition.Key];
+            if (storedDefinition.TechnicalDescription == $"Versioned model parameter '{storedDefinition.Key}'.")
+            {
+                storedDefinition.TechnicalDescription = seededDefinition.TechnicalDescription;
+            }
+            if (storedDefinition.PlainLanguageDescription == storedDefinition.DisplayName)
+            {
+                storedDefinition.PlainLanguageDescription = seededDefinition.PlainLanguageDescription;
+            }
+        }
+        await db.SaveChangesAsync(cancellationToken);
         var nationalBase = await GetOrCreateParameterSetAsync(
             db,
             "national-base",
@@ -364,8 +377,8 @@ public static class ModelFoundationInitializer
             Key = key,
             Category = category,
             DisplayName = displayName,
-            TechnicalDescription = $"Versioned model parameter '{key}'.",
-            PlainLanguageDescription = displayName,
+            TechnicalDescription = $"'{key}' is the {units} input consumed by the {category} module for {displayName.ToLowerInvariant()}.",
+            PlainLanguageDescription = PlainLanguageInterpretation(key, displayName, units),
             Units = units,
             DataType = "number",
             SystemDefaultValue = fallback,
@@ -381,6 +394,36 @@ public static class ModelFoundationInitializer
             IsCalibrated = calibrated,
             IsActive = true
         };
+
+    private static string PlainLanguageInterpretation(string key, string displayName, string units) => key switch
+    {
+        "gravity.beta" => "Controls how sharply casino attraction falls as routed drive time increases. Higher values make the modeled market more local.",
+        "gravity.alpha" => "Controls how strongly differences in facility attraction affect patron choice. Higher values favor larger or more attractive facilities more strongly.",
+        "gravity.outside_option_weight" => "Represents relevant gaming supply or leakage that is not explicitly modeled as a named facility.",
+        "demand.gaming_income_share" => "Sets the share of adjusted gross income available to the resident gaming-demand pool before facility allocation.",
+        "demand.income_elasticity" => "Controls how gaming demand changes with origin income relative to the model reference level.",
+        "demand.regional_intensity_multiplier" => "Scales resident gaming demand for the selected market while preserving the same origin-level allocation equations.",
+        "market_expansion.accessibility_elasticity" => "Controls how much resident gaming demand may expand when the project improves routed access to gaming.",
+        "tourism.capture_rate" => "Sets the share of eligible visiting participants captured by the proposed facility after resident overlap is removed.",
+        "traffic.intercept_rate" => "Sets the share of eligible through-travelers intercepted by the proposed facility after resident and tourism overlap is removed.",
+        "displacement.local_patron_share" => "Sets the modeled share of project patrons treated as local for displacement accounting.",
+        "displacement.eligible_base_share" => "Limits displacement to the economically eligible local resident revenue base after transfers, tourism, and traffic are excluded.",
+        "displacement.coefficient" => "Sets the share of the eligible local resident base expected to displace spending in other local sectors.",
+        "social_cost.prevalence" => "Sets the modeled share of the exposed population experiencing the defined problem-gambling condition.",
+        "ramp.first_year_share" => "Sets first-year project revenue as a share of stabilized annual revenue.",
+        "ramp.second_year_share" => "Sets second-year project revenue as a share of stabilized annual revenue.",
+        _ when key.EndsWith("_coefficient", StringComparison.Ordinal) =>
+            $"Controls the marginal effect of {displayName.ToLowerInvariant()}. Positive values increase the associated modeled result; negative values reduce it.",
+        _ when key.Contains("reference_", StringComparison.Ordinal) =>
+            $"Defines the normalization reference for {displayName.ToLowerInvariant()} so structural attraction remains interpretable.",
+        _ when units is "share" or "rate" =>
+            $"Sets {displayName.ToLowerInvariant()} as a proportion from zero to one unless the hard bounds state otherwise.",
+        _ when units is "multiplier" or "scale" =>
+            $"Scales {displayName.ToLowerInvariant()}; a value of one is neutral unless the provenance note states otherwise.",
+        _ when units is "indicator" =>
+            $"Turns {displayName.ToLowerInvariant()} off at zero and on at one.",
+        _ => $"Sets {displayName.ToLowerInvariant()} in {units} for the authoritative backend model."
+    };
 
     private static async Task<Jurisdiction> GetOrCreateJurisdictionAsync(
         AppDbContext db,

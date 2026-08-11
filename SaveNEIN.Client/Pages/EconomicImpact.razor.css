@@ -191,6 +191,67 @@
     font-weight: 750;
 }
 
+.model-field > small {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.model-field-action {
+    align-self: flex-start;
+    margin-top: 0.1rem;
+}
+
+.model-program-editor {
+    background: rgba(2, 6, 23, 0.48);
+    border: 1px solid #475569;
+    border-radius: 1rem;
+    margin-top: 1.5rem;
+    padding: 1rem;
+}
+
+.model-program-editor legend {
+    color: #dbeafe;
+    font-size: 1rem;
+    font-weight: 850;
+    padding: 0 0.4rem;
+}
+
+.model-program-editor > p {
+    color: #9fb0c7;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    margin: 0.25rem 0 0;
+}
+
+.model-checkbox-field {
+    align-items: center;
+    color: #cbd5e1;
+    display: flex;
+    font-size: 0.9rem;
+    font-weight: 750;
+    gap: 0.7rem;
+}
+
+.model-checkbox-field input {
+    height: 1.2rem;
+    width: 1.2rem;
+}
+
+.model-program-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.model-program-message {
+    color: #a5f3fc !important;
+}
+
+.model-program-message.is-error {
+    color: #fecaca !important;
+}
+
 .model-field input,
 .model-field select,
 .model-parameter input {
@@ -243,6 +304,39 @@ summary:focus-visible {
     padding: 0.9rem;
 }
 
+.model-section-toolbar {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-top: 1.25rem;
+}
+
+.model-section-toolbar p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.model-parameter-heading {
+    align-items: start;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.model-parameter-heading label {
+    color: #dbe5f4;
+    font-size: 0.9rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.model-parameter-heading .model-link-button {
+    flex: 0 0 auto;
+}
+
 .model-parameter.is-overridden {
     border-color: rgba(96, 165, 250, 0.8);
 }
@@ -252,19 +346,75 @@ summary:focus-visible {
 }
 
 .model-parameter small,
-.model-parameter em {
+.model-parameter-state {
     color: #94a3b8;
     font-size: 0.875rem;
     font-style: normal;
     line-height: 1.35;
 }
 
-.model-parameter em {
+.model-parameter-state {
     color: #7dd3fc;
 }
 
-.model-parameter.is-outside-range em {
+.model-parameter.is-outside-range .model-parameter-state {
     color: #fde68a;
+}
+
+.model-parameter-metadata {
+    border-top: 1px solid rgba(71, 85, 105, 0.65);
+    margin-top: 0.25rem;
+    padding-top: 0.65rem;
+}
+
+.model-parameter-metadata summary {
+    color: #bfdbfe;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 750;
+}
+
+.model-parameter-metadata p {
+    color: #b8c5d8;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0.75rem 0;
+}
+
+.model-parameter-metadata dl {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+}
+
+.model-parameter-metadata dl > div {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(6.5rem, 0.4fr) minmax(0, 1fr);
+}
+
+.model-parameter-metadata dt,
+.model-parameter-metadata dd {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.model-parameter-metadata dt {
+    color: #94a3b8;
+    font-weight: 750;
+}
+
+.model-parameter-metadata dd {
+    color: #dbe5f4;
+    overflow-wrap: anywhere;
+}
+
+.model-parameter-metadata .model-parameter-provenance {
+    background: rgba(30, 41, 59, 0.65);
+    border-radius: 0.65rem;
+    color: #cbd5e1;
+    padding: 0.65rem;
 }
 
 .model-advanced {
@@ -284,6 +434,74 @@ summary:focus-visible {
 
 .model-advanced-toolbar .model-field {
     flex: 1 1 auto;
+}
+
+.model-advanced-actions,
+.model-scenario-json-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.model-specification-grid {
+    border-bottom: 1px solid rgba(71, 85, 105, 0.65);
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+}
+
+.model-scenario-json {
+    background: rgba(2, 6, 23, 0.4);
+    border: 1px solid #334155;
+    border-radius: 1rem;
+    margin-top: 1.5rem;
+    padding: 1rem;
+}
+
+.model-scenario-json summary {
+    color: #bfdbfe;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.model-scenario-json p {
+    color: #9fb0c7;
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.model-scenario-json textarea {
+    background: #020617;
+    border: 1px solid #475569;
+    border-radius: 0.75rem;
+    color: #dbeafe;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    min-height: 14rem;
+    padding: 0.85rem;
+    resize: vertical;
+    width: 100%;
+}
+
+.model-scenario-json textarea:focus-visible {
+    outline: 3px solid rgba(96, 165, 250, 0.72);
+    outline-offset: 2px;
+}
+
+.model-json-message {
+    background: rgba(14, 116, 144, 0.18);
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    border-radius: 0.7rem;
+    color: #cffafe !important;
+    padding: 0.75rem;
+}
+
+.model-json-message.is-error {
+    background: rgba(127, 29, 29, 0.24);
+    border-color: rgba(248, 113, 113, 0.55);
+    color: #fecaca !important;
 }
 
 .model-primary-button,

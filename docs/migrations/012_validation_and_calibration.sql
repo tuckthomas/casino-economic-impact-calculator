@@ -154,28 +154,32 @@ FOR EACH ROW EXECUTE FUNCTION prevent_finalized_validation_evaluation_change();
 
 INSERT INTO benchmark_studies (
     id, benchmark_key, title, market_code, geography_type, geography_code,
-    study_date, consultant_or_source, reported_assumptions_json, methodological_notes,
-    source_url, provenance_notes, validation_state)
+    study_date, consultant_or_source, development_program_json, reported_outputs_json,
+    reported_assumptions_json, methodological_notes,
+    source_url, provenance_notes, validation_state, created_at_utc)
 VALUES
     ('45c835d7-63af-41b8-bba3-118b44c8eca0', 'spectrum-in-relocation-2025',
      'Indiana Gaming Market and Casino Relocation Analysis', 'US-IN-NORTHEAST', 'market', 'US-IN-NORTHEAST',
      DATE '2025-09-30', 'Spectrum Gaming Group',
+     '{}'::jsonb, '{}'::jsonb,
      '{"methodologicalAnchors":["ZIP-level adjusted gross income","drive-time capture","market potential"]}'::jsonb,
      'Registered as a validation anchor; reported outputs must be source-extracted and reviewed before the state advances.',
      'https://www.in.gov/igc/files/publications/Spectrum-Relocation-Report-to-Indiana-Gaming-Commission-9-30-2025-Final.pdf',
-     'Canonical-plan benchmark registry seed.', 'registered'),
+     'Canonical-plan benchmark registry seed.', 'registered', NOW()),
     ('f3fae147-af74-410a-8cc4-e0a72d059558', 'cbre-union-gaming-fort-wayne-2025',
      'Greater Fort Wayne Area Casino Analysis', 'US-IN-FORT-WAYNE', 'market', 'US-IN-FORT-WAYNE',
      DATE '2025-12-03', 'CBRE / Union Gaming Analytics',
+     '{}'::jsonb, '{}'::jsonb,
      '{"methodologicalAnchors":["gravity model","development program","traffic demand","ramp analysis","comparable-market regression"]}'::jsonb,
      'Registered as a validation anchor; reported outputs must be source-extracted and reviewed before the state advances.',
      'https://cdn.insideindianabusiness.com/wp-content/uploads/2026/01/GFWI-Casino-Analysis-Presentation-Final-2025-12-03.pdf',
-     'Canonical-plan benchmark registry seed.', 'registered'),
+     'Canonical-plan benchmark registry seed.', 'registered', NOW()),
     ('61146275-1a75-412a-98d3-f88848b6e5d4', 'steinberg-steuben-feasibility',
      'Steuben County Gaming Market Feasibility Study', 'US-IN-STEUBEN', 'county', 'US-IN-18151',
      NULL, 'A.M. Steinberg Advisors',
+     '{}'::jsonb, '{}'::jsonb,
      '{"methodologicalAnchors":["eligible adult population","income-adjusted expenditure","travel decay","beta prior 1.5","observed GGR mass","tourism"]}'::jsonb,
      'Registered as a validation anchor; reported outputs must be source-extracted and reviewed before the state advances.',
      'https://www.steubenedc.com/media/userfiles/subsite_259/files/SCEDC_Feasibility_Study_FINAL.pdf',
-     'Canonical-plan benchmark registry seed.', 'registered')
+     'Canonical-plan benchmark registry seed.', 'registered', NOW())
 ON CONFLICT (benchmark_key) DO NOTHING;

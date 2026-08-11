@@ -212,26 +212,34 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Seed the remaining TIGER datasets and warm caches in the background. Correctness-
-// critical municipality PLACE data has already been verified above.
-_ = Task.Run(async () =>
+// critical municipality PLACE data has already been verified above. Disposable validation
+// runtimes may disable this nonessential background work after readiness dependencies pass.
+if (app.Configuration.GetValue("TigerSeeding:Enabled", true))
 {
-    using var scope = app.Services.CreateScope();
-    var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
-    try
+    _ = Task.Run(async () =>
     {
-        Console.WriteLine("Starting TIGER Data Seeding Check...");
-        await seeder.EnsureSeededAsync();
-        Console.WriteLine("TIGER Data Seeding Check Complete.");
+        using var scope = app.Services.CreateScope();
+        var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
+        try
+        {
+            Console.WriteLine("Starting TIGER Data Seeding Check...");
+            await seeder.EnsureSeededAsync();
+            Console.WriteLine("TIGER Data Seeding Check Complete.");
 
-        await WarmStateCacheAsync(scope.ServiceProvider);
-        await WarmMunicipalityBoundaryCacheAsync(scope.ServiceProvider);
-        await WarmMvtTilesAsync(scope.ServiceProvider);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Tiger Seeding Failed: {ex}");
-    }
-});
+            await WarmStateCacheAsync(scope.ServiceProvider);
+            await WarmMunicipalityBoundaryCacheAsync(scope.ServiceProvider);
+            await WarmMvtTilesAsync(scope.ServiceProvider);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Tiger Seeding Failed: {ex}");
+        }
+    });
+}
+else
+{
+    Console.WriteLine("Background TIGER seeding is disabled for this runtime.");
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -1,5 +1,7 @@
 @inject HttpClient Http
 @using System.Globalization
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Rendering
 
 <section class="model-workbench" id="economic-analysis" aria-labelledby="model-workbench-title">
     <div class="model-workbench-shell">
@@ -67,9 +69,16 @@
                                 <option value="">Select program</option>
                                 @foreach (var program in _configuration.DevelopmentPrograms)
                                 {
-                                    <option value="@program.Id">@program.Name · v@program.Version</option>
+                                    <option value="@program.Id">@DevelopmentProgramLabel(program)</option>
                                 }
                             </select>
+                            <button type="button" class="model-link-button model-field-action" @onclick="ToggleProgramEditor">
+                                @(_showProgramEditor ? "Cancel new program" : "Define a new facility program")
+                            </button>
+                            @if (!string.IsNullOrWhiteSpace(_programMessage))
+                            {
+                                <small class="@(_programError ? "model-program-message is-error" : "model-program-message")" role="status">@_programMessage</small>
+                            }
                         </label>
 
                         <label class="model-field">
@@ -82,6 +91,80 @@
                             <input type="number" min="-180" max="180" step="0.000001" @bind="_form.CandidateLongitude" />
                         </label>
                     </div>
+
+                    @if (_showProgramEditor)
+                    {
+                        <fieldset class="model-program-editor">
+                            <legend>New development program version</legend>
+                            <p>
+                                Define physical scale once. The backend stores this version and makes it immutable when a
+                                model run uses it.
+                            </p>
+                            <div class="model-form-grid">
+                                <label class="model-field model-field-wide">
+                                    <span>Program name</span>
+                                    <input @bind="_programForm.Name" @bind:event="oninput" maxlength="200" placeholder="Proposed regional casino program" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Slots / VLT positions</span>
+                                    <input type="number" min="0" step="1" @bind="_programForm.SlotOrVltPositions" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Table games</span>
+                                    <input type="number" min="0" step="1" @bind="_programForm.TableGameCount" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Poker tables</span>
+                                    <input type="number" min="0" step="1" @bind="_programForm.PokerTableCount" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Hotel rooms</span>
+                                    <input type="number" min="0" step="1" @bind="_programForm.HotelRoomCount" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Gaming floor (sq. ft.)</span>
+                                    <input type="number" min="0" step="100" @bind="_programForm.GamingFloorSquareFeet" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Food and beverage venues</span>
+                                    <input type="number" min="0" step="1" @bind="_programForm.FoodBeverageVenueCount" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Event capacity</span>
+                                    <input type="number" min="0" step="100" @bind="_programForm.EventCapacity" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Resort amenities</span>
+                                    <input type="number" min="0" step="1" @bind="_programForm.ResortAmenityCount" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Capital cost (USD)</span>
+                                    <input type="number" min="0" step="1000000" @bind="_programForm.CapitalCost" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Capital-cost dollar year</span>
+                                    <input type="number" min="1900" max="2200" step="1" @bind="_programForm.CapitalCostDollarYear" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Planned opening date</span>
+                                    <input type="date" @bind="_programForm.PlannedOpeningDate" @bind:event="oninput" />
+                                </label>
+                                <label class="model-field">
+                                    <span>Stabilized year number</span>
+                                    <input type="number" min="1" max="20" step="1" @bind="_programForm.StabilizedYearNumber" @bind:event="oninput" />
+                                </label>
+                                <label class="model-checkbox-field model-field-wide">
+                                    <input type="checkbox" @bind="_programForm.HasSportsbook" />
+                                    <span>Includes a sportsbook</span>
+                                </label>
+                            </div>
+                            <div class="model-program-actions">
+                                <button type="button" class="model-secondary-button" disabled="@(!CanCreateProgram || _creatingProgram)" @onclick="CreateProgramAsync">
+                                    @(_creatingProgram ? "Storing program…" : "Store and select program")
+                                </button>
+                            </div>
+                        </fieldset>
+                    }
 
                     <div class="model-subsection">
                         <div class="model-subsection-heading">
@@ -207,30 +290,24 @@
                                         <option value="@set.Id">@set.Name · @set.Version</option>
                                     }
                                 </select>
+                                <small>Mode: @ScenarioModeLabel</small>
                             </label>
                             <label class="model-field">
-                                <span>Demand specification</span>
-                                <select @bind="_form.DemandSpecification">
-                                    <option value="agi-share">AGI-share demand</option>
-                                    <option value="eligible-adult-per-capita">Eligible-adult per capita</option>
+                                <span>Travel sensitivity</span>
+                                <select value="@TravelSensitivityPreset" @onchange="SetTravelSensitivityPreset">
+                                    <option value="base">Selected base value</option>
+                                    <option value="broad">Broader regional draw</option>
+                                    <option value="local">More local destination</option>
+                                    <option value="custom">Custom beta override</option>
                                 </select>
-                            </label>
-                            <label class="model-field">
-                                <span>Facility attraction</span>
-                                <select @bind="_form.AttractionSpecification">
-                                    <option value="observed-ggr">Observed-GGR mass</option>
-                                    <option value="structural">Structural facility mass</option>
-                                </select>
-                            </label>
-                            <label class="model-field">
-                                <span>Travel-friction form</span>
-                                <select @bind="_form.FrictionForm">
-                                    <option value="inverse-power">Inverse power (beta)</option>
-                                    <option value="exponential">Exponential decay</option>
-                                </select>
+                                <small>Uses the validated beta range and still reruns the server model.</small>
                             </label>
                         </div>
 
+                        <div class="model-section-toolbar">
+                            <p>Common decisions use plain-language controls. Exact coefficients remain available below.</p>
+                            <button type="button" class="model-link-button" @onclick="ResetStandardOverrides">Reset this section</button>
+                        </div>
                         <div class="model-parameter-grid">
                             @foreach (var definition in StandardDefinitions())
                             {
@@ -246,7 +323,33 @@
                                         <span>Filter parameters</span>
                                         <input @bind="_parameterSearch" placeholder="beta, social cost, traffic…" />
                                     </label>
-                                    <button type="button" class="model-secondary-button" @onclick="ResetOverrides">Reset all overrides</button>
+                                    <div class="model-advanced-actions">
+                                        <button type="button" class="model-secondary-button" @onclick="ResetAdvancedOverrides">Reset this section</button>
+                                        <button type="button" class="model-secondary-button" @onclick="ResetOverrides">Reset to selected defaults</button>
+                                    </div>
+                                </div>
+                                <div class="model-form-grid model-specification-grid">
+                                    <label class="model-field">
+                                        <span>Demand specification</span>
+                                        <select @bind="_form.DemandSpecification">
+                                            <option value="agi-share">AGI-share demand</option>
+                                            <option value="eligible-adult-per-capita">Eligible-adult per capita</option>
+                                        </select>
+                                    </label>
+                                    <label class="model-field">
+                                        <span>Facility attraction</span>
+                                        <select @bind="_form.AttractionSpecification">
+                                            <option value="observed-ggr">Observed-GGR mass</option>
+                                            <option value="structural">Structural facility mass</option>
+                                        </select>
+                                    </label>
+                                    <label class="model-field">
+                                        <span>Travel-friction form</span>
+                                        <select @bind="_form.FrictionForm">
+                                            <option value="inverse-power">Inverse power (beta)</option>
+                                            <option value="exponential">Exponential decay</option>
+                                        </select>
+                                    </label>
                                 </div>
                                 <div class="model-parameter-grid">
                                     @foreach (var definition in AdvancedDefinitions())
@@ -256,6 +359,23 @@
                                 </div>
                             </div>
                         }
+
+                        <details class="model-scenario-json">
+                            <summary>Export or import a versioned scenario definition</summary>
+                            <p>
+                                This JSON contains model inputs and parameter overrides, not calculated outputs. Importing it
+                                restores the form; running it creates a new immutable backend model run.
+                            </p>
+                            <textarea @bind="_scenarioJson" @bind:event="oninput" rows="12" spellcheck="false" aria-label="Versioned scenario definition JSON"></textarea>
+                            <div class="model-scenario-json-actions">
+                                <button type="button" class="model-secondary-button" @onclick="ExportScenarioDefinition">Export current inputs to JSON</button>
+                                <button type="button" class="model-secondary-button" @onclick="ImportScenarioDefinitionAsync">Import JSON into inputs</button>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(_scenarioJsonMessage))
+                            {
+                                <p class="@(_scenarioJsonError ? "model-json-message is-error" : "model-json-message")" role="status">@_scenarioJsonMessage</p>
+                            }
+                        </details>
                     </div>
 
                     <div class="model-run-actions">
@@ -507,12 +627,11 @@
 @code {
     private static readonly string[] StandardParameterKeys =
     [
-        "gravity.beta",
-        "gravity.alpha",
         "demand.regional_intensity_multiplier",
         "market_expansion.accessibility_elasticity",
         "tourism.capture_rate",
         "traffic.intercept_rate",
+        "displacement.local_patron_share",
         "displacement.eligible_base_share",
         "displacement.coefficient",
         "social_cost.prevalence",
@@ -537,9 +656,14 @@
         "displacement.coefficient",
         "social_cost.prevalence"
     ];
+    private static readonly JsonSerializerOptions ScenarioJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        WriteIndented = true
+    };
 
     private ModelConfiguration? _configuration;
     private readonly ScenarioForm _form = new();
+    private readonly DevelopmentProgramForm _programForm = new();
     private readonly Dictionary<string, double> _overrides = new(StringComparer.Ordinal);
     private readonly List<OriginOption> _origins = [];
     private readonly List<TourismObservation> _tourism = [];
@@ -553,11 +677,18 @@
     private bool _loading = true;
     private bool _running;
     private bool _showAdvanced;
+    private bool _showProgramEditor;
+    private bool _creatingProgram;
     private bool _comparing;
     private bool _generatingReport;
     private bool _runningSensitivity;
     private string? _error;
     private string _parameterSearch = string.Empty;
+    private string _scenarioJson = string.Empty;
+    private string? _scenarioJsonMessage;
+    private bool _scenarioJsonError;
+    private string? _programMessage;
+    private bool _programError;
     private ReportArtifact? _reportArtifact;
     private SensitivityAnalysisResult? _sensitivityResult;
     private string _sensitivityMetric = "net-host-local-impact";
@@ -621,6 +752,66 @@
         _form.OriginStateCode = StateCode(_form.JurisdictionCode);
         ApplyJurisdictionParameterSet();
         await LoadOriginsAsync();
+    }
+
+    private void ToggleProgramEditor()
+    {
+        _showProgramEditor = !_showProgramEditor;
+        _programMessage = null;
+        _programError = false;
+    }
+
+    private async Task CreateProgramAsync()
+    {
+        if (!CanCreateProgram || _configuration is null)
+        {
+            return;
+        }
+        _creatingProgram = true;
+        _programMessage = null;
+        _programError = false;
+        try
+        {
+            var request = new DevelopmentProgramCreateRequest(
+                $"interactive-{Guid.NewGuid():N}",
+                "1",
+                _programForm.Name.Trim(),
+                _programForm.SlotOrVltPositions!.Value,
+                _programForm.TableGameCount!.Value,
+                _programForm.PokerTableCount ?? 0,
+                _programForm.HasSportsbook,
+                _programForm.HotelRoomCount ?? 0,
+                _programForm.GamingFloorSquareFeet ?? 0,
+                _programForm.FoodBeverageVenueCount ?? 0,
+                _programForm.EventCapacity ?? 0,
+                _programForm.ResortAmenityCount ?? 0,
+                _programForm.CapitalCost,
+                _programForm.CapitalCostDollarYear,
+                _programForm.PlannedOpeningDate,
+                _programForm.StabilizedYearNumber ?? 3,
+                "Created through the stored-run casino impact workbench.");
+            using var response = await Http.PostAsJsonAsync("api/development-programs", request);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"{(int)response.StatusCode} {response.ReasonPhrase}: {await response.Content.ReadAsStringAsync()}");
+            }
+            var program = await response.Content.ReadFromJsonAsync<DevelopmentProgramOption>()
+                          ?? throw new InvalidOperationException("The development program was stored without a response body.");
+            _configuration.DevelopmentPrograms.Insert(0, program);
+            _form.DevelopmentProgramId = program.Id;
+            _showProgramEditor = false;
+            _programMessage = $"Stored and selected {program.Name} v{program.Version}.";
+            _programForm.Reset();
+        }
+        catch (Exception exception)
+        {
+            _programMessage = exception.Message;
+            _programError = true;
+        }
+        finally
+        {
+            _creatingProgram = false;
+        }
     }
 
     private void ApplyJurisdictionParameterSet()
@@ -942,7 +1133,272 @@
     }
 
     private void ToggleAdvanced() => _showAdvanced = !_showAdvanced;
-    private void ResetOverrides() => _overrides.Clear();
+    private void ResetOverrides()
+    {
+        _overrides.Clear();
+        _scenarioJsonMessage = "All user overrides were removed; selected parameter-set defaults are active.";
+        _scenarioJsonError = false;
+    }
+
+    private void ResetStandardOverrides()
+    {
+        foreach (var key in StandardParameterKeys.Append("gravity.beta"))
+        {
+            _overrides.Remove(key);
+        }
+        _scenarioJsonMessage = "Standard controls were reset to their selected parameter-set defaults.";
+        _scenarioJsonError = false;
+    }
+
+    private void ResetAdvancedOverrides()
+    {
+        if (_configuration is null)
+        {
+            return;
+        }
+        foreach (var definition in _configuration.ParameterDefinitions
+                     .Where(definition => !StandardParameterKeys.Contains(definition.Key, StringComparer.Ordinal)))
+        {
+            _overrides.Remove(definition.Key);
+        }
+        _scenarioJsonMessage = "Advanced overrides were reset to their selected parameter-set defaults.";
+        _scenarioJsonError = false;
+    }
+
+    private string TravelSensitivityPreset
+    {
+        get
+        {
+            var definition = FindParameter("gravity.beta");
+            if (definition is null || !_overrides.TryGetValue(definition.Key, out var value))
+            {
+                return "base";
+            }
+            if (definition.RecommendedMinimum is { } minimum && NearlyEqual(value, minimum))
+            {
+                return "broad";
+            }
+            if (definition.RecommendedMaximum is { } maximum && NearlyEqual(value, maximum))
+            {
+                return "local";
+            }
+            return "custom";
+        }
+    }
+
+    private void SetTravelSensitivityPreset(ChangeEventArgs args)
+    {
+        var definition = FindParameter("gravity.beta");
+        if (definition is null)
+        {
+            return;
+        }
+        switch (args.Value?.ToString())
+        {
+            case "base":
+                _overrides.Remove(definition.Key);
+                break;
+            case "broad" when definition.RecommendedMinimum is { } minimum:
+                _overrides[definition.Key] = minimum;
+                break;
+            case "local" when definition.RecommendedMaximum is { } maximum:
+                _overrides[definition.Key] = maximum;
+                break;
+            case "custom":
+                _showAdvanced = true;
+                _parameterSearch = "gravity.beta";
+                break;
+        }
+    }
+
+    private void ExportScenarioDefinition()
+    {
+        if (_configuration is null)
+        {
+            return;
+        }
+        var document = new ScenarioDefinitionDocument
+        {
+            SchemaVersion = ScenarioDefinitionDocument.CurrentSchemaVersion,
+            ModelVersion = _configuration.ModelVersion,
+            ScenarioName = _form.ScenarioName,
+            JurisdictionCode = _form.JurisdictionCode,
+            OriginStateCode = _form.OriginStateCode,
+            DevelopmentProgramId = _form.DevelopmentProgramId,
+            CandidateLatitude = _form.CandidateLatitude,
+            CandidateLongitude = _form.CandidateLongitude,
+            OriginGeographySnapshotId = _form.OriginGeographySnapshotId,
+            AgePopulationSnapshotId = _form.AgePopulationSnapshotId,
+            IncomeSnapshotId = _form.IncomeSnapshotId,
+            CompetitorSnapshotId = _form.CompetitorSnapshotId,
+            ObservedPerformanceSnapshotId = _form.ObservedPerformanceSnapshotId,
+            TourismSnapshotId = _form.TourismSnapshotId,
+            TrafficSnapshotId = _form.TrafficSnapshotId,
+            LocalEconomicInventorySnapshotId = _form.LocalEconomicInventorySnapshotId,
+            NationalParameterSetId = _form.NationalParameterSetId,
+            JurisdictionParameterSetId = _form.JurisdictionParameterSetId,
+            ScenarioParameterSetId = _form.ScenarioParameterSetId,
+            FacilityRegime = _form.FacilityRegime,
+            DemandSpecification = _form.DemandSpecification,
+            AttractionSpecification = _form.AttractionSpecification,
+            FrictionForm = _form.FrictionForm,
+            ObservedMetricKey = _form.ObservedMetricKey,
+            UserOverrides = new Dictionary<string, double>(_overrides, StringComparer.Ordinal)
+        };
+        _scenarioJson = JsonSerializer.Serialize(document, ScenarioJsonOptions);
+        _scenarioJsonMessage = $"Exported {_overrides.Count} override(s) using {ScenarioDefinitionDocument.CurrentSchemaVersion}.";
+        _scenarioJsonError = false;
+    }
+
+    private async Task ImportScenarioDefinitionAsync()
+    {
+        _scenarioJsonMessage = null;
+        _scenarioJsonError = false;
+        try
+        {
+            if (_configuration is null)
+            {
+                throw new InvalidOperationException("The model catalog must be loaded before importing a scenario.");
+            }
+            var document = JsonSerializer.Deserialize<ScenarioDefinitionDocument>(_scenarioJson, ScenarioJsonOptions)
+                           ?? throw new InvalidDataException("The scenario JSON was empty or invalid.");
+            ValidateScenarioDefinition(document, _configuration);
+
+            _form.ScenarioName = document.ScenarioName.Trim();
+            _form.JurisdictionCode = document.JurisdictionCode;
+            _form.OriginStateCode = document.OriginStateCode;
+            _form.DevelopmentProgramId = document.DevelopmentProgramId;
+            _form.CandidateLatitude = document.CandidateLatitude;
+            _form.CandidateLongitude = document.CandidateLongitude;
+            _form.OriginGeographySnapshotId = document.OriginGeographySnapshotId;
+            _form.AgePopulationSnapshotId = document.AgePopulationSnapshotId;
+            _form.IncomeSnapshotId = document.IncomeSnapshotId;
+            _form.CompetitorSnapshotId = document.CompetitorSnapshotId;
+            _form.ObservedPerformanceSnapshotId = document.ObservedPerformanceSnapshotId;
+            _form.TourismSnapshotId = document.TourismSnapshotId;
+            _form.TrafficSnapshotId = document.TrafficSnapshotId;
+            _form.LocalEconomicInventorySnapshotId = document.LocalEconomicInventorySnapshotId;
+            _form.NationalParameterSetId = document.NationalParameterSetId;
+            _form.JurisdictionParameterSetId = document.JurisdictionParameterSetId;
+            _form.ScenarioParameterSetId = document.ScenarioParameterSetId;
+            _form.FacilityRegime = document.FacilityRegime;
+            _form.DemandSpecification = document.DemandSpecification;
+            _form.AttractionSpecification = document.AttractionSpecification;
+            _form.FrictionForm = document.FrictionForm;
+            _form.ObservedMetricKey = document.ObservedMetricKey;
+            _overrides.Clear();
+            foreach (var (key, value) in document.UserOverrides)
+            {
+                _overrides.Add(key, value);
+            }
+
+            await LoadOriginsAsync();
+            await LoadTourismAsync();
+            await LoadTrafficAsync();
+            _latestRun = null;
+            _lastRunRequest = null;
+            _sensitivityResult = null;
+            _reportArtifact = null;
+            _scenarioJsonMessage = $"Imported {document.UserOverrides.Count} override(s). Run the scenario to create a new immutable result.";
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidDataException or InvalidOperationException or ArgumentException)
+        {
+            _scenarioJsonMessage = exception.Message;
+            _scenarioJsonError = true;
+        }
+    }
+
+    private static void ValidateScenarioDefinition(
+        ScenarioDefinitionDocument document,
+        ModelConfiguration configuration)
+    {
+        if (!string.Equals(document.SchemaVersion, ScenarioDefinitionDocument.CurrentSchemaVersion, StringComparison.Ordinal))
+        {
+            throw new InvalidDataException($"Unsupported scenario schema '{document.SchemaVersion}'. Expected '{ScenarioDefinitionDocument.CurrentSchemaVersion}'.");
+        }
+        if (!string.Equals(document.ModelVersion, configuration.ModelVersion, StringComparison.Ordinal))
+        {
+            throw new InvalidDataException($"Scenario model version '{document.ModelVersion}' does not match '{configuration.ModelVersion}'.");
+        }
+        if (string.IsNullOrWhiteSpace(document.ScenarioName) || string.IsNullOrWhiteSpace(document.JurisdictionCode) ||
+            !configuration.Jurisdictions.Any(item => item.Code == document.JurisdictionCode))
+        {
+            throw new InvalidDataException("The scenario name and a catalog-backed jurisdiction are required.");
+        }
+        if (document.DevelopmentProgramId is not { } programId ||
+            !configuration.DevelopmentPrograms.Any(item => item.Id == programId))
+        {
+            throw new InvalidDataException("The imported development program is not available in the current catalog.");
+        }
+        if (document.CandidateLatitude is not (>= -90 and <= 90) || document.CandidateLongitude is not (>= -180 and <= 180))
+        {
+            throw new InvalidDataException("Imported candidate coordinates are missing or outside valid latitude/longitude bounds.");
+        }
+        if (document.UserOverrides is null)
+        {
+            throw new InvalidDataException("Imported userOverrides must be a JSON object.");
+        }
+        if (document.DemandSpecification is not ("agi-share" or "eligible-adult-per-capita") ||
+            document.AttractionSpecification is not ("observed-ggr" or "structural") ||
+            document.FrictionForm is not ("inverse-power" or "exponential"))
+        {
+            throw new InvalidDataException("The imported demand, attraction, or travel-friction specification is not supported.");
+        }
+        ValidateSnapshot(configuration, document.OriginGeographySnapshotId, "origin-geography", true);
+        ValidateSnapshot(configuration, document.AgePopulationSnapshotId, "age-population", true);
+        ValidateSnapshot(configuration, document.IncomeSnapshotId, "income", true);
+        ValidateSnapshot(configuration, document.CompetitorSnapshotId, "competitors", true);
+        ValidateSnapshot(configuration, document.ObservedPerformanceSnapshotId, "observed-performance", true);
+        ValidateSnapshot(configuration, document.TourismSnapshotId, "tourism", false);
+        ValidateSnapshot(configuration, document.TrafficSnapshotId, "traffic", false);
+        ValidateSnapshot(configuration, document.LocalEconomicInventorySnapshotId, "local-economic-inventory", false);
+        ValidateParameterSet(configuration, document.NationalParameterSetId, "national");
+        ValidateParameterSet(configuration, document.JurisdictionParameterSetId, "jurisdiction");
+        ValidateParameterSet(configuration, document.ScenarioParameterSetId, "scenario");
+
+        foreach (var (key, value) in document.UserOverrides)
+        {
+            var definition = configuration.ParameterDefinitions.SingleOrDefault(item => item.Key == key)
+                             ?? throw new InvalidDataException($"Imported override '{key}' is not active in the current model catalog.");
+            if (!definition.IsUserOverridable || !double.IsFinite(value))
+            {
+                throw new InvalidDataException($"Imported override '{key}' is not a finite user-overridable value.");
+            }
+            if (definition.ComputationalMinimum is { } minimum && value < minimum ||
+                definition.ComputationalMaximum is { } maximum && value > maximum)
+            {
+                throw new InvalidDataException($"Imported override '{key}' is outside its hard computational bounds.");
+            }
+        }
+    }
+
+    private static void ValidateSnapshot(
+        ModelConfiguration configuration,
+        Guid? snapshotId,
+        string expectedKind,
+        bool required)
+    {
+        if (snapshotId is null)
+        {
+            if (required)
+            {
+                throw new InvalidDataException($"A sealed '{expectedKind}' snapshot is required.");
+            }
+            return;
+        }
+        if (!configuration.Snapshots.Any(item => item.Id == snapshotId && item.DatasetKey == expectedKind))
+        {
+            throw new InvalidDataException($"Snapshot '{snapshotId}' is not an available '{expectedKind}' snapshot.");
+        }
+    }
+
+    private static void ValidateParameterSet(ModelConfiguration configuration, long? setId, string expectedScope)
+    {
+        if (setId is not null && !configuration.ParameterSets.Any(item => item.Id == setId && item.Scope == expectedScope))
+        {
+            throw new InvalidDataException($"Parameter set '{setId}' is not an available '{expectedScope}' layer.");
+        }
+    }
 
     private IEnumerable<ParameterDefinition> StandardDefinitions()
     {
@@ -976,30 +1432,91 @@
     {
         var sequence = 0;
         var value = ParameterValue(Definition);
+        var scenarioValue = ParameterScenarioValue(Definition);
         var overridden = _overrides.ContainsKey(Definition.Key);
         var outside = Definition.RecommendedMinimum is { } minimum && value < minimum ||
                       Definition.RecommendedMaximum is { } maximum && value > maximum;
-        builder.OpenElement(sequence++, "label");
+        var inputId = $"model-parameter-{Definition.Key.Replace('.', '-')}";
+        builder.OpenElement(sequence++, "article");
         builder.AddAttribute(sequence++, "class", $"model-parameter{(overridden ? " is-overridden" : "")}{(outside ? " is-outside-range" : "")}");
-        builder.OpenElement(sequence++, "span");
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "model-parameter-heading");
+        builder.OpenElement(sequence++, "label");
+        builder.AddAttribute(sequence++, "for", inputId);
         builder.AddContent(sequence++, Definition.DisplayName);
         builder.CloseElement();
+        if (overridden)
+        {
+            builder.OpenElement(sequence++, "button");
+            builder.AddAttribute(sequence++, "type", "button");
+            builder.AddAttribute(sequence++, "class", "model-link-button");
+            builder.AddAttribute(sequence++, "onclick", EventCallback.Factory.Create(this, () => ResetOverride(Definition.Key)));
+            builder.AddContent(sequence++, "Reset");
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
         builder.OpenElement(sequence++, "input");
+        builder.AddAttribute(sequence++, "id", inputId);
         builder.AddAttribute(sequence++, "type", "number");
         builder.AddAttribute(sequence++, "step", Definition.UiStep ?? 0.01);
+        builder.AddAttribute(sequence++, "disabled", !Definition.IsUserOverridable);
         if (Definition.ComputationalMinimum is { } hardMinimum) builder.AddAttribute(sequence++, "min", hardMinimum);
         if (Definition.ComputationalMaximum is { } hardMaximum) builder.AddAttribute(sequence++, "max", hardMaximum);
         builder.AddAttribute(sequence++, "value", value.ToString(CultureInfo.InvariantCulture));
-        builder.AddAttribute(sequence++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetOverride(Definition, args.Value?.ToString())));
+        builder.AddAttribute(sequence++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetOverride(Definition, args.Value?.ToString())));
         builder.CloseElement();
+
+        builder.OpenElement(sequence++, "span");
+        builder.AddAttribute(sequence++, "class", "model-parameter-state");
+        builder.AddContent(sequence++, outside
+            ? "Outside recommended range — the backend run will preserve and report this warning."
+            : overridden
+                ? "Custom override — the next backend run will store this exact value."
+                : $"{ParameterSource(Definition.Key)} value.");
+        builder.CloseElement();
+
         builder.OpenElement(sequence++, "small");
-        builder.AddContent(sequence++, $"{Definition.Units} · recommended {Range(Definition)}");
+        builder.AddContent(sequence++, $"{Definition.Units} · base {Definition.SystemDefaultValue:G6} · scenario {scenarioValue:G6} · recommended {Range(Definition)}");
         builder.CloseElement();
-        builder.OpenElement(sequence++, "em");
-        builder.AddContent(sequence++, outside ? "Outside recommended range" : overridden ? "Custom override" : ParameterSource(Definition.Key));
+
+        builder.OpenElement(sequence++, "details");
+        builder.AddAttribute(sequence++, "class", "model-parameter-metadata");
+        builder.OpenElement(sequence++, "summary");
+        builder.AddContent(sequence++, "Interpretation and provenance");
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "p");
+        builder.AddContent(sequence++, Definition.PlainLanguageDescription);
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "dl");
+        AddMetadata(builder, ref sequence, "Parameter key", Definition.Key);
+        AddMetadata(builder, ref sequence, "Exposure", Definition.UiExposureLevel);
+        AddMetadata(builder, ref sequence, "Calibration", Definition.IsCalibrated ? "Calibrated" : "Provisional / not calibrated");
+        AddMetadata(builder, ref sequence, "Hard bounds", ComputationalRange(Definition));
+        AddMetadata(builder, ref sequence, "Selected source", ParameterSource(Definition.Key));
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "p");
+        builder.AddAttribute(sequence++, "class", "model-parameter-provenance");
+        builder.AddContent(sequence++, string.IsNullOrWhiteSpace(Definition.ProvenanceNotes)
+            ? "No provenance note is available."
+            : Definition.ProvenanceNotes);
+        builder.CloseElement();
         builder.CloseElement();
         builder.CloseElement();
     };
+
+    private static void AddMetadata(RenderTreeBuilder builder, ref int sequence, string term, string value)
+    {
+        builder.OpenElement(sequence++, "div");
+        builder.OpenElement(sequence++, "dt");
+        builder.AddContent(sequence++, term);
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "dd");
+        builder.AddContent(sequence++, value);
+        builder.CloseElement();
+        builder.CloseElement();
+    }
 
     private RenderFragment Metric(string Label, string Value, string? Tone = null) => builder =>
     {
@@ -1035,9 +1552,21 @@
     {
         if (double.TryParse(rawValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
         {
+            if (!double.IsFinite(value) ||
+                definition.ComputationalMinimum is { } minimum && value < minimum ||
+                definition.ComputationalMaximum is { } maximum && value > maximum)
+            {
+                _scenarioJsonMessage = $"{definition.DisplayName} must remain within hard bounds {ComputationalRange(definition)} {definition.Units}.";
+                _scenarioJsonError = true;
+                return;
+            }
             _overrides[definition.Key] = value;
+            _scenarioJsonMessage = null;
+            _scenarioJsonError = false;
         }
     }
+
+    private void ResetOverride(string key) => _overrides.Remove(key);
 
     private double ParameterValue(ParameterDefinition definition)
     {
@@ -1045,6 +1574,11 @@
         {
             return userValue;
         }
+        return ParameterScenarioValue(definition);
+    }
+
+    private double ParameterScenarioValue(ParameterDefinition definition)
+    {
         var selectedSets = new[]
         {
             _form.ScenarioParameterSetId,
@@ -1065,6 +1599,10 @@
 
     private string ParameterSource(string key)
     {
+        if (_overrides.ContainsKey(key))
+        {
+            return "User override";
+        }
         var selectedSets = new[]
         {
             _form.ScenarioParameterSetId,
@@ -1081,12 +1619,36 @@
         return "System fallback";
     }
 
+    private ParameterDefinition? FindParameter(string key) =>
+        _configuration?.ParameterDefinitions.FirstOrDefault(definition => definition.Key == key);
+
+    private string ScenarioModeLabel
+    {
+        get
+        {
+            if (_overrides.Count > 0)
+            {
+                return $"Custom ({_overrides.Count} override{(_overrides.Count == 1 ? string.Empty : "s")})";
+            }
+            var selected = _configuration?.ParameterSets.FirstOrDefault(set => set.Id == _form.ScenarioParameterSetId);
+            return selected?.ScenarioKind switch
+            {
+                "conservative" => "Conservative",
+                "high" => "High / aggressive",
+                "base" => "Base",
+                _ => "System / base"
+            };
+        }
+    }
+
     private IEnumerable<SnapshotOption> Snapshots(string kind) =>
         _configuration?.Snapshots.Where(snapshot => snapshot.DatasetKey == kind) ?? [];
 
     private Guid? LatestSnapshotId(string kind) => Snapshots(kind).FirstOrDefault()?.Id;
     private SnapshotOption? FindSnapshot(Guid id) => _configuration?.Snapshots.FirstOrDefault(snapshot => snapshot.Id == id);
     private static string SnapshotLabel(SnapshotOption snapshot) => $"{snapshot.Period} · {snapshot.RowCount:N0} rows · {snapshot.ValidationState}";
+    private static string DevelopmentProgramLabel(DevelopmentProgramOption program) =>
+        $"{program.Name} · {program.SlotOrVltPositions:N0} slots/VLTs · {program.TableGameCount:N0} tables · {program.HotelRoomCount:N0} rooms · v{program.Version}";
     private static string StateCode(string jurisdictionCode) => jurisdictionCode.Split('-', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? string.Empty;
     private void ApplySnapshotYears() { }
 
@@ -1102,6 +1664,21 @@
         _form.CompetitorSnapshotId.HasValue &&
         _form.ObservedPerformanceSnapshotId.HasValue &&
         _origins.Count > 0;
+
+    private bool CanCreateProgram =>
+        !string.IsNullOrWhiteSpace(_programForm.Name) &&
+        _programForm.SlotOrVltPositions is >= 0 &&
+        _programForm.TableGameCount is >= 0 &&
+        (_programForm.SlotOrVltPositions > 0 || _programForm.TableGameCount > 0) &&
+        (_programForm.PokerTableCount ?? 0) >= 0 &&
+        (_programForm.HotelRoomCount ?? 0) >= 0 &&
+        (_programForm.GamingFloorSquareFeet ?? 0) >= 0 &&
+        (_programForm.FoodBeverageVenueCount ?? 0) >= 0 &&
+        (_programForm.EventCapacity ?? 0) >= 0 &&
+        (_programForm.ResortAmenityCount ?? 0) >= 0 &&
+        _programForm.CapitalCost is null or >= 0 &&
+        _programForm.CapitalCostDollarYear is null or (>= 1900 and <= 2200) &&
+        _programForm.StabilizedYearNumber is >= 1 and <= 20;
 
     private bool CanRunSensitivity =>
         _latestRun is not null && _lastRunRequest is not null &&
@@ -1138,6 +1715,9 @@
         definition.RecommendedMinimum is null && definition.RecommendedMaximum is null
             ? "not established"
             : $"{definition.RecommendedMinimum?.ToString(CultureInfo.InvariantCulture) ?? "−∞"}–{definition.RecommendedMaximum?.ToString(CultureInfo.InvariantCulture) ?? "+∞"}";
+    private static string ComputationalRange(ParameterDefinition definition) =>
+        $"{definition.ComputationalMinimum?.ToString(CultureInfo.InvariantCulture) ?? "−∞"}–{definition.ComputationalMaximum?.ToString(CultureInfo.InvariantCulture) ?? "+∞"}";
+    private static bool NearlyEqual(double left, double right) => Math.Abs(left - right) <= 1e-9 * Math.Max(1, Math.Max(Math.Abs(left), Math.Abs(right)));
 
     private sealed class ScenarioForm
     {
@@ -1165,6 +1745,42 @@
         public string ObservedMetricKey { get; set; } = "casino-win";
     }
 
+    private sealed class DevelopmentProgramForm
+    {
+        public string Name { get; set; } = string.Empty;
+        public int? SlotOrVltPositions { get; set; }
+        public int? TableGameCount { get; set; }
+        public int? PokerTableCount { get; set; }
+        public bool HasSportsbook { get; set; }
+        public int? HotelRoomCount { get; set; }
+        public int? GamingFloorSquareFeet { get; set; }
+        public int? FoodBeverageVenueCount { get; set; }
+        public int? EventCapacity { get; set; }
+        public int? ResortAmenityCount { get; set; }
+        public decimal? CapitalCost { get; set; }
+        public int? CapitalCostDollarYear { get; set; }
+        public DateOnly? PlannedOpeningDate { get; set; }
+        public int? StabilizedYearNumber { get; set; } = 3;
+
+        public void Reset()
+        {
+            Name = string.Empty;
+            SlotOrVltPositions = null;
+            TableGameCount = null;
+            PokerTableCount = null;
+            HasSportsbook = false;
+            HotelRoomCount = null;
+            GamingFloorSquareFeet = null;
+            FoodBeverageVenueCount = null;
+            EventCapacity = null;
+            ResortAmenityCount = null;
+            CapitalCost = null;
+            CapitalCostDollarYear = null;
+            PlannedOpeningDate = null;
+            StabilizedYearNumber = 3;
+        }
+    }
+
     private sealed class ModelConfiguration
     {
         public string ModelVersion { get; set; } = string.Empty;
@@ -1178,15 +1794,92 @@
 
     private sealed class JurisdictionOption { public int Id { get; set; } public string Code { get; set; } = string.Empty; public string Name { get; set; } = string.Empty; public string Kind { get; set; } = string.Empty; }
     private sealed class SnapshotOption { public Guid Id { get; set; } public string DatasetKey { get; set; } = string.Empty; public string Period { get; set; } = string.Empty; public DateOnly PeriodStart { get; set; } public DateOnly PeriodEnd { get; set; } public long RowCount { get; set; } public string ValidationState { get; set; } = string.Empty; }
-    private sealed class DevelopmentProgramOption { public Guid Id { get; set; } public string Name { get; set; } = string.Empty; public string Version { get; set; } = string.Empty; }
-    private sealed class ParameterDefinition { public string Key { get; set; } = string.Empty; public string Category { get; set; } = string.Empty; public string DisplayName { get; set; } = string.Empty; public string Units { get; set; } = string.Empty; public double SystemDefaultValue { get; set; } public double? ComputationalMinimum { get; set; } public double? ComputationalMaximum { get; set; } public double? RecommendedMinimum { get; set; } public double? RecommendedMaximum { get; set; } public double? UiStep { get; set; } }
+    private sealed class DevelopmentProgramOption
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
+        public int SlotOrVltPositions { get; set; }
+        public int TableGameCount { get; set; }
+        public int HotelRoomCount { get; set; }
+    }
+
+    private sealed class ParameterDefinition
+    {
+        public string Key { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string TechnicalDescription { get; set; } = string.Empty;
+        public string PlainLanguageDescription { get; set; } = string.Empty;
+        public string Units { get; set; } = string.Empty;
+        public double SystemDefaultValue { get; set; }
+        public double? ComputationalMinimum { get; set; }
+        public double? ComputationalMaximum { get; set; }
+        public double? RecommendedMinimum { get; set; }
+        public double? RecommendedMaximum { get; set; }
+        public double? UiStep { get; set; }
+        public string UiExposureLevel { get; set; } = string.Empty;
+        public bool IsUserOverridable { get; set; }
+        public bool IsCalibrated { get; set; }
+        public string? ProvenanceNotes { get; set; }
+    }
     private sealed class ParameterSetOption { public long Id { get; set; } public string Name { get; set; } = string.Empty; public string Scope { get; set; } = string.Empty; public int? JurisdictionId { get; set; } public string? ScenarioKind { get; set; } public string Version { get; set; } = string.Empty; }
     private sealed class ParameterSetValueOption { public long ParameterSetId { get; set; } public string ParameterKey { get; set; } = string.Empty; public double Value { get; set; } }
     private sealed class OriginResponse { public int Total { get; set; } public List<OriginOption> Origins { get; set; } = []; }
     private sealed class OriginOption { public string StableOriginId { get; set; } = string.Empty; }
     private sealed class TourismObservation { public string StableObservationId { get; set; } = string.Empty; }
     private sealed class TrafficObservation { public string StableObservationId { get; set; } = string.Empty; }
+
+    private sealed class ScenarioDefinitionDocument
+    {
+        public const string CurrentSchemaVersion = "savenein.gravity-scenario.v1";
+
+        public string SchemaVersion { get; set; } = CurrentSchemaVersion;
+        public string ModelVersion { get; set; } = string.Empty;
+        public string ScenarioName { get; set; } = string.Empty;
+        public string JurisdictionCode { get; set; } = string.Empty;
+        public string OriginStateCode { get; set; } = string.Empty;
+        public Guid? DevelopmentProgramId { get; set; }
+        public double? CandidateLatitude { get; set; }
+        public double? CandidateLongitude { get; set; }
+        public Guid? OriginGeographySnapshotId { get; set; }
+        public Guid? AgePopulationSnapshotId { get; set; }
+        public Guid? IncomeSnapshotId { get; set; }
+        public Guid? CompetitorSnapshotId { get; set; }
+        public Guid? ObservedPerformanceSnapshotId { get; set; }
+        public Guid? TourismSnapshotId { get; set; }
+        public Guid? TrafficSnapshotId { get; set; }
+        public Guid? LocalEconomicInventorySnapshotId { get; set; }
+        public long? NationalParameterSetId { get; set; }
+        public long? JurisdictionParameterSetId { get; set; }
+        public long? ScenarioParameterSetId { get; set; }
+        public string FacilityRegime { get; set; } = "commercial-casino";
+        public string DemandSpecification { get; set; } = "agi-share";
+        public string AttractionSpecification { get; set; } = "observed-ggr";
+        public string FrictionForm { get; set; } = "inverse-power";
+        public string ObservedMetricKey { get; set; } = "casino-win";
+        public Dictionary<string, double> UserOverrides { get; set; } = new(StringComparer.Ordinal);
+    }
+
     private sealed record ParameterOverrideRequest(string Key, double Value);
+    private sealed record DevelopmentProgramCreateRequest(
+        string StableProgramId,
+        string Version,
+        string Name,
+        int SlotOrVltPositions,
+        int TableGameCount,
+        int PokerTableCount,
+        bool HasSportsbook,
+        int HotelRoomCount,
+        int GamingFloorSquareFeet,
+        int FoodBeverageVenueCount,
+        int EventCapacity,
+        int ResortAmenityCount,
+        decimal? CapitalCost,
+        int? CapitalCostDollarYear,
+        DateOnly? PlannedOpeningDate,
+        int StabilizedYearNumber,
+        string? Notes);
     private sealed record TrafficSelectionRequest(string StableObservationId, double RelevantDirectionShare, double InterchangeAccessibilityModifier);
     private sealed record ImpactGeographyRequest(string ScopeKind, string ScopeCode, IReadOnlyCollection<string>? LocalOriginIds = null);
     private sealed record ReportOptions(

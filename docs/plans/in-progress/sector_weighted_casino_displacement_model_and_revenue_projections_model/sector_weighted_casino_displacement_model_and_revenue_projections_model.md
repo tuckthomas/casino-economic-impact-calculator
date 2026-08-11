@@ -2,7 +2,7 @@
 
 ## Governing AI Agent Implementation Checklist
 
-> **Status:** In Progress — Foundation committed (commits `f30229d`, `0846e71`). Core services, entity schema, migrations, selected authoritative providers, validation/calibration infrastructure, and deterministic server-side HTML/PDF/CSV report rendering are implemented. National provider coverage, production-quality calibration/holdouts, benchmark reconciliation, front-end controls/results, and publication-quality report content remain pending.
+> **Status:** In Progress — Foundation committed (commits `f30229d`, `0846e71`). Core services, entity schema, migrations, selected authoritative providers, validation/calibration infrastructure, the stored-run web workbench, scenario comparison, and deterministic server-side HTML/PDF/CSV report rendering are implemented. National provider coverage, production-quality calibration/holdouts, benchmark reconciliation, and publication-quality report content remain pending.
 >
 > **Primary objective:** Build a transparent, empirically calibrated, nationally reusable casino gravity and economic-impact engine that can evaluate a proposed casino or major gaming development anywhere in the United States. The engine must estimate site-specific gaming revenue, patron origins, market expansion, cannibalization, repatriation/leakage, tourism and through-traffic demand, sector displacement, fiscal effects, employment effects, and downstream social/economic costs. The same immutable model run must power the interactive web application, APIs, sensitivity analysis, and a server-generated full analytical report comparable in structure and rigor to professional casino feasibility and impact studies.
 >
@@ -13,7 +13,7 @@
 > **Verified implementation evidence and checklist cadence (2026-08-11):**
 >
 > - Checklist state was independently reviewed against commit `cf37a1a`; items are checked only when they meet the completion rule in this document, not merely when an interface, entity, or provisional provider exists.
-> - **SUCCESS:** `SaveNEIN.Server.Tests` passes 112/112 tests in the isolated feature worktree, including stored-run report integration, dynamic origin reconciliation, artifact immutability/cache identity, draft-run rejection, multi-provider jurisdiction composition, and Michigan/Ohio regulator-source discovery, reconciliation, and failure handling.
+> - **SUCCESS:** `SaveNEIN.Server.Tests` passes 114/114 tests in the isolated feature worktree, including stored-run report integration, dynamic origin reconciliation, artifact immutability/cache identity, draft-run rejection, model-foundation seed metadata/default upgrades, schema defaults, multi-provider jurisdiction composition, and Michigan/Ohio regulator-source discovery, reconciliation, and failure handling.
 > - **SUCCESS:** A disposable remote PostGIS/Valhalla integration run persisted exact routed travel and finalized 45 calibration candidates. Its selected holdout MAPE improved from 98.20% to 68.85%, but still fails the production-quality gate; calibration and production acceptance items therefore remain unchecked.
 > - **SUCCESS:** Live Illinois regulator ingestion returned 17 facilities, 34 performance rows, and $1.9437 billion in reconciled annual AGR; a multi-jurisdiction Indiana/Illinois ingestion persisted sealed source snapshots.
 > - **SUCCESS:** Live Michigan inventory ingestion returned 27 facilities (24 tribal and 3 commercial), stable identities, geocoded coordinates, provenance checksum, and an explicit structural-attraction fallback warning where audited tribal GGR is unavailable. Michigan performance-history coverage remains incomplete.
@@ -23,6 +23,8 @@
 > - **SUCCESS:** Live Ohio Lottery ingestion combined the exact overlapping FY2025/FY2026 facility PDFs into calendar 2025 and reconciled every shared fiscal month to the statewide reports: seven racinos, 168 regulator/comparable performance rows, $1,424,001,339 in comparable VLT net win, and 10,109 average VLTs in the December inventory. The composite provider now supports multiple non-overlapping regulators in one jurisdiction; OCCC plus Ohio Lottery yields 11 facilities and $2,457,921,705 in comparable 2025 land-based revenue.
 > - **SUCCESS:** The checksum-pinned combined Ohio provider bundle (`45a9259cf1598c9fd0c316bded59980abca2f41677ebd86384ad11ef985150f7`) was ingested through the deployed server stack into a disposable VPS PostGIS database: 11 facility rows and 264 performance rows produced sealed `competitors` and `observed-performance` snapshots with exact provider checksums `9336da5a568470dd401db3a75cad544897d1d08fd5a21adb8b7f793cd33a452c` and `aa9dd24095b8fcb348590c5d44e51cb88a1bb8a73c39e8989630299cefdfc653`, and reconciled to $2,457,921,705. Direct `ohiolottery.com` downloads from the VPS remain blocked by upstream HTTP 403, so official outputs were fetched locally and transferred by checksum; the guarded validator removed database `savenein_provider_validation_ohiobundle20260811b` and `/tmp/savenein-provider-validation.e294TA` after success.
 > - **SUCCESS:** Stored-run report integration now verifies dynamic ZCTA, state, and county/parish reconciliation and one immutable cached HTML/PDF/JSON/CSV artifact per normalized presentation. County/parish composition is rendered in HTML/PDF and exported in CSV.
+> - **SUCCESS:** A checksum-pinned release artifact (`b8d9ad80e87363158a762974260320401090d3dd856459ecd57c641f2b48e3ef`) booted against a fresh disposable VPS PostGIS database after all model migrations and catalog seeding. The in-app browser created and selected an immutable 2,000-slot/50-table/200-room development program, exposed standard and advanced parameter metadata, rejected an incompatible versioned scenario document, and successfully restored a valid sealed-snapshot scenario.
+> - **SUCCESS:** The same browser workbench submitted two finalized runs through the authoritative backend and persisted live Valhalla routes (2.23 minutes/1,445 meters to the proposed facility; 110.7 minutes/165,232 meters to the incumbent). Beta `1.55` produced $1,012,625 stabilized GGR; allowed-but-warned beta `1.7` produced $869,000. The generated report JSON preserved `gravity.beta = 1.7` and the exact validated-range warning, while immutable comparison rendered both runs alongside the integration baseline.
 > - Update this checklist immediately after every verified implementation tranche, including the evidence used to justify each newly completed item and any failed quality gate that keeps an item open.
 
 ---
@@ -704,17 +706,17 @@ P_ij = W_ij / (W_i0 + Σ_k W_ik)
 - [x] Test the published `1.4` to `1.6` range and expand validation search where needed. *(The live search expanded beyond this range; its holdout result still fails the production-quality gate.)*
 - [ ] Determine whether one beta is adequate nationally.
 - [ ] Support market/facility-segment parameter sets when evidence supports materially different travel behavior.
-- [ ] **Expose beta as a front-end user-overridable parameter.**
-- [ ] Show the default, current value, validated/recommended range, units/interpretation, and source/calibration note.
-- [ ] Permit values outside the validated range unless a numerical-safety bound is crossed, but show a visible warning in the UI and report.
+- [x] **Expose beta as a front-end user-overridable parameter.**
+- [x] Show the default, current value, validated/recommended range, units/interpretation, and source/calibration note.
+- [x] Permit values outside the validated range unless a numerical-safety bound is crossed, but show a visible warning in the UI and report.
 
 ## 11.4 Attraction elasticity and facility weights
 
 - [ ] Give `alpha` and all active facility-attractiveness coefficients calibrated defaults.
-- [ ] **Expose active facility weights/coefficients in the advanced/expert front-end parameter panel.**
-- [ ] Do not force ordinary users to edit raw regression coefficients in the standard workflow.
-- [ ] Permit expert override and preserve every override in the model run.
-- [ ] Flag out-of-calibration-range values without silently resetting them.
+- [x] **Expose active facility weights/coefficients in the advanced/expert front-end parameter panel.**
+- [x] Do not force ordinary users to edit raw regression coefficients in the standard workflow.
+- [x] Permit expert override and preserve every override in the model run.
+- [x] Flag out-of-calibration-range values without silently resetting them.
 
 ---
 
@@ -828,54 +830,54 @@ System fallback
 
 ## 13.1 Standard controls
 
-- [ ] Provide understandable controls for common scenario decisions without exposing raw model internals by default.
-- [ ] Examples:
-  - [ ] proposed facility size/program;
-  - [ ] travel sensitivity preset;
-  - [ ] gaming-demand intensity;
-  - [ ] tourism contribution;
-  - [ ] traffic-intercept contribution;
-  - [ ] local patron share;
-  - [ ] displacement severity;
-  - [ ] social-cost/prevalence scenario;
-  - [ ] ramp/stabilization scenario.
+- [x] Provide understandable controls for common scenario decisions without exposing raw model internals by default.
+- [x] Examples:
+  - [x] proposed facility size/program;
+  - [x] travel sensitivity preset;
+  - [x] gaming-demand intensity;
+  - [x] tourism contribution;
+  - [x] traffic-intercept contribution;
+  - [x] local patron share;
+  - [x] displacement severity;
+  - [x] social-cost/prevalence scenario;
+  - [x] ramp/stabilization scenario.
 
 ## 13.2 Advanced model parameters
 
-- [ ] Add expandable `Advanced Model Parameters` UI.
-- [ ] Expose beta directly.
-- [ ] Expose alpha directly.
-- [ ] Expose active facility-attractiveness coefficients/weights.
-- [ ] Expose demand elasticity and outside-option controls.
-- [ ] Expose other calibrated technical parameters whose override materially changes results.
-- [ ] For every parameter show:
-  - [ ] model default/base value;
-  - [ ] current scenario value;
-  - [ ] recommended/validated range;
-  - [ ] interpretation;
-  - [ ] provenance/calibration reference.
+- [x] Add expandable `Advanced Model Parameters` UI.
+- [x] Expose beta directly.
+- [x] Expose alpha directly.
+- [x] Expose active facility-attractiveness coefficients/weights.
+- [x] Expose demand elasticity and outside-option controls.
+- [x] Expose other calibrated technical parameters whose override materially changes results.
+- [x] For every parameter show:
+  - [x] model default/base value;
+  - [x] current scenario value;
+  - [x] recommended/validated range;
+  - [x] interpretation;
+  - [x] provenance/calibration reference.
 
 ## 13.3 Override behavior
 
-- [ ] User changes must trigger model recalculation through the same backend engine used for default scenarios.
-- [ ] Never implement a front-end-only multiplier that bypasses the model.
-- [ ] Show changed/overridden state clearly.
-- [ ] Provide `Reset to calibrated defaults`.
-- [ ] Provide `Reset this section` where useful.
-- [ ] Allow user values outside recommended ranges unless unsafe.
-- [ ] Show clear warning for values outside validation range.
-- [ ] Include the warning in generated reports.
+- [x] User changes must trigger model recalculation through the same backend engine used for default scenarios.
+- [x] Never implement a front-end-only multiplier that bypasses the model.
+- [x] Show changed/overridden state clearly.
+- [ ] Provide `Reset to calibrated defaults`. *(The UI resets to the selected versioned parameter-set defaults; this item remains open until those defaults pass the calibration gate.)*
+- [x] Provide `Reset this section` where useful.
+- [x] Allow user values outside recommended ranges unless unsafe.
+- [x] Show clear warning for values outside validation range.
+- [x] Include the warning in generated reports.
 
 ## 13.4 Presets and scenario comparison
 
 - [ ] Support at minimum:
-  - [ ] calibrated/base;
-  - [ ] conservative;
-  - [ ] high/aggressive;
-  - [ ] custom.
-- [ ] Allow side-by-side comparison of multiple model runs.
-- [ ] Preserve each comparison scenario as its own immutable run.
-- [ ] Allow export/import of scenario definitions as versioned JSON where practical.
+  - [ ] calibrated/base; *(A clearly disclosed provisional base preset exists; the calibrated designation remains open.)*
+  - [x] conservative;
+  - [x] high/aggressive;
+  - [x] custom.
+- [x] Allow side-by-side comparison of multiple model runs.
+- [x] Preserve each comparison scenario as its own immutable run.
+- [x] Allow export/import of scenario definitions as versioned JSON where practical.
 
 ---
 
@@ -886,7 +888,7 @@ System fallback
 - [x] Do not use it as an unexplained balancing plug.
 - [ ] Calibrate it against observed market totals and/or holdout properties.
 - [ ] Allow the outside-option parameter to vary by market segment/region when validation supports it.
-- [x] Make expert override possible and auditable through the backend parameter-resolution and stored-run audit trail. *(Front-end exposure remains open.)*
+- [x] Make expert override possible and auditable through the front-end control, backend parameter-resolution, and stored-run audit trail.
 
 ---
 
@@ -899,7 +901,7 @@ A fixed share model redistributes a constant gaming pool. Improved access may al
 - [x] Estimate induced demand as a separate, transparent layer.
 - [x] Do not bury induced demand inside beta or facility attraction.
 - [ ] Calibrate accessibility-expansion elasticity where possible.
-- [x] Expose it as an advanced overrideable backend parameter. *(Front-end exposure remains open.)*
+- [x] Expose it as an advanced overrideable front-end/backend parameter.
 - [x] Report resident demand as:
   - [x] baseline resident gaming pool;
   - [x] redistributed/captured amount;
@@ -915,7 +917,7 @@ A fixed share model redistributes a constant gaming pool. Improved access may al
 - [x] Define visitor-days/person-trips rather than applying one arbitrary annual tourist count.
 - [x] Estimate casino-eligible visitor share, participation, capture, and spend.
 - [x] Deduplicate visitors already represented as resident origins.
-- [x] Allow backend user overrides for tourism capture assumptions. *(Front-end exposure remains open.)*
+- [x] Allow front-end/backend user overrides for tourism capture assumptions.
 - [x] Report tourism GGR separately.
 
 ---
@@ -986,7 +988,7 @@ A fixed share model redistributes a constant gaming pool. Improved access may al
   - [ ] hotel/event capacity where relevant.
 - [x] Flag when demand forecast implies implausible per-position productivity.
 - [x] Do not automatically cap without showing the constraint and rationale.
-- [ ] Allow development-program resizing sensitivity.
+- [x] Allow development-program resizing sensitivity through immutable facility-program versions and stored-run comparison.
 
 ---
 
@@ -995,7 +997,7 @@ A fixed share model redistributes a constant gaming pool. Improved access may al
 - [x] Separate stabilized revenue from opening-year revenue.
 - [x] Use versioned ramp parameters.
 - [ ] Allow market-specific calibration.
-- [ ] Expose ramp assumptions on the front end.
+- [x] Expose ramp assumptions on the front end.
 - [x] Report at minimum:
   - [x] opening/partial year if applicable;
   - [x] first full year;
@@ -1339,25 +1341,25 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
 
 # 30. UI result architecture
 
-- [ ] Separate inputs/assumptions from model outputs visually.
-- [ ] Show default-vs-custom state on model parameters.
-- [ ] Show site/development configuration independently.
-- [ ] Show headline stabilized GGR with resident/tourism/traffic decomposition.
+- [x] Separate inputs/assumptions from model outputs visually.
+- [x] Show default-vs-custom state on model parameters.
+- [x] Show site/development configuration independently.
+- [x] Show headline stabilized GGR with resident/tourism/traffic decomposition.
 - [ ] Show patron-origin map/table dynamically.
 - [ ] Show incumbent impacts.
-- [ ] Show local/state net economic-impact summaries.
-- [ ] Show methodology and data provenance without burying key assumptions.
-- [ ] Add explicit `Generate Full Report` workflow only after a model run is complete.
-- [ ] The report action must reference the stored run ID, not submit a second independent set of calculations.
+- [x] Show local/state net economic-impact summaries.
+- [x] Show methodology and data provenance without burying key assumptions.
+- [x] Add explicit `Generate Full Report` workflow only after a model run is complete.
+- [x] The report action must reference the stored run ID, not submit a second independent set of calculations.
 
 ---
 
 # 31. Scenario and sensitivity engine
 
-- [ ] Permit one-click low/base/high scenarios using versioned parameter presets.
+- [x] Permit one-click low/base/high scenarios using versioned parameter presets. *(The base preset remains explicitly provisional until calibration passes.)*
 - [x] Permit custom backend scenarios with arbitrary valid override combinations.
 - [x] Support one-at-a-time sensitivity for beta, alpha, gaming intensity, tourism, traffic intercept, local share, displacement coefficient, and major social-cost assumptions.
-- [ ] Support multi-parameter scenario comparison.
+- [x] Support multi-parameter scenario comparison through side-by-side immutable stored runs.
 - [x] Store every sensitivity scenario result as a separate immutable model run.
 - [x] Build tornado/sensitivity tables from server-computed runs.
 - [x] Do not fake sensitivities by multiplying final GGR or net impact by a percentage after the model has run.
@@ -1409,12 +1411,12 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
 
 ## 34.2 Integration tests
 
-- [ ] Full model run with stored data snapshots.
-- [ ] Default vs overridden beta.
+- [x] Full model run with stored data snapshots.
+- [x] Default vs overridden beta.
 - [ ] Default vs overridden facility weights.
-- [ ] Scenario reset to defaults.
+- [x] Scenario reset to defaults.
 - [x] Indiana jurisdiction profile failure/selection behavior. *(Production fiscal-rule validation remains open.)*
-- [ ] At least one non-Indiana mock/test jurisdiction proving no Indiana hard-coding.
+- [x] At least one non-Indiana mock/test jurisdiction proving no Indiana hard-coding.
 - [x] Dynamic origin aggregation with different counties/states.
 - [x] Full report generation from stored run.
 - [x] Regeneration of the same run/presentation returns the same immutable artifact and numeric tables.
@@ -1438,13 +1440,13 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
 Indiana is the first real validation suite, not the core architecture.
 
 - [ ] Recreate the Northeast Indiana market with current candidate scenarios.
-- [ ] Test an Allen/Fort Wayne-area development program.
+- [x] Test an Allen/Fort Wayne-area development program. *(The disposable sealed-snapshot/Valhalla fixture is an integration proof, not a substitute for the open public benchmark reconciliation.)*
 - [ ] Test an I-69/DeKalb/Spectrum-like proxy.
 - [ ] Test a Steuben scenario.
 - [ ] Compare resident GGR, total GGR, origin composition, and incumbent impacts with public study outputs.
 - [ ] Explain model differences rather than forcing exact agreement.
-- [ ] Verify that patron-origin categories are generated dynamically.
-- [ ] Verify that the same code can run a non-Indiana synthetic or real validation market without changes to core model logic.
+- [x] Verify that patron-origin categories are generated dynamically.
+- [x] Verify that the same code can run a non-Indiana synthetic or real validation market without changes to core model logic.
 
 ---
 
@@ -1493,14 +1495,14 @@ Indiana is the first real validation suite, not the core architecture.
 
 ## Phase F: front-end configurability
 
-- [ ] Standard scenario controls.
-- [ ] Advanced parameter panel.
-- [ ] Beta override.
-- [ ] Alpha override.
-- [ ] Facility weight overrides.
-- [ ] Range warnings.
-- [ ] Default reset.
-- [ ] Scenario comparison.
+- [x] Standard scenario controls.
+- [x] Advanced parameter panel.
+- [x] Beta override.
+- [x] Alpha override.
+- [x] Facility weight overrides.
+- [x] Range warnings.
+- [x] Default reset.
+- [x] Scenario comparison.
 
 ## Phase G: validation
 
@@ -1508,7 +1510,7 @@ Indiana is the first real validation suite, not the core architecture.
 - [ ] Holdouts.
 - [ ] Independent regression/comparable model.
 - [ ] Indiana public benchmark suite.
-- [ ] At least one non-Indiana validation case.
+- [x] At least one non-Indiana validation case. *(The disposable Ohio synthetic holdout proves portability; a production-quality non-Indiana empirical benchmark remains desirable.)*
 
 ## Phase H: report engine
 
@@ -1527,25 +1529,25 @@ Indiana is the first real validation suite, not the core architecture.
 The gravity/revenue model is not production-complete until:
 
 - [ ] Core model contains no Fort Wayne/Allen/DeKalb/Steuben/Indiana assumptions except through scenario, benchmark, or jurisdiction configuration.
-- [ ] Competitive effects are computed origin-by-origin.
-- [ ] Network travel time drives friction.
+- [x] Competitive effects are computed origin-by-origin.
+- [x] Network travel time drives friction.
 - [ ] Facility attraction is empirically/structurally calibrated rather than hand-scored.
 - [ ] Beta has a calibrated default and is user-overridable on the front end.
 - [ ] Alpha and active facility coefficients have calibrated defaults and are user-overridable in advanced/expert controls.
-- [ ] User overrides are persisted and disclosed.
-- [ ] Out-of-range overrides produce warnings but are not silently replaced.
-- [ ] Patron-origin reporting is dynamic.
-- [ ] Legal gaming age is jurisdiction-aware.
-- [ ] Baseline vs with-project equilibrium exists.
-- [ ] Cannibalization and cross-jurisdiction capture are decomposed.
-- [ ] Tourism and through-traffic are separate from resident demand.
-- [ ] Local spending displacement is applied only to an economically eligible base.
+- [x] User overrides are persisted and disclosed.
+- [x] Out-of-range overrides produce warnings but are not silently replaced.
+- [x] Patron-origin reporting is dynamic.
+- [x] Legal gaming age is jurisdiction-aware.
+- [x] Baseline vs with-project equilibrium exists.
+- [x] Cannibalization and cross-jurisdiction capture are decomposed.
+- [x] Tourism and through-traffic are separate from resident demand.
+- [x] Local spending displacement is applied only to an economically eligible base.
 - [ ] Fiscal rules are jurisdiction-specific and effective-dated.
-- [ ] Social/downstream costs remain location-sensitive and configurable.
-- [ ] A complete immutable model run can be reproduced.
-- [ ] A full .NET 10 server-generated report can be produced from that model run without recalculating through separate formulas.
+- [x] Social/downstream costs remain location-sensitive and configurable.
+- [x] A complete immutable model run can be reproduced.
+- [x] A full .NET 10 server-generated report can be produced from that model run without recalculating through separate formulas.
 - [ ] Indiana benchmark cases are validated.
-- [ ] A non-Indiana case demonstrates national portability.
+- [x] A non-Indiana case demonstrates national portability.
 
 ---
 
@@ -1575,13 +1577,13 @@ Do **not** call the model complete if any of the following remain true:
 
 # 39. Final directive to the implementing AI agent
 
-- [ ] Build a **nationally reusable casino gravity model**, not a Northeast-Indiana-only calculator.
+- [x] Build a **nationally reusable casino gravity model**, not a Northeast-Indiana-only calculator.
 - [ ] Use Indiana as the first calibrated jurisdiction and benchmark suite, not the hard-coded model definition.
 - [ ] Give beta, alpha, facility weights, demand parameters, tourism/traffic assumptions, displacement assumptions, and social-cost parameters defensible defaults while making economically meaningful parameters configurable through the front end.
-- [ ] Preserve every override and rerun the authoritative backend model rather than applying superficial front-end multipliers.
+- [x] Preserve every override and rerun the authoritative backend model rather than applying superficial front-end multipliers.
 - [ ] Calculate competition from each origin to each relevant facility using network travel time and calibrated facility attraction.
-- [ ] Dynamically determine patron-origin counties, states, regions, and external-market shares from the model run.
-- [ ] Separate resident demand, induced demand, tourism, traffic, cannibalization, repatriation/imported demand, and displacement.
-- [ ] Integrate revenue projections with employment, fiscal, sector-displacement, and social/downstream cost analysis.
-- [ ] Make the immutable `ModelRun` the single source of truth for the web UI, API, scenario comparison, and full .NET 10 server-generated professional report.
+- [x] Dynamically determine patron-origin counties, states, regions, and external-market shares from the model run.
+- [x] Separate resident demand, induced demand, tourism, traffic, cannibalization, repatriation/imported demand, and displacement.
+- [x] Integrate revenue projections with employment, fiscal, sector-displacement, and social/downstream cost analysis.
+- [x] Make the immutable `ModelRun` the single source of truth for the web UI, API, scenario comparison, and full .NET 10 server-generated professional report.
 - [ ] Favor transparent, reproducible, testable modeling over false precision.

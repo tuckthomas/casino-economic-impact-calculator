@@ -27,6 +27,12 @@ public sealed class ModelFoundationSchemaTests
         Assert.Equal("finalized_at_utc", runEntity.FindProperty(nameof(ModelRun.FinalizedAtUtc))!.GetColumnName(runTable));
         Assert.Equal("jsonb", runEntity.FindProperty(nameof(ModelRun.ResolvedInputJson))!.GetColumnType());
 
+        var benchmarkEntity = db.Model.FindEntityType(typeof(BenchmarkStudy))!;
+        Assert.Equal("'{}'::jsonb", benchmarkEntity.FindProperty(nameof(BenchmarkStudy.DevelopmentProgramJson))!.GetDefaultValueSql());
+        Assert.Equal("'{}'::jsonb", benchmarkEntity.FindProperty(nameof(BenchmarkStudy.ReportedOutputsJson))!.GetDefaultValueSql());
+        Assert.Equal("'{}'::jsonb", benchmarkEntity.FindProperty(nameof(BenchmarkStudy.ReportedAssumptionsJson))!.GetDefaultValueSql());
+        Assert.Equal("NOW()", benchmarkEntity.FindProperty(nameof(BenchmarkStudy.CreatedAtUtc))!.GetDefaultValueSql());
+
         var referenceEntity = db.Model.FindEntityType(typeof(ModelRunParameterSetReference))!;
         var referenceTable = StoreObjectIdentifier.Table("model_run_parameter_set_references", null);
         Assert.Equal("parameter_set_id", referenceEntity.FindProperty(nameof(ModelRunParameterSetReference.ParameterSetId))!.GetColumnName(referenceTable));
@@ -162,6 +168,8 @@ public sealed class ModelFoundationSchemaTests
         Assert.Contains("validation_evaluations", validationSql, StringComparison.Ordinal);
         Assert.Contains("validation_case_results", validationSql, StringComparison.Ordinal);
         Assert.Contains("prevent_immutable_validation_evaluation_mutation", validationSql, StringComparison.Ordinal);
+        Assert.Contains("development_program_json, reported_outputs_json", validationSql, StringComparison.Ordinal);
+        Assert.Contains("validation_state, created_at_utc", validationSql, StringComparison.Ordinal);
 
         var reportMigration = Assert.Single(
             resourceNames,

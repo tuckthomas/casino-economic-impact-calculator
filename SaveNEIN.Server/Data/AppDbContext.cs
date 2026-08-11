@@ -392,13 +392,19 @@ public class AppDbContext : DbContext
             .HasColumnType("jsonb");
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.BenchmarkStudy>()
             .Property(study => study.DevelopmentProgramJson)
-            .HasColumnType("jsonb");
+            .HasColumnType("jsonb")
+            .HasDefaultValueSql("'{}'::jsonb");
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.BenchmarkStudy>()
             .Property(study => study.ReportedOutputsJson)
-            .HasColumnType("jsonb");
+            .HasColumnType("jsonb")
+            .HasDefaultValueSql("'{}'::jsonb");
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.BenchmarkStudy>()
             .Property(study => study.ReportedAssumptionsJson)
-            .HasColumnType("jsonb");
+            .HasColumnType("jsonb")
+            .HasDefaultValueSql("'{}'::jsonb");
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.BenchmarkStudy>()
+            .Property(study => study.CreatedAtUtc)
+            .HasDefaultValueSql("NOW()");
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ValidationCase>()
             .Property(validationCase => validationCase.InclusionRulesJson)
             .HasColumnType("jsonb");
