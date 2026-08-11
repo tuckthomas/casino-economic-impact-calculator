@@ -34,6 +34,6 @@ const copies = [
 for (const { from, to } of copies) {
   if (existsSync(from)) {
     mkdirSync(path.dirname(to), { recursive: true });
-    cpSync(from, to, { recursive: true, force: true });
+    cpSync(from, to, { recursive: true, force: true, dereference: true });
   }
 }
