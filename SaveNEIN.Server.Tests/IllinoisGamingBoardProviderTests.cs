@@ -94,7 +94,10 @@ public sealed class IllinoisGamingBoardProviderTests
     {
         var inProvider = new StubFacilityProvider("US-IN", "USA-IN-one");
         var ilProvider = new StubFacilityProvider("US-IL", "USA-IL-one");
-        var composite = new CompositeGamingFacilityInventoryProvider([inProvider, ilProvider]);
+        var ohCasinoProvider = new StubFacilityProvider("US-OH", "USA-OH-casino");
+        var ohRacinoProvider = new StubFacilityProvider("US-OH", "USA-OH-racino");
+        var composite = new CompositeGamingFacilityInventoryProvider(
+            [inProvider, ilProvider, ohCasinoProvider, ohRacinoProvider]);
         var request = new ProviderFetchRequest(
             "US-IN,US-IL",
             new DateOnly(2025, 1, 1),
@@ -106,8 +109,12 @@ public sealed class IllinoisGamingBoardProviderTests
         Assert.Equal("US-IL", ilProvider.LastRequest!.GeographicCoverage);
         Assert.Equal("US-IN", inProvider.LastRequest!.GeographicCoverage);
         Assert.Equal(64, dataset.ContentChecksum.Length);
+        var ohio = await composite.FetchAsync(request with { GeographicCoverage = "US-OH" });
+        Assert.Equal(2, ohio.Rows.Count);
+        Assert.Equal("US-OH", ohCasinoProvider.LastRequest!.GeographicCoverage);
+        Assert.Equal("US-OH", ohRacinoProvider.LastRequest!.GeographicCoverage);
         await Assert.ThrowsAsync<NotSupportedException>(() => composite.FetchAsync(
-            request with { GeographicCoverage = "US-OH" }));
+            request with { GeographicCoverage = "US-KY" }));
     }
 
     private static IllinoisGamingBoardProviderOptions TestOptions() => new()
@@ -192,7 +199,7 @@ public sealed class IllinoisGamingBoardProviderTests
 
     private sealed class StubFacilityProvider(string coverage, string stableVenueId) : IGamingFacilityInventoryProvider
     {
-        public string ProviderKey => $"stub-{coverage}";
+        public string ProviderKey => $"stub-{stableVenueId}";
         public string GeographicCoverage => coverage;
         public ProviderFetchRequest? LastRequest { get; private set; }
 

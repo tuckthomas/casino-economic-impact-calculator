@@ -76,6 +76,10 @@ builder.Services.Configure<SaveNEIN.Server.Services.Providers.OhioCasinoControlC
     builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.OhioCasinoControlCommissionProviderOptions.ConfigurationSection));
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.OhioCasinoControlCommissionRevenueProvider>();
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.OhioCasinoControlCommissionFacilityInventoryProvider>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.OhioLotteryVideoLotteryProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.OhioLotteryVideoLotteryProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.OhioLotteryVideoLotteryRevenueProvider>();
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.OhioLotteryVideoLotteryFacilityInventoryProvider>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingRegulatorPerformanceProvider>(serviceProvider =>
     serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.IndianaGamingCommissionMonthlyRevenueProvider>());
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingRegulatorPerformanceProvider>(serviceProvider =>
@@ -84,6 +88,8 @@ builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingRegulatorPerformanceP
     serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.MichiganGamingControlBoardRevenueProvider>());
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingRegulatorPerformanceProvider>(serviceProvider =>
     serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.OhioCasinoControlCommissionRevenueProvider>());
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingRegulatorPerformanceProvider>(serviceProvider =>
+    serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.OhioLotteryVideoLotteryRevenueProvider>());
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>
     serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.IndianaGamingCommissionFacilityInventoryProvider>());
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>
@@ -92,6 +98,8 @@ builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProv
     serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.MichiganGamingFacilityInventoryProvider>());
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>
     serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.OhioCasinoControlCommissionFacilityInventoryProvider>());
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>
+    serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.OhioLotteryVideoLotteryFacilityInventoryProvider>());
 builder.Services.AddScoped<SaveNEIN.Server.Services.Providers.CompositeGamingRegulatorPerformanceProvider>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Providers.CompositeGamingFacilityInventoryProvider>();
 builder.Services.Configure<SaveNEIN.Server.Services.Providers.IndianaDepartmentOfTransportationProviderOptions>(

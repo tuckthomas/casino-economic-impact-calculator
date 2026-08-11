@@ -12,6 +12,8 @@ const designatedFiles = [
   'SaveNEIN.Server/Services/ModelParameterService.cs',
   'SaveNEIN.Server/Services/ModelRunService.cs',
   'SaveNEIN.Server/Services/Providers/OhioCasinoControlCommissionProviders.cs',
+  'SaveNEIN.Server/Services/Providers/OhioLotteryVideoLotteryProviders.cs',
+  'SaveNEIN.Server/Services/Providers/CompositeGamingProviders.cs',
   'SaveNEIN.Server/Controllers/GravityModelRunsController.cs',
   'SaveNEIN.Server/Controllers/ModelSensitivityController.cs',
   'SaveNEIN.Server/Controllers/ModelValidationController.cs',
@@ -34,7 +36,7 @@ const designatedFiles = [
   'scripts/validation/run-gravity-model-integration.sh',
   'scripts/validation/run-incumbent-calibration.sh',
   'scripts/validation/run-provider-ingestion.sh',
-  'scripts/validation/run-michigan-provider-bundle-ingestion.sh',
+  'scripts/validation/run-provider-bundle-ingestion.sh',
   'scripts/validation/GravityModelIntegrationHarness/Program.cs'
 ];
 

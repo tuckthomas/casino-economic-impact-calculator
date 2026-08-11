@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+// SaveNEIN Advanced Economic Modeling Subsystem
+// Copyright (C) 2026 Save Fort Wayne Contributors & Model Authors
+// Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
+
 using System.Security.Cryptography;
 using System.Text;
 
@@ -6,7 +11,7 @@ namespace SaveNEIN.Server.Services.Providers;
 public sealed class CompositeGamingFacilityInventoryProvider(
     IEnumerable<IGamingFacilityInventoryProvider> providers) : IGamingFacilityInventoryProvider
 {
-    private readonly IReadOnlyDictionary<string, IGamingFacilityInventoryProvider> providersByCoverage =
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<IGamingFacilityInventoryProvider>> providersByCoverage =
         BuildProviderMap(providers);
 
     public string ProviderKey => "composite-regulated-gaming-facility-inventory";
@@ -35,36 +40,51 @@ public sealed class CompositeGamingFacilityInventoryProvider(
             "composite-regulated-gaming-facilities-v1");
     }
 
-    private static IReadOnlyDictionary<string, IGamingFacilityInventoryProvider> BuildProviderMap(
+    private static IReadOnlyDictionary<string, IReadOnlyList<IGamingFacilityInventoryProvider>> BuildProviderMap(
         IEnumerable<IGamingFacilityInventoryProvider> providers)
     {
-        var result = new Dictionary<string, IGamingFacilityInventoryProvider>(StringComparer.OrdinalIgnoreCase);
+        var result = new Dictionary<string, List<IGamingFacilityInventoryProvider>>(StringComparer.OrdinalIgnoreCase);
+        var providerKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var provider in providers)
         {
-            if (string.IsNullOrWhiteSpace(provider.GeographicCoverage) ||
-                !result.TryAdd(provider.GeographicCoverage.Trim(), provider))
+            if (string.IsNullOrWhiteSpace(provider.GeographicCoverage))
             {
                 throw new InvalidOperationException(
-                    $"Gaming facility providers must have one unique geographic coverage; duplicate or empty coverage '{provider.GeographicCoverage}'.");
+                    $"Gaming facility providers must have a non-empty geographic coverage; received '{provider.GeographicCoverage}'.");
             }
+            if (!providerKeys.Add(provider.ProviderKey))
+            {
+                throw new InvalidOperationException($"Gaming facility provider key '{provider.ProviderKey}' is registered more than once.");
+            }
+            var coverage = provider.GeographicCoverage.Trim();
+            if (!result.TryGetValue(coverage, out var coverageProviders))
+            {
+                coverageProviders = [];
+                result.Add(coverage, coverageProviders);
+            }
+            coverageProviders.Add(provider);
         }
         if (result.Count == 0)
         {
             throw new InvalidOperationException("At least one gaming facility provider is required.");
         }
-        return result;
+        return result.ToDictionary(
+            pair => pair.Key,
+            pair => (IReadOnlyList<IGamingFacilityInventoryProvider>)pair.Value
+                .OrderBy(provider => provider.ProviderKey, StringComparer.Ordinal)
+                .ToArray(),
+            StringComparer.OrdinalIgnoreCase);
     }
 
     private static IReadOnlyList<(string Coverage, IGamingFacilityInventoryProvider Provider)> SelectProviders(
         string requestedCoverage,
-        IReadOnlyDictionary<string, IGamingFacilityInventoryProvider> available)
+        IReadOnlyDictionary<string, IReadOnlyList<IGamingFacilityInventoryProvider>> available)
     {
         var requested = CompositeProviderSupport.ParseCoverage(requestedCoverage);
-        return requested.Select(coverage => (
-            coverage,
-            available.TryGetValue(coverage, out var provider)
-                ? provider
-                : throw new NotSupportedException($"No gaming facility provider is registered for '{coverage}'.")))
+        return requested.SelectMany(coverage =>
+            available.TryGetValue(coverage, out var coverageProviders)
+                ? coverageProviders.Select(provider => (coverage, provider))
+                : throw new NotSupportedException($"No gaming facility provider is registered for '{coverage}'."))
             .ToArray();
     }
 
@@ -86,7 +106,7 @@ public sealed class CompositeGamingFacilityInventoryProvider(
 public sealed class CompositeGamingRegulatorPerformanceProvider(
     IEnumerable<IGamingRegulatorPerformanceProvider> providers) : IGamingRegulatorPerformanceProvider
 {
-    private readonly IReadOnlyDictionary<string, IGamingRegulatorPerformanceProvider> providersByCoverage =
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<IGamingRegulatorPerformanceProvider>> providersByCoverage =
         BuildProviderMap(providers);
 
     public string ProviderKey => "composite-regulated-gaming-performance";
@@ -119,36 +139,51 @@ public sealed class CompositeGamingRegulatorPerformanceProvider(
             "composite-regulated-gaming-performance-v1");
     }
 
-    private static IReadOnlyDictionary<string, IGamingRegulatorPerformanceProvider> BuildProviderMap(
+    private static IReadOnlyDictionary<string, IReadOnlyList<IGamingRegulatorPerformanceProvider>> BuildProviderMap(
         IEnumerable<IGamingRegulatorPerformanceProvider> providers)
     {
-        var result = new Dictionary<string, IGamingRegulatorPerformanceProvider>(StringComparer.OrdinalIgnoreCase);
+        var result = new Dictionary<string, List<IGamingRegulatorPerformanceProvider>>(StringComparer.OrdinalIgnoreCase);
+        var providerKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var provider in providers)
         {
-            if (string.IsNullOrWhiteSpace(provider.GeographicCoverage) ||
-                !result.TryAdd(provider.GeographicCoverage.Trim(), provider))
+            if (string.IsNullOrWhiteSpace(provider.GeographicCoverage))
             {
                 throw new InvalidOperationException(
-                    $"Gaming performance providers must have one unique geographic coverage; duplicate or empty coverage '{provider.GeographicCoverage}'.");
+                    $"Gaming performance providers must have a non-empty geographic coverage; received '{provider.GeographicCoverage}'.");
             }
+            if (!providerKeys.Add(provider.ProviderKey))
+            {
+                throw new InvalidOperationException($"Gaming performance provider key '{provider.ProviderKey}' is registered more than once.");
+            }
+            var coverage = provider.GeographicCoverage.Trim();
+            if (!result.TryGetValue(coverage, out var coverageProviders))
+            {
+                coverageProviders = [];
+                result.Add(coverage, coverageProviders);
+            }
+            coverageProviders.Add(provider);
         }
         if (result.Count == 0)
         {
             throw new InvalidOperationException("At least one gaming performance provider is required.");
         }
-        return result;
+        return result.ToDictionary(
+            pair => pair.Key,
+            pair => (IReadOnlyList<IGamingRegulatorPerformanceProvider>)pair.Value
+                .OrderBy(provider => provider.ProviderKey, StringComparer.Ordinal)
+                .ToArray(),
+            StringComparer.OrdinalIgnoreCase);
     }
 
     private static IReadOnlyList<(string Coverage, IGamingRegulatorPerformanceProvider Provider)> SelectProviders(
         string requestedCoverage,
-        IReadOnlyDictionary<string, IGamingRegulatorPerformanceProvider> available)
+        IReadOnlyDictionary<string, IReadOnlyList<IGamingRegulatorPerformanceProvider>> available)
     {
         var requested = CompositeProviderSupport.ParseCoverage(requestedCoverage);
-        return requested.Select(coverage => (
-            coverage,
-            available.TryGetValue(coverage, out var provider)
-                ? provider
-                : throw new NotSupportedException($"No gaming performance provider is registered for '{coverage}'.")))
+        return requested.SelectMany(coverage =>
+            available.TryGetValue(coverage, out var coverageProviders)
+                ? coverageProviders.Select(provider => (coverage, provider))
+                : throw new NotSupportedException($"No gaming performance provider is registered for '{coverage}'."))
             .ToArray();
     }
 
@@ -208,11 +243,16 @@ internal static class CompositeProviderSupport
         }
         var components = datasets
             .OrderBy(dataset => dataset.Source.GeographicCoverage, StringComparer.Ordinal)
+            .ThenBy(dataset => dataset.Source.Publisher, StringComparer.Ordinal)
+            .ThenBy(dataset => dataset.Source.Url, StringComparer.Ordinal)
             .Select(dataset => $"{dataset.Source.Publisher}|{dataset.Source.Url}|{dataset.ContentChecksum}")
             .ToArray();
         var checksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', components))))
             .ToLowerInvariant();
-        var coverage = string.Join(",", datasets.Select(dataset => dataset.Source.GeographicCoverage).Order(StringComparer.Ordinal));
+        var coverage = string.Join(",", datasets
+            .Select(dataset => dataset.Source.GeographicCoverage)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.Ordinal));
         var period = request.PeriodStart == new DateOnly(request.PeriodStart.Year, 1, 1) &&
                      request.PeriodEnd == new DateOnly(request.PeriodStart.Year, 12, 31)
             ? request.PeriodStart.Year.ToString()

@@ -8,7 +8,8 @@ set -euo pipefail
 
 validation_db="${1:?validation database name is required}"
 validation_dir="${2:?validation publish directory is required}"
-bundle_file="${3:?Michigan provider bundle path is required}"
+bundle_file="${3:?provider bundle path is required}"
+validation_mode="${4:?provider bundle validation mode is required}"
 validation_created=0
 
 case "$validation_db" in
@@ -20,8 +21,12 @@ case "$validation_dir" in
   *) echo "Unsafe validation temp path" >&2; exit 64 ;;
 esac
 case "$bundle_file" in
-  "$validation_dir"/michigan-provider-bundle.json) ;;
-  *) echo "Unsafe Michigan provider bundle path" >&2; exit 64 ;;
+  "$validation_dir"/provider-bundle.json) ;;
+  *) echo "Unsafe provider bundle path" >&2; exit 64 ;;
+esac
+case "$validation_mode" in
+  --validate-michigan-provider-bundle|--validate-ohio-provider-bundle) ;;
+  *) echo "Unsafe provider bundle validation mode" >&2; exit 64 ;;
 esac
 
 validation_compose=(
@@ -62,11 +67,11 @@ validation_created=1
 "${validation_compose[@]}" run --rm --no-deps \
   --entrypoint dotnet \
   -v "$validation_dir/publish:/validation:ro" \
-  -v "$bundle_file:/input/michigan-provider-bundle.json:ro" \
+  -v "$bundle_file:/input/provider-bundle.json:ro" \
   app \
   /validation/GravityModelIntegrationHarness.dll \
-  --validate-michigan-provider-bundle \
+  "$validation_mode" \
   "$validation_db" \
-  /input/michigan-provider-bundle.json
+  /input/provider-bundle.json
 
-echo "Remote Michigan provider-bundle PostGIS ingestion validation passed."
+echo "Remote provider-bundle PostGIS ingestion validation passed: $validation_mode"
