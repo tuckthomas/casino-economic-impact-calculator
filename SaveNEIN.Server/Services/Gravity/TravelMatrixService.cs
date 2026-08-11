@@ -4,6 +4,7 @@
 // Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
 
 using System.Globalization;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
@@ -48,9 +49,10 @@ public sealed class TravelMatrixService(
     ValhallaClient valhallaClient) : ITravelMatrixService
 {
     // The deployed Valhalla contract allows at most 20 total matrix locations.
-    // Ten-by-ten batches stay within that limit for every request shape.
-    private const int SourceBatchSize = 10;
+    // A single source plus ten targets also lets the service exclude pair-specific
+    // broad-distance misses without one far cross-product cell rejecting the batch.
     private const int TargetBatchSize = 10;
+    internal const double MaximumMatrixPrefilterMiles = 200;
 
     public async Task<TravelMatrixResolution> ResolveAsync(
         IReadOnlyCollection<TravelMatrixOrigin> origins,
@@ -135,86 +137,45 @@ public sealed class TravelMatrixService(
             await db.SaveChangesAsync(cancellationToken);
         }
 
-        foreach (var originBatch in orderedOrigins.Chunk(SourceBatchSize))
+        foreach (var origin in orderedOrigins)
         {
-            foreach (var facilityBatch in orderedFacilities.Chunk(TargetBatchSize))
+            var missingFacilities = orderedFacilities
+                .Where(facility => !routeByKey.ContainsKey((origin.OriginZoneId, facility.FacilityKey)))
+                .ToArray();
+            var excludedFacilities = missingFacilities
+                .Where(facility => !CompetitiveUniverseService.IsWithinBroadPrefilter(
+                    origin.Latitude,
+                    origin.Longitude,
+                    facility.Latitude,
+                    facility.Longitude,
+                    MaximumMatrixPrefilterMiles))
+                .ToArray();
+            foreach (var facility in excludedFacilities)
             {
-                var missingPairs = originBatch
-                    .SelectMany(origin => facilityBatch.Select(facility => (origin, facility)))
-                    .Where(pair => !routeByKey.ContainsKey((pair.origin.OriginZoneId, pair.facility.FacilityKey)))
-                    .ToArray();
-                if (missingPairs.Length == 0)
-                {
-                    continue;
-                }
-
-                var matrix = await valhallaClient.GetDriveTimeMatrixAsync(
-                    originBatch
-                        .Select(origin => new ValhallaMatrixLocation(origin.Latitude, origin.Longitude))
-                        .ToArray(),
-                    facilityBatch
-                        .Select(facility => new ValhallaMatrixLocation(facility.Latitude, facility.Longitude))
-                        .ToArray(),
+                var route = CreateRoute(
+                    origin,
+                    facility,
+                    graph,
                     costingProfile,
-                    cancellationToken);
-                foreach (var cell in matrix.Cells)
-                {
-                    var origin = originBatch[cell.SourceIndex];
-                    var facility = facilityBatch[cell.TargetIndex];
-                    var key = (origin.OriginZoneId, facility.FacilityKey);
-                    if (routeByKey.ContainsKey(key))
-                    {
-                        continue;
-                    }
-
-                    var route = new OriginFacilityTravel
-                    {
-                        OriginZoneId = origin.OriginZoneId,
-                        CasinoCompetitorId = facility.CasinoCompetitorId,
-                        ModelRunId = facility.ModelRunId,
-                        FacilityKey = facility.FacilityKey,
-                        FacilityKind = facility.FacilityKind,
-                        RoutingGraphHash = graph.GraphHash,
-                        CostingProfile = costingProfile,
-                        TravelTimeMinutes = cell.TravelTimeMinutes,
-                        RoutedDistanceMeters = cell.RoutedDistanceMeters,
-                        RouteFound = cell.RouteFound,
-                        RouteFailureReason = cell.RouteFound ? null : "Valhalla returned the origin-facility pair as unreachable.",
-                        CalculatedAtUtc = DateTime.UtcNow
-                    };
-                    db.OriginFacilityTravel.Add(route);
-                    routeByKey.Add(key, route);
-                    if (facility.FacilityKind == FacilityKinds.Scenario)
-                    {
-                        var identity = candidateIdentities[facility.FacilityKey];
-                        var candidateKey = (origin.OriginZoneId, identity.Hash);
-                        if (!candidateRouteByKey.ContainsKey(candidateKey))
-                        {
-                            var candidateCache = new CandidateLocationTravelCache
-                            {
-                                OriginZoneId = origin.OriginZoneId,
-                                CandidateCoordinateHash = identity.Hash,
-                                CandidateLatitude = identity.Latitude,
-                                CandidateLongitude = identity.Longitude,
-                                RoutingGraphHash = graph.GraphHash,
-                                ValhallaVersion = graph.ValhallaVersion,
-                                TilesetLastModified = graph.TilesetLastModified,
-                                CostingProfile = costingProfile,
-                                TravelTimeMinutes = cell.TravelTimeMinutes,
-                                RoutedDistanceMeters = cell.RoutedDistanceMeters,
-                                RouteFound = cell.RouteFound,
-                                RouteFailureReason = cell.RouteFound
-                                    ? null
-                                    : "Valhalla returned the origin-candidate pair as unreachable.",
-                                CalculatedAtUtc = route.CalculatedAtUtc
-                            };
-                            db.CandidateLocationTravelCache.Add(candidateCache);
-                            candidateRouteByKey.Add(candidateKey, candidateCache);
-                        }
-                    }
-                }
-
+                    null,
+                    null,
+                    false,
+                    $"Origin-facility pair exceeded the broad {MaximumMatrixPrefilterMiles:0}-mile Valhalla matrix eligibility prefilter; no routed travel time was assumed.");
+                db.OriginFacilityTravel.Add(route);
+                routeByKey.Add((origin.OriginZoneId, facility.FacilityKey), route);
+                AddCandidateCacheIfNeeded(origin, facility, route);
+            }
+            if (excludedFacilities.Length > 0)
+            {
                 await db.SaveChangesAsync(cancellationToken);
+            }
+
+            var eligibleFacilities = missingFacilities
+                .Except(excludedFacilities)
+                .ToArray();
+            foreach (var facilityBatch in eligibleFacilities.Chunk(TargetBatchSize))
+            {
+                await ResolveEligibleBatchAsync(origin, facilityBatch);
             }
         }
 
@@ -228,7 +189,144 @@ public sealed class TravelMatrixService(
             graph.TilesetLastModified,
             costingProfile,
             resolvedRoutes);
+
+        async Task ResolveEligibleBatchAsync(
+            TravelMatrixOrigin origin,
+            TravelMatrixFacility[] facilityBatch)
+        {
+            try
+            {
+                var matrix = await valhallaClient.GetDriveTimeMatrixAsync(
+                    [new ValhallaMatrixLocation(origin.Latitude, origin.Longitude)],
+                    facilityBatch
+                        .Select(facility => new ValhallaMatrixLocation(facility.Latitude, facility.Longitude))
+                        .ToArray(),
+                    costingProfile,
+                    cancellationToken);
+                foreach (var cell in matrix.Cells)
+                {
+                    if (cell.SourceIndex != 0)
+                    {
+                        throw new InvalidOperationException("Valhalla returned an unexpected source index for a single-origin matrix request.");
+                    }
+                    var facility = facilityBatch[cell.TargetIndex];
+                    var key = (origin.OriginZoneId, facility.FacilityKey);
+                    if (routeByKey.ContainsKey(key))
+                    {
+                        continue;
+                    }
+
+                    var route = CreateRoute(
+                        origin,
+                        facility,
+                        graph,
+                        costingProfile,
+                        cell.TravelTimeMinutes,
+                        cell.RoutedDistanceMeters,
+                        cell.RouteFound,
+                        cell.RouteFound ? null : "Valhalla returned the origin-facility pair as unreachable.");
+                    db.OriginFacilityTravel.Add(route);
+                    routeByKey.Add(key, route);
+                    AddCandidateCacheIfNeeded(origin, facility, route);
+                }
+
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (HttpRequestException exception) when (
+                exception.StatusCode == HttpStatusCode.BadRequest &&
+                IsPairSpecificMatrixFailure(exception.Message))
+            {
+                if (facilityBatch.Length > 1)
+                {
+                    var midpoint = facilityBatch.Length / 2;
+                    await ResolveEligibleBatchAsync(origin, facilityBatch[..midpoint]);
+                    await ResolveEligibleBatchAsync(origin, facilityBatch[midpoint..]);
+                    return;
+                }
+
+                var facility = facilityBatch[0];
+                var route = CreateRoute(
+                    origin,
+                    facility,
+                    graph,
+                    costingProfile,
+                    null,
+                    null,
+                    false,
+                    "Valhalla rejected the exact origin-facility pair as unroutable (HTTP 400); no travel time was assumed.");
+                db.OriginFacilityTravel.Add(route);
+                routeByKey.Add((origin.OriginZoneId, facility.FacilityKey), route);
+                AddCandidateCacheIfNeeded(origin, facility, route);
+                await db.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        void AddCandidateCacheIfNeeded(
+            TravelMatrixOrigin origin,
+            TravelMatrixFacility facility,
+            OriginFacilityTravel route)
+        {
+            if (facility.FacilityKind != FacilityKinds.Scenario)
+            {
+                return;
+            }
+
+            var identity = candidateIdentities[facility.FacilityKey];
+            var candidateKey = (origin.OriginZoneId, identity.Hash);
+            if (candidateRouteByKey.ContainsKey(candidateKey))
+            {
+                return;
+            }
+
+            var candidateCache = new CandidateLocationTravelCache
+            {
+                OriginZoneId = origin.OriginZoneId,
+                CandidateCoordinateHash = identity.Hash,
+                CandidateLatitude = identity.Latitude,
+                CandidateLongitude = identity.Longitude,
+                RoutingGraphHash = graph.GraphHash,
+                ValhallaVersion = graph.ValhallaVersion,
+                TilesetLastModified = graph.TilesetLastModified,
+                CostingProfile = costingProfile,
+                TravelTimeMinutes = route.TravelTimeMinutes,
+                RoutedDistanceMeters = route.RoutedDistanceMeters,
+                RouteFound = route.RouteFound,
+                RouteFailureReason = route.RouteFailureReason,
+                CalculatedAtUtc = route.CalculatedAtUtc
+            };
+            db.CandidateLocationTravelCache.Add(candidateCache);
+            candidateRouteByKey.Add(candidateKey, candidateCache);
+        }
     }
+
+    private static OriginFacilityTravel CreateRoute(
+        TravelMatrixOrigin origin,
+        TravelMatrixFacility facility,
+        ValhallaRoutingGraphIdentity graph,
+        string costingProfile,
+        double? travelTimeMinutes,
+        double? routedDistanceMeters,
+        bool routeFound,
+        string? failureReason) =>
+        new()
+        {
+            OriginZoneId = origin.OriginZoneId,
+            CasinoCompetitorId = facility.CasinoCompetitorId,
+            ModelRunId = facility.ModelRunId,
+            FacilityKey = facility.FacilityKey,
+            FacilityKind = facility.FacilityKind,
+            RoutingGraphHash = graph.GraphHash,
+            CostingProfile = costingProfile,
+            TravelTimeMinutes = travelTimeMinutes,
+            RoutedDistanceMeters = routedDistanceMeters,
+            RouteFound = routeFound,
+            RouteFailureReason = failureReason,
+            CalculatedAtUtc = DateTime.UtcNow
+        };
+
+    private static bool IsPairSpecificMatrixFailure(string message) =>
+        message.Contains("\"error_code\":442", StringComparison.Ordinal) ||
+        message.Contains("\"error_code\":154", StringComparison.Ordinal);
 
     private static void Validate(
         IReadOnlyCollection<TravelMatrixOrigin> origins,
