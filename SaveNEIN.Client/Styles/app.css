@@ -606,6 +606,11 @@ input[type=number] {
     z-index: 1;
     width: 100%;
     max-width: 100%;
+    box-sizing: border-box;
+    padding: 0 1px;
+    font-size: clamp(0.5rem, 7.2cqi, 0.92rem);
+    line-height: 1.08;
+    letter-spacing: -0.035em;
     color: #16181d !important;
     font-weight: 850 !important;
     text-transform: uppercase;
@@ -613,6 +618,7 @@ input[type=number] {
     word-break: keep-all;
     overflow-wrap: normal;
     hyphens: none;
+    text-align: center;
 }
 
 .modern-slot-cell.is-truth {
