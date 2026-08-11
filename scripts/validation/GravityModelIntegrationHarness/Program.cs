@@ -282,6 +282,62 @@ if (args is ["--probe-michigan-performance"])
     return;
 }
 
+if (args is ["--probe-ohio-providers"])
+{
+    using var providerProbeHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+    var configured = Options.Create(new OhioCasinoControlCommissionProviderOptions());
+    var revenueProvider = new OhioCasinoControlCommissionRevenueProvider(providerProbeHttp, configured);
+    var request = new ProviderFetchRequest(
+        "US-OH",
+        new DateOnly(2025, 1, 1),
+        new DateOnly(2025, 12, 31));
+    var revenue = await revenueProvider.FetchAsync(request);
+    var facilities = await new OhioCasinoControlCommissionFacilityInventoryProvider(
+            providerProbeHttp,
+            revenueProvider,
+            configured)
+        .FetchAsync(request);
+    var comparable = revenue.Rows
+        .Where(row => row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
+        .ToArray();
+    var revenueIds = comparable.Select(row => row.StableVenueId).ToHashSet(StringComparer.Ordinal);
+    var facilityIds = facilities.Rows.Select(row => row.StableVenueId).ToHashSet(StringComparer.Ordinal);
+    if (!revenueIds.SetEquals(facilityIds))
+    {
+        throw new InvalidOperationException("Live OCCC revenue and facility stable-ID sets did not reconcile.");
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        Revenue = new
+        {
+            revenue.Source.Url,
+            revenue.Period,
+            RowCount = revenue.Rows.Count,
+            FacilityCount = revenueIds.Count,
+            MonthCount = comparable.Select(row => row.PeriodStart).Distinct().Count(),
+            MetricKeys = revenue.Rows.Select(row => row.ReportedMetricKey).Distinct().Order().ToArray(),
+            TotalComparableRevenue = comparable.Sum(row => row.ReportedAmount),
+            AnnualByFacility = comparable
+                .GroupBy(row => row.StableVenueId)
+                .OrderBy(group => group.Key)
+                .Select(group => new { StableVenueId = group.Key, Revenue = group.Sum(row => row.ReportedAmount) }),
+            revenue.Warnings,
+            revenue.ContentChecksum
+        },
+        Facilities = new
+        {
+            facilities.Source.Url,
+            facilities.Period,
+            RowCount = facilities.Rows.Count,
+            TotalTables = facilities.Rows.Sum(row => row.TableGameCount),
+            TotalSlots = facilities.Rows.Sum(row => row.SlotOrVltPositions),
+            facilities.Warnings,
+            facilities.ContentChecksum
+        }
+    }));
+    return;
+}
+
 if (args is ["--export-michigan-provider-bundle", var bundleOutputPath])
 {
     var fullOutputPath = Path.GetFullPath(bundleOutputPath);
@@ -317,14 +373,16 @@ if (args is ["--export-michigan-provider-bundle", var bundleOutputPath])
 
 var validateIncumbentCalibration = args is ["--validate-incumbent-calibration", _, _];
 var validateMichiganProviderBundle = args is ["--validate-michigan-provider-bundle", _, _];
+var validateOhioProviderIngestion = args is ["--validate-ohio-provider-ingestion", _];
 var validateProviderIngestion = args is ["--validate-provider-ingestion", _] ||
                                  validateIncumbentCalibration ||
-                                 validateMichiganProviderBundle;
+                                 validateMichiganProviderBundle ||
+                                 validateOhioProviderIngestion;
 if ((!validateIncumbentCalibration && !validateMichiganProviderBundle && args.Length != 2) ||
     ((validateIncumbentCalibration || validateMichiganProviderBundle) && args.Length != 3))
 {
     throw new ArgumentException(
-        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url>");
+        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --probe-ohio-providers | --export-michigan-provider-bundle <output-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url>");
 }
 
 var validationDatabase = validateProviderIngestion ? args[1] : args[0];
@@ -406,6 +464,55 @@ if (validateMichiganProviderBundle)
     return;
 }
 
+if (validateOhioProviderIngestion)
+{
+    var request = new ProviderFetchRequest(
+        "US-OH",
+        new DateOnly(2025, 1, 1),
+        new DateOnly(2025, 12, 31));
+    using var providerHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+    var configured = Options.Create(new OhioCasinoControlCommissionProviderOptions());
+    var revenueProvider = new OhioCasinoControlCommissionRevenueProvider(providerHttp, configured);
+    var facilityProvider = new OhioCasinoControlCommissionFacilityInventoryProvider(
+        providerHttp,
+        revenueProvider,
+        configured);
+    var snapshots = new DataSnapshotService(db);
+    var rows = new ModelDataIngestionService(db);
+    var ohioIngestion = new ProviderSnapshotIngestionService(snapshots, rows);
+    var facilitySnapshotId = await ohioIngestion.IngestGamingFacilitiesAsync(facilityProvider, request);
+    var performanceSnapshotId = await ohioIngestion.IngestGamingPerformanceAsync(
+        revenueProvider,
+        request,
+        facilitySnapshotId);
+    var facilityCount = await db.CasinoCompetitors.CountAsync(row => row.DatasetSnapshotId == facilitySnapshotId);
+    var performanceCount = await db.CasinoGamingRevenuePeriods.CountAsync(row => row.DatasetSnapshotId == performanceSnapshotId);
+    var comparableTotal = await db.CasinoGamingRevenuePeriods
+        .Where(row => row.DatasetSnapshotId == performanceSnapshotId &&
+                      row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
+        .SumAsync(row => row.ReportedAmount);
+    var snapshotStates = await db.DatasetSnapshots
+        .Where(snapshot => snapshot.Id == facilitySnapshotId || snapshot.Id == performanceSnapshotId)
+        .Select(snapshot => new { snapshot.DatasetKey, snapshot.IsSealed, snapshot.ValidationState, snapshot.Checksum })
+        .OrderBy(snapshot => snapshot.DatasetKey)
+        .ToArrayAsync();
+    if (facilityCount != 4 || performanceCount != 96 || comparableTotal != 1_033_920_366m ||
+        snapshotStates.Length != 2 || snapshotStates.Any(snapshot => !snapshot.IsSealed))
+    {
+        throw new InvalidOperationException("The live Ohio provider ingestion did not persist the expected sealed regulator rows.");
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        facilitySnapshotId,
+        performanceSnapshotId,
+        facilityCount,
+        performanceCount,
+        comparableTotal,
+        snapshotStates
+    }));
+    return;
+}
+
 if (validateProviderIngestion)
 {
     var providerSnapshots = new DataSnapshotService(db);
@@ -415,6 +522,7 @@ if (validateProviderIngestion)
     var igcOptions = Options.Create(new IndianaGamingCommissionProviderOptions());
     var igbOptions = Options.Create(new IllinoisGamingBoardProviderOptions());
     var mgcbOptions = Options.Create(new MichiganGamingFacilityProviderOptions());
+    var occcOptions = Options.Create(new OhioCasinoControlCommissionProviderOptions());
     var igcRevenueProvider = new IndianaGamingCommissionMonthlyRevenueProvider(providerHttp, igcOptions);
     var igcFacilityProvider = new IndianaGamingCommissionFacilityInventoryProvider(providerHttp, igcOptions);
     var igbRevenueProvider = new IllinoisGamingBoardRevenueProvider(providerHttp, igbOptions);
@@ -424,21 +532,26 @@ if (validateProviderIngestion)
         igbOptions);
     var mgcbRevenueProvider = new MichiganGamingControlBoardRevenueProvider(providerHttp, mgcbOptions);
     var mgcbFacilityProvider = new MichiganGamingFacilityInventoryProvider(providerHttp, mgcbOptions);
+    var occcRevenueProvider = new OhioCasinoControlCommissionRevenueProvider(providerHttp, occcOptions);
+    var occcFacilityProvider = new OhioCasinoControlCommissionFacilityInventoryProvider(
+        providerHttp,
+        occcRevenueProvider,
+        occcOptions);
     var igcFacilityPeriod = new ProviderFetchRequest(
-        "US-IN,US-IL,US-MI",
+        "US-IN,US-IL,US-MI,US-OH",
         new DateOnly(2025, 12, 1),
         new DateOnly(2025, 12, 31));
     var igcPerformancePeriod = new ProviderFetchRequest(
-        "US-IN,US-IL,US-MI",
+        "US-IN,US-IL,US-MI,US-OH",
         new DateOnly(2025, 1, 1),
         new DateOnly(2025, 12, 31));
     var facilitySnapshotId = await providerIngestion.IngestGamingFacilitiesAsync(
         new CompositeGamingFacilityInventoryProvider(
-            new IGamingFacilityInventoryProvider[] { igcFacilityProvider, igbFacilityProvider, mgcbFacilityProvider }),
+            new IGamingFacilityInventoryProvider[] { igcFacilityProvider, igbFacilityProvider, mgcbFacilityProvider, occcFacilityProvider }),
         igcFacilityPeriod);
     var performanceSnapshotId = await providerIngestion.IngestGamingPerformanceAsync(
         new CompositeGamingRegulatorPerformanceProvider(
-            new IGamingRegulatorPerformanceProvider[] { igcRevenueProvider, igbRevenueProvider, mgcbRevenueProvider }),
+            new IGamingRegulatorPerformanceProvider[] { igcRevenueProvider, igbRevenueProvider, mgcbRevenueProvider, occcRevenueProvider }),
         igcPerformancePeriod,
         facilitySnapshotId);
     var trafficSnapshotId = await providerIngestion.IngestTrafficAsync(
@@ -527,7 +640,7 @@ if (validateProviderIngestion)
         .Select(snapshot => new { snapshot.Id, snapshot.DatasetKey, snapshot.IsSealed, snapshot.ValidationState })
         .OrderBy(snapshot => snapshot.DatasetKey)
         .ToArrayAsync();
-    if (facilityCount != 57 || unknownHotelCount != 57 || performanceCount != 574 || trafficCount != 1 ||
+    if (facilityCount != 61 || unknownHotelCount != 61 || performanceCount != 670 || trafficCount != 1 ||
         originCount != irsDataset.Rows.Count || incomeCount != irsDataset.Rows.Count ||
         ageBinCount != irsDataset.Rows.Count * 23 || tourismCount != 1 ||
         snapshotStates.Length != 7 || snapshotStates.Any(snapshot => !snapshot.IsSealed))

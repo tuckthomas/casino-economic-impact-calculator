@@ -8,6 +8,7 @@ set -euo pipefail
 
 validation_db="${1:?validation database name is required}"
 validation_dir="${2:?validation publish directory is required}"
+validation_mode="${3:---validate-provider-ingestion}"
 validation_created=0
 
 case "$validation_db" in
@@ -17,6 +18,10 @@ esac
 case "$validation_dir" in
   /tmp/savenein-provider-validation.*) ;;
   *) echo "Unsafe validation temp path" >&2; exit 64 ;;
+esac
+case "$validation_mode" in
+  --validate-provider-ingestion|--validate-ohio-provider-ingestion) ;;
+  *) echo "Unsafe provider validation mode" >&2; exit 64 ;;
 esac
 
 validation_compose=(
@@ -59,7 +64,7 @@ validation_created=1
   -v "$validation_dir/publish:/validation:ro" \
   app \
   /validation/GravityModelIntegrationHarness.dll \
-  --validate-provider-ingestion \
+  "$validation_mode" \
   "$validation_db"
 
-echo "Remote live multi-jurisdiction provider-ingestion validation passed."
+echo "Remote live provider-ingestion validation passed: $validation_mode"
