@@ -32,3 +32,17 @@ Thumbs.db
 *.log
 scripts/dev/.local-dev-server.pid
 scripts/dev/.dotnet-watch-home/
+
+## Validation & Test Artifacts
+.codex-validation/
+.codex/
+playwright-report/
+test-results/
+.playwright/
+.coverage/
+coverage/
+
+## Build & Compression Artifacts
+*.br
+*.gz
+
