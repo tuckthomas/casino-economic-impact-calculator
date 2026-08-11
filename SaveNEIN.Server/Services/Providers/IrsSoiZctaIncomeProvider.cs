@@ -27,7 +27,7 @@ public sealed class IrsSoiExactCodeZctaIncomeProvider(
     IOptions<IrsSoiProviderOptions> options) : IOriginIncomeProvider
 {
     private const int SupportedTaxYear = 2022;
-    private const string TransformVersion = "irs-soi-zip-to-census-zcta-exact-code-2022-v2";
+    private const string TransformVersion = "irs-soi-zip-to-census-zcta-exact-code-2022-v3";
 
     public string ProviderKey => "irs-soi-zcta-income-exact-code";
 
@@ -51,10 +51,18 @@ public sealed class IrsSoiExactCodeZctaIncomeProvider(
         var gazetteerBytes = await gazetteerTask;
 
         var zctas = ReadZctaCodes(gazetteerBytes);
+        var requestedCodes = ZctaCodeFilter.Optional(request.Options);
         var sourceRows = workbooks.SelectMany(workbook => ReadStateTotals(workbook.Bytes)
             .Select(row => new IrsStateZipTotal(workbook.State, row))).ToArray();
-        var matched = sourceRows.Where(row => zctas.Contains(row.ZipCode)).ToArray();
-        var unmatched = sourceRows.Where(row => !zctas.Contains(row.ZipCode)).ToArray();
+        var marketRows = requestedCodes is null
+            ? sourceRows
+            : sourceRows.Where(row => requestedCodes.Contains(row.ZipCode)).ToArray();
+        var matched = marketRows.Where(row => zctas.Contains(row.ZipCode)).ToArray();
+        var unmatched = marketRows.Where(row => !zctas.Contains(row.ZipCode)).ToArray();
+        var missingRequestedCodes = requestedCodes?
+            .Except(matched.Select(row => row.ZipCode), StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray() ?? [];
         var duplicateZip = matched.GroupBy(row => row.ZipCode, StringComparer.Ordinal)
             .FirstOrDefault(group => group.Count() > 1);
         if (duplicateZip is not null)
@@ -90,19 +98,36 @@ public sealed class IrsSoiExactCodeZctaIncomeProvider(
         var unmatchedAgi = unmatched.Sum(row => row.AdjustedGrossIncomeThousands) * 1_000m;
         var warnings = states.Select(state =>
         {
-            var stateRows = sourceRows.Where(row => row.State == state).ToArray();
+            var stateRows = marketRows.Where(row => row.State == state).ToArray();
             var stateMatched = stateRows.Count(row => zctas.Contains(row.ZipCode));
-            return $"{state.Name}: retained {stateMatched:N0} of {stateRows.Length:N0} IRS ZIP total rows by exact-code ZCTA concordance; " +
-                   $"{stateRows.Length - stateMatched:N0} unmatched USPS ZIP rows were excluded.";
+            return requestedCodes is null
+                ? $"{state.Name}: retained {stateMatched:N0} of {stateRows.Length:N0} IRS ZIP total rows by exact-code ZCTA concordance; " +
+                  $"{stateRows.Length - stateMatched:N0} unmatched USPS ZIP rows were excluded."
+                : $"{state.Name}: retained {stateMatched:N0} IRS ZIP total rows in the explicit ZCTA market universe by exact-code concordance; " +
+                  $"{stateRows.Length - stateMatched:N0} requested-code rows that do not exist as Census ZCTAs were excluded.";
         }).Append(
-            $"Exact-code ZIP-to-ZCTA reconciliation retained {matched.Length:N0} of {sourceRows.Length:N0} IRS ZIP total rows " +
+            $"Exact-code ZIP-to-ZCTA reconciliation retained {matched.Length:N0} of {marketRows.Length:N0} in-scope IRS ZIP total rows " +
             $"for {string.Join(", ", states.Select(state => state.Name))}; {unmatched.Length:N0} unmatched USPS ZIP rows were excluded. " +
             "ZIP and ZCTA are not treated as identical geographies.")
         .Append(
-            $"Retained rows represent {matchedReturns:N0} returns and {matchedAgi:C0} of AGI; excluded rows represent " +
-            $"{unmatchedReturns:N0} returns and {unmatchedAgi:C0} of AGI. Review these excluded totals before using the snapshot for calibration.")
+            FormattableString.Invariant(
+                $"Retained rows represent {matchedReturns:N0} returns and ${matchedAgi:N0} of AGI; excluded rows represent {unmatchedReturns:N0} returns and ${unmatchedAgi:N0} of AGI. Review these excluded totals before using the snapshot for calibration."))
+        .Concat(requestedCodes is null
+            ? []
+            :
+            [
+                $"The explicit market universe requested {requestedCodes.Count:N0} ZCTAs; {matched.Length:N0} had exact-code IRS ZIP total rows and " +
+                $"{missingRequestedCodes.Length:N0} had no retained IRS total: {string.Join(", ", missingRequestedCodes)}. " +
+                "No missing AGI was replaced with zero or an imputed value."
+            ])
         .ToArray();
-        var checksum = ContentHash(workbooks, gazetteerBytes, TransformVersion);
+        var sourceHash = ContentHash(workbooks, gazetteerBytes);
+        var marketDescriptor = requestedCodes is null
+            ? "all-state-workbook-zips"
+            : $"zcta-codes={string.Join(',', requestedCodes.Order(StringComparer.Ordinal))}";
+        var checksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+                $"{sourceHash}\n{TransformVersion}\n{marketDescriptor}")))
+            .ToLowerInvariant();
         var stateLabel = string.Join(", ", states.Select(state => state.Name));
         var workbookList = string.Join(", ", workbooks.OrderBy(workbook => workbook.State.Abbreviation).Select(workbook => workbook.Uri));
         var sourceUrl = workbooks.Length == 1 ? workbooks[0].Uri.ToString() : providerOptions.PublicationUrl;
@@ -120,7 +145,7 @@ public sealed class IrsSoiExactCodeZctaIncomeProvider(
                     : $"US-STATES:{string.Join(',', states.Select(state => state.Abbreviation))}",
                 SupportedTaxYear.ToString(CultureInfo.InvariantCulture),
                 retrievedAt,
-                checksum,
+                sourceHash,
                 true,
                 "IRS and Census terms and conditions apply.",
                 $"IRS publication: {providerOptions.PublicationUrl}; source workbooks: {workbookList}; Census ZCTA gazetteer: {gazetteerUri}. " +
@@ -273,8 +298,7 @@ public sealed class IrsSoiExactCodeZctaIncomeProvider(
 
     private static string ContentHash(
         IReadOnlyCollection<IrsWorkbook> workbooks,
-        byte[] gazetteerBytes,
-        string transformVersion)
+        byte[] gazetteerBytes)
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         foreach (var workbook in workbooks.OrderBy(workbook => workbook.State.Abbreviation, StringComparer.Ordinal))
@@ -283,7 +307,6 @@ public sealed class IrsSoiExactCodeZctaIncomeProvider(
             hash.AppendData(workbook.Bytes);
         }
         hash.AppendData(gazetteerBytes);
-        hash.AppendData(Encoding.UTF8.GetBytes(transformVersion));
         return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
     }
 

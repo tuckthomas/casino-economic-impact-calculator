@@ -36,6 +36,8 @@ public sealed class IrsSoiProviderTests
         Assert.Contains(dataset.Warnings, warning => warning.Contains("excluded rows represent 20 returns", StringComparison.Ordinal));
         Assert.Equal("https://www.irs.gov/pub/irs-soi/22zp15in.xlsx", dataset.Source.Url);
         Assert.Equal(64, dataset.ContentChecksum.Length);
+        Assert.NotEqual(dataset.Source.ContentHash, dataset.ContentChecksum);
+        Assert.Contains(dataset.Warnings, warning => warning.Contains("$5,000,000", StringComparison.Ordinal));
         Assert.Equal(2, handler.RequestUris.Count);
     }
 
@@ -80,6 +82,35 @@ public sealed class IrsSoiProviderTests
         Assert.Equal("https://www.irs.gov/statistics/soi-tax-stats-individual-income-tax-statistics-2022-zip-code-data-soi", dataset.Source.Url);
         Assert.Contains("US-STATES:IN,OH", dataset.Source.GeographicCoverage, StringComparison.Ordinal);
         Assert.Equal(3, handler.RequestUris.Count);
+    }
+
+    [Fact]
+    public async Task Provider_LimitsRowsAndChecksumToExplicitZctaMarketUniverse()
+    {
+        var handler = new MultiStateIrsResponseHandler(
+            BuildWorkbook("46802", "99999", 100, 5_000),
+            BuildWorkbook("43215", "99998", 200, 12_000),
+            BuildGazetteer("46802", "43215", "43007"));
+        var provider = new IrsSoiExactCodeZctaIncomeProvider(
+            new HttpClient(handler),
+            Options.Create(new IrsSoiProviderOptions()));
+
+        var dataset = await provider.FetchAsync(new ProviderFetchRequest(
+            "US-STATES",
+            new DateOnly(2022, 1, 1),
+            new DateOnly(2022, 12, 31),
+            new Dictionary<string, string>
+            {
+                ["state-codes"] = "OH,IN",
+                ["zcta-codes"] = "46802,43007"
+            }));
+
+        var row = Assert.Single(dataset.Rows);
+        Assert.Equal("USA-ZCTA-46802", row.StableOriginId);
+        Assert.NotEqual(dataset.Source.ContentHash, dataset.ContentChecksum);
+        Assert.Contains(dataset.Warnings, warning =>
+            warning.Contains("43007", StringComparison.Ordinal) &&
+            warning.Contains("No missing AGI was replaced", StringComparison.Ordinal));
     }
 
     private static byte[] BuildWorkbook(
