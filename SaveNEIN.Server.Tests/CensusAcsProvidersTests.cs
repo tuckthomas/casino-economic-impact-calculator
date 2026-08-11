@@ -162,6 +162,31 @@ public sealed class CensusAcsProvidersTests
         Assert.Contains(dataset.Warnings, warning => warning.Contains("Summary File", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task MedianIncomeProvider_OmitsUnavailableOfficialEstimateWithoutInventingIncome()
+    {
+        var handler = new StubHttpHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                "GEO_ID|B19013_E001|B19013_M001\n" +
+                "860Z200US43007|-666666666|-222222222\n" +
+                "860Z200US46802|61234|1000\n",
+                Encoding.UTF8,
+                "text/plain")
+        });
+        var provider = new CensusAcsMedianIncomeProvider(
+            new HttpClient(handler),
+            Options.Create(new CensusAcsProviderOptions()));
+
+        var dataset = await provider.FetchAsync(Request());
+
+        var row = Assert.Single(dataset.Rows);
+        Assert.Equal("USA-ZCTA-46802", row.StableOriginId);
+        Assert.Contains(dataset.Warnings, warning =>
+            warning.Contains("43007", StringComparison.Ordinal) &&
+            warning.Contains("no zero or imputed value", StringComparison.Ordinal));
+    }
+
     private static ProviderFetchRequest Request() => new(
         "US-ZCTA",
         new DateOnly(2024, 1, 1),

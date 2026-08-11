@@ -168,6 +168,29 @@ internal static class CensusAcsProviderSupport
         return value;
     }
 
+    public static long? ReadNullableNonnegativeLong(
+        IReadOnlyList<string> row,
+        IReadOnlyDictionary<string, int> headers,
+        string variable,
+        string geographyCode)
+    {
+        if (!headers.TryGetValue(variable, out var index))
+        {
+            throw new InvalidOperationException($"ACS response is missing required variable '{variable}'.");
+        }
+        var raw = row[index];
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+        if (!long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            throw new InvalidOperationException(
+                $"ACS variable '{variable}' for ZCTA '{geographyCode}' is malformed.");
+        }
+        return value < 0 ? null : value;
+    }
+
     public static string ReadRequired(
         IReadOnlyList<string> row,
         IReadOnlyDictionary<string, int> headers,
@@ -349,6 +372,26 @@ internal static class CensusAcsTableSummarySupport
         return value;
     }
 
+    public static long? ReadNullableNonnegativeLong(
+        IReadOnlyDictionary<string, string> values,
+        string variable,
+        string zcta)
+    {
+        if (!values.TryGetValue(variable, out var raw))
+        {
+            throw new InvalidDataException($"ACS table is missing required variable '{variable}'.");
+        }
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+        if (!long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            throw new InvalidDataException($"ACS table variable '{variable}' for ZCTA '{zcta}' is malformed.");
+        }
+        return value < 0 ? null : value;
+    }
+
     public static RegisterDataSourceRequest Source(
         CensusAcsTableSummaryResponse response,
         string description) => new(
@@ -513,15 +556,22 @@ public sealed class CensusAcsMedianIncomeProvider(
             cancellationToken);
         var headers = CensusAcsProviderSupport.HeaderIndex(response);
         var selectedSourceRows = CensusAcsProviderSupport.SelectRequestedZctas(response, headers, request);
-        var rows = selectedSourceRows.Select(sourceRow =>
+        var unavailableZctas = new List<string>();
+        var rows = new List<OriginIncomeImportRow>(selectedSourceRows.Count);
+        foreach (var sourceRow in selectedSourceRows)
         {
             var zcta = CensusAcsProviderSupport.ReadRequired(sourceRow, headers, CensusAcsVariables.ZctaHeader);
-            var income = CensusAcsProviderSupport.ReadNonnegativeLong(
+            var income = CensusAcsProviderSupport.ReadNullableNonnegativeLong(
                 sourceRow,
                 headers,
                 CensusAcsVariables.MedianHouseholdIncome,
                 zcta);
-            return new OriginIncomeImportRow(
+            if (income is null)
+            {
+                unavailableZctas.Add(zcta);
+                continue;
+            }
+            rows.Add(new OriginIncomeImportRow(
                 $"USA-ZCTA-{zcta}",
                 year,
                 null,
@@ -529,8 +579,8 @@ public sealed class CensusAcsMedianIncomeProvider(
                 null,
                 income,
                 year,
-                "ACS B19013 estimate; this is median household income, not IRS adjusted gross income.");
-        }).ToArray();
+                "ACS B19013 estimate; this is median household income, not IRS adjusted gross income."));
+        }
 
         return new ProviderDataset<OriginIncomeImportRow>(
             CensusAcsProviderSupport.Source(response, "ZCTA median household income"),
@@ -541,7 +591,7 @@ public sealed class CensusAcsMedianIncomeProvider(
             CensusAcsProviderSupport.DatasetChecksum(response.ContentHash, request.Options),
             "census-acs5-b19013-zcta-v1",
             rows,
-            []);
+            UnavailableIncomeWarnings(unavailableZctas));
     }
 
     private async Task<ProviderDataset<OriginIncomeImportRow>> FetchFromTableSummaryAsync(
@@ -557,21 +607,34 @@ public sealed class CensusAcsMedianIncomeProvider(
             [CensusAcsVariables.MedianHouseholdIncome],
             request,
             cancellationToken);
-        var rows = response.ValuesByZcta
-            .OrderBy(pair => pair.Key, StringComparer.Ordinal)
-            .Select(pair => new OriginIncomeImportRow(
+        var unavailableZctas = new List<string>();
+        var rows = new List<OriginIncomeImportRow>(response.ValuesByZcta.Count);
+        foreach (var pair in response.ValuesByZcta.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            var income = CensusAcsTableSummarySupport.ReadNullableNonnegativeLong(
+                pair.Value,
+                CensusAcsVariables.MedianHouseholdIncome,
+                pair.Key);
+            if (income is null)
+            {
+                unavailableZctas.Add(pair.Key);
+                continue;
+            }
+            rows.Add(new OriginIncomeImportRow(
                 $"USA-ZCTA-{pair.Key}",
                 year,
                 null,
                 null,
                 null,
-                CensusAcsTableSummarySupport.ReadNonnegativeLong(
-                    pair.Value,
-                    CensusAcsVariables.MedianHouseholdIncome,
-                    pair.Key),
+                income,
                 year,
-                "ACS B19013 estimate from the table-based Summary File; this is median household income, not IRS adjusted gross income."))
-            .ToArray();
+                "ACS B19013 estimate from the table-based Summary File; this is median household income, not IRS adjusted gross income."));
+        }
+        var warnings = new List<string>
+        {
+            "Census API key was not configured; ingestion used the official table-based ACS Summary File."
+        };
+        warnings.AddRange(UnavailableIncomeWarnings(unavailableZctas));
         return new ProviderDataset<OriginIncomeImportRow>(
             CensusAcsTableSummarySupport.Source(response, "ZCTA median household income"),
             DatasetSnapshotKinds.Income,
@@ -581,6 +644,16 @@ public sealed class CensusAcsMedianIncomeProvider(
             CensusAcsProviderSupport.DatasetChecksum(response.ContentHash, request.Options),
             "census-acs5-b19013-table-summary-zcta-v1",
             rows,
-            ["Census API key was not configured; ingestion used the official table-based ACS Summary File."]);
+            warnings);
     }
+
+    private static IReadOnlyCollection<string> UnavailableIncomeWarnings(IReadOnlyCollection<string> zctas) =>
+        zctas.Count == 0
+            ? []
+            :
+            [
+                $"ACS B19013 publishes no usable median-household-income estimate for {zctas.Count} selected ZCTA(s): " +
+                $"{string.Join(", ", zctas.Order(StringComparer.Ordinal))}. Those origins are omitted from this income snapshot; " +
+                "no zero or imputed value was substituted."
+            ];
 }
