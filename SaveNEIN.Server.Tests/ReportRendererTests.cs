@@ -31,6 +31,9 @@ public sealed class ReportRendererTests
         Assert.Contains("Stabilized GGR composition", first, StringComparison.Ordinal);
         Assert.Contains("Proposed site and competitive facilities", first, StringComparison.Ordinal);
         Assert.Contains("Patron-origin intensity", first, StringComparison.Ordinal);
+        Assert.Contains("Patron-origin contribution choropleth", first, StringComparison.Ordinal);
+        Assert.Contains("Origin-to-candidate routed travel-time map", first, StringComparison.Ordinal);
+        Assert.Contains("Persisted Valhalla auto minutes", first, StringComparison.Ordinal);
         Assert.Contains("Revenue composition waterfall", first, StringComparison.Ordinal);
         Assert.Contains("Social-cost bridge", first, StringComparison.Ordinal);
         Assert.Contains("Net host-local impact waterfall", first, StringComparison.Ordinal);
@@ -63,6 +66,9 @@ public sealed class ReportRendererTests
         Assert.Contains("revenue,stabilized,total_ggr,1250000,USD", first, StringComparison.Ordinal);
         Assert.Contains("origin,ZCTA:46802,total_proposed_resident_ggr,900000,USD", first, StringComparison.Ordinal);
         Assert.Contains("origin,ZCTA:46802,latitude,41.08,degrees", first, StringComparison.Ordinal);
+        Assert.Contains("origin,ZCTA:46802,candidate_travel_time,12.5,minutes", first, StringComparison.Ordinal);
+        Assert.Contains("origin,ZCTA:46802,candidate_route_found,True,boolean", first, StringComparison.Ordinal);
+        Assert.Contains("origin,ZCTA:46802,presentation_area_geometry", first, StringComparison.Ordinal);
         Assert.Contains("facility,scenario:test,longitude,-85.1,degrees", first, StringComparison.Ordinal);
         Assert.Contains("sensitivity,gravity.beta,low_model_run_id,10000000-0000-0000-0000-000000000001,uuid", first, StringComparison.Ordinal);
     }
@@ -74,7 +80,7 @@ public sealed class ReportRendererTests
             Identity: new ReportIdentity(
                 runId,
                 "gravity-v1",
-                "professional-v4",
+                "professional-v5",
                 new DateTime(2026, 8, 9, 12, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 8, 9, 11, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 8, 9, 11, 1, 0, DateTimeKind.Utc),
@@ -129,7 +135,9 @@ public sealed class ReportRendererTests
             Origins:
             [
                 new ReportOrigin(
-                    "ZCTA:46802", "zcta", "46802", "IN", "003", "23060", 41.08, -85.14, 1_500_000,
+                    "ZCTA:46802", "zcta", "46802", "IN", "003", "23060", 41.08, -85.14,
+                    "POLYGON ((-85.16 41.06, -85.12 41.06, -85.12 41.10, -85.16 41.10, -85.16 41.06))",
+                    12.5, 10_000, true, 1_500_000,
                     800_000, 100_000, 900_000, 600_000, 200_000, 50_000, 150_000, 1)
             ],
             OriginStates: [new ReportOriginGroup("state", "IN", 800_000, 100_000, 900_000, 1, 1)],

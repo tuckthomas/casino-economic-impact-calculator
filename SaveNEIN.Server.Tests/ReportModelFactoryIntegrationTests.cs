@@ -36,6 +36,10 @@ public sealed class ReportModelFactoryIntegrationTests
         Assert.Equal("inverse-power", model.Scenario.FrictionForm);
         Assert.Equal(41.08, model.Origins[0].Latitude, 6);
         Assert.Equal(-85.14, model.Origins[0].Longitude, 6);
+        Assert.StartsWith("POLYGON", model.Origins[0].AreaGeometryWkt, StringComparison.Ordinal);
+        Assert.Equal(12.5, model.Origins[0].CandidateTravelTimeMinutes);
+        Assert.Equal(10_000, model.Origins[0].CandidateRoutedDistanceMeters);
+        Assert.True(model.Origins[0].CandidateRouteFound);
         Assert.Equal(41.08, model.Facilities.Single(facility => facility.IsProposedFacility).Latitude, 6);
         Assert.Equal(-85.14, model.Facilities.Single(facility => facility.IsProposedFacility).Longitude, 6);
         Assert.StartsWith("effective-rules@2026-08-11#", model.Identity.JurisdictionProfileVersion, StringComparison.Ordinal);
@@ -54,7 +58,7 @@ public sealed class ReportModelFactoryIntegrationTests
 
         Assert.Equal(first.Id, second.Id);
         Assert.True(first.IsImmutable);
-        Assert.Equal("professional-v4", first.TemplateVersion);
+        Assert.Equal("professional-v5", first.TemplateVersion);
         Assert.Equal(64, first.ReportModelHash.Length);
         Assert.Equal(64, first.HtmlContentHash.Length);
         Assert.Equal(64, first.PdfContentHash.Length);
@@ -63,6 +67,8 @@ public sealed class ReportModelFactoryIntegrationTests
         Assert.Contains("County/parish composition", first.HtmlContent, StringComparison.Ordinal);
         Assert.Contains("Proposed site and competitive facilities", first.HtmlContent, StringComparison.Ordinal);
         Assert.Contains("Patron-origin intensity", first.HtmlContent, StringComparison.Ordinal);
+        Assert.Contains("Patron-origin contribution choropleth", first.HtmlContent, StringComparison.Ordinal);
+        Assert.Contains("Origin-to-candidate routed travel-time map", first.HtmlContent, StringComparison.Ordinal);
         Assert.Contains("origin_county,IN-003,total_proposed_resident_ggr,700,USD", first.CsvContent, StringComparison.Ordinal);
         Assert.Contains("origin,USA-ZCTA-46802,total_proposed_resident_ggr,700,USD", first.CsvContent, StringComparison.Ordinal);
         Assert.Equal(1, await db.ModelRunReportArtifacts.CountAsync());
@@ -151,7 +157,7 @@ public sealed class ReportModelFactoryIntegrationTests
                 StateOrTerritoryCode = "IN",
                 CountyEquivalentCode = "003",
                 RepresentativePoint = new Point(-85.14, 41.08) { SRID = 4326 },
-                AreaGeometry = new Point(-85.14, 41.08) { SRID = 4326 }
+                AreaGeometry = Box(-85.16, 41.06, -85.12, 41.10)
             },
             new OriginZone
             {
@@ -163,7 +169,7 @@ public sealed class ReportModelFactoryIntegrationTests
                 StateOrTerritoryCode = "MI",
                 CountyEquivalentCode = "025",
                 RepresentativePoint = new Point(-85.18, 42.32) { SRID = 4326 },
-                AreaGeometry = new Point(-85.18, 42.32) { SRID = 4326 }
+                AreaGeometry = Box(-85.20, 42.30, -85.16, 42.34)
             }
         };
         var originResults = new[]
@@ -186,11 +192,17 @@ public sealed class ReportModelFactoryIntegrationTests
             TrafficGgr = 50m,
             StabilizedTotalGgr = 1_150m
         };
+        var routes = new[]
+        {
+            CandidateRoute(run.Id, 1, 12.5, 10_000),
+            CandidateRoute(run.Id, 2, 95, 145_000)
+        };
 
         db.AddRange(jurisdiction, program, run);
         db.OriginZones.AddRange(origins);
         db.ModelRunOriginResults.AddRange(originResults);
         db.ModelRunFacilityResults.Add(proposed);
+        db.OriginFacilityTravel.AddRange(routes);
         await db.SaveChangesAsync();
         return run.Id;
     }
@@ -214,4 +226,30 @@ public sealed class ReportModelFactoryIntegrationTests
             ExternalJurisdictionCapture = redistributed * 0.25m,
             OutsideOptionCapture = redistributed * 0.25m
         };
+
+    private static OriginFacilityTravel CandidateRoute(Guid runId, long originId, double minutes, double meters) => new()
+    {
+        Id = originId,
+        ModelRunId = runId,
+        OriginZoneId = originId,
+        FacilityKey = "scenario:integration",
+        FacilityKind = FacilityKinds.Scenario,
+        RoutingGraphHash = "test-graph",
+        CostingProfile = "auto",
+        TravelTimeMinutes = minutes,
+        RoutedDistanceMeters = meters,
+        RouteFound = true
+    };
+
+    private static Polygon Box(double minimumLongitude, double minimumLatitude, double maximumLongitude, double maximumLatitude)
+    {
+        var geometry = new GeometryFactory(new PrecisionModel(), 4326);
+        return geometry.CreatePolygon([
+            new Coordinate(minimumLongitude, minimumLatitude),
+            new Coordinate(maximumLongitude, minimumLatitude),
+            new Coordinate(maximumLongitude, maximumLatitude),
+            new Coordinate(minimumLongitude, maximumLatitude),
+            new Coordinate(minimumLongitude, minimumLatitude)
+        ]);
+    }
 }

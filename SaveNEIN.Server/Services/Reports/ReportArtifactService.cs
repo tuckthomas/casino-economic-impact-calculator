@@ -9,6 +9,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -84,7 +86,7 @@ public sealed class ReportArtifactService(
     IPdfReportRenderer pdfRenderer,
     ICsvReportRenderer csvRenderer) : IReportArtifactService
 {
-    public const string TemplateVersion = "professional-v4";
+    public const string TemplateVersion = "professional-v5";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true
@@ -289,6 +291,200 @@ internal static class ReportExhibitBuilder
         return svg.ToString();
     }
 
+    public static string PatronOriginChoroplethSvg(CasinoImpactReportModel model)
+    {
+        var reader = new WKTReader();
+        var areas = new List<(ReportOrigin Origin, Geometry Geometry)>();
+        foreach (var origin in model.Origins.Where(origin => !string.IsNullOrWhiteSpace(origin.AreaGeometryWkt)))
+        {
+            try
+            {
+                var geometry = reader.Read(origin.AreaGeometryWkt!);
+                if (!geometry.IsEmpty && geometry is Polygon or MultiPolygon)
+                {
+                    areas.Add((origin, geometry));
+                }
+            }
+            catch (ParseException)
+            {
+                // Invalid source geometry is omitted from the presentation exhibit; numeric origin results remain intact.
+            }
+        }
+        if (areas.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var coordinates = areas.SelectMany(area => area.Geometry.Coordinates)
+            .Where(coordinate => ValidCoordinate(coordinate.Y, coordinate.X))
+            .Select(coordinate => (Latitude: coordinate.Y, Longitude: coordinate.X))
+            .Append((model.Scenario.CandidateLatitude, model.Scenario.CandidateLongitude))
+            .ToArray();
+        var projection = MapProjection.Create(coordinates);
+        var maximumShare = Math.Max(areas.Max(area => area.Origin.ShareOfProposedResidentGgr), double.Epsilon);
+        var svg = StartProjectedMap(projection, "Patron-origin contribution choropleth");
+        foreach (var area in areas.OrderBy(area => area.Origin.ShareOfProposedResidentGgr))
+        {
+            var ratio = Math.Clamp(area.Origin.ShareOfProposedResidentGgr / maximumShare, 0, 1);
+            var fill = ratio switch
+            {
+                <= 0.2 => "#dbeafe",
+                <= 0.4 => "#93c5fd",
+                <= 0.7 => "#3b82f6",
+                _ => "#1d4ed8"
+            };
+            svg.Append("<path d=\"");
+            AppendGeometryPath(svg, area.Geometry, projection);
+            svg.Append("\" fill=\"").Append(fill)
+                .Append("\" fill-rule=\"evenodd\" stroke=\"#ffffff\" stroke-width=\"1\"><title>")
+                .Append(WebUtility.HtmlEncode($"{area.Origin.StableOriginId} · {area.Origin.ShareOfProposedResidentGgr.ToString("P2", CultureInfo.InvariantCulture)} · {area.Origin.TotalProposedResidentGgr.ToString("N0", CultureInfo.InvariantCulture)} USD proposed resident GGR"))
+                .Append("</title></path>");
+        }
+        AppendProposedSite(svg, projection, model.Scenario.CandidateLatitude, model.Scenario.CandidateLongitude);
+        svg.Append("</svg>");
+        return svg.ToString();
+    }
+
+    public static string CandidateTravelTimeMapSvg(CasinoImpactReportModel model)
+    {
+        var origins = model.Origins
+            .Where(origin => origin.CandidateRouteFound && origin.CandidateTravelTimeMinutes is >= 0 &&
+                             ValidCoordinate(origin.Latitude, origin.Longitude))
+            .ToArray();
+        if (origins.Length == 0 || !ValidCoordinate(model.Scenario.CandidateLatitude, model.Scenario.CandidateLongitude))
+        {
+            return string.Empty;
+        }
+
+        var coordinates = origins.Select(origin => (origin.Latitude, origin.Longitude))
+            .Append((model.Scenario.CandidateLatitude, model.Scenario.CandidateLongitude));
+        var projection = MapProjection.Create(coordinates);
+        var svg = StartProjectedMap(projection, "Persisted origin-to-candidate routed travel-time map");
+        foreach (var origin in origins.OrderByDescending(origin => origin.CandidateTravelTimeMinutes))
+        {
+            var minutes = origin.CandidateTravelTimeMinutes!.Value;
+            var fill = minutes switch
+            {
+                <= 15 => "#166534",
+                <= 30 => "#65a30d",
+                <= 60 => "#eab308",
+                <= 90 => "#ea580c",
+                _ => "#b91c1c"
+            };
+            var x = projection.X(origin.Longitude);
+            var y = projection.Y(origin.Latitude);
+            var radius = 5 + 7 * Math.Sqrt(Math.Max(0, origin.ShareOfProposedResidentGgr));
+            svg.Append("<circle cx=\"").Append(F(x)).Append("\" cy=\"").Append(F(y)).Append("\" r=\"")
+                .Append(F(radius)).Append("\" fill=\"").Append(fill)
+                .Append("\" fill-opacity=\"0.82\" stroke=\"#ffffff\" stroke-width=\"1.5\"><title>")
+                .Append(WebUtility.HtmlEncode($"{origin.StableOriginId} · {minutes:F1} routed minutes · {origin.CandidateRoutedDistanceMeters.GetValueOrDefault():N0} routed meters"))
+                .Append("</title></circle>");
+        }
+        AppendProposedSite(svg, projection, model.Scenario.CandidateLatitude, model.Scenario.CandidateLongitude);
+        svg.Append("</svg>");
+        return svg.ToString();
+    }
+
+    private static StringBuilder StartProjectedMap(MapProjection projection, string ariaLabel)
+    {
+        var svg = new StringBuilder(20_000);
+        svg.Append("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 760 360\" role=\"img\" aria-label=\"")
+            .Append(WebUtility.HtmlEncode(ariaLabel))
+            .Append("\"><rect x=\"0\" y=\"0\" width=\"760\" height=\"360\" fill=\"#f8fafc\"/>");
+        for (var index = 0; index <= 4; index++)
+        {
+            var gridX = projection.Left + projection.PlotWidth * index / 4;
+            var gridY = projection.Top + projection.PlotHeight * index / 4;
+            var longitude = projection.MinimumLongitude + (projection.MaximumLongitude - projection.MinimumLongitude) * index / 4;
+            var latitude = projection.MaximumLatitude - (projection.MaximumLatitude - projection.MinimumLatitude) * index / 4;
+            svg.Append("<line x1=\"").Append(F(gridX)).Append("\" y1=\"").Append(F(projection.Top)).Append("\" x2=\"")
+                .Append(F(gridX)).Append("\" y2=\"").Append(F(projection.Top + projection.PlotHeight)).Append("\" stroke=\"#dbe2ea\" stroke-width=\"1\"/>")
+                .Append("<line x1=\"").Append(F(projection.Left)).Append("\" y1=\"").Append(F(gridY)).Append("\" x2=\"")
+                .Append(F(projection.Left + projection.PlotWidth)).Append("\" y2=\"").Append(F(gridY)).Append("\" stroke=\"#dbe2ea\" stroke-width=\"1\"/>")
+                .Append("<text x=\"").Append(F(gridX)).Append("\" y=\"348\" text-anchor=\"middle\" font-size=\"11\" fill=\"#526174\">")
+                .Append(F(longitude, 2)).Append("°</text>")
+                .Append("<text x=\"48\" y=\"").Append(F(gridY + 4)).Append("\" text-anchor=\"end\" font-size=\"11\" fill=\"#526174\">")
+                .Append(F(latitude, 2)).Append("°</text>");
+        }
+        return svg;
+    }
+
+    private static void AppendGeometryPath(StringBuilder svg, Geometry geometry, MapProjection projection)
+    {
+        if (geometry is Polygon polygon)
+        {
+            AppendPolygonPath(svg, polygon, projection);
+            return;
+        }
+        if (geometry is MultiPolygon multiPolygon)
+        {
+            for (var index = 0; index < multiPolygon.NumGeometries; index++)
+            {
+                AppendPolygonPath(svg, (Polygon)multiPolygon.GetGeometryN(index), projection);
+            }
+        }
+    }
+
+    private static void AppendPolygonPath(StringBuilder svg, Polygon polygon, MapProjection projection)
+    {
+        AppendRingPath(svg, polygon.ExteriorRing.Coordinates, projection);
+        for (var index = 0; index < polygon.NumInteriorRings; index++)
+        {
+            AppendRingPath(svg, polygon.GetInteriorRingN(index).Coordinates, projection);
+        }
+    }
+
+    private static void AppendRingPath(StringBuilder svg, IReadOnlyList<Coordinate> coordinates, MapProjection projection)
+    {
+        for (var index = 0; index < coordinates.Count; index++)
+        {
+            svg.Append(index == 0 ? 'M' : 'L')
+                .Append(F(projection.X(coordinates[index].X))).Append(',')
+                .Append(F(projection.Y(coordinates[index].Y)));
+        }
+        svg.Append('Z');
+    }
+
+    private static void AppendProposedSite(StringBuilder svg, MapProjection projection, double latitude, double longitude)
+    {
+        var x = projection.X(longitude);
+        var y = projection.Y(latitude);
+        svg.Append("<polygon points=\"").Append(F(x)).Append(',').Append(F(y - 9)).Append(' ')
+            .Append(F(x + 9)).Append(',').Append(F(y)).Append(' ').Append(F(x)).Append(',').Append(F(y + 9)).Append(' ')
+            .Append(F(x - 9)).Append(',').Append(F(y)).Append("\" fill=\"#0f2948\" stroke=\"#ffffff\" stroke-width=\"2\"><title>Proposed site</title></polygon>");
+    }
+
+    private sealed record MapProjection(
+        double MinimumLongitude,
+        double MaximumLongitude,
+        double MinimumLatitude,
+        double MaximumLatitude)
+    {
+        public double Left => 55;
+        public double Top => 24;
+        public double PlotWidth => 680;
+        public double PlotHeight => 294;
+
+        public double X(double longitude) => Left + (longitude - MinimumLongitude) / (MaximumLongitude - MinimumLongitude) * PlotWidth;
+        public double Y(double latitude) => Top + (MaximumLatitude - latitude) / (MaximumLatitude - MinimumLatitude) * PlotHeight;
+
+        public static MapProjection Create(IEnumerable<(double Latitude, double Longitude)> coordinates)
+        {
+            var values = coordinates.Where(value => ValidCoordinate(value.Latitude, value.Longitude)).ToArray();
+            var minimumLongitude = values.Min(value => value.Longitude);
+            var maximumLongitude = values.Max(value => value.Longitude);
+            var minimumLatitude = values.Min(value => value.Latitude);
+            var maximumLatitude = values.Max(value => value.Latitude);
+            var longitudePadding = Math.Max((maximumLongitude - minimumLongitude) * 0.12, 0.02);
+            var latitudePadding = Math.Max((maximumLatitude - minimumLatitude) * 0.12, 0.02);
+            return new MapProjection(
+                minimumLongitude - longitudePadding,
+                maximumLongitude + longitudePadding,
+                minimumLatitude - latitudePadding,
+                maximumLatitude + latitudePadding);
+        }
+    }
+
     private static bool ValidCoordinate(double latitude, double longitude) =>
         double.IsFinite(latitude) && double.IsFinite(longitude) && latitude is >= -90 and <= 90 && longitude is >= -180 and <= 180;
 
@@ -444,6 +640,8 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
 
         Section(html, "Patron-origin analysis");
         CoordinateMap(html, "Patron-origin intensity", model, includeOrigins: true);
+        PatronOriginChoropleth(html, model);
+        CandidateTravelTimeMap(html, model);
         Subsection(html, "State composition");
         Table(html, ["State", "Origins", "Redistributed GGR", "Induced GGR", "Total", "Share"],
             model.OriginStates.Select(row => new[]
@@ -754,6 +952,37 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
         html.Append("<span>WGS84 coordinates · schematic equirectangular exhibit · no basemap</span></figcaption></figure>");
     }
 
+    private static void PatronOriginChoropleth(StringBuilder html, CasinoImpactReportModel model)
+    {
+        var svg = ReportExhibitBuilder.PatronOriginChoroplethSvg(model);
+        if (string.IsNullOrWhiteSpace(svg))
+        {
+            return;
+        }
+        html.Append("<figure class=\"map-exhibit\"><strong>Patron-origin contribution choropleth</strong>")
+            .Append(svg)
+            .Append("<figcaption class=\"map-caption\"><span><i class=\"legend-dot\" style=\"background:#dbeafe\"></i>Lower contribution</span>")
+            .Append("<span><i class=\"legend-dot\" style=\"background:#1d4ed8\"></i>Higher contribution</span>")
+            .Append("<span>Top-N source polygons · contribution-scaled color · geometry simplified 0.002° for presentation · WGS84 · no basemap</span></figcaption></figure>");
+    }
+
+    private static void CandidateTravelTimeMap(StringBuilder html, CasinoImpactReportModel model)
+    {
+        var svg = ReportExhibitBuilder.CandidateTravelTimeMapSvg(model);
+        if (string.IsNullOrWhiteSpace(svg))
+        {
+            return;
+        }
+        html.Append("<figure class=\"map-exhibit\"><strong>Origin-to-candidate routed travel-time map</strong>")
+            .Append(svg)
+            .Append("<figcaption class=\"map-caption\"><span><i class=\"legend-dot\" style=\"background:#166534\"></i>≤15 min</span>")
+            .Append("<span><i class=\"legend-dot\" style=\"background:#65a30d\"></i>≤30</span>")
+            .Append("<span><i class=\"legend-dot\" style=\"background:#eab308\"></i>≤60</span>")
+            .Append("<span><i class=\"legend-dot\" style=\"background:#ea580c\"></i>≤90</span>")
+            .Append("<span><i class=\"legend-dot\" style=\"background:#b91c1c\"></i>&gt;90</span>")
+            .Append("<span>Persisted Valhalla auto minutes at origin representative points · not interpolated isochrones · WGS84 · no basemap</span></figcaption></figure>");
+    }
+
     private static void WaterfallChart(
         StringBuilder html,
         string title,
@@ -1003,6 +1232,8 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
 
                     Heading(column, "Patron-origin analysis");
                     CoordinateMap(column, "Patron-origin intensity", model, includeOrigins: true);
+                    PatronOriginChoropleth(column, model);
+                    CandidateTravelTimeMap(column, model);
                     SimpleTable(column,
                         ["State", "Origins", "Resident GGR", "Share"],
                         model.OriginStates.Select(row => new[]
@@ -1288,6 +1519,38 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
             .FontSize(6).FontColor(Colors.Grey.Darken1);
     }
 
+    private static void PatronOriginChoropleth(ColumnDescriptor column, CasinoImpactReportModel model)
+    {
+        var svg = ReportExhibitBuilder.PatronOriginChoroplethSvg(model);
+        if (string.IsNullOrWhiteSpace(svg))
+        {
+            return;
+        }
+        column.Item().ShowEntire().Column(exhibit =>
+        {
+            exhibit.Item().PaddingTop(4).Text("Patron-origin contribution choropleth").SemiBold().FontSize(8);
+            exhibit.Item().Height(190).Svg(svg);
+            exhibit.Item().Text("Top-N source polygons · contribution-scaled color · geometry simplified 0.002° for presentation · WGS84 · no basemap.")
+                .FontSize(6).FontColor(Colors.Grey.Darken1);
+        });
+    }
+
+    private static void CandidateTravelTimeMap(ColumnDescriptor column, CasinoImpactReportModel model)
+    {
+        var svg = ReportExhibitBuilder.CandidateTravelTimeMapSvg(model);
+        if (string.IsNullOrWhiteSpace(svg))
+        {
+            return;
+        }
+        column.Item().ShowEntire().Column(exhibit =>
+        {
+            exhibit.Item().PaddingTop(4).Text("Origin-to-candidate routed travel-time map").SemiBold().FontSize(8);
+            exhibit.Item().Height(190).Svg(svg);
+            exhibit.Item().Text("Green ≤15/30 min · yellow ≤60 · orange ≤90 · red >90 · persisted Valhalla auto minutes at representative points · not interpolated isochrones · WGS84 · no basemap.")
+                .FontSize(6).FontColor(Colors.Grey.Darken1);
+        });
+    }
+
     private static void WaterfallChart(
         ColumnDescriptor column,
         string title,
@@ -1458,6 +1721,10 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
             Row(csv, "origin", origin.StableOriginId, "state_code", origin.StateCode, origin.OriginType);
             Row(csv, "origin", origin.StableOriginId, "latitude", origin.Latitude, "degrees");
             Row(csv, "origin", origin.StableOriginId, "longitude", origin.Longitude, "degrees");
+            Row(csv, "origin", origin.StableOriginId, "candidate_route_found", origin.CandidateRouteFound, "boolean");
+            Row(csv, "origin", origin.StableOriginId, "candidate_travel_time", origin.CandidateTravelTimeMinutes, "minutes");
+            Row(csv, "origin", origin.StableOriginId, "candidate_routed_distance", origin.CandidateRoutedDistanceMeters, "meters");
+            Row(csv, "origin", origin.StableOriginId, "presentation_area_geometry", origin.AreaGeometryWkt, "WKT EPSG:4326 simplified 0.002 degrees");
             Row(csv, "origin", origin.StableOriginId, "redistributed_resident_ggr", origin.RedistributedResidentGgr, "USD");
             Row(csv, "origin", origin.StableOriginId, "induced_resident_ggr", origin.InducedResidentGgr, "USD");
             Row(csv, "origin", origin.StableOriginId, "total_proposed_resident_ggr", origin.TotalProposedResidentGgr, "USD");

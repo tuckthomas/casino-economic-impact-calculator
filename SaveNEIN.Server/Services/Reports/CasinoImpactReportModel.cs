@@ -8,6 +8,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.Simplify;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Data.Entities;
 
@@ -138,6 +140,10 @@ public sealed record ReportOrigin(
     string? MsaCode,
     double Latitude,
     double Longitude,
+    string? AreaGeometryWkt,
+    double? CandidateTravelTimeMinutes,
+    double? CandidateRoutedDistanceMeters,
+    bool CandidateRouteFound,
     decimal ResidentDemand,
     decimal RedistributedResidentGgr,
     decimal InducedResidentGgr,
@@ -367,25 +373,39 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
             .OrderByDescending(item => item.result.TotalProposedResidentGgr)
             .ThenBy(item => item.origin.StableOriginId)
             .ToListAsync(cancellationToken);
+        var candidateRoutes = (await db.OriginFacilityTravel.AsNoTracking()
+                .Where(route => route.ModelRunId == modelRunId && route.FacilityKind == FacilityKinds.Scenario)
+                .OrderBy(route => route.Id)
+                .ToListAsync(cancellationToken))
+            .GroupBy(route => route.OriginZoneId)
+            .ToDictionary(group => group.Key, group => group.Single());
         var residentTotal = originRows.Sum(item => item.result.TotalProposedResidentGgr);
-        var origins = originRows.Select(item => new ReportOrigin(
-            item.origin.StableOriginId,
-            item.origin.OriginType,
-            item.origin.GeographyCode,
-            item.origin.StateOrTerritoryCode ?? "unassigned",
-            item.origin.CountyEquivalentCode,
-            item.origin.MetropolitanStatisticalAreaCode,
-            item.origin.RepresentativePoint.Y,
-            item.origin.RepresentativePoint.X,
-            item.result.ResidentDemand,
-            item.result.ProposedResidentGgr,
-            item.result.ProposedInducedResidentGgr,
-            item.result.TotalProposedResidentGgr,
-            item.result.HostJurisdictionCapture,
-            item.result.ExternalJurisdictionCapture,
-            item.result.TribalOrOtherJurisdictionCapture,
-            item.result.OutsideOptionCapture,
-            Share(item.result.TotalProposedResidentGgr, residentTotal))).ToArray();
+        var origins = originRows.Select((item, index) =>
+        {
+            candidateRoutes.TryGetValue(item.origin.Id, out var candidateRoute);
+            return new ReportOrigin(
+                item.origin.StableOriginId,
+                item.origin.OriginType,
+                item.origin.GeographyCode,
+                item.origin.StateOrTerritoryCode ?? "unassigned",
+                item.origin.CountyEquivalentCode,
+                item.origin.MetropolitanStatisticalAreaCode,
+                item.origin.RepresentativePoint.Y,
+                item.origin.RepresentativePoint.X,
+                index < options.TopOriginCount ? SimplifiedAreaWkt(item.origin.AreaGeometry) : null,
+                candidateRoute?.TravelTimeMinutes,
+                candidateRoute?.RoutedDistanceMeters,
+                candidateRoute?.RouteFound ?? false,
+                item.result.ResidentDemand,
+                item.result.ProposedResidentGgr,
+                item.result.ProposedInducedResidentGgr,
+                item.result.TotalProposedResidentGgr,
+                item.result.HostJurisdictionCapture,
+                item.result.ExternalJurisdictionCapture,
+                item.result.TribalOrOtherJurisdictionCapture,
+                item.result.OutsideOptionCapture,
+                Share(item.result.TotalProposedResidentGgr, residentTotal));
+        }).ToArray();
 
         var geographicAccountingEntity = await db.ModelRunGeographicAccounting.AsNoTracking()
             .SingleOrDefaultAsync(item => item.ModelRunId == modelRunId, cancellationToken);
@@ -788,6 +808,25 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
             .OrderByDescending(group => group.TotalProposedResidentGgr)
             .ThenBy(group => group.GeographyCode, StringComparer.Ordinal)
             .ToArray();
+    }
+
+    private static string? SimplifiedAreaWkt(Geometry geometry)
+    {
+        if (geometry.IsEmpty || geometry is not (Polygon or MultiPolygon))
+        {
+            return null;
+        }
+
+        try
+        {
+            const double presentationToleranceDegrees = 0.002;
+            var simplified = TopologyPreservingSimplifier.Simplify(geometry, presentationToleranceDegrees);
+            return simplified.IsEmpty || simplified is not (Polygon or MultiPolygon) ? null : simplified.AsText();
+        }
+        catch (TopologyException)
+        {
+            return null;
+        }
     }
 
     private static double Share(decimal value, decimal total) => total == 0 ? 0 : Convert.ToDouble(value / total);

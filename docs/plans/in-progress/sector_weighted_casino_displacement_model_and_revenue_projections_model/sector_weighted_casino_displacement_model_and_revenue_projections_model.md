@@ -2,7 +2,7 @@
 
 ## Governing AI Agent Implementation Checklist
 
-> **Status:** In Progress — Foundation committed (commits `f30229d`, `0846e71`). Core services, entity schema, migrations, selected authoritative providers, validation/calibration infrastructure, the stored-run web workbench, scenario comparison, and deterministic server-side HTML/PDF/CSV report rendering are implemented. National provider coverage, production-quality calibration/holdouts, benchmark reconciliation, and the remaining travel-time/isoline plus polygon-choropleth report exhibits remain pending.
+> **Status:** In Progress — Foundation committed (commits `f30229d`, `0846e71`). Core services, entity schema, migrations, selected authoritative providers, validation/calibration infrastructure, the stored-run web workbench, scenario comparison, and deterministic server-side HTML/PDF/CSV report rendering with the planned report exhibits are implemented. National provider coverage, production-quality calibration/holdouts, and benchmark reconciliation remain pending.
 >
 > **Primary objective:** Build a transparent, empirically calibrated, nationally reusable casino gravity and economic-impact engine that can evaluate a proposed casino or major gaming development anywhere in the United States. The engine must estimate site-specific gaming revenue, patron origins, market expansion, cannibalization, repatriation/leakage, tourism and through-traffic demand, sector displacement, fiscal effects, employment effects, and downstream social/economic costs. The same immutable model run must power the interactive web application, APIs, sensitivity analysis, and a server-generated full analytical report comparable in structure and rigor to professional casino feasibility and impact studies.
 >
@@ -30,6 +30,7 @@
 > - **SUCCESS:** Report template `professional-v3` was generated from the same finalized browser run as immutable artifact `41c3076e-b968-40cd-a7c4-0d25fea03d1f` with PDF SHA-256 `c59583ba35094e22e1b70b3e98bd9d9a14dc0398bb27edf77ee36677fcb1f16a`. Poppler rendered all 12 letter-size pages for visual inspection. The report correctly discloses the stored `agi-share`, `observed-ggr`, and `inverse-power` specifications despite production input JSON casing. The executive warning flood is compressed from 93 raw warnings (84 parameter-calibration notices) into a concise disclosure plus decision-use warnings; exact warnings remain in JSON and the parameter appendix. The report adds data-backed revenue-composition, origin-contribution, competitor-impact, and sector-displacement charts and a complete replay appendix containing the jurisdiction effective-rule fingerprint, parameter sets, overrides, source vintages, Valhalla graph hash/costing profile, site, program, run timestamps, and generation timestamp.
 > - **SUCCESS:** Migration `018_candidate_location_travel_cache.sql` was applied to disposable VPS PostGIS database `savenein_ui_validation_20260811`, and a checksum-pinned corrected release artifact completed two in-app browser runs at the exact candidate coordinate `41.0793, -85.1394`. Finalized runs `eeb06a92-2c9b-4361-b70d-9ca9803fc8e1` and `55979daf-6c77-4c14-88d4-72a13fa5bf88` persisted distinct immutable scenario-route rows while sharing one SHA-256 coordinate-cache row (`f989a8eab8da6baf7050aedd3767395cae00ab2c3a1661cadd6ce5dfe420b5d7`) for routing graph `ebaf3afb590388a0e9ba5c64b9e5d3b1014b17c61f1dcb58ede89955e55b82bd`. Both per-run routes preserve the cache calculation timestamp `2026-08-11 10:04:09.858572+00`, 2.233333 minutes, and 1,445 routed meters, proving the second run reused Valhalla output without sacrificing exact run coordinates or replayable route materialization.
 > - **SUCCESS:** Report template `professional-v4` was generated from finalized run `0022ed41-9c1d-435a-bb9d-2942913a9101` and stored sensitivity analysis `4411b3f5-8ad2-428d-964d-9d0dba1635b0` as immutable artifact `dec6ed81-cf88-4389-b7a6-d553f853a619`. The server returned PDF SHA-256 `38363e781b57d560ffd988e36f3102f1363f5c3de9d43ad60b9777bab36b5cf5`; Poppler confirmed and rendered all 14 letter-size pages for visual inspection. The PDF/HTML now contain WGS84 proposed-site/competitor and proportional-symbol patron-origin maps, a revenue-composition waterfall, social-cost bridge, net host-local impact waterfall, and a signed-output-delta sensitivity tornado with an explicit low/high setting legend. The tornado was verified against nine complete stored runs, including the inverse `gravity.beta` relationship (low setting: $50,099; baseline: $47,195; high setting: $44,762). CSV preserves facility/origin coordinates, waterfall/bridge source components, inclusion flags, point-run UUIDs, and exact low/high deltas behind the exhibits.
+> - **SUCCESS:** Report template `professional-v5` derives a top-N patron-origin polygon choropleth and origin-to-candidate travel-time map from the same immutable run. Live artifact `3f90c001-42f1-44b3-b042-ec6f3a022fb5` has PDF SHA-256 `346edb7a63fe11ba3d6e7ee0c4d8e83393f39b2e7d6bcb905015a6b9c4db469f`; Poppler confirmed and rendered all 15 letter-size pages. Visual QA corrected an orphaned exhibit heading and verified compact pagination. The stored ZCTA polygon is simplified by a disclosed 0.002° presentation tolerance, while exact contribution values remain unchanged; the travel-time map uses the finalized run's persisted Valhalla `auto` route of 2.233333 minutes and 1,445 meters at the origin representative point and explicitly states that it is not an interpolated isochrone. HTML, report JSON, and CSV preserve source geometry, route-found state, routed minutes, and routed meters behind both exhibits.
 > - Update this checklist immediately after every verified implementation tranche, including the evidence used to justify each newly completed item and any failed quality gate that keeps an item open.
 
 ---
@@ -1310,11 +1311,11 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
 
 ## 29.6 Report exhibits
 
-- [ ] Generate publication-quality maps, tables, and charts from model data.
-- [ ] Candidate exhibits:
+- [x] Generate publication-quality maps, tables, and charts from model data.
+- [x] Candidate exhibits:
   - [x] proposed site and competitor map;
-  - [ ] travel-time/isoline map;
-  - [ ] patron-origin choropleth;
+  - [x] travel-time/isoline map;
+  - [x] patron-origin choropleth;
   - [x] revenue composition waterfall;
   - [x] baseline vs with-project competitor GGR;
   - [x] county/state origin contribution chart;
