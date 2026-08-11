@@ -36,20 +36,29 @@ public sealed class GravityModelConfigurationController(AppDbContext db) : Contr
             .AsNoTracking()
             .Where(snapshot => snapshot.IsSealed &&
                                snapshot.ValidationState != DatasetValidationStates.Rejected)
-            .OrderBy(snapshot => snapshot.DatasetKey)
-            .ThenByDescending(snapshot => snapshot.PeriodEnd)
-            .ThenByDescending(snapshot => snapshot.IngestedAtUtc)
-            .Select(snapshot => new
+            .Join(
+                db.DataSources.AsNoTracking(),
+                snapshot => snapshot.DataSourceId,
+                source => source.Id,
+                (snapshot, source) => new { Snapshot = snapshot, Source = source })
+            .OrderBy(item => item.Snapshot.DatasetKey)
+            .ThenByDescending(item => item.Snapshot.PeriodEnd)
+            .ThenByDescending(item => item.Snapshot.IngestedAtUtc)
+            .Select(item => new
             {
-                snapshot.Id,
-                snapshot.DatasetKey,
-                snapshot.Period,
-                snapshot.PeriodStart,
-                snapshot.PeriodEnd,
-                snapshot.RowCount,
-                snapshot.ValidationState,
-                snapshot.WarningsJson,
-                snapshot.TransformVersion
+                item.Snapshot.Id,
+                item.Snapshot.DatasetKey,
+                item.Snapshot.Period,
+                item.Snapshot.PeriodStart,
+                item.Snapshot.PeriodEnd,
+                item.Snapshot.RowCount,
+                item.Snapshot.ValidationState,
+                item.Snapshot.WarningsJson,
+                item.Snapshot.TransformVersion,
+                item.Snapshot.Checksum,
+                SourceName = item.Source.Name,
+                SourcePublisher = item.Source.Publisher,
+                SourceVintage = item.Source.VintagePeriod
             })
             .ToListAsync(cancellationToken);
         var programs = await db.DevelopmentPrograms

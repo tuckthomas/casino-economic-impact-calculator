@@ -25,6 +25,7 @@
 > - **SUCCESS:** Stored-run report integration now verifies dynamic ZCTA, state, and county/parish reconciliation and one immutable cached HTML/PDF/JSON/CSV artifact per normalized presentation. County/parish composition is rendered in HTML/PDF and exported in CSV.
 > - **SUCCESS:** A checksum-pinned release artifact (`b8d9ad80e87363158a762974260320401090d3dd856459ecd57c641f2b48e3ef`) booted against a fresh disposable VPS PostGIS database after all model migrations and catalog seeding. The in-app browser created and selected an immutable 2,000-slot/50-table/200-room development program, exposed standard and advanced parameter metadata, rejected an incompatible versioned scenario document, and successfully restored a valid sealed-snapshot scenario.
 > - **SUCCESS:** The same browser workbench submitted two finalized runs through the authoritative backend and persisted live Valhalla routes (2.23 minutes/1,445 meters to the proposed facility; 110.7 minutes/165,232 meters to the incumbent). Beta `1.55` produced $1,012,625 stabilized GGR; allowed-but-warned beta `1.7` produced $869,000. The generated report JSON preserved `gravity.beta = 1.7` and the exact validated-range warning, while immutable comparison rendered both runs alongside the integration baseline.
+> - **SUCCESS:** A follow-up checksum-pinned artifact (`b376e1de0ba8dc30da238b0ecfbfc833fa3df183e545b270ef1e9d1b09c1c5b7`) exposed source names and checksum prefixes on sealed-snapshot choices and loaded dynamic result detail from the stored-run APIs. Browser verification rendered origin `USA-ZCTA-46802` with $7,260,000 resident demand and $1,064,683 proposed GGR, plus incumbent `USA-IN-SOUTH-BEND-SMOKE` changing from $6,145 baseline resident GGR to $5,243 with project (-$901), without a separate calculation path.
 > - Update this checklist immediately after every verified implementation tranche, including the evidence used to justify each newly completed item and any failed quality gate that keeps an item open.
 
 ---
@@ -1345,8 +1346,8 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
 - [x] Show default-vs-custom state on model parameters.
 - [x] Show site/development configuration independently.
 - [x] Show headline stabilized GGR with resident/tourism/traffic decomposition.
-- [ ] Show patron-origin map/table dynamically.
-- [ ] Show incumbent impacts.
+- [x] Show patron-origin map/table dynamically.
+- [x] Show incumbent impacts.
 - [x] Show local/state net economic-impact summaries.
 - [x] Show methodology and data provenance without burying key assumptions.
 - [x] Add explicit `Generate Full Report` workflow only after a model run is complete.

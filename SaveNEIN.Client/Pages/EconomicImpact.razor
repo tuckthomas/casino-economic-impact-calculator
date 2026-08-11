@@ -437,6 +437,93 @@
                             }
                         </section>
 
+                        <div class="model-result-detail-grid">
+                            <section class="model-result-table-section" aria-labelledby="model-origin-results-title">
+                                <div class="model-result-table-heading">
+                                    <div>
+                                        <h4 id="model-origin-results-title">Patron-origin results</h4>
+                                        <p>Computed at the run's actual @_latestRun.ComputationalOriginType.ToUpperInvariant() resolution.</p>
+                                    </div>
+                                    <span>@_runOriginTotal origin(s)</span>
+                                </div>
+                                @if (_runOrigins.Count == 0)
+                                {
+                                    <p class="model-muted">No patron-origin rows were persisted for this run.</p>
+                                }
+                                else
+                                {
+                                    <div class="model-result-table-shell">
+                                        <table class="model-result-table">
+                                            <caption>Top @_runOrigins.Count origin(s) by proposed resident GGR; complete rows remain stored with the immutable run.</caption>
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Origin</th>
+                                                    <th scope="col">Resident demand</th>
+                                                    <th scope="col">Proposed GGR</th>
+                                                    <th scope="col">Outside-option capture</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var origin in _runOrigins)
+                                                {
+                                                    <tr>
+                                                        <th scope="row">
+                                                            @origin.StableOriginId
+                                                            <small>@OriginGeographyLabel(origin)</small>
+                                                        </th>
+                                                        <td>@Money(origin.ResidentDemand)</td>
+                                                        <td>@Money(origin.TotalProposedResidentGgr)</td>
+                                                        <td>@Money(origin.OutsideOptionCapture)</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </section>
+
+                            <section class="model-result-table-section" aria-labelledby="model-incumbent-results-title">
+                                <div class="model-result-table-heading">
+                                    <div>
+                                        <h4 id="model-incumbent-results-title">Incumbent impacts</h4>
+                                        <p>Baseline and with-project resident GGR from the same stored market equilibrium.</p>
+                                    </div>
+                                    <span>@_runFacilities.Count(facility => !facility.IsProposedFacility) incumbent(s)</span>
+                                </div>
+                                @if (_runFacilities.All(facility => facility.IsProposedFacility))
+                                {
+                                    <p class="model-muted">No incumbent facility impacts were persisted for this run.</p>
+                                }
+                                else
+                                {
+                                    <div class="model-result-table-shell">
+                                        <table class="model-result-table">
+                                            <caption>Per-incumbent resident GGR before and after the proposed facility enters the competitive market.</caption>
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Facility</th>
+                                                    <th scope="col">Baseline</th>
+                                                    <th scope="col">With project</th>
+                                                    <th scope="col">Change</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var facility in _runFacilities.Where(facility => !facility.IsProposedFacility).OrderBy(facility => facility.ChangeInResidentGgr))
+                                                {
+                                                    <tr>
+                                                        <th scope="row">@facility.FacilityKey</th>
+                                                        <td>@Money(facility.BaselineResidentGgr)</td>
+                                                        <td>@Money(facility.WithProjectResidentGgr)</td>
+                                                        <td class="@Tone(facility.ChangeInResidentGgr)">@Money(facility.ChangeInResidentGgr)</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </section>
+                        </div>
+
                         @if (_latestRun.Warnings.Count > 0)
                         {
                             <details class="model-warning-list">
@@ -672,6 +759,9 @@
     private readonly HashSet<Guid> _comparisonSelection = [];
     private readonly List<ComparisonRun> _comparison = [];
     private readonly List<SensitivityRangeForm> _sensitivityRanges = [];
+    private readonly List<RunOriginResult> _runOrigins = [];
+    private readonly List<RunFacilityResult> _runFacilities = [];
+    private int _runOriginTotal;
     private RunResult? _latestRun;
     private RunRequest? _lastRunRequest;
     private bool _loading = true;
@@ -884,6 +974,29 @@
         }
     }
 
+    private async Task LoadRunOutputDetailsAsync(Guid modelRunId)
+    {
+        _runFacilities.Clear();
+        _runOrigins.Clear();
+        _runOriginTotal = 0;
+
+        var detailsTask = Http.GetFromJsonAsync<RunDetails>($"api/gravity-model-runs/{modelRunId}");
+        var originsTask = Http.GetFromJsonAsync<RunOriginResponse>($"api/gravity-model-runs/{modelRunId}/origins?take=250");
+        await Task.WhenAll(detailsTask, originsTask);
+
+        var details = await detailsTask;
+        if (details is not null)
+        {
+            _runFacilities.AddRange(details.Facilities);
+        }
+        var origins = await originsTask;
+        if (origins is not null)
+        {
+            _runOriginTotal = origins.Total;
+            _runOrigins.AddRange(origins.Origins);
+        }
+    }
+
     private async Task RunScenarioAsync()
     {
         if (!CanRun)
@@ -892,6 +1005,9 @@
         }
         _running = true;
         _error = null;
+        _runFacilities.Clear();
+        _runOrigins.Clear();
+        _runOriginTotal = 0;
         try
         {
             var observedSnapshot = FindSnapshot(_form.ObservedPerformanceSnapshotId!.Value)!;
@@ -942,6 +1058,7 @@
             }
             _latestRun = await response.Content.ReadFromJsonAsync<RunResult>()
                          ?? throw new InvalidOperationException("The model run completed without a result body.");
+            await LoadRunOutputDetailsAsync(_latestRun.ModelRunId);
             _lastRunRequest = request;
             ResetSensitivityRanges();
             _sensitivityResult = null;
@@ -1646,10 +1763,22 @@
 
     private Guid? LatestSnapshotId(string kind) => Snapshots(kind).FirstOrDefault()?.Id;
     private SnapshotOption? FindSnapshot(Guid id) => _configuration?.Snapshots.FirstOrDefault(snapshot => snapshot.Id == id);
-    private static string SnapshotLabel(SnapshotOption snapshot) => $"{snapshot.Period} · {snapshot.RowCount:N0} rows · {snapshot.ValidationState}";
+    private static string SnapshotLabel(SnapshotOption snapshot)
+    {
+        var checksum = string.IsNullOrWhiteSpace(snapshot.Checksum)
+            ? "no checksum"
+            : snapshot.Checksum[..Math.Min(10, snapshot.Checksum.Length)];
+        return $"{snapshot.Period} · {snapshot.RowCount:N0} rows · {snapshot.ValidationState} · {snapshot.SourceName} · {checksum}";
+    }
     private static string DevelopmentProgramLabel(DevelopmentProgramOption program) =>
         $"{program.Name} · {program.SlotOrVltPositions:N0} slots/VLTs · {program.TableGameCount:N0} tables · {program.HotelRoomCount:N0} rooms · v{program.Version}";
     private static string StateCode(string jurisdictionCode) => jurisdictionCode.Split('-', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? string.Empty;
+    private static string OriginGeographyLabel(RunOriginResult origin)
+    {
+        var labels = new[] { origin.StateOrTerritoryCode, origin.CountyEquivalentCode, origin.GeographyCode }
+            .Where(value => !string.IsNullOrWhiteSpace(value));
+        return string.Join(" · ", labels);
+    }
     private void ApplySnapshotYears() { }
 
     private bool CanRun =>
@@ -1793,7 +1922,20 @@
     }
 
     private sealed class JurisdictionOption { public int Id { get; set; } public string Code { get; set; } = string.Empty; public string Name { get; set; } = string.Empty; public string Kind { get; set; } = string.Empty; }
-    private sealed class SnapshotOption { public Guid Id { get; set; } public string DatasetKey { get; set; } = string.Empty; public string Period { get; set; } = string.Empty; public DateOnly PeriodStart { get; set; } public DateOnly PeriodEnd { get; set; } public long RowCount { get; set; } public string ValidationState { get; set; } = string.Empty; }
+    private sealed class SnapshotOption
+    {
+        public Guid Id { get; set; }
+        public string DatasetKey { get; set; } = string.Empty;
+        public string Period { get; set; } = string.Empty;
+        public DateOnly PeriodStart { get; set; }
+        public DateOnly PeriodEnd { get; set; }
+        public long RowCount { get; set; }
+        public string ValidationState { get; set; } = string.Empty;
+        public string Checksum { get; set; } = string.Empty;
+        public string SourceName { get; set; } = string.Empty;
+        public string SourcePublisher { get; set; } = string.Empty;
+        public string SourceVintage { get; set; } = string.Empty;
+    }
     private sealed class DevelopmentProgramOption
     {
         public Guid Id { get; set; }
@@ -1999,6 +2141,39 @@
         public decimal NetHostStateImpact { get; set; }
         public Dictionary<string, decimal> ProposedCaptureBySource { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public List<string> Warnings { get; set; } = [];
+    }
+
+    private sealed class RunDetails
+    {
+        public List<RunFacilityResult> Facilities { get; set; } = [];
+    }
+
+    private sealed class RunFacilityResult
+    {
+        public string FacilityKey { get; set; } = string.Empty;
+        public string FacilityKind { get; set; } = string.Empty;
+        public bool IsProposedFacility { get; set; }
+        public decimal BaselineResidentGgr { get; set; }
+        public decimal WithProjectResidentGgr { get; set; }
+        public decimal ChangeInResidentGgr { get; set; }
+    }
+
+    private sealed class RunOriginResponse
+    {
+        public int Total { get; set; }
+        public List<RunOriginResult> Origins { get; set; } = [];
+    }
+
+    private sealed class RunOriginResult
+    {
+        public string StableOriginId { get; set; } = string.Empty;
+        public string OriginType { get; set; } = string.Empty;
+        public string GeographyCode { get; set; } = string.Empty;
+        public string? StateOrTerritoryCode { get; set; }
+        public string? CountyEquivalentCode { get; set; }
+        public decimal ResidentDemand { get; set; }
+        public decimal TotalProposedResidentGgr { get; set; }
+        public decimal OutsideOptionCapture { get; set; }
     }
 
     private sealed class RecentRun { public Guid Id { get; set; } public string ScenarioName { get; set; } = string.Empty; public string Status { get; set; } = string.Empty; public DateTime CreatedAtUtc { get; set; } }
