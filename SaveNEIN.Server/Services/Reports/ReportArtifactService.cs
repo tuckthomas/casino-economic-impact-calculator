@@ -40,6 +40,43 @@ public interface IReportArtifactService
         CancellationToken cancellationToken = default);
 }
 
+internal sealed record ReportWarningDigest(
+    int CalibrationNoticeCount,
+    IReadOnlyList<string> DecisionWarnings)
+{
+    public string Summary =>
+        $"This provisional run contains {CalibrationNoticeCount:N0} parameter calibration notice(s) and {DecisionWarnings.Count:N0} other disclosed warning(s). " +
+        "Decision-use warnings are shown below; complete parameter status remains in the parameter appendix and machine-readable exports.";
+}
+
+internal static class ReportDisclosure
+{
+    private const string CalibrationNoticeMarker = "does not have a completed calibration designation.";
+
+    public static ReportWarningDigest DigestWarnings(IReadOnlyCollection<string> warnings) => new(
+        warnings.Count(warning => warning.Contains(CalibrationNoticeMarker, StringComparison.OrdinalIgnoreCase)),
+        warnings.Where(warning => !warning.Contains(CalibrationNoticeMarker, StringComparison.OrdinalIgnoreCase)).ToArray());
+
+    public static string ParameterSets(CasinoImpactReportModel model) =>
+        model.Scenario.ParameterSets.Count == 0 ? "None stored" : string.Join("; ", model.Scenario.ParameterSets);
+
+    public static string UserOverrides(CasinoImpactReportModel model)
+    {
+        var overrides = model.Parameters.Where(parameter => parameter.UserOverrideValue is not null)
+            .Select(parameter => $"{parameter.Key}={parameter.UserOverrideValue:G7} {parameter.Units}")
+            .ToArray();
+        return overrides.Length == 0 ? "None" : string.Join("; ", overrides);
+    }
+
+    public static string SourceVintages(CasinoImpactReportModel model) =>
+        model.DataSources.Count == 0
+            ? "None stored"
+            : string.Join("; ", model.DataSources.Select(source =>
+                $"{source.Role}:{source.ReferenceKey}={source.DatasetKey}@{source.Period} [{ShortHash(source.Checksum)}]"));
+
+    private static string ShortHash(string value) => value.Length <= 12 ? value : value[..12];
+}
+
 public sealed class ReportArtifactService(
     AppDbContext db,
     ICasinoImpactReportModelFactory reportModelFactory,
@@ -47,7 +84,7 @@ public sealed class ReportArtifactService(
     IPdfReportRenderer pdfRenderer,
     ICsvReportRenderer csvRenderer) : IReportArtifactService
 {
-    public const string TemplateVersion = "professional-v2";
+    public const string TemplateVersion = "professional-v3";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true
@@ -136,6 +173,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
     {
         var html = new StringBuilder(64_000);
         var title = options.Title ?? $"Casino Revenue and Economic-Impact Analysis — {model.Scenario.Name}";
+        var warningDigest = ReportDisclosure.DigestWarnings(model.Warnings);
         html.Append("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">")
             .Append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
             .Append("<title>").Append(E(title)).Append("</title>")
@@ -143,7 +181,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             .Append("@page{size:letter;margin:.65in}body{font:15px/1.5 'Public Sans',Arial,sans-serif;color:#172033;margin:0;background:#fff}")
             .Append("main{max-width:1050px;margin:auto;padding:36px}h1{font-size:34px;line-height:1.15;color:#0f2948;margin:0 0 12px}h2{font-size:23px;color:#0f2948;border-bottom:2px solid #cbd5e1;padding-bottom:7px;margin-top:36px}h3{font-size:18px;color:#244d74;margin-top:25px}")
             .Append(".eyebrow{font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#2c6b8f}.subtitle{font-size:18px;color:#526174}.meta,.note{color:#526174}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.metric{border:1px solid #cbd5e1;border-radius:8px;padding:14px}.metric strong{display:block;font-size:20px;color:#0f2948}")
-            .Append("table{width:100%;border-collapse:collapse;margin:14px 0 24px;font-size:13px}th{text-align:left;background:#e8eef4;color:#0f2948}th,td{padding:8px;border-bottom:1px solid #dbe2ea;vertical-align:top}.number{text-align:right;font-variant-numeric:tabular-nums}.warning{border-left:4px solid #b45309;background:#fff7ed;padding:9px 12px;margin:8px 0}.repro{background:#eef3f7;padding:14px;border-radius:8px;font-family:ui-monospace,monospace;font-size:12px;overflow-wrap:anywhere}")
+            .Append("table{width:100%;border-collapse:collapse;margin:14px 0 24px;font-size:13px}th{text-align:left;background:#e8eef4;color:#0f2948}th,td{padding:8px;border-bottom:1px solid #dbe2ea;vertical-align:top}.number{text-align:right;font-variant-numeric:tabular-nums}.warning{border-left:4px solid #b45309;background:#fff7ed;padding:9px 12px;margin:8px 0}.repro{background:#eef3f7;padding:14px;border-radius:8px;font-family:ui-monospace,monospace;font-size:12px;overflow-wrap:anywhere}.chart{border:1px solid #dbe2ea;border-radius:8px;padding:14px;margin:14px 0 24px}.chart-row{display:grid;grid-template-columns:minmax(160px,1.2fr) 3fr minmax(100px,.8fr);gap:10px;align-items:center;margin:8px 0}.chart-track{height:12px;background:#e8eef4;border-radius:3px;overflow:hidden}.chart-bar{height:100%;background:#2c6b8f}.chart-value{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}")
             .Append("@media print{main{padding:0}.page-break{break-before:page}a{color:inherit;text-decoration:none}}@media(max-width:700px){main{padding:20px}.metrics{grid-template-columns:1fr}table{display:block;overflow:auto}}")
             .Append("</style></head><body><main>");
         html.Append("<header><div class=\"eyebrow\">Stored model-run report</div><h1>").Append(E(title)).Append("</h1>")
@@ -167,10 +205,16 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
         html.Append("</div>");
         if (model.Warnings.Count > 0)
         {
-            Subsection(html, "Run warnings");
-            foreach (var warning in model.Warnings)
+            Subsection(html, "Run warning summary");
+            html.Append("<div class=\"warning\"><strong>").Append(E(warningDigest.Summary)).Append("</strong></div>");
+            foreach (var warning in warningDigest.DecisionWarnings.Take(6))
             {
                 html.Append("<div class=\"warning\">").Append(E(warning)).Append("</div>");
+            }
+            if (warningDigest.DecisionWarnings.Count > 6)
+            {
+                html.Append("<p class=\"note\">").Append(warningDigest.DecisionWarnings.Count - 6)
+                    .Append(" additional decision-use warning(s) are listed in the methodology disclosure.</p>");
             }
         }
 
@@ -190,6 +234,46 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             ("Impact geography", $"{model.Scenario.ImpactScopeKind}: {model.Scenario.ImpactScopeCode}")
         ]);
 
+        Section(html, "Study area and market definition");
+        TwoColumnTable(html,
+        [
+            ("Impact scope", $"{model.Scenario.ImpactScopeKind}: {model.Scenario.ImpactScopeCode}"),
+            ("Computational origin type", model.Scenario.ComputationalOriginType),
+            ("Modeled origins", model.Origins.Count.ToString("N0", CultureInfo.InvariantCulture)),
+            ("States / territories represented", model.OriginStates.Count.ToString("N0", CultureInfo.InvariantCulture)),
+            ("Counties / parishes represented", model.OriginCounties.Count.ToString("N0", CultureInfo.InvariantCulture)),
+            ("Competitive facilities represented", model.Facilities.Count.ToString("N0", CultureInfo.InvariantCulture))
+        ]);
+
+        Section(html, "Demographics, eligible population, and income");
+        html.Append("<p>Eligible population and income are resolved by the stored demand specification and pinned source snapshots. The renderer reports the resulting resident gaming-demand base without re-estimating it.</p>");
+        TwoColumnTable(html,
+        [
+            ("Demand specification", model.Scenario.DemandSpecification),
+            ("Resident demand represented", Money(model.Revenue.TotalResidentDemand)),
+            ("Origin records represented", model.Origins.Count.ToString("N0", CultureInfo.InvariantCulture)),
+            ("Pinned dataset snapshots", model.DataSources.Count.ToString("N0", CultureInfo.InvariantCulture))
+        ]);
+
+        Section(html, "Competitive gaming supply");
+        Table(html, ["Facility", "Kind", "Proposed", "Normalized attraction", "Baseline resident GGR"],
+            model.Facilities.Select(row => new[]
+            {
+                row.FacilityName, row.FacilityKind, row.IsProposedFacility ? "Yes" : "No",
+                Number(row.NormalizedAttraction), Money(row.BaselineResidentGgr)
+            }));
+
+        Section(html, "Gravity model methodology");
+        html.Append("<p>The finalized run allocates each origin's stored demand among incumbent facilities, the proposed facility, and the outside option using routed travel impedance and normalized facility attraction. The baseline and with-project systems are solved separately; this report reads their persisted allocations.</p>");
+        TwoColumnTable(html,
+        [
+            ("Demand specification", model.Scenario.DemandSpecification),
+            ("Attraction specification", model.Scenario.AttractionSpecification),
+            ("Travel-friction form", model.Scenario.FrictionForm),
+            ("Routing graph hash(es)", string.Join(", ", model.Identity.RoutingGraphHashes)),
+            ("Costing profile(s)", string.Join(", ", model.Identity.CostingProfiles))
+        ]);
+
         Section(html, "Gaming revenue projection");
         TwoColumnTable(html,
         [
@@ -199,6 +283,13 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             ("Tourism GGR", Money(model.Revenue.TourismGgr)),
             ("Through-traffic GGR", Money(model.Revenue.TrafficGgr)),
             ("Stabilized total GGR", Money(model.Revenue.StabilizedTotalGgr))
+        ]);
+        BarChart(html, "Stabilized GGR composition",
+        [
+            ("Redistributed resident GGR", model.Revenue.RedistributedResidentGgr),
+            ("Accessibility-induced resident GGR", model.Revenue.InducedResidentGgr),
+            ("Tourism GGR", model.Revenue.TourismGgr),
+            ("Through-traffic GGR", model.Revenue.TrafficGgr)
         ]);
         if (model.Capacity is not null)
         {
@@ -222,6 +313,8 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
                 row.GeographyCode, row.OriginCount.ToString(), Money(row.RedistributedResidentGgr),
                 Money(row.InducedResidentGgr), Money(row.TotalProposedResidentGgr), Percent(row.ShareOfProposedResidentGgr)
             }));
+        BarChart(html, "State / territory origin contribution",
+            model.OriginStates.Take(12).Select(row => (row.GeographyCode, row.TotalProposedResidentGgr)));
         Subsection(html, "County/parish composition");
         Table(html, ["County/parish", "Origins", "Redistributed GGR", "Induced GGR", "Total", "Share"],
             model.OriginCounties.Select(row => new[]
@@ -245,6 +338,13 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
                 row.FacilityName, row.IsProposedFacility ? "Proposed" : "Incumbent", Money(row.BaselineResidentGgr),
                 Money(row.WithProjectResidentGgr), Money(row.ChangeInResidentGgr), Money(row.StabilizedTotalGgr)
             }));
+        BarChart(html, "Baseline vs with-project resident GGR",
+            model.Facilities.Where(row => !row.IsProposedFacility)
+                .SelectMany(row => new[]
+                {
+                    ($"{row.FacilityName} — baseline", row.BaselineResidentGgr),
+                    ($"{row.FacilityName} — with project", row.WithProjectResidentGgr)
+                }));
         if (model.GeographicAccounting is not null)
         {
             Subsection(html, "Geographic accounting bridge");
@@ -258,6 +358,43 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             ]);
         }
 
+        Section(html, "Tourism and through-traffic demand");
+        TwoColumnTable(html,
+        [
+            ("Tourism GGR", Money(model.Revenue.TourismGgr)),
+            ("Through-traffic GGR", Money(model.Revenue.TrafficGgr)),
+            ("Stored tourism / traffic demand components", model.DemandComponents.Count(component =>
+                component.ComponentType.Contains("tour", StringComparison.OrdinalIgnoreCase) ||
+                component.ComponentType.Contains("traffic", StringComparison.OrdinalIgnoreCase)).ToString("N0", CultureInfo.InvariantCulture))
+        ]);
+        Table(html, ["Component", "Source record", "Input", "Eligible", "Participating", "Captured", "GGR"],
+            model.DemandComponents.Where(component =>
+                    component.ComponentType.Contains("tour", StringComparison.OrdinalIgnoreCase) ||
+                    component.ComponentType.Contains("traffic", StringComparison.OrdinalIgnoreCase))
+                .Select(component => new[]
+                {
+                    component.ComponentType, component.SourceRecordKey, Money(component.InputQuantity),
+                    Money(component.EligibleQuantity), Money(component.ParticipatingQuantity),
+                    Money(component.CapturedQuantity), Money(component.Ggr)
+                }));
+
+        Section(html, "Repatriation and cross-jurisdiction capture");
+        if (model.GeographicAccounting is not null)
+        {
+            TwoColumnTable(html,
+            [
+                ("Host-jurisdiction cannibalization", Money(model.GeographicAccounting.HostJurisdictionCannibalization)),
+                ("Cross-jurisdiction capture", Money(model.GeographicAccounting.CrossJurisdictionCapture)),
+                ("Outside / unmodeled leakage capture", Money(model.GeographicAccounting.OutsideOrUnmodeledLeakageCapture)),
+                ("Transfer-effect GGR", Money(model.GeographicAccounting.TransferEffectGgr)),
+                ("Market expansion and imported GGR", Money(model.GeographicAccounting.MarketExpansionAndImportGgr))
+            ]);
+        }
+        else
+        {
+            html.Append("<p class=\"note\">Geographic accounting was not stored for this run.</p>");
+        }
+
         Section(html, "Local spending displacement");
         Table(html, ["Sector", "Weight", "Eligible base", "Coefficient", "Displaced sales", "Fiscal loss", "Jobs displaced"],
             model.SectorDisplacement.Select(row => new[]
@@ -266,8 +403,10 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
                 Percent(row.DisplacementCoefficient), Money(row.DisplacedSales),
                 Money(row.SalesTaxLoss + row.BusinessIncomeTaxLoss), row.DisplacedJobs.ToString("N2")
             }));
+        BarChart(html, "Displaced local sales by sector",
+            model.SectorDisplacement.Select(row => (row.SectorKey, row.DisplacedSales)));
 
-        Section(html, "Employment and fiscal impact");
+        Section(html, "Employment and labor-market effects");
         if (model.Employment is not null)
         {
             Subsection(html, "Employment");
@@ -281,6 +420,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
                 ("Construction job-years", model.Employment.ConstructionJobYears.ToString("N1"))
             ]);
         }
+        Section(html, "Fiscal impact");
         if (model.Fiscal is not null)
         {
             Subsection(html, "Fiscal bridge");
@@ -358,6 +498,16 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             html.Append("<li>").Append(E(limitation)).Append("</li>");
         }
         html.Append("</ul>");
+        if (model.Warnings.Count > 0)
+        {
+            Subsection(html, "Complete decision-use warning disclosure");
+            html.Append("<p>").Append(E(warningDigest.Summary)).Append("</p>");
+            foreach (var warning in warningDigest.DecisionWarnings)
+            {
+                html.Append("<div class=\"warning\">").Append(E(warning)).Append("</div>");
+            }
+        }
+        Section(html, "Technical appendices");
         Subsection(html, "Model parameters and overrides");
         Table(html, ["Parameter", "Category", "Units", "Default", "Scenario", "User override", "Final", "Source", "Recommended range", "Warning"],
             model.Parameters.Select(row => new[]
@@ -381,7 +531,13 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             .Append("Model version: ").Append(E(model.Identity.ModelVersion)).Append("<br>")
             .Append("Report template: ").Append(E(model.Identity.TemplateVersion)).Append("<br>")
             .Append("Run UUID: ").Append(model.Identity.ModelRunId).Append("<br>")
-            .Append("Jurisdiction: ").Append(E(model.Identity.JurisdictionCode)).Append("<br>")
+            .Append("Generated timestamp: ").Append(model.Identity.GeneratedAtUtc.ToString("O", CultureInfo.InvariantCulture)).Append("<br>")
+            .Append("Run created/finalized: ").Append(model.Identity.RunCreatedAtUtc.ToString("O", CultureInfo.InvariantCulture)).Append(" / ")
+            .Append(model.Identity.RunFinalizedAtUtc.ToString("O", CultureInfo.InvariantCulture)).Append("<br>")
+            .Append("Jurisdiction profile/version: ").Append(E($"{model.Identity.JurisdictionCode} / {model.Identity.JurisdictionProfileVersion}")).Append("<br>")
+            .Append("Parameter-set version(s): ").Append(E(ReportDisclosure.ParameterSets(model))).Append("<br>")
+            .Append("User overrides: ").Append(E(ReportDisclosure.UserOverrides(model))).Append("<br>")
+            .Append("Source data vintages: ").Append(E(ReportDisclosure.SourceVintages(model))).Append("<br>")
             .Append("Candidate: ").Append(model.Scenario.CandidateLatitude.ToString("F6", CultureInfo.InvariantCulture)).Append(", ")
             .Append(model.Scenario.CandidateLongitude.ToString("F6", CultureInfo.InvariantCulture)).Append("<br>")
             .Append("Routing graph hash(es): ").Append(E(string.Join(", ", model.Identity.RoutingGraphHashes))).Append("<br>")
@@ -399,6 +555,26 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
     private static void Metric(StringBuilder html, string label, string value) => html.Append("<div class=\"metric\"><span>").Append(E(label)).Append("</span><strong>").Append(E(value)).Append("</strong></div>");
     private static void TwoColumnTable(StringBuilder html, IEnumerable<(string Label, string Value)> rows) =>
         Table(html, ["Measure", "Value"], rows.Select(row => new[] { row.Label, row.Value }));
+
+    private static void BarChart(StringBuilder html, string title, IEnumerable<(string Label, decimal Value)> rows)
+    {
+        var values = rows.ToArray();
+        if (values.Length == 0)
+        {
+            return;
+        }
+        var maximum = values.Max(row => Math.Abs(row.Value));
+        html.Append("<div class=\"chart\"><strong>").Append(E(title)).Append("</strong>");
+        foreach (var row in values)
+        {
+            var width = maximum == 0 ? 0 : Math.Abs(row.Value) / maximum * 100;
+            html.Append("<div class=\"chart-row\"><span>").Append(E(row.Label))
+                .Append("</span><div class=\"chart-track\"><div class=\"chart-bar\" style=\"width:")
+                .Append(width.ToString("F2", CultureInfo.InvariantCulture)).Append("%\"></div></div><span class=\"chart-value\">")
+                .Append(E(Money(row.Value))).Append("</span></div>");
+        }
+        html.Append("</div>");
+    }
 
     private static void Table(StringBuilder html, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
     {
@@ -436,6 +612,7 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
     public byte[] Render(CasinoImpactReportModel model, ReportPresentationOptions options)
     {
         var title = options.Title ?? $"Casino Revenue and Economic-Impact Analysis — {model.Scenario.Name}";
+        var warningDigest = ReportDisclosure.DigestWarnings(model.Warnings);
         var document = Document.Create(container =>
         {
             container.Page(page =>
@@ -481,10 +658,20 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         ("Net host-local impact", model.NetImpact is null ? "Not available" : Money(model.NetImpact.NetHostLocalImpact)),
                         ("Net host-state impact", model.NetImpact is null ? "Not available" : Money(model.NetImpact.NetHostStateImpact))
                     ]);
-                    foreach (var warning in model.Warnings)
+                    if (model.Warnings.Count > 0)
                     {
                         column.Item().BorderLeft(3).BorderColor(Colors.Orange.Darken2).Background(Colors.Orange.Lighten5)
-                            .Padding(6).Text(warning).FontSize(8);
+                            .Padding(6).Text(warningDigest.Summary).SemiBold().FontSize(8);
+                        foreach (var warning in warningDigest.DecisionWarnings.Take(6))
+                        {
+                            column.Item().BorderLeft(3).BorderColor(Colors.Orange.Darken2).Background(Colors.Orange.Lighten5)
+                                .Padding(6).Text(warning).FontSize(8);
+                        }
+                        if (warningDigest.DecisionWarnings.Count > 6)
+                        {
+                            column.Item().Text($"{warningDigest.DecisionWarnings.Count - 6:N0} additional decision-use warning(s) are listed in the methodology disclosure.")
+                                .FontSize(8).Italic().FontColor(Colors.Grey.Darken1);
+                        }
                     }
 
                     Heading(column, "Proposed development and site");
@@ -500,6 +687,47 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         ("Origin / report geography", $"{model.Scenario.ComputationalOriginType} / {model.Scenario.ImpactScopeKind}:{model.Scenario.ImpactScopeCode}")
                     ]);
 
+                    Heading(column, "Study area and market definition");
+                    KeyValues(column,
+                    [
+                        ("Impact scope", $"{model.Scenario.ImpactScopeKind}: {model.Scenario.ImpactScopeCode}"),
+                        ("Computational origin type", model.Scenario.ComputationalOriginType),
+                        ("Modeled origins", model.Origins.Count.ToString("N0")),
+                        ("States / counties represented", $"{model.OriginStates.Count:N0} / {model.OriginCounties.Count:N0}"),
+                        ("Competitive facilities", model.Facilities.Count.ToString("N0"))
+                    ]);
+
+                    Heading(column, "Demographics, eligible population, and income");
+                    column.Item().Text("Eligible population and income are resolved by the stored demand specification and pinned source snapshots. The renderer reports the resulting resident gaming-demand base without re-estimating it.")
+                        .FontSize(8);
+                    KeyValues(column,
+                    [
+                        ("Demand specification", model.Scenario.DemandSpecification),
+                        ("Resident demand represented", Money(model.Revenue.TotalResidentDemand)),
+                        ("Origin records", model.Origins.Count.ToString("N0")),
+                        ("Pinned dataset snapshots", model.DataSources.Count.ToString("N0"))
+                    ]);
+
+                    Heading(column, "Competitive gaming supply");
+                    SimpleTable(column,
+                        ["Facility", "Kind", "Proposed", "Attraction", "Baseline resident GGR"],
+                        model.Facilities.Select(row => new[]
+                        {
+                            row.FacilityName, row.FacilityKind, row.IsProposedFacility ? "Yes" : "No",
+                            row.NormalizedAttraction.ToString("G7"), Money(row.BaselineResidentGgr)
+                        }));
+
+                    Heading(column, "Gravity model methodology");
+                    column.Item().Text("The finalized run allocates each origin's stored demand among incumbent facilities, the proposed facility, and the outside option using routed travel impedance and normalized facility attraction. Baseline and with-project systems are solved separately; this report reads their persisted allocations.")
+                        .FontSize(8);
+                    KeyValues(column,
+                    [
+                        ("Demand / attraction", $"{model.Scenario.DemandSpecification} / {model.Scenario.AttractionSpecification}"),
+                        ("Travel-friction form", model.Scenario.FrictionForm),
+                        ("Routing graph hash(es)", string.Join(", ", model.Identity.RoutingGraphHashes)),
+                        ("Costing profile(s)", string.Join(", ", model.Identity.CostingProfiles))
+                    ]);
+
                     Heading(column, "Gaming revenue projection");
                     KeyValues(column,
                     [
@@ -509,6 +737,13 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         ("Tourism GGR", Money(model.Revenue.TourismGgr)),
                         ("Through-traffic GGR", Money(model.Revenue.TrafficGgr)),
                         ("Stabilized total GGR", Money(model.Revenue.StabilizedTotalGgr))
+                    ]);
+                    BarChart(column, "Stabilized GGR composition",
+                    [
+                        ("Redistributed resident", model.Revenue.RedistributedResidentGgr),
+                        ("Accessibility-induced", model.Revenue.InducedResidentGgr),
+                        ("Tourism", model.Revenue.TourismGgr),
+                        ("Through-traffic", model.Revenue.TrafficGgr)
                     ]);
                     SimpleTable(column,
                         ["Year", "Operating year", "Ramp", "Projected GGR"],
@@ -526,6 +761,8 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                             row.GeographyCode, row.OriginCount.ToString(), Money(row.TotalProposedResidentGgr),
                             row.ShareOfProposedResidentGgr.ToString("P1")
                         }));
+                    BarChart(column, "State / territory origin contribution",
+                        model.OriginStates.Take(12).Select(row => (row.GeographyCode, row.TotalProposedResidentGgr)));
                     column.Item().Text("County/parish composition").SemiBold();
                     SimpleTable(column,
                         ["County/parish", "Origins", "Resident GGR", "Share"],
@@ -551,6 +788,40 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                             row.FacilityName, row.IsProposedFacility ? "Proposed" : "Incumbent",
                             Money(row.BaselineResidentGgr), Money(row.WithProjectResidentGgr), Money(row.ChangeInResidentGgr)
                         }));
+                    BarChart(column, "Baseline vs with-project resident GGR",
+                        model.Facilities.Where(row => !row.IsProposedFacility)
+                            .SelectMany(row => new[]
+                            {
+                                ($"{row.FacilityName} — baseline", row.BaselineResidentGgr),
+                                ($"{row.FacilityName} — with project", row.WithProjectResidentGgr)
+                            }));
+
+                    Heading(column, "Tourism and through-traffic demand");
+                    KeyValues(column,
+                    [
+                        ("Tourism GGR", Money(model.Revenue.TourismGgr)),
+                        ("Through-traffic GGR", Money(model.Revenue.TrafficGgr)),
+                        ("Stored demand components", model.DemandComponents.Count(component =>
+                            component.ComponentType.Contains("tour", StringComparison.OrdinalIgnoreCase) ||
+                            component.ComponentType.Contains("traffic", StringComparison.OrdinalIgnoreCase)).ToString("N0"))
+                    ]);
+
+                    Heading(column, "Repatriation and cross-jurisdiction capture");
+                    if (model.GeographicAccounting is not null)
+                    {
+                        KeyValues(column,
+                        [
+                            ("Host-jurisdiction cannibalization", Money(model.GeographicAccounting.HostJurisdictionCannibalization)),
+                            ("Cross-jurisdiction capture", Money(model.GeographicAccounting.CrossJurisdictionCapture)),
+                            ("Outside / unmodeled leakage capture", Money(model.GeographicAccounting.OutsideOrUnmodeledLeakageCapture)),
+                            ("Transfer-effect GGR", Money(model.GeographicAccounting.TransferEffectGgr)),
+                            ("Market expansion and imported GGR", Money(model.GeographicAccounting.MarketExpansionAndImportGgr))
+                        ]);
+                    }
+                    else
+                    {
+                        column.Item().Text("Geographic accounting was not stored for this run.").Italic().FontSize(8);
+                    }
 
                     Heading(column, "Local spending displacement");
                     SimpleTable(column,
@@ -560,8 +831,10 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                             row.SectorKey, row.NormalizedWeight.ToString("P1"), Money(row.DisplacedSales),
                             Money(row.SalesTaxLoss + row.BusinessIncomeTaxLoss), row.DisplacedJobs.ToString("N2")
                         }));
+                    BarChart(column, "Displaced local sales by sector",
+                        model.SectorDisplacement.Select(row => (row.SectorKey, row.DisplacedSales)));
 
-                    Heading(column, "Employment and fiscal impact");
+                    Heading(column, "Employment and labor-market effects");
                     if (model.Employment is not null)
                     {
                         KeyValues(column,
@@ -572,6 +845,7 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                             ("Net permanent jobs", model.Employment.NetPermanentJobs.ToString("N1"))
                         ]);
                     }
+                    Heading(column, "Fiscal impact");
                     if (model.Fiscal is not null)
                     {
                         KeyValues(column,
@@ -643,7 +917,17 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                     {
                         column.Item().PaddingLeft(8).Text("• " + limitation).FontSize(8);
                     }
+                    if (model.Warnings.Count > 0)
+                    {
+                        column.Item().Text("Complete decision-use warning disclosure").SemiBold();
+                        column.Item().Text(warningDigest.Summary).FontSize(8);
+                        foreach (var warning in warningDigest.DecisionWarnings)
+                        {
+                            column.Item().PaddingLeft(8).Text("• " + warning).FontSize(8);
+                        }
+                    }
 
+                    Heading(column, "Technical appendices");
                     Heading(column, "Parameter and override appendix");
                     SimpleTable(column,
                         ["Parameter", "Default", "Override", "Final", "Source / warning"],
@@ -667,9 +951,15 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         ("Model version", model.Identity.ModelVersion),
                         ("Report template", model.Identity.TemplateVersion),
                         ("Run UUID", model.Identity.ModelRunId.ToString()),
-                        ("Jurisdiction", model.Identity.JurisdictionCode),
+                        ("Generated timestamp", model.Identity.GeneratedAtUtc.ToString("O", CultureInfo.InvariantCulture)),
+                        ("Run created / finalized", $"{model.Identity.RunCreatedAtUtc:O} / {model.Identity.RunFinalizedAtUtc:O}"),
+                        ("Jurisdiction profile/version", $"{model.Identity.JurisdictionCode} / {model.Identity.JurisdictionProfileVersion}"),
+                        ("Parameter-set version(s)", ReportDisclosure.ParameterSets(model)),
+                        ("User overrides", ReportDisclosure.UserOverrides(model)),
+                        ("Source data vintages", ReportDisclosure.SourceVintages(model)),
                         ("Route graph hash(es)", string.Join(", ", model.Identity.RoutingGraphHashes)),
                         ("Costing profile(s)", string.Join(", ", model.Identity.CostingProfiles)),
+                        ("Candidate coordinates", $"{model.Scenario.CandidateLatitude:F6}, {model.Scenario.CandidateLongitude:F6}"),
                         ("Development program", $"{model.DevelopmentProgram.StableProgramId}@{model.DevelopmentProgram.Version}"),
                         ("Sensitivity analysis", model.Sensitivity?.SensitivityAnalysisId.ToString() ?? "Not included")
                     ]);
@@ -688,6 +978,34 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
 
     private static void KeyValues(ColumnDescriptor column, IReadOnlyCollection<(string Label, string Value)> values) =>
         SimpleTable(column, ["Measure", "Value"], values.Select(value => new[] { value.Label, value.Value }));
+
+    private static void BarChart(ColumnDescriptor column, string title, IEnumerable<(string Label, decimal Value)> rows)
+    {
+        var values = rows.ToArray();
+        if (values.Length == 0)
+        {
+            return;
+        }
+        var maximum = values.Max(row => Math.Abs(row.Value));
+        column.Item().Text(title).SemiBold().FontSize(8);
+        foreach (var rowValue in values)
+        {
+            var ratio = maximum == 0 ? 0 : Convert.ToSingle(Math.Abs(rowValue.Value) / maximum);
+            column.Item().Row(row =>
+            {
+                row.ConstantItem(135).Text(rowValue.Label).FontSize(7);
+                row.ConstantItem(210).Height(8).Layers(layers =>
+                {
+                    layers.PrimaryLayer().Background(Colors.BlueGrey.Lighten4);
+                    if (ratio > 0)
+                    {
+                        layers.Layer().Width(210 * ratio).Background(Colors.Blue.Darken1);
+                    }
+                });
+                row.RelativeItem().AlignRight().Text(Money(rowValue.Value)).FontSize(7).SemiBold();
+            });
+        }
+    }
 
     private static void SimpleTable(
         ColumnDescriptor column,

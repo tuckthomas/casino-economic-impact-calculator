@@ -3,7 +3,10 @@
 // Copyright (C) 2026 Save Fort Wayne Contributors & Model Authors
 // Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
 
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Data.Entities;
@@ -51,6 +54,7 @@ public sealed record ReportIdentity(
     DateTime RunFinalizedAtUtc,
     string JurisdictionCode,
     string JurisdictionName,
+    string JurisdictionProfileVersion,
     IReadOnlyList<string> RoutingGraphHashes,
     IReadOnlyList<string> CostingProfiles);
 
@@ -341,6 +345,10 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
         }
         var jurisdiction = await db.Jurisdictions.AsNoTracking()
             .SingleAsync(item => item.Id == run.JurisdictionId, cancellationToken);
+        var jurisdictionProfileVersion = await BuildJurisdictionProfileVersionAsync(
+            jurisdiction,
+            DateOnly.FromDateTime(run.FinalizedAtUtc.Value),
+            cancellationToken);
         var program = await db.DevelopmentPrograms.AsNoTracking()
             .SingleAsync(item => item.Id == run.DevelopmentProgramId, cancellationToken);
         var proposed = await db.ModelRunFacilityResults.AsNoTracking()
@@ -686,6 +694,7 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
                 run.FinalizedAtUtc.Value,
                 jurisdiction.Code,
                 jurisdiction.Name,
+                jurisdictionProfileVersion,
                 routeMetadata.Select(item => item.RoutingGraphHash).Distinct().Order().ToArray(),
                 routeMetadata.Select(item => item.CostingProfile).Distinct().Order().ToArray()),
             new ReportScenario(
@@ -778,7 +787,56 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
     private static IReadOnlyList<string> ParseWarnings(string? warningSummary) =>
         string.IsNullOrWhiteSpace(warningSummary)
             ? []
-            : warningSummary.Split(['\r', '\n', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            : Regex.Split(warningSummary, @"(?:\r?\n|;|(?<=\.)\s+(?=[A-Z]))")
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .ToArray();
+
+    private async Task<string> BuildJurisdictionProfileVersionAsync(
+        Jurisdiction jurisdiction,
+        DateOnly effectiveOn,
+        CancellationToken cancellationToken)
+    {
+        var jurisdictionIds = new List<int>();
+        var current = jurisdiction;
+        var visited = new HashSet<int>();
+        while (visited.Add(current.Id))
+        {
+            jurisdictionIds.Add(current.Id);
+            if (current.ParentJurisdictionId is not { } parentId)
+            {
+                break;
+            }
+
+            current = await db.Jurisdictions.AsNoTracking()
+                .SingleAsync(item => item.Id == parentId, cancellationToken);
+        }
+
+        var rules = await db.JurisdictionRules.AsNoTracking()
+            .Where(rule => jurisdictionIds.Contains(rule.JurisdictionId) &&
+                           rule.EffectiveFrom <= effectiveOn &&
+                           (rule.EffectiveTo == null || rule.EffectiveTo >= effectiveOn))
+            .OrderBy(rule => rule.JurisdictionId)
+            .ThenBy(rule => rule.RuleType)
+            .ThenBy(rule => rule.Id)
+            .Select(rule => new
+            {
+                rule.Id,
+                rule.JurisdictionId,
+                rule.RuleType,
+                rule.RuleValueJson,
+                rule.ValidationState,
+                rule.EffectiveFrom,
+                rule.EffectiveTo,
+                rule.SourceUrl
+            })
+            .ToListAsync(cancellationToken);
+        var fingerprint = string.Join('\n', rules.Select(rule =>
+            $"{rule.JurisdictionId}|{rule.Id}|{rule.RuleType}|{rule.ValidationState}|{rule.EffectiveFrom:yyyy-MM-dd}|{rule.EffectiveTo:yyyy-MM-dd}|{rule.RuleValueJson}|{rule.SourceUrl}"));
+        var hashInput = $"{jurisdiction.Code}|{effectiveOn:yyyy-MM-dd}|{fingerprint}";
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(hashInput))).ToLowerInvariant();
+        return $"effective-rules@{effectiveOn:yyyy-MM-dd}#{hash[..16]}";
+    }
 
     private static ResolvedScenario ParseResolvedInput(string json)
     {
@@ -791,10 +849,23 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
             ReadString(root, "frictionForm", "unknown"));
     }
 
-    private static string ReadString(JsonElement root, string property, string fallback) =>
-        root.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String
-            ? value.GetString() ?? fallback
-            : fallback;
+    private static string ReadString(JsonElement root, string property, string fallback)
+    {
+        if (root.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String)
+        {
+            return value.GetString() ?? fallback;
+        }
+
+        foreach (var candidate in root.EnumerateObject())
+        {
+            if (candidate.Name.Equals(property, StringComparison.OrdinalIgnoreCase) &&
+                candidate.Value.ValueKind == JsonValueKind.String)
+            {
+                return candidate.Value.GetString() ?? fallback;
+            }
+        }
+        return fallback;
+    }
 
     private sealed record ResolvedScenario(
         string ScenarioName,

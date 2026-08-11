@@ -2,7 +2,7 @@
 
 ## Governing AI Agent Implementation Checklist
 
-> **Status:** In Progress — Foundation committed (commits `f30229d`, `0846e71`). Core services, entity schema, migrations, selected authoritative providers, validation/calibration infrastructure, the stored-run web workbench, scenario comparison, and deterministic server-side HTML/PDF/CSV report rendering are implemented. National provider coverage, production-quality calibration/holdouts, benchmark reconciliation, and publication-quality report content remain pending.
+> **Status:** In Progress — Foundation committed (commits `f30229d`, `0846e71`). Core services, entity schema, migrations, selected authoritative providers, validation/calibration infrastructure, the stored-run web workbench, scenario comparison, and deterministic server-side HTML/PDF/CSV report rendering are implemented. National provider coverage, production-quality calibration/holdouts, benchmark reconciliation, and map/waterfall report exhibits remain pending.
 >
 > **Primary objective:** Build a transparent, empirically calibrated, nationally reusable casino gravity and economic-impact engine that can evaluate a proposed casino or major gaming development anywhere in the United States. The engine must estimate site-specific gaming revenue, patron origins, market expansion, cannibalization, repatriation/leakage, tourism and through-traffic demand, sector displacement, fiscal effects, employment effects, and downstream social/economic costs. The same immutable model run must power the interactive web application, APIs, sensitivity analysis, and a server-generated full analytical report comparable in structure and rigor to professional casino feasibility and impact studies.
 >
@@ -26,6 +26,7 @@
 > - **SUCCESS:** A checksum-pinned release artifact (`b8d9ad80e87363158a762974260320401090d3dd856459ecd57c641f2b48e3ef`) booted against a fresh disposable VPS PostGIS database after all model migrations and catalog seeding. The in-app browser created and selected an immutable 2,000-slot/50-table/200-room development program, exposed standard and advanced parameter metadata, rejected an incompatible versioned scenario document, and successfully restored a valid sealed-snapshot scenario.
 > - **SUCCESS:** The same browser workbench submitted two finalized runs through the authoritative backend and persisted live Valhalla routes (2.23 minutes/1,445 meters to the proposed facility; 110.7 minutes/165,232 meters to the incumbent). Beta `1.55` produced $1,012,625 stabilized GGR; allowed-but-warned beta `1.7` produced $869,000. The generated report JSON preserved `gravity.beta = 1.7` and the exact validated-range warning, while immutable comparison rendered both runs alongside the integration baseline.
 > - **SUCCESS:** A follow-up checksum-pinned artifact (`b376e1de0ba8dc30da238b0ecfbfc833fa3df183e545b270ef1e9d1b09c1c5b7`) exposed source names and checksum prefixes on sealed-snapshot choices and loaded dynamic result detail from the stored-run APIs. Browser verification rendered origin `USA-ZCTA-46802` with $7,260,000 resident demand and $1,064,683 proposed GGR, plus incumbent `USA-IN-SOUTH-BEND-SMOKE` changing from $6,145 baseline resident GGR to $5,243 with project (-$901), without a separate calculation path.
+> - **SUCCESS:** Report template `professional-v3` was generated from the same finalized browser run as immutable artifact `41c3076e-b968-40cd-a7c4-0d25fea03d1f` with PDF SHA-256 `c59583ba35094e22e1b70b3e98bd9d9a14dc0398bb27edf77ee36677fcb1f16a`. Poppler rendered all 12 letter-size pages for visual inspection. The report correctly discloses the stored `agi-share`, `observed-ggr`, and `inverse-power` specifications despite production input JSON casing. The executive warning flood is compressed from 93 raw warnings (84 parameter-calibration notices) into a concise disclosure plus decision-use warnings; exact warnings remain in JSON and the parameter appendix. The report adds data-backed revenue-composition, origin-contribution, competitor-impact, and sector-displacement charts and a complete replay appendix containing the jurisdiction effective-rule fingerprint, parameter sets, overrides, source vintages, Valhalla graph hash/costing profile, site, program, run timestamps, and generation timestamp.
 > - Update this checklist immediately after every verified implementation tranche, including the evidence used to justify each newly completed item and any failed quality gate that keeps an item open.
 
 ---
@@ -1260,33 +1261,33 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
 
 - [x] The report must adapt to the selected geography and jurisdiction.
 - [x] Do not hard-code Indiana-specific section labels unless the active run is Indiana.
-- [ ] Recommended major sections:
-  - [ ] Executive Summary;
-  - [ ] Proposed Development and Site;
-  - [ ] Study Area and Market Definition;
-  - [ ] Demographics, Eligible Population, and Income;
-  - [ ] Competitive Gaming Supply;
-  - [ ] Gravity Model Methodology;
-  - [ ] Gaming Revenue Projection;
-  - [ ] Patron Origin Analysis;
-  - [ ] Tourism and Through-Traffic Demand;
-  - [ ] Competitive Impact and Cannibalization;
-  - [ ] Repatriation / Cross-Jurisdiction Capture;
-  - [ ] Local Spending Displacement;
-  - [ ] Employment and Labor-Market Effects;
-  - [ ] Fiscal Impact;
-  - [ ] Social and Downstream Economic Costs;
-  - [ ] Net Economic Impact;
-  - [ ] Sensitivity and Scenario Analysis;
-  - [ ] Benchmark/Comparable Study Reconciliation where configured;
-  - [ ] Methodology and Limitations;
-  - [ ] Data Sources;
-  - [ ] Model Parameters and Overrides;
-  - [ ] Technical Appendices.
+- [x] Recommended major sections:
+  - [x] Executive Summary;
+  - [x] Proposed Development and Site;
+  - [x] Study Area and Market Definition;
+  - [x] Demographics, Eligible Population, and Income;
+  - [x] Competitive Gaming Supply;
+  - [x] Gravity Model Methodology;
+  - [x] Gaming Revenue Projection;
+  - [x] Patron Origin Analysis;
+  - [x] Tourism and Through-Traffic Demand;
+  - [x] Competitive Impact and Cannibalization;
+  - [x] Repatriation / Cross-Jurisdiction Capture;
+  - [x] Local Spending Displacement;
+  - [x] Employment and Labor-Market Effects;
+  - [x] Fiscal Impact;
+  - [x] Social and Downstream Economic Costs;
+  - [x] Net Economic Impact;
+  - [x] Sensitivity and Scenario Analysis;
+  - [x] Benchmark/Comparable Study Reconciliation where configured;
+  - [x] Methodology and Limitations;
+  - [x] Data Sources;
+  - [x] Model Parameters and Overrides;
+  - [x] Technical Appendices.
 
 ## 29.4 Dynamic patron-origin section
 
-- [ ] Build origin tables/charts from actual contribution data. *(Dynamic tables are implemented; origin charts remain pending.)*
+- [x] Build origin tables/charts from actual contribution data.
 - [x] Report top contributing counties/parishes dynamically.
 - [x] Report state/territory composition dynamically.
 - [x] Show host jurisdiction vs external capture dynamically.
@@ -1312,31 +1313,31 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
   - [ ] travel-time/isoline map;
   - [ ] patron-origin choropleth;
   - [ ] revenue composition waterfall;
-  - [ ] baseline vs with-project competitor GGR;
-  - [ ] county/state origin contribution chart;
-  - [ ] ramp-up table;
-  - [ ] displacement by sector;
-  - [ ] fiscal bridge;
+  - [x] baseline vs with-project competitor GGR;
+  - [x] county/state origin contribution chart;
+  - [x] ramp-up table;
+  - [x] displacement by sector;
+  - [x] fiscal bridge;
   - [ ] social-cost bridge;
   - [ ] net-impact waterfall;
   - [ ] sensitivity tornado/spider chart;
-  - [ ] benchmark comparison table.
-- [ ] Preserve exact numeric source values behind every exhibit.
+  - [x] benchmark comparison table.
+- [x] Preserve exact numeric source values behind every exhibit.
 
 ## 29.7 Report reproducibility statement
 
-- [ ] Include a technical appendix containing:
-  - [ ] model version;
-  - [ ] report-template version;
-  - [ ] run UUID;
-  - [ ] jurisdiction profile/version;
-  - [ ] parameter-set version;
-  - [ ] user overrides;
-  - [ ] source data vintages;
-  - [ ] route graph hash/version;
-  - [ ] candidate coordinates;
-  - [ ] development program;
-  - [ ] generated timestamp.
+- [x] Include a technical appendix containing:
+  - [x] model version;
+  - [x] report-template version;
+  - [x] run UUID;
+  - [x] jurisdiction profile/version;
+  - [x] parameter-set version;
+  - [x] user overrides;
+  - [x] source data vintages;
+  - [x] route graph hash/version;
+  - [x] candidate coordinates;
+  - [x] development program;
+  - [x] generated timestamp.
 
 ---
 

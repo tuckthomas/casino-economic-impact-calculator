@@ -23,6 +23,12 @@ public sealed class ReportRendererTests
         Assert.Contains("One-at-a-time sensitivity", first, StringComparison.Ordinal);
         Assert.Contains("County/parish composition", first, StringComparison.Ordinal);
         Assert.Contains("Test sensitivity", first, StringComparison.Ordinal);
+        Assert.Contains("2 parameter calibration notice(s) and 1 other disclosed warning(s)", first, StringComparison.Ordinal);
+        Assert.DoesNotContain("First parameter does not have a completed calibration designation.", first, StringComparison.Ordinal);
+        Assert.Contains("Jurisdiction profile/version", first, StringComparison.Ordinal);
+        Assert.Contains("effective-rules@2026-08-09#test", first, StringComparison.Ordinal);
+        Assert.Contains("User overrides: gravity.beta=1.6 exponent", first, StringComparison.Ordinal);
+        Assert.Contains("Stabilized GGR composition", first, StringComparison.Ordinal);
         Assert.DoesNotContain("html2canvas", first, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -59,12 +65,13 @@ public sealed class ReportRendererTests
             Identity: new ReportIdentity(
                 runId,
                 "gravity-v1",
-                "professional-v1",
+                "professional-v3",
                 new DateTime(2026, 8, 9, 12, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 8, 9, 11, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 8, 9, 11, 1, 0, DateTimeKind.Utc),
                 "US-IN",
                 "Indiana",
+                "effective-rules@2026-08-09#test",
                 ["graph-hash"],
                 ["auto"]),
             Scenario: new ReportScenario(
@@ -151,7 +158,12 @@ public sealed class ReportRendererTests
                     Guid.Parse("10000000-0000-0000-0000-000000000002"),
                     360_000, 383_000, 410_000, -23_000, 27_000, 50_000)]),
             Benchmarks: [],
-            Warnings: ["Test warning"],
+            Warnings:
+            [
+                "First parameter does not have a completed calibration designation.",
+                "Second parameter does not have a completed calibration designation.",
+                "Test warning"
+            ],
             Limitations: ["Test limitation"]);
     }
 }

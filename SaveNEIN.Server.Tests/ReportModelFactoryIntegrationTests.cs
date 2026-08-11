@@ -30,6 +30,12 @@ public sealed class ReportModelFactoryIntegrationTests
         Assert.Equal(1_000m, model.OriginCounties.Sum(group => group.TotalProposedResidentGgr));
         Assert.Equal(1d, model.OriginStates.Sum(group => group.ShareOfProposedResidentGgr), 10);
         Assert.Equal("zcta", model.Scenario.ComputationalOriginType);
+        Assert.Equal("Dynamic origin verification", model.Scenario.Name);
+        Assert.Equal("agi-share", model.Scenario.DemandSpecification);
+        Assert.Equal("observed-ggr", model.Scenario.AttractionSpecification);
+        Assert.Equal("inverse-power", model.Scenario.FrictionForm);
+        Assert.StartsWith("effective-rules@2026-08-11#", model.Identity.JurisdictionProfileVersion, StringComparison.Ordinal);
+        Assert.Equal(["First warning.", "Second warning."], model.Warnings);
 
         var service = new ReportArtifactService(
             db,
@@ -44,6 +50,7 @@ public sealed class ReportModelFactoryIntegrationTests
 
         Assert.Equal(first.Id, second.Id);
         Assert.True(first.IsImmutable);
+        Assert.Equal("professional-v3", first.TemplateVersion);
         Assert.Equal(64, first.ReportModelHash.Length);
         Assert.Equal(64, first.HtmlContentHash.Length);
         Assert.Equal(64, first.PdfContentHash.Length);
@@ -116,13 +123,14 @@ public sealed class ReportModelFactoryIntegrationTests
             FinalizedAtUtc = new DateTime(2026, 8, 11, 10, 1, 0, DateTimeKind.Utc),
             ResolvedInputJson = """
                 {
-                  "scenarioName": "Dynamic origin verification",
-                  "demandSpecification": "agi-share",
-                  "attractionSpecification": "observed-ggr",
-                  "frictionForm": "inverse-power"
+                  "ScenarioName": "Dynamic origin verification",
+                  "DemandSpecification": "agi-share",
+                  "AttractionSpecification": "observed-ggr",
+                  "FrictionForm": "inverse-power"
                 }
                 """,
-            DataSnapshotReferencesJson = "{}"
+            DataSnapshotReferencesJson = "{}",
+            WarningSummary = "First warning. Second warning."
         };
         var originSnapshotId = Guid.Parse("30000000-0000-0000-0000-000000000003");
         var origins = new[]
