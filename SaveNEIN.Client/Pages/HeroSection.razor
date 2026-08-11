@@ -70,18 +70,14 @@
             <div class="hero-slot-shell relative mx-auto z-0 mt-6">
                 <div class="modern-slot-machine" data-slot-machine>
                     <div class="modern-slot-siren" id="siren" aria-hidden="true">
-                        <span class="modern-slot-siren-cap"></span>
-                        <span class="modern-slot-siren-lens"></span>
-                        <span class="modern-slot-siren-base"></span>
+                        <div class="modern-slot-siren-bulb"></div>
+                        <div class="modern-slot-siren-base"></div>
                     </div>
 
                     <div class="modern-slot-upper-display">
                         <div class="modern-slot-screen-glow" aria-hidden="true"></div>
-                        <img class="modern-slot-logo" src="assets/SAVENEIN.svg" alt="Save Northeast Indiana" />
-                        <div class="modern-slot-screen-copy">
-                            <span class="modern-slot-screen-kicker">Community Outcome</span>
-                            <output class="modern-slot-status" id="slot-status" aria-live="polite">READY</output>
-                        </div>
+                        <img class="modern-slot-logo" src="assets/SaveNEIN_SVG_Dark_Mode_Small.svg" alt="Save Northeast Indiana" />
+                        <output class="modern-slot-status sr-only" id="slot-status" aria-live="polite">READY</output>
                     </div>
 
                     <div class="modern-slot-reel-housing">
@@ -90,13 +86,15 @@
                             @for (var column = 0; column < 3; column++)
                             {
                                 <div class="modern-slot-column" data-slot-column="@column">
-                                    @for (var row = 0; row < 3; row++)
-                                    {
-                                        <div class="modern-slot-cell" data-slot-row="@row">
-                                            <span class="material-symbols-outlined modern-slot-cell-icon" aria-hidden="true">star</span>
-                                            <span class="modern-slot-cell-label">WORLD-CLASS DESTINATION</span>
-                                        </div>
-                                    }
+                                    <div class="modern-slot-reel-strip" data-slot-strip="@column">
+                                        @for (var row = 0; row < 3; row++)
+                                        {
+                                            <div class="modern-slot-cell" data-slot-row="@row">
+                                                <span class="material-symbols-outlined modern-slot-cell-icon" aria-hidden="true">star</span>
+                                                <span class="modern-slot-cell-label">WORLD-CLASS DESTINATION</span>
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
                             }
                         </div>
@@ -105,13 +103,11 @@
 
                     <div class="modern-slot-control-deck">
                         <button class="modern-slot-coin-insert" id="slot-coin-insert" type="button" aria-label="Insert coin to add one credit">
-                            <span class="modern-slot-coin-led" aria-hidden="true"></span>
                             <span class="modern-slot-coin-slot" aria-hidden="true"></span>
                             <span class="modern-slot-coin-copy">
                                 <strong>25¢</strong>
                                 <span>INSERT COIN</span>
                             </span>
-                            <span class="modern-slot-coin-disc" aria-hidden="true">25¢</span>
                         </button>
 
                         <button class="modern-slot-spin-button" id="slot-spin-button" type="button">SPIN</button>
@@ -119,7 +115,6 @@
                         <div class="modern-slot-credit-bay" aria-label="Machine credits">
                             <span class="modern-slot-credit-label">CREDITS</span>
                             <output class="modern-slot-credit-value" id="credit-display">02</output>
-                            <span class="modern-slot-return-slot" aria-hidden="true"></span>
                         </div>
                     </div>
                 </div>

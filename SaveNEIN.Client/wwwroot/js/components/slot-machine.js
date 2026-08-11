@@ -330,35 +330,51 @@ window.SlotMachine = (function ()
         });
     }
 
-    function getColumnElement(index)
+    function createCellElement(tile, row)
     {
-        return document.querySelector(`[data-slot-column="${index}"]`);
-    }
-
-    function renderTile(cell, tile)
-    {
-        if (!cell || !tile) return;
-        cell.classList.toggle('is-truth', tile.type === 'truth');
-        cell.classList.toggle('is-near-miss', tile.type === 'near-miss');
+        const cell = document.createElement('div');
+        cell.className = 'modern-slot-cell' + (tile.type === 'truth' ? ' is-truth' : (tile.type === 'near-miss' ? ' is-near-miss' : ''));
+        if (typeof row === 'number') cell.dataset.slotRow = String(row);
         cell.dataset.slotType = tile.type;
 
-        const icon = cell.querySelector('.modern-slot-cell-icon');
-        const label = cell.querySelector('.modern-slot-cell-label');
-        if (icon) icon.textContent = tile.icon;
-        if (label) label.textContent = tile.label;
+        const icon = document.createElement('span');
+        icon.className = 'material-symbols-outlined modern-slot-cell-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = tile.icon || (tile.type === 'truth' ? 'warning' : 'star');
+
+        const label = document.createElement('span');
+        label.className = 'modern-slot-cell-label';
+        label.textContent = tile.label;
+
+        cell.appendChild(icon);
+        cell.appendChild(label);
+        return cell;
     }
 
-    function renderColumn(index, column)
+    function getStripElement(index)
     {
-        const element = getColumnElement(index);
-        if (!element) return;
-        const cells = Array.from(element.querySelectorAll('.modern-slot-cell'));
-        column.forEach((tile, row) => renderTile(cells[row], tile));
+        return document.querySelector(`[data-slot-strip="${index}"]`) ||
+               document.querySelector(`[data-slot-column="${index}"] .modern-slot-reel-strip`) ||
+               document.querySelector(`[data-slot-column="${index}"]`);
+    }
+
+    function renderColumnStrip(index, columnTiles)
+    {
+        const strip = getStripElement(index);
+        if (!strip) return;
+
+        strip.innerHTML = '';
+        strip.style.transition = 'none';
+        strip.style.transform = 'translate3d(0, 0, 0)';
+        columnTiles.forEach((tile, row) =>
+        {
+            strip.appendChild(createCellElement(tile, row));
+        });
     }
 
     function renderAllColumns(columns)
     {
-        columns.forEach((column, index) => renderColumn(index, column));
+        columns.forEach((column, index) => renderColumnStrip(index, column));
     }
 
     function updateCreditDisplay()
@@ -443,21 +459,12 @@ window.SlotMachine = (function ()
         }, 2800);
     }
 
-    function buildRollingColumn()
-    {
-        return [
-            outcome(randomBait(), 'near-miss'),
-            Math.random() > 0.68 ? outcome(randomTruth(), 'truth') : outcome(randomBait(), 'bait'),
-            outcome(randomBait(), 'near-miss')
-        ];
-    }
-
-    function animateColumn(index, finalColumn, duration)
+    function animateReelStrip(index, finalColumn, duration, intermediateCount)
     {
         return new Promise((resolve) =>
         {
-            const element = getColumnElement(index);
-            if (!element)
+            const strip = getStripElement(index);
+            if (!strip)
             {
                 resolve();
                 return;
@@ -465,24 +472,48 @@ window.SlotMachine = (function ()
 
             if (!canAnimate())
             {
-                renderColumn(index, finalColumn);
+                renderColumnStrip(index, finalColumn);
+                state.columns[index] = finalColumn;
                 resolve();
                 return;
             }
 
-            element.classList.add('is-rolling');
-            const timer = setInterval(() =>
+            const currentTiles = state.columns[index] || createInitialColumns()[index];
+            const intermediateTiles = [];
+            for (let i = 0; i < intermediateCount; i++)
             {
-                if (canAnimate()) renderColumn(index, buildRollingColumn());
-            }, 84);
+                const isTruth = Math.random() > 0.55;
+                intermediateTiles.push(isTruth ? outcome(randomTruth(), 'truth') : outcome(randomBait(), 'near-miss'));
+            }
+            const allTiles = [...finalColumn, ...intermediateTiles, ...currentTiles];
+
+            strip.innerHTML = '';
+            allTiles.forEach((tile, i) =>
+            {
+                const isTargetRow = i < 3 ? i : (i >= allTiles.length - 3 ? i - (allTiles.length - 3) : undefined);
+                strip.appendChild(createCellElement(tile, isTargetRow));
+            });
+
+            const firstCell = strip.children[0];
+            const cellRect = firstCell ? firstCell.getBoundingClientRect() : null;
+            const cellHeight = (cellRect && cellRect.height > 0) ? cellRect.height : (firstCell ? firstCell.offsetHeight : 90);
+            const gap = 2;
+            const step = cellHeight + gap;
+            const scrollDistance = (allTiles.length - 3) * step;
+
+            strip.style.transition = 'none';
+            strip.style.transform = `translate3d(0, -${scrollDistance}px, 0)`;
+            strip.classList.add('is-spinning-strip');
+            strip.offsetHeight;
+
+            strip.style.transition = `transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`;
+            strip.style.transform = 'translate3d(0, 0, 0)';
 
             setTimeout(() =>
             {
-                clearInterval(timer);
-                renderColumn(index, finalColumn);
-                element.classList.remove('is-rolling');
-                element.classList.add('is-settling');
-                setTimeout(() => element.classList.remove('is-settling'), 260);
+                strip.classList.remove('is-spinning-strip');
+                renderColumnStrip(index, finalColumn);
+                state.columns[index] = finalColumn;
                 resolve();
             }, duration);
         });
@@ -508,9 +539,14 @@ window.SlotMachine = (function ()
         setStatus('SPINNING');
 
         const finalColumns = createFinalColumns();
-        const baseDuration = prefersReducedMotion() ? 160 : 1280;
+        const reelConfigs = [
+            { duration: prefersReducedMotion() ? 160 : 1250, intermediate: 14 },
+            { duration: prefersReducedMotion() ? 160 : 1900, intermediate: 22 },
+            { duration: prefersReducedMotion() ? 160 : 2550, intermediate: 30 }
+        ];
+
         await Promise.all(finalColumns.map((column, index) =>
-            animateColumn(index, column, baseDuration + (index * (prefersReducedMotion() ? 0 : 220)))));
+            animateReelStrip(index, column, reelConfigs[index].duration, reelConfigs[index].intermediate)));
 
         state.columns = finalColumns;
         state.phase = 'result';
@@ -538,10 +574,80 @@ window.SlotMachine = (function ()
         setStatus('COIN ACCEPTED');
         updateControls();
 
+        const slotEl = document.querySelector('.modern-slot-coin-slot') || document.getElementById('slot-coin-insert');
         const button = document.getElementById('slot-coin-insert');
         if (button) button.classList.add('is-inserting');
+
+        if (!slotEl || prefersReducedMotion())
+        {
+            setTimeout(() =>
+            {
+                state.credits++;
+                updateCreditDisplay();
+                if (button) button.classList.remove('is-inserting', 'is-attention');
+                state.phase = 'idle';
+                setCabinetPhase('idle');
+                setStatus('CREDIT ADDED — READY');
+                updateControls();
+            }, prefersReducedMotion() ? 160 : 600);
+            return;
+        }
+
+        const shell = document.querySelector('.hero-slot-shell') || document.querySelector('.modern-slot-machine') || document.body;
+        const shellRect = shell.getBoundingClientRect();
+
+        const coinW = 24;
+        const left = (rect.left - shellRect.left) + (rect.width / 2) - (coinW / 2);
+        const top = (rect.top - shellRect.top) + (rect.height / 2) - (coinW / 2);
+
+        const scene = document.createElement('div');
+        scene.className = 'modern-coin-scene';
+        scene.style.position = 'absolute';
+        scene.style.left = `${left}px`;
+        scene.style.top = `${top}px`;
+        scene.style.width = `${coinW}px`;
+        scene.style.height = `${coinW}px`;
+        scene.style.zIndex = '99999';
+        scene.style.pointerEvents = 'none';
+        scene.style.perspective = '2000px';
+
+        const coinWrapper = document.createElement('div');
+        coinWrapper.className = 'modern-coin-wrapper anim-insert';
+        coinWrapper.style.position = 'absolute';
+        coinWrapper.style.top = '0';
+        coinWrapper.style.left = '0';
+
+        const isHeads = Math.random() > 0.5;
+
+        for (let i = -2; i <= 2; i++)
+        {
+            const layer = document.createElement('div');
+            layer.className = 'modern-coin-layer';
+
+            let transform = `translateZ(${i * 4}px)`;
+            if (i === -2) transform += ' rotateY(180deg)';
+            layer.style.transform = transform;
+
+            if (Math.abs(i) === 2)
+            {
+                layer.classList.add('modern-coin-face');
+                if (i === 2) layer.classList.add(isHeads ? 'modern-coin-face-front' : 'modern-coin-face-back');
+                if (i === -2) layer.classList.add(isHeads ? 'modern-coin-face-back' : 'modern-coin-face-front');
+            }
+            else
+            {
+                layer.classList.add('modern-coin-edge');
+            }
+
+            coinWrapper.appendChild(layer);
+        }
+
+        scene.appendChild(coinWrapper);
+        shell.appendChild(scene);
+
         setTimeout(() =>
         {
+            if (scene.parentNode) scene.parentNode.removeChild(scene);
             state.credits++;
             updateCreditDisplay();
             if (button) button.classList.remove('is-inserting', 'is-attention');
@@ -549,7 +655,7 @@ window.SlotMachine = (function ()
             setCabinetPhase('idle');
             setStatus('CREDIT ADDED — READY');
             updateControls();
-        }, prefersReducedMotion() ? 160 : 720);
+        }, 1400);
     }
 
     function bindControls()
