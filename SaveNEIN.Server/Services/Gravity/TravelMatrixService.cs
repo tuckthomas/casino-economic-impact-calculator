@@ -3,6 +3,9 @@
 // Copyright (C) 2026 Save Fort Wayne Contributors & Model Authors
 // Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
 
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Data.Entities;
@@ -72,6 +75,65 @@ public sealed class TravelMatrixService(
         var routeByKey = cached.ToDictionary(
             route => (route.OriginZoneId, route.FacilityKey),
             OriginFacilityTravelKeyComparer.Instance);
+        var scenarioFacilities = orderedFacilities
+            .Where(facility => facility.FacilityKind == FacilityKinds.Scenario)
+            .ToArray();
+        var candidateIdentities = scenarioFacilities.ToDictionary(
+            facility => facility.FacilityKey,
+            facility => CandidateIdentity(facility.Latitude, facility.Longitude),
+            StringComparer.OrdinalIgnoreCase);
+        var candidateHashes = candidateIdentities.Values.Select(identity => identity.Hash).Distinct().ToArray();
+        var cachedCandidateRoutes = candidateHashes.Length == 0
+            ? []
+            : await db.CandidateLocationTravelCache
+                .Where(route => originIds.Contains(route.OriginZoneId) &&
+                                candidateHashes.Contains(route.CandidateCoordinateHash) &&
+                                route.RoutingGraphHash == graph.GraphHash &&
+                                route.CostingProfile == costingProfile)
+                .ToListAsync(cancellationToken);
+        var candidateRouteByKey = cachedCandidateRoutes.ToDictionary(
+            route => (route.OriginZoneId, route.CandidateCoordinateHash));
+        var materializedCandidateRoute = false;
+        foreach (var origin in orderedOrigins)
+        {
+            foreach (var facility in scenarioFacilities)
+            {
+                var routeKey = (origin.OriginZoneId, facility.FacilityKey);
+                if (routeByKey.ContainsKey(routeKey))
+                {
+                    continue;
+                }
+
+                var identity = candidateIdentities[facility.FacilityKey];
+                if (!candidateRouteByKey.TryGetValue((origin.OriginZoneId, identity.Hash), out var cachedCandidate) ||
+                    !CoordinatesMatch(cachedCandidate, identity))
+                {
+                    continue;
+                }
+
+                var route = new OriginFacilityTravel
+                {
+                    OriginZoneId = origin.OriginZoneId,
+                    ModelRunId = facility.ModelRunId,
+                    FacilityKey = facility.FacilityKey,
+                    FacilityKind = facility.FacilityKind,
+                    RoutingGraphHash = cachedCandidate.RoutingGraphHash,
+                    CostingProfile = cachedCandidate.CostingProfile,
+                    TravelTimeMinutes = cachedCandidate.TravelTimeMinutes,
+                    RoutedDistanceMeters = cachedCandidate.RoutedDistanceMeters,
+                    RouteFound = cachedCandidate.RouteFound,
+                    RouteFailureReason = cachedCandidate.RouteFailureReason,
+                    CalculatedAtUtc = cachedCandidate.CalculatedAtUtc
+                };
+                db.OriginFacilityTravel.Add(route);
+                routeByKey.Add(routeKey, route);
+                materializedCandidateRoute = true;
+            }
+        }
+        if (materializedCandidateRoute)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
 
         foreach (var originBatch in orderedOrigins.Chunk(SourceBatchSize))
         {
@@ -122,6 +184,34 @@ public sealed class TravelMatrixService(
                     };
                     db.OriginFacilityTravel.Add(route);
                     routeByKey.Add(key, route);
+                    if (facility.FacilityKind == FacilityKinds.Scenario)
+                    {
+                        var identity = candidateIdentities[facility.FacilityKey];
+                        var candidateKey = (origin.OriginZoneId, identity.Hash);
+                        if (!candidateRouteByKey.ContainsKey(candidateKey))
+                        {
+                            var candidateCache = new CandidateLocationTravelCache
+                            {
+                                OriginZoneId = origin.OriginZoneId,
+                                CandidateCoordinateHash = identity.Hash,
+                                CandidateLatitude = identity.Latitude,
+                                CandidateLongitude = identity.Longitude,
+                                RoutingGraphHash = graph.GraphHash,
+                                ValhallaVersion = graph.ValhallaVersion,
+                                TilesetLastModified = graph.TilesetLastModified,
+                                CostingProfile = costingProfile,
+                                TravelTimeMinutes = cell.TravelTimeMinutes,
+                                RoutedDistanceMeters = cell.RoutedDistanceMeters,
+                                RouteFound = cell.RouteFound,
+                                RouteFailureReason = cell.RouteFound
+                                    ? null
+                                    : "Valhalla returned the origin-candidate pair as unreachable.",
+                                CalculatedAtUtc = route.CalculatedAtUtc
+                            };
+                            db.CandidateLocationTravelCache.Add(candidateCache);
+                            candidateRouteByKey.Add(candidateKey, candidateCache);
+                        }
+                    }
                 }
 
                 await db.SaveChangesAsync(cancellationToken);
@@ -202,6 +292,27 @@ public sealed class TravelMatrixService(
             throw new ArgumentOutOfRangeException(parameterName, "Coordinates must be valid WGS84 coordinates.");
         }
     }
+
+    internal static string CandidateCoordinateHash(double latitude, double longitude) =>
+        CandidateIdentity(latitude, longitude).Hash;
+
+    private static CandidateLocationIdentity CandidateIdentity(double latitude, double longitude)
+    {
+        var value = latitude.ToString("R", CultureInfo.InvariantCulture) + "," +
+                    longitude.ToString("R", CultureInfo.InvariantCulture);
+        return new CandidateLocationIdentity(
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant(),
+            latitude,
+            longitude);
+    }
+
+    private static bool CoordinatesMatch(
+        CandidateLocationTravelCache cached,
+        CandidateLocationIdentity requested) =>
+        BitConverter.DoubleToInt64Bits(cached.CandidateLatitude) == BitConverter.DoubleToInt64Bits(requested.Latitude) &&
+        BitConverter.DoubleToInt64Bits(cached.CandidateLongitude) == BitConverter.DoubleToInt64Bits(requested.Longitude);
+
+    private sealed record CandidateLocationIdentity(string Hash, double Latitude, double Longitude);
 
     private sealed class OriginFacilityTravelKeyComparer : IEqualityComparer<(long OriginZoneId, string FacilityKey)>
     {

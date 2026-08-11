@@ -73,6 +73,41 @@ public sealed class OriginFacilityTravel
     public DateTime CalculatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 
+[Table("candidate_location_travel_cache")]
+public sealed class CandidateLocationTravelCache
+{
+    [Key]
+    public long Id { get; set; }
+
+    public long OriginZoneId { get; set; }
+
+    [Required, MaxLength(64)]
+    public string CandidateCoordinateHash { get; set; } = string.Empty;
+
+    public double CandidateLatitude { get; set; }
+    public double CandidateLongitude { get; set; }
+
+    [Required, MaxLength(128)]
+    public string RoutingGraphHash { get; set; } = string.Empty;
+
+    [Required, MaxLength(80)]
+    public string ValhallaVersion { get; set; } = string.Empty;
+
+    public long? TilesetLastModified { get; set; }
+
+    [Required, MaxLength(40)]
+    public string CostingProfile { get; set; } = "auto";
+
+    public double? TravelTimeMinutes { get; set; }
+    public double? RoutedDistanceMeters { get; set; }
+    public bool RouteFound { get; set; }
+
+    [MaxLength(500)]
+    public string? RouteFailureReason { get; set; }
+
+    public DateTime CalculatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
 [Table("model_run_origin_results")]
 public sealed class ModelRunOriginResult
 {

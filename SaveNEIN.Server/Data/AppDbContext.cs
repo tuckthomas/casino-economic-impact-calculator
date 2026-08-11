@@ -38,6 +38,7 @@ public class AppDbContext : DbContext
     public DbSet<SaveNEIN.Server.Data.Entities.CasinoGamingRevenuePeriod> CasinoGamingRevenuePeriods => Set<SaveNEIN.Server.Data.Entities.CasinoGamingRevenuePeriod>();
     public DbSet<SaveNEIN.Server.Data.Entities.DevelopmentProgram> DevelopmentPrograms => Set<SaveNEIN.Server.Data.Entities.DevelopmentProgram>();
     public DbSet<SaveNEIN.Server.Data.Entities.OriginFacilityTravel> OriginFacilityTravel => Set<SaveNEIN.Server.Data.Entities.OriginFacilityTravel>();
+    public DbSet<SaveNEIN.Server.Data.Entities.CandidateLocationTravelCache> CandidateLocationTravelCache => Set<SaveNEIN.Server.Data.Entities.CandidateLocationTravelCache>();
     public DbSet<SaveNEIN.Server.Data.Entities.ModelRunOriginResult> ModelRunOriginResults => Set<SaveNEIN.Server.Data.Entities.ModelRunOriginResult>();
     public DbSet<SaveNEIN.Server.Data.Entities.ModelRunFacilityResult> ModelRunFacilityResults => Set<SaveNEIN.Server.Data.Entities.ModelRunFacilityResult>();
     public DbSet<SaveNEIN.Server.Data.Entities.ModelRunOriginFacilityAllocation> ModelRunOriginFacilityAllocations => Set<SaveNEIN.Server.Data.Entities.ModelRunOriginFacilityAllocation>();
@@ -181,6 +182,15 @@ public class AppDbContext : DbContext
             {
                 route.OriginZoneId,
                 route.FacilityKey,
+                route.RoutingGraphHash,
+                route.CostingProfile
+            })
+            .IsUnique();
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.CandidateLocationTravelCache>()
+            .HasIndex(route => new
+            {
+                route.OriginZoneId,
+                route.CandidateCoordinateHash,
                 route.RoutingGraphHash,
                 route.CostingProfile
             })
@@ -652,6 +662,11 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(route => route.ModelRunId)
             .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.CandidateLocationTravelCache>()
+            .HasOne<SaveNEIN.Server.Data.Entities.OriginZone>()
+            .WithMany()
+            .HasForeignKey(route => route.OriginZoneId)
+            .OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ModelRunOriginResult>()
             .HasOne<SaveNEIN.Server.Data.Entities.ModelRun>()
             .WithMany()
@@ -823,6 +838,7 @@ public class AppDbContext : DbContext
             typeof(Entities.CasinoGamingRevenuePeriod),
             typeof(Entities.DevelopmentProgram),
             typeof(Entities.OriginFacilityTravel),
+            typeof(Entities.CandidateLocationTravelCache),
             typeof(Entities.ModelRunOriginResult),
             typeof(Entities.ModelRunFacilityResult),
             typeof(Entities.ModelRunOriginFacilityAllocation),

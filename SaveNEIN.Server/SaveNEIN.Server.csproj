@@ -61,6 +61,8 @@
                       Link="Data\Migrations\016_local_economic_inventory.sql" />
     <EmbeddedResource Include="..\docs\migrations\017_nullable_facility_evidence_flags.sql"
                       Link="Data\Migrations\017_nullable_facility_evidence_flags.sql" />
+    <EmbeddedResource Include="..\docs\migrations\018_candidate_location_travel_cache.sql"
+                      Link="Data\Migrations\018_candidate_location_travel_cache.sql" />
   </ItemGroup>
 
 </Project>

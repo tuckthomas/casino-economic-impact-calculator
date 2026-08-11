@@ -63,6 +63,21 @@ public sealed class ModelFoundationSchemaTests
         var travelEntity = db.Model.FindEntityType(typeof(OriginFacilityTravel))!;
         var travelTable = StoreObjectIdentifier.Table("origin_facility_travel", null);
         Assert.Equal("routing_graph_hash", travelEntity.FindProperty(nameof(OriginFacilityTravel.RoutingGraphHash))!.GetColumnName(travelTable));
+        var candidateTravelEntity = db.Model.FindEntityType(typeof(CandidateLocationTravelCache))!;
+        var candidateTravelTable = StoreObjectIdentifier.Table("candidate_location_travel_cache", null);
+        Assert.Equal("id", candidateTravelEntity.FindProperty(nameof(CandidateLocationTravelCache.Id))!.GetColumnName(candidateTravelTable));
+        Assert.Equal(
+            "candidate_coordinate_hash",
+            candidateTravelEntity.FindProperty(nameof(CandidateLocationTravelCache.CandidateCoordinateHash))!.GetColumnName(candidateTravelTable));
+        Assert.Contains(
+            candidateTravelEntity.GetIndexes(),
+            index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual(
+            [
+                nameof(CandidateLocationTravelCache.OriginZoneId),
+                nameof(CandidateLocationTravelCache.CandidateCoordinateHash),
+                nameof(CandidateLocationTravelCache.RoutingGraphHash),
+                nameof(CandidateLocationTravelCache.CostingProfile)
+            ]));
 
         var allocationEntity = db.Model.FindEntityType(typeof(ModelRunOriginFacilityAllocation))!;
         var allocationTable = StoreObjectIdentifier.Table("model_run_origin_facility_allocations", null);
@@ -218,5 +233,15 @@ public sealed class ModelFoundationSchemaTests
         var nullableFacilityFlagsSql = nullableFacilityFlagsReader.ReadToEnd();
         Assert.Contains("ALTER COLUMN has_hotel DROP NOT NULL", nullableFacilityFlagsSql, StringComparison.Ordinal);
         Assert.Contains("ALTER COLUMN is_border_market DROP NOT NULL", nullableFacilityFlagsSql, StringComparison.Ordinal);
+
+        var candidateCacheMigration = Assert.Single(
+            resourceNames,
+            name => name.EndsWith("018_candidate_location_travel_cache.sql", StringComparison.Ordinal));
+        using var candidateCacheStream = typeof(ModelFoundationInitializer).Assembly.GetManifestResourceStream(candidateCacheMigration)!;
+        using var candidateCacheReader = new StreamReader(candidateCacheStream);
+        var candidateCacheSql = candidateCacheReader.ReadToEnd();
+        Assert.Contains("candidate_location_travel_cache", candidateCacheSql, StringComparison.Ordinal);
+        Assert.Contains("candidate_coordinate_hash", candidateCacheSql, StringComparison.Ordinal);
+        Assert.Contains("routing_graph_hash", candidateCacheSql, StringComparison.Ordinal);
     }
 }
