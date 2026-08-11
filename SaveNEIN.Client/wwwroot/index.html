@@ -194,13 +194,21 @@
                                     </span>
                                 </p>
 
-                                <a href="#proponents-critique" class="hero-desktop-learn-more hidden lg:flex" aria-label="Learn more and continue to the next section">
-                                    <span class="hero-desktop-learn-more-text">Learn More</span>
-                                    <span class="hero-desktop-learn-more-circle" aria-hidden="true">
-                                        <svg class="hero-desktop-learn-more-chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                    </span>
+                                <a href="#proponents-critique" class="hero-desktop-learn-more hidden lg:inline-flex" aria-label="Learn more and continue to the next section">
+                                    <svg class="hero-desktop-learn-more-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <defs>
+                                            <path id="learn-more-curve" d="M 18,68 A 42,42 0 0,1 102,68" />
+                                        </defs>
+                                        <text class="hero-desktop-learn-more-curved-text">
+                                            <textPath href="#learn-more-curve" startOffset="50%" text-anchor="middle">
+                                                LEARN MORE
+                                            </textPath>
+                                        </text>
+                                        <g class="hero-desktop-learn-more-btn-group">
+                                            <circle cx="60" cy="68" r="26" class="hero-desktop-learn-more-circle-bg" />
+                                            <path class="hero-desktop-learn-more-chevron" d="M 60,57 v 22 M 52,70 l 8 9 8 -9" stroke-linecap="round" stroke-linejoin="round" />
+                                        </g>
+                                    </svg>
                                 </a>
 
                                 <div class="hero-mobile-scroll-hint">
