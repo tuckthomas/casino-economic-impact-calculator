@@ -42,7 +42,36 @@ public sealed class CensusZctaOriginProviderTests
     }
 
     [Fact]
-    public async Task Provider_RequiresExplicitMarketUniverseBeforeNetworkAccess()
+    public async Task Provider_PrefiltersCandidateStudyRegionWithBroadHaversineRadius()
+    {
+        var handler = new ByteResponseHandler(BuildArchive(), BuildCountyRelationships());
+        var provider = new CensusZctaOriginProvider(
+            new HttpClient(handler),
+            Options.Create(new CensusZctaOriginProviderOptions()));
+
+        var dataset = await provider.FetchAsync(new ProviderFetchRequest(
+            "US-ZCTA",
+            new DateOnly(2020, 1, 1),
+            new DateOnly(2020, 12, 31),
+            new Dictionary<string, string>
+            {
+                ["center-latitude"] = "41.10",
+                ["center-longitude"] = "-85.10",
+                ["radius-miles"] = "25"
+            }));
+
+        var row = Assert.Single(dataset.Rows);
+        Assert.Equal("46802", row.GeographyCode);
+        Assert.Equal("IN", row.StateOrTerritoryCode);
+        Assert.Contains("25.0-mile representative-point radius", dataset.Source.GeographicCoverage, StringComparison.Ordinal);
+        Assert.Contains(dataset.Warnings, warning =>
+            warning.Contains("broad representative-point Haversine radius", StringComparison.Ordinal) &&
+            warning.Contains("persisted Valhalla travel times", StringComparison.Ordinal));
+        Assert.Equal(2, handler.RequestUris.Count);
+    }
+
+    [Fact]
+    public async Task Provider_RequiresConfiguredMarketUniverseBeforeNetworkAccess()
     {
         var handler = new ByteResponseHandler(BuildArchive(), BuildCountyRelationships());
         var provider = new CensusZctaOriginProvider(
@@ -53,6 +82,29 @@ public sealed class CensusZctaOriginProviderTests
             "US-ZCTA",
             new DateOnly(2020, 1, 1),
             new DateOnly(2020, 12, 31))));
+
+        Assert.Empty(handler.RequestUris);
+    }
+
+    [Fact]
+    public async Task Provider_RejectsMixedExplicitAndRadialMarketUniverseBeforeNetworkAccess()
+    {
+        var handler = new ByteResponseHandler(BuildArchive(), BuildCountyRelationships());
+        var provider = new CensusZctaOriginProvider(
+            new HttpClient(handler),
+            Options.Create(new CensusZctaOriginProviderOptions()));
+
+        await Assert.ThrowsAsync<ArgumentException>(() => provider.FetchAsync(new ProviderFetchRequest(
+            "US-ZCTA",
+            new DateOnly(2020, 1, 1),
+            new DateOnly(2020, 12, 31),
+            new Dictionary<string, string>
+            {
+                ["zcta-codes"] = "46802",
+                ["center-latitude"] = "41.10",
+                ["center-longitude"] = "-85.10",
+                ["radius-miles"] = "25"
+            })));
 
         Assert.Empty(handler.RequestUris);
     }

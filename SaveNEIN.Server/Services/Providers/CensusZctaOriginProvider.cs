@@ -41,7 +41,7 @@ public sealed class CensusZctaOriginProvider(
         CancellationToken cancellationToken = default)
     {
         RequireRequest(request);
-        var requestedCodes = ZctaCodeFilter.Require(request.Options);
+        var marketUniverse = ZctaMarketUniverse.Require(request.Options);
         var configured = options.Value;
         var archiveUri = new Uri(configured.ArchiveUrl);
         var retrievedAt = DateTime.UtcNow;
@@ -60,16 +60,16 @@ public sealed class CensusZctaOriginProvider(
         var sourceHash = Convert.ToHexString(SHA256.HashData(
                 Encoding.UTF8.GetBytes($"{archiveHash}\n{relationshipHash}")))
             .ToLowerInvariant();
-        var parsed = CensusZctaArchiveReader.Read(bytes, requestedCodes);
-        var missingCodes = requestedCodes.Except(
-            parsed.Rows.Select(row => row.GeographyCode),
-            StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+        var parsed = CensusZctaArchiveReader.Read(bytes, marketUniverse);
+        var selectedCodes = parsed.Rows.Select(row => row.GeographyCode).ToHashSet(StringComparer.Ordinal);
+        var missingCodes = marketUniverse.ExplicitCodes?.Except(selectedCodes, StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal).ToArray() ?? [];
         if (missingCodes.Length > 0)
         {
             throw new KeyNotFoundException(
                 $"The Census 2020 ZCTA cartographic boundary file is missing requested code(s): {string.Join(", ", missingCodes)}.");
         }
-        var dominantCounties = CensusZctaCountyRelationshipReader.Read(relationshipBytes, requestedCodes);
+        var dominantCounties = CensusZctaCountyRelationshipReader.Read(relationshipBytes, selectedCodes);
         var rows = parsed.Rows.Select(row =>
         {
             var relationship = dominantCounties[row.GeographyCode];
@@ -80,9 +80,8 @@ public sealed class CensusZctaOriginProvider(
             };
         }).ToArray();
 
-        var canonicalCodes = string.Join(',', requestedCodes.Order(StringComparer.Ordinal));
         var checksum = Convert.ToHexString(SHA256.HashData(
-                Encoding.UTF8.GetBytes($"{sourceHash}\n{TransformVersion}\n{canonicalCodes}")))
+                Encoding.UTF8.GetBytes($"{sourceHash}\n{TransformVersion}\n{marketUniverse.CanonicalDescriptor}")))
             .ToLowerInvariant();
         var warnings = parsed.Warnings
             .Append(
@@ -91,6 +90,7 @@ public sealed class CensusZctaOriginProvider(
             .Append(
                 "State and county attributes use the county with the largest 2020 Census land-area overlap for each ZCTA; " +
                 "cross-county and cross-state ZCTAs remain single computational origins and are not proportionally allocated by this field.")
+            .Append(marketUniverse.SelectionWarning)
             .ToArray();
 
         return new ProviderDataset<OriginZoneImportRow>(
@@ -99,7 +99,7 @@ public sealed class CensusZctaOriginProvider(
                 "United States Census Bureau",
                 archiveUri.ToString(),
                 "federal-cartographic-boundary-shapefile",
-                "Requested United States ZCTAs",
+                marketUniverse.SourceScope,
                 GeographyYear.ToString(CultureInfo.InvariantCulture),
                 retrievedAt,
                 sourceHash,
@@ -230,6 +230,77 @@ internal static class CensusStateCodes
         : throw new InvalidDataException($"Unsupported Census state FIPS code '{fips}'.");
 }
 
+internal sealed record ZctaMarketUniverse(
+    IReadOnlySet<string>? ExplicitCodes,
+    double? CenterLatitude,
+    double? CenterLongitude,
+    double? RadiusMiles)
+{
+    public string CanonicalDescriptor => ExplicitCodes is not null
+        ? $"zcta-codes={string.Join(',', ExplicitCodes.Order(StringComparer.Ordinal))}"
+        : FormattableString.Invariant($"center={CenterLatitude:F6},{CenterLongitude:F6};radius-miles={RadiusMiles:F3}");
+
+    public string SourceScope => ExplicitCodes is not null
+        ? "Explicit requested United States ZCTAs"
+        : FormattableString.Invariant(
+            $"United States ZCTAs within a {RadiusMiles:F1}-mile representative-point radius of {CenterLatitude:F6}, {CenterLongitude:F6}");
+
+    public string SelectionWarning => ExplicitCodes is not null
+        ? "The origin snapshot contains the caller's explicit ZCTA market universe."
+        : "The origin snapshot uses a broad representative-point Haversine radius only to prefilter the candidate study region; " +
+          "the model must use persisted Valhalla travel times, not this radius, for travel friction and final route reachability.";
+
+    public bool Includes(string code, Geometry geometry)
+    {
+        if (ExplicitCodes is not null)
+        {
+            return ExplicitCodes.Contains(code);
+        }
+        var point = geometry.InteriorPoint;
+        return HaversineMiles(CenterLatitude!.Value, CenterLongitude!.Value, point.Y, point.X) <= RadiusMiles!.Value;
+    }
+
+    public static ZctaMarketUniverse Require(IReadOnlyDictionary<string, string>? options)
+    {
+        var explicitCodes = ZctaCodeFilter.Optional(options);
+        var radialKeys = new[] { "center-latitude", "center-longitude", "radius-miles" };
+        var suppliedRadialCount = options is null ? 0 : radialKeys.Count(options.ContainsKey);
+        if (explicitCodes is not null)
+        {
+            if (suppliedRadialCount > 0)
+            {
+                throw new ArgumentException("Specify either 'zcta-codes' or center/radius options, not both.");
+            }
+            return new ZctaMarketUniverse(explicitCodes, null, null, null);
+        }
+        if (suppliedRadialCount != radialKeys.Length ||
+            !double.TryParse(options!["center-latitude"], NumberStyles.Float, CultureInfo.InvariantCulture, out var latitude) ||
+            !double.TryParse(options["center-longitude"], NumberStyles.Float, CultureInfo.InvariantCulture, out var longitude) ||
+            !double.TryParse(options["radius-miles"], NumberStyles.Float, CultureInfo.InvariantCulture, out var radiusMiles) ||
+            !double.IsFinite(latitude) || latitude is < -90 or > 90 ||
+            !double.IsFinite(longitude) || longitude is < -180 or > 180 ||
+            !double.IsFinite(radiusMiles) || radiusMiles is <= 0 or > 500)
+        {
+            throw new ArgumentException(
+                "Provide a nonempty 'zcta-codes' option or valid 'center-latitude', 'center-longitude', and 'radius-miles' options; radius must be greater than zero and no more than 500 miles.");
+        }
+        return new ZctaMarketUniverse(null, latitude, longitude, radiusMiles);
+    }
+
+    private static double HaversineMiles(double latitude1, double longitude1, double latitude2, double longitude2)
+    {
+        const double earthRadiusMiles = 3958.7613;
+        static double Radians(double degrees) => degrees * Math.PI / 180d;
+        var latitudeDelta = Radians(latitude2 - latitude1);
+        var longitudeDelta = Radians(longitude2 - longitude1);
+        var a = Math.Pow(Math.Sin(latitudeDelta / 2), 2) +
+                Math.Cos(Radians(latitude1)) * Math.Cos(Radians(latitude2)) *
+                Math.Pow(Math.Sin(longitudeDelta / 2), 2);
+        a = Math.Clamp(a, 0d, 1d);
+        return earthRadiusMiles * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(Math.Max(0, 1 - a)));
+    }
+}
+
 internal static class ZctaCodeFilter
 {
     public static IReadOnlySet<string> Require(IReadOnlyDictionary<string, string>? options)
@@ -258,7 +329,7 @@ internal sealed record CensusZctaArchiveResult(
 
 internal static class CensusZctaArchiveReader
 {
-    public static CensusZctaArchiveResult Read(byte[] archiveBytes, IReadOnlySet<string> requestedCodes)
+    public static CensusZctaArchiveResult Read(byte[] archiveBytes, ZctaMarketUniverse marketUniverse)
     {
         var extractionDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -268,7 +339,7 @@ internal static class CensusZctaArchiveReader
         try
         {
             var shapefilePath = ExtractShapefile(archiveBytes, extractionDirectory);
-            return ReadShapefile(shapefilePath, requestedCodes);
+            return ReadShapefile(shapefilePath, marketUniverse);
         }
         finally
         {
@@ -310,9 +381,9 @@ internal static class CensusZctaArchiveReader
 
     private static CensusZctaArchiveResult ReadShapefile(
         string shapefilePath,
-        IReadOnlySet<string> requestedCodes)
+        ZctaMarketUniverse marketUniverse)
     {
-        var rows = new List<OriginZoneImportRow>(requestedCodes.Count);
+        var rows = new List<OriginZoneImportRow>(marketUniverse.ExplicitCodes?.Count ?? 512);
         using var reader = new ShapefileDataReader(
             shapefilePath,
             new GeometryFactory(new PrecisionModel(), 4326),
@@ -322,14 +393,14 @@ internal static class CensusZctaArchiveReader
         while (reader.Read())
         {
             var code = Field(reader, codeOrdinal);
-            if (!requestedCodes.Contains(code))
-            {
-                continue;
-            }
             var geometry = reader.Geometry;
             if (geometry is not Polygon and not MultiPolygon || geometry.IsEmpty || !geometry.IsValid)
             {
                 throw new InvalidDataException($"Census ZCTA '{code}' has invalid or empty polygon geometry.");
+            }
+            if (!marketUniverse.Includes(code, geometry))
+            {
+                continue;
             }
             geometry.SRID = 4326;
             var representativePoint = geometry.InteriorPoint;
@@ -345,6 +416,10 @@ internal static class CensusZctaArchiveReader
                 representativePoint.Y,
                 representativePoint.X,
                 wktWriter.Write(geometry)));
+        }
+        if (rows.Count == 0)
+        {
+            throw new KeyNotFoundException("The selected ZCTA market universe contains no Census ZCTA polygons.");
         }
         var warnings = new[]
         {
