@@ -420,6 +420,73 @@ if (args is ["--export-michigan-provider-bundle", var bundleOutputPath])
     return;
 }
 
+if (args is ["--export-four-state-provider-bundle", var fourStateBundleOutputPath])
+{
+    var fullOutputPath = Path.GetFullPath(fourStateBundleOutputPath);
+    if (!string.Equals(Path.GetExtension(fullOutputPath), ".json", StringComparison.OrdinalIgnoreCase) ||
+        !Directory.Exists(Path.GetDirectoryName(fullOutputPath)))
+    {
+        throw new ArgumentException("Four-state provider bundle output must be a .json file in an existing directory.");
+    }
+    using var providerHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(8) };
+    var request = new ProviderFetchRequest(
+        "US-IL,US-IN,US-MI,US-OH",
+        new DateOnly(2025, 1, 1),
+        new DateOnly(2025, 12, 31));
+
+    var indianaOptions = Options.Create(new IndianaGamingCommissionProviderOptions());
+    var illinoisOptions = Options.Create(new IllinoisGamingBoardProviderOptions());
+    var illinoisRevenue = new IllinoisGamingBoardRevenueProvider(providerHttp, illinoisOptions);
+    var michiganOptions = Options.Create(new MichiganGamingFacilityProviderOptions());
+    var ohioOptions = Options.Create(new OhioCasinoControlCommissionProviderOptions());
+    var ohioRevenue = new OhioCasinoControlCommissionRevenueProvider(providerHttp, ohioOptions);
+    var ohioLotteryOptions = Options.Create(new OhioLotteryVideoLotteryProviderOptions());
+    var ohioLotteryRevenue = new OhioLotteryVideoLotteryRevenueProvider(providerHttp, ohioLotteryOptions);
+
+    var facilities = await new CompositeGamingFacilityInventoryProvider(
+    [
+        new IndianaGamingCommissionFacilityInventoryProvider(providerHttp, indianaOptions),
+        new IllinoisGamingBoardFacilityInventoryProvider(providerHttp, illinoisRevenue, illinoisOptions),
+        new MichiganGamingFacilityInventoryProvider(providerHttp, michiganOptions),
+        new OhioCasinoControlCommissionFacilityInventoryProvider(providerHttp, ohioRevenue, ohioOptions),
+        new OhioLotteryVideoLotteryFacilityInventoryProvider(providerHttp, ohioLotteryRevenue, ohioLotteryOptions)
+    ]).FetchAsync(request);
+    var performance = await new CompositeGamingRegulatorPerformanceProvider(
+    [
+        new IndianaGamingCommissionMonthlyRevenueProvider(providerHttp, indianaOptions),
+        illinoisRevenue,
+        new MichiganGamingControlBoardRevenueProvider(providerHttp, michiganOptions),
+        ohioRevenue,
+        ohioLotteryRevenue
+    ]).FetchAsync(request);
+    var facilityIds = facilities.Rows.Select(row => row.StableVenueId).ToHashSet(StringComparer.Ordinal);
+    var performanceIds = performance.Rows.Select(row => row.StableVenueId).ToHashSet(StringComparer.Ordinal);
+    if (!facilityIds.IsSupersetOf(performanceIds))
+    {
+        throw new InvalidOperationException(
+            $"Four-state provider performance contains facility IDs absent from inventory: {string.Join(", ", performanceIds.Except(facilityIds, StringComparer.Ordinal).Order(StringComparer.Ordinal))}.");
+    }
+
+    var bundle = new ProviderValidationBundle(facilities, performance);
+    await File.WriteAllTextAsync(
+        fullOutputPath,
+        JsonSerializer.Serialize(bundle, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        BundlePath = fullOutputPath,
+        FacilityRows = facilities.Rows.Count,
+        PerformanceRows = performance.Rows.Count,
+        FacilityStates = facilities.Rows.GroupBy(row => row.State).OrderBy(group => group.Key)
+            .ToDictionary(group => group.Key, group => group.Count()),
+        ComparableTotal = performance.Rows
+            .Where(row => row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
+            .Sum(row => row.ReportedAmount),
+        facilities.ContentChecksum,
+        PerformanceChecksum = performance.ContentChecksum
+    }));
+    return;
+}
+
 if (args is ["--export-ohio-provider-bundle", var ohioBundleOutputPath])
 {
     var fullOutputPath = Path.GetFullPath(ohioBundleOutputPath);
@@ -468,6 +535,85 @@ if (args is ["--export-ohio-provider-bundle", var ohioBundleOutputPath])
     return;
 }
 
+if (args is ["--ingest-four-state-provider-bundle", var fourStateDatabase, var fourStateBundlePath])
+{
+    if (!fourStateDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        fourStateDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+    {
+        throw new ArgumentException("Unsafe four-state validation database name.");
+    }
+    var fullBundlePath = Path.GetFullPath(fourStateBundlePath);
+    if (!File.Exists(fullBundlePath) ||
+        !string.Equals(Path.GetExtension(fullBundlePath), ".json", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new FileNotFoundException("The four-state provider validation bundle was not found.", fullBundlePath);
+    }
+    var bundle = JsonSerializer.Deserialize<ProviderValidationBundle>(await File.ReadAllTextAsync(fullBundlePath))
+        ?? throw new InvalidDataException("The four-state provider validation bundle is empty or invalid.");
+    var fourStateConfiguredConnection = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("The app container did not provide ConnectionStrings__DefaultConnection.");
+    var fourStateConnectionBuilder = new NpgsqlConnectionStringBuilder(fourStateConfiguredConnection)
+    {
+        Database = fourStateDatabase
+    };
+    var options = new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(fourStateConnectionBuilder.ConnectionString, provider => provider.UseNetTopologySuite())
+        .Options;
+    await using var bundleDb = new AppDbContext(options);
+    await ModelFoundationInitializer.ApplySchemaAsync(bundleDb);
+    await ModelFoundationInitializer.SeedAsync(bundleDb);
+    var fourStateIngestion = new ProviderSnapshotIngestionService(
+        new DataSnapshotService(bundleDb),
+        new ModelDataIngestionService(bundleDb));
+    var request = new ProviderFetchRequest(
+        "US-IL,US-IN,US-MI,US-OH",
+        new DateOnly(2025, 1, 1),
+        new DateOnly(2025, 12, 31));
+    var facilitySnapshotId = await fourStateIngestion.IngestGamingFacilitiesAsync(
+        new FrozenGamingFacilityProvider(
+            bundle.Facilities,
+            "frozen-official-four-state-facilities-validation",
+            request.GeographicCoverage),
+        request);
+    var performanceSnapshotId = await fourStateIngestion.IngestGamingPerformanceAsync(
+        new FrozenGamingPerformanceProvider(
+            bundle.Performance,
+            "frozen-official-four-state-performance-validation",
+            request.GeographicCoverage),
+        request,
+        facilitySnapshotId);
+    var facilityRows = await bundleDb.CasinoCompetitors.AsNoTracking()
+        .Where(row => row.DatasetSnapshotId == facilitySnapshotId)
+        .ToArrayAsync();
+    var performanceRows = await bundleDb.CasinoGamingRevenuePeriods.AsNoTracking()
+        .Where(row => row.DatasetSnapshotId == performanceSnapshotId)
+        .ToArrayAsync();
+    var snapshots = await bundleDb.DatasetSnapshots.AsNoTracking()
+        .Where(snapshot => snapshot.Id == facilitySnapshotId || snapshot.Id == performanceSnapshotId)
+        .ToArrayAsync();
+    if (facilityRows.Length != bundle.Facilities.Rows.Count ||
+        performanceRows.Length != bundle.Performance.Rows.Count ||
+        snapshots.Length != 2 || snapshots.Any(snapshot => !snapshot.IsSealed))
+    {
+        throw new InvalidOperationException("The four-state bundle did not persist as two complete sealed snapshots.");
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        facilitySnapshotId,
+        performanceSnapshotId,
+        FacilityRows = facilityRows.Length,
+        PerformanceRows = performanceRows.Length,
+        FacilityStates = facilityRows.GroupBy(row => row.State).OrderBy(group => group.Key)
+            .ToDictionary(group => group.Key, group => group.Count()),
+        ComparableTotal = performanceRows
+            .Where(row => row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
+            .Sum(row => row.ReportedAmount),
+        Snapshots = snapshots.OrderBy(snapshot => snapshot.DatasetKey)
+            .Select(snapshot => new { snapshot.DatasetKey, snapshot.Checksum, snapshot.ValidationState, snapshot.IsSealed })
+    }));
+    return;
+}
+
 var validateIncumbentCalibration = args is ["--validate-incumbent-calibration", _, _];
 var validateMichiganProviderBundle = args is ["--validate-michigan-provider-bundle", _, _];
 var validateOhioProviderBundle = args is ["--validate-ohio-provider-bundle", _, _];
@@ -481,7 +627,7 @@ if ((!validateIncumbentCalibration && !validateMichiganProviderBundle && !valida
     ((validateIncumbentCalibration || validateMichiganProviderBundle || validateOhioProviderBundle) && args.Length != 3))
 {
     throw new ArgumentException(
-        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --probe-ohio-providers | --export-michigan-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url>");
+        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --probe-ohio-providers | --export-michigan-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url>");
 }
 
 var validationDatabase = validateProviderIngestion ? args[1] : args[0];

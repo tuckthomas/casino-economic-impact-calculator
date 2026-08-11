@@ -249,10 +249,7 @@ internal static class CompositeProviderSupport
             .ToArray();
         var checksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', components))))
             .ToLowerInvariant();
-        var coverage = string.Join(",", datasets
-            .Select(dataset => dataset.Source.GeographicCoverage)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Order(StringComparer.Ordinal));
+        var coverage = string.Join(",", ParseCoverage(request.GeographicCoverage));
         var period = request.PeriodStart == new DateOnly(request.PeriodStart.Year, 1, 1) &&
                      request.PeriodEnd == new DateOnly(request.PeriodStart.Year, 12, 31)
             ? request.PeriodStart.Year.ToString()

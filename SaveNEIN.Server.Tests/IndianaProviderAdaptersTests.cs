@@ -106,6 +106,27 @@ public sealed class IndianaProviderAdaptersTests
     }
 
     [Fact]
+    public async Task GamingCommissionFacilityProvider_UsesDecemberInventoryForAnnualCompositeRequest()
+    {
+        var handler = new IgcResponseHandler(BuildIgcWorkbook(), BuildIgcLocationsHtml());
+        var provider = new IndianaGamingCommissionFacilityInventoryProvider(
+            new HttpClient(handler),
+            Options.Create(new IndianaGamingCommissionProviderOptions()));
+
+        var dataset = await provider.FetchAsync(new ProviderFetchRequest(
+            "US-IN",
+            new DateOnly(2025, 1, 1),
+            new DateOnly(2025, 12, 31)));
+
+        Assert.Equal("2025", dataset.Period);
+        Assert.Equal("2025-12", dataset.Source.VintagePeriod);
+        Assert.Contains("2025-12 month-end", dataset.Source.Notes, StringComparison.Ordinal);
+        Assert.Contains(handler.RequestUris, uri =>
+            uri.AbsolutePath.EndsWith("/2025/2025-12-Revenue.xlsx", StringComparison.Ordinal));
+        Assert.Equal(13, dataset.Rows.Count);
+    }
+
+    [Fact]
     public async Task IndotProvider_ParsesPublishedAadtAndTransformsUtmZone16Coordinates()
     {
         var archive = BuildIndotArchive();

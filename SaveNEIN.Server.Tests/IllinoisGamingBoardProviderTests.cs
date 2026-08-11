@@ -108,6 +108,7 @@ public sealed class IllinoisGamingBoardProviderTests
         Assert.Equal(2, dataset.Rows.Count);
         Assert.Equal("US-IL", ilProvider.LastRequest!.GeographicCoverage);
         Assert.Equal("US-IN", inProvider.LastRequest!.GeographicCoverage);
+        Assert.Equal("US-IL,US-IN", dataset.Source.GeographicCoverage);
         Assert.Equal(64, dataset.ContentChecksum.Length);
         var ohio = await composite.FetchAsync(request with { GeographicCoverage = "US-OH" });
         Assert.Equal(2, ohio.Rows.Count);

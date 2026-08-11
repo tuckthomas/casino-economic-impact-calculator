@@ -284,10 +284,14 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
         ProviderFetchRequest request,
         CancellationToken cancellationToken = default)
     {
-        RequireIndianaCalendarMonth(request);
+        var inventoryMonth = RequireIndianaInventoryPeriod(request);
+        var periodLabel = request.PeriodStart.Month == 1 && request.PeriodStart.Day == 1 &&
+                          request.PeriodEnd == new DateOnly(request.PeriodStart.Year, 12, 31)
+            ? request.PeriodStart.Year.ToString(CultureInfo.InvariantCulture)
+            : inventoryMonth.ToString("yyyy-MM", CultureInfo.InvariantCulture);
         var configured = options.Value;
         var reportUri = new Uri(
-            $"{configured.MonthlyReportBaseUrl.TrimEnd('/')}/{request.PeriodStart.Year}/{request.PeriodStart:yyyy-MM}-Revenue.xlsx");
+            $"{configured.MonthlyReportBaseUrl.TrimEnd('/')}/{inventoryMonth.Year}/{inventoryMonth:yyyy-MM}-Revenue.xlsx");
         var locationsUri = new Uri(configured.CasinoLocationsUrl);
         var retrievedAt = DateTime.UtcNow;
         using var reportResponse = await http.GetAsync(reportUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -372,28 +376,28 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
 
         return new ProviderDataset<CasinoCompetitorImportRow>(
             new RegisterDataSourceRequest(
-                $"Indiana Gaming Commission facility inventory and gaming units {request.PeriodStart:yyyy-MM}",
+                $"Indiana Gaming Commission facility inventory and gaming units {periodLabel}",
                 "Indiana Gaming Commission",
                 locationsUri.ToString(),
                 "state-regulator-html-and-xlsx",
                 "Indiana commercial casinos and racinos",
-                request.PeriodStart.ToString("yyyy-MM", CultureInfo.InvariantCulture),
+                inventoryMonth.ToString("yyyy-MM", CultureInfo.InvariantCulture),
                 retrievedAt,
                 checksum,
                 true,
                 "Indiana public-record terms apply.",
-                $"Facility locations come from the IGC locations page; table and EGD/slot counts come from {reportUri}. Coordinate transform catalog: igc-address-geocodes-2026-08-09-v1."),
+                $"Facility locations come from the IGC locations page; table and EGD/slot counts are the {inventoryMonth:yyyy-MM} month-end inventory from {reportUri}. Coordinate transform catalog: igc-address-geocodes-2026-08-09-v1."),
             DatasetSnapshotKinds.Competitors,
-            request.PeriodStart.ToString("yyyy-MM", CultureInfo.InvariantCulture),
+            periodLabel,
             request.PeriodStart,
             request.PeriodEnd,
             checksum,
-            "igc-facilities-and-monthly-gaming-units-v1",
+            "igc-facilities-and-month-end-gaming-units-v2",
             rows,
             []);
     }
 
-    private static void RequireIndianaCalendarMonth(ProviderFetchRequest request)
+    private static DateOnly RequireIndianaInventoryPeriod(ProviderFetchRequest request)
     {
         if (!string.Equals(request.GeographicCoverage, "US-IN", StringComparison.OrdinalIgnoreCase))
         {
@@ -401,12 +405,19 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
                 "The Indiana Gaming Commission facility adapter requires GeographicCoverage 'US-IN'.");
         }
         var expectedStart = new DateOnly(request.PeriodStart.Year, request.PeriodStart.Month, 1);
-        if (request.PeriodStart != expectedStart || request.PeriodEnd != expectedStart.AddMonths(1).AddDays(-1))
+        if (request.PeriodStart == expectedStart && request.PeriodEnd == expectedStart.AddMonths(1).AddDays(-1))
         {
-            throw new ArgumentException(
-                "An IGC facility request must use one complete monthly report period.",
-                nameof(request));
+            return expectedStart;
         }
+        if (request.PeriodStart == new DateOnly(request.PeriodStart.Year, 1, 1) &&
+            request.PeriodEnd == new DateOnly(request.PeriodStart.Year, 12, 31))
+        {
+            return new DateOnly(request.PeriodStart.Year, 12, 1);
+        }
+        throw new ArgumentException(
+            "An IGC facility request must use one complete monthly report period or one complete calendar year; " +
+            "annual inventory uses the December month-end gaming-unit table.",
+            nameof(request));
     }
 
     private static IReadOnlyDictionary<string, IgcFacilityLocation> ParseLocations(string html)
