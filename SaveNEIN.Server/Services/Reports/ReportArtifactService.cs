@@ -222,6 +222,13 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
                 row.GeographyCode, row.OriginCount.ToString(), Money(row.RedistributedResidentGgr),
                 Money(row.InducedResidentGgr), Money(row.TotalProposedResidentGgr), Percent(row.ShareOfProposedResidentGgr)
             }));
+        Subsection(html, "County/parish composition");
+        Table(html, ["County/parish", "Origins", "Redistributed GGR", "Induced GGR", "Total", "Share"],
+            model.OriginCounties.Select(row => new[]
+            {
+                row.GeographyCode, row.OriginCount.ToString(), Money(row.RedistributedResidentGgr),
+                Money(row.InducedResidentGgr), Money(row.TotalProposedResidentGgr), Percent(row.ShareOfProposedResidentGgr)
+            }));
         Subsection(html, $"Top {Math.Min(options.TopOriginCount, model.Origins.Count)} contributing origins");
         Table(html, ["Origin", "Type", "State", "County", "Redistributed GGR", "Induced GGR", "Total", "Share"],
             model.Origins.Take(options.TopOriginCount).Select(row => new[]
@@ -519,6 +526,14 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                             row.GeographyCode, row.OriginCount.ToString(), Money(row.TotalProposedResidentGgr),
                             row.ShareOfProposedResidentGgr.ToString("P1")
                         }));
+                    column.Item().Text("County/parish composition").SemiBold();
+                    SimpleTable(column,
+                        ["County/parish", "Origins", "Resident GGR", "Share"],
+                        model.OriginCounties.Select(row => new[]
+                        {
+                            row.GeographyCode, row.OriginCount.ToString(), Money(row.TotalProposedResidentGgr),
+                            row.ShareOfProposedResidentGgr.ToString("P1")
+                        }));
                     column.Item().Text($"Top {Math.Min(options.TopOriginCount, model.Origins.Count)} contributing origins").SemiBold();
                     SimpleTable(column,
                         ["Origin", "Type", "State / county", "Resident GGR", "Share"],
@@ -732,6 +747,12 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
         Row(csv, "revenue", "stabilized", "tourism_ggr", model.Revenue.TourismGgr, "USD");
         Row(csv, "revenue", "stabilized", "traffic_ggr", model.Revenue.TrafficGgr, "USD");
         Row(csv, "revenue", "stabilized", "total_ggr", model.Revenue.StabilizedTotalGgr, "USD");
+        foreach (var county in model.OriginCounties)
+        {
+            Row(csv, "origin_county", county.GeographyCode, "origin_count", county.OriginCount, "origins");
+            Row(csv, "origin_county", county.GeographyCode, "total_proposed_resident_ggr", county.TotalProposedResidentGgr, "USD");
+            Row(csv, "origin_county", county.GeographyCode, "share_of_proposed_resident_ggr", county.ShareOfProposedResidentGgr, "share");
+        }
         foreach (var origin in model.Origins)
         {
             Row(csv, "origin", origin.StableOriginId, "state_code", origin.StateCode, origin.OriginType);

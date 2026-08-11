@@ -21,6 +21,7 @@ public sealed class ReportRendererTests
         Assert.Contains("Public &amp; Review", first, StringComparison.Ordinal);
         Assert.Contains(model.Identity.ModelRunId.ToString(), first, StringComparison.Ordinal);
         Assert.Contains("One-at-a-time sensitivity", first, StringComparison.Ordinal);
+        Assert.Contains("County/parish composition", first, StringComparison.Ordinal);
         Assert.Contains("Test sensitivity", first, StringComparison.Ordinal);
         Assert.DoesNotContain("html2canvas", first, StringComparison.OrdinalIgnoreCase);
     }
