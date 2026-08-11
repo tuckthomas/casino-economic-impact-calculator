@@ -593,6 +593,7 @@ window.SlotMachine = (function ()
             return;
         }
 
+        const rect = slotEl.getBoundingClientRect();
         const shell = document.querySelector('.hero-slot-shell') || document.querySelector('.modern-slot-machine') || document.body;
         const shellRect = shell.getBoundingClientRect();
 
