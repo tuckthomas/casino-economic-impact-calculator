@@ -204,6 +204,14 @@ public sealed class ModelFoundationSchemaTests
         Assert.Contains("spectrum-in-relocation-2025", benchmarkEvidenceSql, StringComparison.Ordinal);
         Assert.Contains("cbre-union-gaming-fort-wayne-2025", benchmarkEvidenceSql, StringComparison.Ordinal);
         Assert.Contains("steinberg-steuben-feasibility", benchmarkEvidenceSql, StringComparison.Ordinal);
+        Assert.Contains("915F30300F5240252D020FF3F7E91A734982C5E18D4B7DCF25EDD4C2F05B27F6", benchmarkEvidenceSql, StringComparison.Ordinal);
+        Assert.Contains("1A00F19766BA0361D4E8A6514D32701727BEDEFCADA73CCFA90729DB8107A510", benchmarkEvidenceSql, StringComparison.Ordinal);
+        Assert.Contains("68D62E0EABA0619197DE14F3E24C484132CDD4CF73390F48CAA2C563C89A7E1E", benchmarkEvidenceSql, StringComparison.Ordinal);
+        Assert.Contains("\"estimatedGrossGamingRevenuePotential\":219900000", benchmarkEvidenceSql, StringComparison.Ordinal);
+        Assert.Contains("\"grossGamingRevenue\":282300000", benchmarkEvidenceSql, StringComparison.Ordinal);
+        Assert.Contains("\"base\":203100000", benchmarkEvidenceSql, StringComparison.Ordinal);
+        Assert.Contains("\"distanceDecayBeta\":1.5", benchmarkEvidenceSql, StringComparison.Ordinal);
+        Assert.Contains("priors and benchmark targets, not universal constants", benchmarkEvidenceSql, StringComparison.Ordinal);
         Assert.Contains("validation_state = 'extracted'", benchmarkEvidenceSql, StringComparison.Ordinal);
 
         var sensitivityMigration = Assert.Single(

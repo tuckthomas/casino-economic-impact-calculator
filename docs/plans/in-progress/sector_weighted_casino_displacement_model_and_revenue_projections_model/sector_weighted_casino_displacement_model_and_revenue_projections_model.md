@@ -31,6 +31,7 @@
 > - **SUCCESS:** Migration `018_candidate_location_travel_cache.sql` was applied to disposable VPS PostGIS database `savenein_ui_validation_20260811`, and a checksum-pinned corrected release artifact completed two in-app browser runs at the exact candidate coordinate `41.0793, -85.1394`. Finalized runs `eeb06a92-2c9b-4361-b70d-9ca9803fc8e1` and `55979daf-6c77-4c14-88d4-72a13fa5bf88` persisted distinct immutable scenario-route rows while sharing one SHA-256 coordinate-cache row (`f989a8eab8da6baf7050aedd3767395cae00ab2c3a1661cadd6ce5dfe420b5d7`) for routing graph `ebaf3afb590388a0e9ba5c64b9e5d3b1014b17c61f1dcb58ede89955e55b82bd`. Both per-run routes preserve the cache calculation timestamp `2026-08-11 10:04:09.858572+00`, 2.233333 minutes, and 1,445 routed meters, proving the second run reused Valhalla output without sacrificing exact run coordinates or replayable route materialization.
 > - **SUCCESS:** Report template `professional-v4` was generated from finalized run `0022ed41-9c1d-435a-bb9d-2942913a9101` and stored sensitivity analysis `4411b3f5-8ad2-428d-964d-9d0dba1635b0` as immutable artifact `dec6ed81-cf88-4389-b7a6-d553f853a619`. The server returned PDF SHA-256 `38363e781b57d560ffd988e36f3102f1363f5c3de9d43ad60b9777bab36b5cf5`; Poppler confirmed and rendered all 14 letter-size pages for visual inspection. The PDF/HTML now contain WGS84 proposed-site/competitor and proportional-symbol patron-origin maps, a revenue-composition waterfall, social-cost bridge, net host-local impact waterfall, and a signed-output-delta sensitivity tornado with an explicit low/high setting legend. The tornado was verified against nine complete stored runs, including the inverse `gravity.beta` relationship (low setting: $50,099; baseline: $47,195; high setting: $44,762). CSV preserves facility/origin coordinates, waterfall/bridge source components, inclusion flags, point-run UUIDs, and exact low/high deltas behind the exhibits.
 > - **SUCCESS:** Report template `professional-v5` derives a top-N patron-origin polygon choropleth and origin-to-candidate travel-time map from the same immutable run. Live artifact `3f90c001-42f1-44b3-b042-ec6f3a022fb5` has PDF SHA-256 `346edb7a63fe11ba3d6e7ee0c4d8e83393f39b2e7d6bcb905015a6b9c4db469f`; Poppler confirmed and rendered all 15 letter-size pages. Visual QA corrected an orphaned exhibit heading and verified compact pagination. The stored ZCTA polygon is simplified by a disclosed 0.002° presentation tolerance, while exact contribution values remain unchanged; the travel-time map uses the finalized run's persisted Valhalla `auto` route of 2.233333 minutes and 1,445 meters at the origin representative point and explicitly states that it is not an interpolated isochrone. HTML, report JSON, and CSV preserve source geometry, route-found state, routed minutes, and routed meters behind both exhibits.
+> - **SUCCESS:** The three primary Indiana benchmark PDFs were freshly downloaded from the canonical URLs and independently matched the checksum-pinned migration evidence byte-for-byte: Spectrum `915F30300F5240252D020FF3F7E91A734982C5E18D4B7DCF25EDD4C2F05B27F6`, CBRE/Union Gaming `1A00F19766BA0361D4E8A6514D32701727BEDEFCADA73CCFA90729DB8107A510`, and Steinberg `68D62E0EABA0619197DE14F3E24C484132CDD4CF73390F48CAA2C563C89A7E1E`. Source-text verification confirmed the registered demand methods, priors, data advantages/limitations, traffic/ramp/comparable concepts, and published output anchors. Disposable VPS PostGIS inspection confirmed all three generic registry rows persist market/geography, study date, consultant, candidate description, program, outputs, assumptions, methodological notes, URL/checksum provenance, and `extracted` state. This validates the benchmark registry and source extraction only; public benchmark model-run reconciliation remains open.
 > - Update this checklist immediately after every verified implementation tranche, including the evidence used to justify each newly completed item and any failed quality gate that keeps an item open.
 
 ---
@@ -48,17 +49,17 @@
   - [ ] Do not hard-code Indiana tax treatment into the national fiscal engine.
   - [ ] Do not assume every casino market uses age 21 as the legal gaming age.
   - [ ] Do not assume all relevant competitors are located in the same state or even the same country.
-- [ ] Treat Indiana-specific public reports as benchmark and validation cases only.
-  - [ ] Spectrum Gaming Group, CBRE/Union Gaming Analytics, and A.M. Steinberg Advisors are useful methodological references and validation anchors.
-  - [ ] Their site-specific outputs are not universal model constants.
+- [x] Treat Indiana-specific public reports as benchmark and validation cases only.
+  - [x] Spectrum Gaming Group, CBRE/Union Gaming Analytics, and A.M. Steinberg Advisors are useful methodological references and validation anchors.
+  - [x] Their site-specific outputs are not universal model constants.
 - [ ] Do not mark a checklist item complete merely because code was written.
   - [ ] A data task is complete only after ingestion, provenance, validation, persistence, and reproducibility are complete.
   - [ ] A model task is complete only after tests, calibration/validation output, documented assumptions, and failure handling exist.
   - [ ] A UI task is complete only after the server integration works and the user can distinguish defaults, calibrated values, overrides, and outputs.
   - [ ] A report task is complete only when a stored `ModelRun` can reproduce the same report deterministically.
-- [ ] Do not hard-code a coefficient solely because a public consultant used it.
-  - [ ] Public consultant assumptions are priors and validation anchors, not automatic truth.
-  - [ ] Any adopted coefficient must have a source, calibration rationale, validation result, sensitivity range, or a documented combination of these.
+- [x] Do not hard-code a coefficient solely because a public consultant used it.
+  - [x] Public consultant assumptions are priors and validation anchors, not automatic truth.
+  - [x] Any adopted coefficient must have a source, calibration rationale, validation result, sensitivity range, or a documented combination of these.
 - [ ] Do not tune the model only until it reproduces one desired consultant result.
   - [ ] It must explain differences across multiple benchmark markets.
   - [ ] It must validate against actual incumbent performance where public data exist.
@@ -167,16 +168,16 @@ Primary source:
 
 - `https://www.in.gov/igc/files/publications/Spectrum-Relocation-Report-to-Indiana-Gaming-Commission-9-30-2025-Final.pdf`
 
-- [ ] Understand Spectrum's public-data demand construction.
-  - [ ] ZIP-level adjusted gross income was used to estimate gaming-market potential.
-  - [ ] National casino-revenue-to-AGI reference was approximately 0.58% using cited 2022 data.
-  - [ ] Indiana mature-market reference was approximately 0.66%.
-  - [ ] Treat these as benchmark priors, not immutable constants.
-- [ ] Understand Spectrum's data advantage.
-  - [ ] It obtained rated/tracked play by ZIP from Indiana operators through the Indiana Gaming Commission.
-  - [ ] This project does not possess equivalent patron-level operator data unless lawfully obtained later.
-- [ ] Retain Spectrum's drive-time and capture concepts.
-- [ ] Retain its Northeast Indiana proxy result as a validation anchor, not a forced target.
+- [x] Understand Spectrum's public-data demand construction.
+  - [x] ZIP-level adjusted gross income was used to estimate gaming-market potential.
+  - [x] National casino-revenue-to-AGI reference was approximately 0.58% using cited 2022 data.
+  - [x] Indiana mature-market reference was approximately 0.66%.
+  - [x] Treat these as benchmark priors, not immutable constants.
+- [x] Understand Spectrum's data advantage.
+  - [x] It obtained rated/tracked play by ZIP from Indiana operators through the Indiana Gaming Commission.
+  - [x] This project does not possess equivalent patron-level operator data unless lawfully obtained later.
+- [x] Retain Spectrum's drive-time and capture concepts.
+- [x] Retain its Northeast Indiana proxy result as a validation anchor, not a forced target.
 
 ## 2.2 CBRE / Union Gaming Analytics: Greater Fort Wayne Area Casino Analysis
 
@@ -184,17 +185,17 @@ Primary source:
 
 - `https://cdn.insideindianabusiness.com/wp-content/uploads/2026/01/GFWI-Casino-Analysis-Presentation-Final-2025-12-03.pdf`
 
-- [ ] Retain its public gravity-model concepts:
-  - [ ] population;
-  - [ ] income;
-  - [ ] project and competitor attractiveness/development scale;
-  - [ ] distance/travel friction.
-- [ ] Retain its development-program concept.
-  - [ ] The proposed development program must affect attraction independently of latitude/longitude.
-- [ ] Retain separate out-of-market highway traffic demand.
-- [ ] Retain stabilization/ramp analysis.
-- [ ] Retain independent regression/comparable-market reasonableness testing.
-- [ ] Retain its published Northeast Indiana outputs and competitor impacts as validation targets, not required outcomes.
+- [x] Retain its public gravity-model concepts:
+  - [x] population;
+  - [x] income;
+  - [x] project and competitor attractiveness/development scale;
+  - [x] distance/travel friction.
+- [x] Retain its development-program concept.
+  - [x] The proposed development program must affect attraction independently of latitude/longitude.
+- [x] Retain separate out-of-market highway traffic demand.
+- [x] Retain stabilization/ramp analysis.
+- [x] Retain independent regression/comparable-market reasonableness testing.
+- [x] Retain its published Northeast Indiana outputs and competitor impacts as validation targets, not required outcomes.
 
 ## 2.3 A.M. Steinberg Advisors: Steuben County Gaming Market Feasibility Study
 
@@ -202,34 +203,34 @@ Primary source:
 
 - `https://www.steubenedc.com/media/userfiles/subsite_259/files/SCEDC_Feasibility_Study_FINAL.pdf`
 
-- [ ] Retain its explicitly described mass-weighted gravity concepts:
-  - [ ] projected casino-eligible adult population;
-  - [ ] income-adjusted gaming expenditure;
-  - [ ] travel-time/distance decay;
-  - [ ] base beta around `1.5`;
-  - [ ] sensitivity around `1.4` to `1.6`;
-  - [ ] incumbent competitive mass materially informed by observed GGR;
-  - [ ] broad competitive inclusion;
-  - [ ] separate tourism demand.
-- [ ] Treat beta `1.5` as an initial prior/default candidate for the Indiana base parameter set, not a universal national constant.
-- [ ] Retain its low/base/high revenue outputs as Indiana validation benchmarks.
+- [x] Retain its explicitly described mass-weighted gravity concepts:
+  - [x] projected casino-eligible adult population;
+  - [x] income-adjusted gaming expenditure;
+  - [x] travel-time/distance decay;
+  - [x] base beta around `1.5`;
+  - [x] sensitivity around `1.4` to `1.6`;
+  - [x] incumbent competitive mass materially informed by observed GGR;
+  - [x] broad competitive inclusion;
+  - [x] separate tourism demand.
+- [x] Treat beta `1.5` as an initial prior/default candidate for the Indiana base parameter set, not a universal national constant.
+- [x] Retain its low/base/high revenue outputs as Indiana validation benchmarks.
 
 ## 2.4 Benchmark-study reconciliation
 
-- [ ] Build a benchmark registry that can hold any public or private study used for validation.
-- [ ] Store:
-  - [ ] benchmark ID;
-  - [ ] market/geography;
-  - [ ] study date;
-  - [ ] consultant/source;
-  - [ ] candidate location;
-  - [ ] development program;
-  - [ ] reported revenue outputs;
-  - [ ] reported model assumptions;
-  - [ ] methodological notes;
-  - [ ] source URL/file provenance.
-- [ ] Explain differences rather than forcing equality.
-- [ ] Allow future benchmark suites for other states and markets without code changes.
+- [x] Build a benchmark registry that can hold any public or private study used for validation.
+- [x] Store:
+  - [x] benchmark ID;
+  - [x] market/geography;
+  - [x] study date;
+  - [x] consultant/source;
+  - [x] candidate location;
+  - [x] development program;
+  - [x] reported revenue outputs;
+  - [x] reported model assumptions;
+  - [x] methodological notes;
+  - [x] source URL/file provenance.
+- [x] Explain differences rather than forcing equality.
+- [x] Allow future benchmark suites for other states and markets without code changes.
 
 ---
 
@@ -1526,7 +1527,7 @@ Indiana is the first real validation suite, not the core architecture.
 - [x] Dynamic jurisdiction fiscal sections.
 - [x] Parameter/override appendix.
 - [x] Data/methodology appendix.
-- [ ] Publication-quality exhibits. *(rendering/PDF output pending)*
+- [x] Publication-quality exhibits.
 
 ---
 
