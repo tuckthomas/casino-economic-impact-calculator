@@ -255,9 +255,12 @@ internal static class IndotAadtArchiveReader
             }
             var trafficSectionId = Field(reader, ordinals.TrafficSectionId);
             var eventId = Field(reader, ordinals.EventId).Trim('{', '}');
-            var stableComponent = string.IsNullOrWhiteSpace(eventId)
-                ? $"{siteNumber}-{trafficSectionId}"
-                : eventId;
+            var globalId = Field(reader, ordinals.GlobalId).Trim('{', '}');
+            var stableComponent = !string.IsNullOrWhiteSpace(globalId)
+                ? globalId
+                : string.IsNullOrWhiteSpace(eventId)
+                    ? $"{siteNumber}-{trafficSectionId}"
+                    : eventId;
             if (string.IsNullOrWhiteSpace(stableComponent))
             {
                 throw new InvalidDataException("An INDOT AADT record has neither an event ID nor a site/section identifier.");
@@ -337,6 +340,7 @@ internal static class IndotAadtArchiveReader
             HpmsYear = Required(reader, "HPMS_YEAR");
             FromDate = Optional(reader, "FROM_DATE");
             EventId = Required(reader, "EVENT_ID");
+            GlobalId = Optional(reader, "GLOBALID_1");
             Comment = Optional(reader, "COMMENT_");
         }
 
@@ -347,6 +351,7 @@ internal static class IndotAadtArchiveReader
         public int HpmsYear { get; }
         public int FromDate { get; }
         public int EventId { get; }
+        public int GlobalId { get; }
         public int Comment { get; }
 
         private static int Required(IDataRecord reader, string name)

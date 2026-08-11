@@ -142,6 +142,25 @@ public sealed class IndianaProviderAdaptersTests
         Assert.InRange(longitude, -87.00001, -86.99999);
     }
 
+    [Fact]
+    public async Task IndotProvider_UsesUniqueGlobalIdsWhenPublishedEventIdsRepeat()
+    {
+        var archive = BuildIndotArchiveWithRepeatedEventIds();
+        var provider = new IndianaDepartmentOfTransportationAadtProvider(
+            new HttpClient(new ByteResponseHandler(archive)),
+            Options.Create(new IndianaDepartmentOfTransportationProviderOptions()));
+
+        var dataset = await provider.FetchAsync(new ProviderFetchRequest(
+            "US-IN",
+            new DateOnly(2024, 1, 1),
+            new DateOnly(2024, 12, 31)));
+
+        Assert.Equal(2, dataset.Rows.Count);
+        Assert.Equal(2, dataset.Rows.Select(row => row.StableObservationId).Distinct(StringComparer.Ordinal).Count());
+        Assert.Contains(dataset.Rows, row => row.StableObservationId.EndsWith("11111111-1111-1111-1111-111111111111", StringComparison.Ordinal));
+        Assert.Contains(dataset.Rows, row => row.StableObservationId.EndsWith("22222222-2222-2222-2222-222222222222", StringComparison.Ordinal));
+    }
+
     private static byte[] BuildIgcWorkbook()
     {
         XNamespace spreadsheet = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
@@ -240,6 +259,62 @@ public sealed class IndianaProviderAdaptersTests
                 Header = ShapefileDataWriter.GetHeader(feature, 1)
             };
             writer.Write([feature]);
+
+            using var archiveStream = new MemoryStream();
+            using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                foreach (var path in Directory.EnumerateFiles(directory, "AADT 2025.*"))
+                {
+                    var entry = archive.CreateEntry(Path.GetFileName(path));
+                    using var source = File.OpenRead(path);
+                    using var target = entry.Open();
+                    source.CopyTo(target);
+                }
+            }
+            return archiveStream.ToArray();
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static byte[] BuildIndotArchiveWithRepeatedEventIds()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "savenein-indot-globalid-fixture", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var basePath = Path.Combine(directory, "AADT 2025");
+            var factory = new GeometryFactory(new PrecisionModel(), 26916);
+            Feature Feature(string globalId, double northing, string site) => new(
+                factory.CreateLineString(
+                [
+                    new Coordinate(500_000, northing),
+                    new Coordinate(500_100, northing)
+                ]),
+                new AttributesTable
+                {
+                    { "ROUTE_ID", "10000000640000001" },
+                    { "TRAFFIC_SE", $"section-{site}" },
+                    { "SITE_NO", site },
+                    { "AADT", 57_429d },
+                    { "HPMS_YEAR", "2024" },
+                    { "FROM_DATE", "20190617" },
+                    { "EVENT_ID", "{AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}" },
+                    { "GLOBALID_1", $"{{{globalId}}}" },
+                    { "COMMENT_", "official frozen-fixture shape" }
+                });
+            var features = new[]
+            {
+                Feature("11111111-1111-1111-1111-111111111111", 4_427_757.218, "970200"),
+                Feature("22222222-2222-2222-2222-222222222222", 4_428_757.218, "970201")
+            };
+            var writer = new ShapefileDataWriter(basePath, factory)
+            {
+                Header = ShapefileDataWriter.GetHeader(features[0], features.Length)
+            };
+            writer.Write(features);
 
             using var archiveStream = new MemoryStream();
             using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Create, leaveOpen: true))
