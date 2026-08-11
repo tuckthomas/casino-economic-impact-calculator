@@ -124,6 +124,10 @@ public sealed class ModelFoundationSchemaTests
         Assert.Contains("prevent_referenced_data_source_mutation", sql, StringComparison.Ordinal);
         Assert.Contains("prevent_finalized_dataset_reference_mutation", sql, StringComparison.Ordinal);
         Assert.Contains("casino_gaming_revenue_periods", sql, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_casino_competitors_stable_venue_id",
+            sql,
+            StringComparison.Ordinal);
 
         var gravityEngineMigration = Assert.Single(
             resourceNames,
@@ -251,5 +255,16 @@ public sealed class ModelFoundationSchemaTests
         Assert.Contains("candidate_location_travel_cache", candidateCacheSql, StringComparison.Ordinal);
         Assert.Contains("candidate_coordinate_hash", candidateCacheSql, StringComparison.Ordinal);
         Assert.Contains("routing_graph_hash", candidateCacheSql, StringComparison.Ordinal);
+
+        var benchmarkReconciliationMigration = Assert.Single(
+            resourceNames,
+            name => name.EndsWith("019_indiana_benchmark_reconciliation_outputs.sql", StringComparison.Ordinal));
+        using var benchmarkReconciliationStream = typeof(ModelFoundationInitializer).Assembly
+            .GetManifestResourceStream(benchmarkReconciliationMigration)!;
+        using var benchmarkReconciliationReader = new StreamReader(benchmarkReconciliationStream);
+        var benchmarkReconciliationSql = benchmarkReconciliationReader.ReadToEnd();
+        Assert.Contains("localGravityGrossGamingRevenue", benchmarkReconciliationSql, StringComparison.Ordinal);
+        Assert.Contains("localRegressionGrossGamingRevenue", benchmarkReconciliationSql, StringComparison.Ordinal);
+        Assert.Contains("source_file_checksum", benchmarkReconciliationSql, StringComparison.Ordinal);
     }
 }

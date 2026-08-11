@@ -29,7 +29,8 @@ public static class ModelFoundationInitializer
         "015_sensitivity_analyses.sql",
         "016_local_economic_inventory.sql",
         "017_nullable_facility_evidence_flags.sql",
-        "018_candidate_location_travel_cache.sql"
+        "018_candidate_location_travel_cache.sql",
+        "019_indiana_benchmark_reconciliation_outputs.sql"
     ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

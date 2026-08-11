@@ -63,6 +63,8 @@
                       Link="Data\Migrations\017_nullable_facility_evidence_flags.sql" />
     <EmbeddedResource Include="..\docs\migrations\018_candidate_location_travel_cache.sql"
                       Link="Data\Migrations\018_candidate_location_travel_cache.sql" />
+    <EmbeddedResource Include="..\docs\migrations\019_indiana_benchmark_reconciliation_outputs.sql"
+                      Link="Data\Migrations\019_indiana_benchmark_reconciliation_outputs.sql" />
   </ItemGroup>
 
 </Project>

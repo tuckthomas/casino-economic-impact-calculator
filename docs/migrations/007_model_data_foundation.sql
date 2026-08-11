@@ -138,8 +138,11 @@ SET stable_venue_id = 'legacy-' || id::text
 WHERE stable_venue_id IS NULL OR stable_venue_id = '';
 ALTER TABLE casino_competitors
     ALTER COLUMN stable_venue_id SET NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS ix_casino_competitors_stable_venue_id
-    ON casino_competitors (stable_venue_id);
+
+-- Stable venue identities repeat across immutable dataset snapshots by design.
+-- Migration 008 installs the production uniqueness constraint scoped to
+-- (dataset_snapshot_id, stable_venue_id); a transient global unique index here
+-- makes the idempotent migration chain fail once more than one snapshot exists.
 
 CREATE TABLE IF NOT EXISTS casino_competitor_history (
     id BIGSERIAL PRIMARY KEY,
