@@ -57,6 +57,12 @@ public sealed class OriginFacilityTravel
     [Required, MaxLength(30)]
     public string FacilityKind { get; set; } = FacilityKinds.Incumbent;
 
+    [Required, MaxLength(64)]
+    public string FacilityCoordinateHash { get; set; } = string.Empty;
+
+    public double FacilityLatitude { get; set; }
+    public double FacilityLongitude { get; set; }
+
     [Required, MaxLength(128)]
     public string RoutingGraphHash { get; set; } = string.Empty;
 

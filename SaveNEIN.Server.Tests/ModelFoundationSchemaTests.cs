@@ -266,5 +266,17 @@ public sealed class ModelFoundationSchemaTests
         Assert.Contains("localGravityGrossGamingRevenue", benchmarkReconciliationSql, StringComparison.Ordinal);
         Assert.Contains("localRegressionGrossGamingRevenue", benchmarkReconciliationSql, StringComparison.Ordinal);
         Assert.Contains("source_file_checksum", benchmarkReconciliationSql, StringComparison.Ordinal);
+
+        var coordinateVersionedTravelMigration = Assert.Single(
+            resourceNames,
+            name => name.EndsWith("020_coordinate_versioned_incumbent_travel_cache.sql", StringComparison.Ordinal));
+        using var coordinateVersionedTravelStream = typeof(ModelFoundationInitializer).Assembly
+            .GetManifestResourceStream(coordinateVersionedTravelMigration)!;
+        using var coordinateVersionedTravelReader = new StreamReader(coordinateVersionedTravelStream);
+        var coordinateVersionedTravelSql = coordinateVersionedTravelReader.ReadToEnd();
+        Assert.Contains("facility_coordinate_hash", coordinateVersionedTravelSql, StringComparison.Ordinal);
+        Assert.Contains("ux_origin_facility_travel_location_identity", coordinateVersionedTravelSql, StringComparison.Ordinal);
+        Assert.Contains("facility_latitude", coordinateVersionedTravelSql, StringComparison.Ordinal);
+        Assert.Contains("facility_longitude", coordinateVersionedTravelSql, StringComparison.Ordinal);
     }
 }

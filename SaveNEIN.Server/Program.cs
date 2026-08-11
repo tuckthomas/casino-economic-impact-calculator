@@ -64,6 +64,9 @@ builder.Services.Configure<SaveNEIN.Server.Services.Providers.IndianaGamingCommi
     builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.IndianaGamingCommissionProviderOptions.ConfigurationSection));
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IndianaGamingCommissionMonthlyRevenueProvider>();
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IndianaGamingCommissionFacilityInventoryProvider>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.IndianaTribalGamingFacilityProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.IndianaTribalGamingFacilityProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IndianaTribalGamingFacilityInventoryProvider>();
 builder.Services.Configure<SaveNEIN.Server.Services.Providers.IllinoisGamingBoardProviderOptions>(
     builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.IllinoisGamingBoardProviderOptions.ConfigurationSection));
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.IllinoisGamingBoardRevenueProvider>();
@@ -92,6 +95,8 @@ builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingRegulatorPerformanceP
     serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.OhioLotteryVideoLotteryRevenueProvider>());
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>
     serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.IndianaGamingCommissionFacilityInventoryProvider>());
+builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>
+    serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.IndianaTribalGamingFacilityInventoryProvider>());
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>
     serviceProvider.GetRequiredService<SaveNEIN.Server.Services.Providers.IllinoisGamingBoardFacilityInventoryProvider>());
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFacilityInventoryProvider>(serviceProvider =>

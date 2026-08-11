@@ -62,6 +62,40 @@ public sealed class TravelMatrixServiceTests
     }
 
     [Fact]
+    public async Task IncumbentStableId_ReusesOnlyAnExactFacilityCoordinateAcrossSnapshots()
+    {
+        await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"incumbent-coordinate-cache-{Guid.NewGuid():N}")
+            .Options);
+        var handler = new ValhallaMatrixHandler();
+        var client = new ValhallaClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://valhalla.test") },
+            NullLogger<ValhallaClient>.Instance);
+        var service = new TravelMatrixService(db, client);
+        var origin = new TravelMatrixOrigin(1, "USA-ZCTA-46802", 41.08, -85.14);
+
+        var first = await service.ResolveAsync(
+            [origin],
+            [new TravelMatrixFacility("USA-IN-stable", FacilityKinds.Incumbent, 10, null, 41.1, -84.9)]);
+        first.Routes.Single().FacilityCoordinateHash = $"legacy-{first.Routes.Single().Id}";
+        await db.SaveChangesAsync();
+        var sameCoordinate = await service.ResolveAsync(
+            [origin],
+            [new TravelMatrixFacility("USA-IN-stable", FacilityKinds.Incumbent, 20, null, 41.1, -84.9)]);
+        var movedCoordinate = await service.ResolveAsync(
+            [origin],
+            [new TravelMatrixFacility("USA-IN-stable", FacilityKinds.Incumbent, 30, null, 41.1001, -84.9)]);
+
+        Assert.Equal(2, handler.MatrixRequestCount);
+        Assert.Equal(first.Routes.Single().Id, sameCoordinate.Routes.Single().Id);
+        Assert.NotEqual(first.Routes.Single().Id, movedCoordinate.Routes.Single().Id);
+        Assert.Equal(2, await db.OriginFacilityTravel.CountAsync());
+        Assert.Equal(
+            TravelMatrixService.CandidateCoordinateHash(41.1001, -84.9),
+            movedCoordinate.Routes.Single().FacilityCoordinateHash);
+    }
+
+    [Fact]
     public async Task FarPair_IsPersistedAsExplicitPrefilterMissWithoutPoisoningValhallaBatch()
     {
         await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()

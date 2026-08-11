@@ -68,12 +68,24 @@ public sealed class TravelMatrixService(
         var graph = await valhallaClient.GetRoutingGraphIdentityAsync(cancellationToken);
         var originIds = orderedOrigins.Select(origin => origin.OriginZoneId).ToArray();
         var facilityKeys = orderedFacilities.Select(facility => facility.FacilityKey).ToArray();
-        var cached = await db.OriginFacilityTravel
+        var facilityIdentities = orderedFacilities.ToDictionary(
+            facility => facility.FacilityKey,
+            facility => CandidateIdentity(facility.Latitude, facility.Longitude),
+            StringComparer.OrdinalIgnoreCase);
+        var cachedRows = await db.OriginFacilityTravel
             .Where(route => originIds.Contains(route.OriginZoneId) &&
                             facilityKeys.Contains(route.FacilityKey) &&
                             route.RoutingGraphHash == graph.GraphHash &&
                             route.CostingProfile == costingProfile)
             .ToListAsync(cancellationToken);
+        var cached = cachedRows
+            .Where(route => facilityIdentities.TryGetValue(route.FacilityKey, out var identity) &&
+                            CoordinatesMatch(route, identity))
+            .GroupBy(
+                route => (route.OriginZoneId, route.FacilityKey),
+                OriginFacilityTravelKeyComparer.Instance)
+            .Select(group => group.OrderByDescending(route => route.CalculatedAtUtc).First())
+            .ToArray();
         var routeByKey = cached.ToDictionary(
             route => (route.OriginZoneId, route.FacilityKey),
             OriginFacilityTravelKeyComparer.Instance);
@@ -82,7 +94,7 @@ public sealed class TravelMatrixService(
             .ToArray();
         var candidateIdentities = scenarioFacilities.ToDictionary(
             facility => facility.FacilityKey,
-            facility => CandidateIdentity(facility.Latitude, facility.Longitude),
+            facility => facilityIdentities[facility.FacilityKey],
             StringComparer.OrdinalIgnoreCase);
         var candidateHashes = candidateIdentities.Values.Select(identity => identity.Hash).Distinct().ToArray();
         var cachedCandidateRoutes = candidateHashes.Length == 0
@@ -119,6 +131,9 @@ public sealed class TravelMatrixService(
                     ModelRunId = facility.ModelRunId,
                     FacilityKey = facility.FacilityKey,
                     FacilityKind = facility.FacilityKind,
+                    FacilityCoordinateHash = identity.Hash,
+                    FacilityLatitude = identity.Latitude,
+                    FacilityLongitude = identity.Longitude,
                     RoutingGraphHash = cachedCandidate.RoutingGraphHash,
                     CostingProfile = cachedCandidate.CostingProfile,
                     TravelTimeMinutes = cachedCandidate.TravelTimeMinutes,
@@ -307,14 +322,19 @@ public sealed class TravelMatrixService(
         double? travelTimeMinutes,
         double? routedDistanceMeters,
         bool routeFound,
-        string? failureReason) =>
-        new()
+        string? failureReason)
+    {
+        var identity = CandidateIdentity(facility.Latitude, facility.Longitude);
+        return new OriginFacilityTravel
         {
             OriginZoneId = origin.OriginZoneId,
             CasinoCompetitorId = facility.CasinoCompetitorId,
             ModelRunId = facility.ModelRunId,
             FacilityKey = facility.FacilityKey,
             FacilityKind = facility.FacilityKind,
+            FacilityCoordinateHash = identity.Hash,
+            FacilityLatitude = identity.Latitude,
+            FacilityLongitude = identity.Longitude,
             RoutingGraphHash = graph.GraphHash,
             CostingProfile = costingProfile,
             TravelTimeMinutes = travelTimeMinutes,
@@ -323,6 +343,7 @@ public sealed class TravelMatrixService(
             RouteFailureReason = failureReason,
             CalculatedAtUtc = DateTime.UtcNow
         };
+    }
 
     private static bool IsPairSpecificMatrixFailure(string message) =>
         message.Contains("\"error_code\":442", StringComparison.Ordinal) ||
@@ -409,6 +430,14 @@ public sealed class TravelMatrixService(
         CandidateLocationIdentity requested) =>
         BitConverter.DoubleToInt64Bits(cached.CandidateLatitude) == BitConverter.DoubleToInt64Bits(requested.Latitude) &&
         BitConverter.DoubleToInt64Bits(cached.CandidateLongitude) == BitConverter.DoubleToInt64Bits(requested.Longitude);
+
+    private static bool CoordinatesMatch(
+        OriginFacilityTravel cached,
+        CandidateLocationIdentity requested) =>
+        (string.Equals(cached.FacilityCoordinateHash, requested.Hash, StringComparison.Ordinal) ||
+         cached.FacilityCoordinateHash.StartsWith("legacy-", StringComparison.Ordinal)) &&
+        BitConverter.DoubleToInt64Bits(cached.FacilityLatitude) == BitConverter.DoubleToInt64Bits(requested.Latitude) &&
+        BitConverter.DoubleToInt64Bits(cached.FacilityLongitude) == BitConverter.DoubleToInt64Bits(requested.Longitude);
 
     private sealed record CandidateLocationIdentity(string Hash, double Latitude, double Longitude);
 

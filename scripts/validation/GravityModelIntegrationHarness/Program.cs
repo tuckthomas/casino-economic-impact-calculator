@@ -435,6 +435,7 @@ if (args is ["--export-four-state-provider-bundle", var fourStateBundleOutputPat
         new DateOnly(2025, 12, 31));
 
     var indianaOptions = Options.Create(new IndianaGamingCommissionProviderOptions());
+    var indianaTribalOptions = Options.Create(new IndianaTribalGamingFacilityProviderOptions());
     var illinoisOptions = Options.Create(new IllinoisGamingBoardProviderOptions());
     var illinoisRevenue = new IllinoisGamingBoardRevenueProvider(providerHttp, illinoisOptions);
     var michiganOptions = Options.Create(new MichiganGamingFacilityProviderOptions());
@@ -446,6 +447,7 @@ if (args is ["--export-four-state-provider-bundle", var fourStateBundleOutputPat
     var facilities = await new CompositeGamingFacilityInventoryProvider(
     [
         new IndianaGamingCommissionFacilityInventoryProvider(providerHttp, indianaOptions),
+        new IndianaTribalGamingFacilityInventoryProvider(providerHttp, indianaTribalOptions),
         new IllinoisGamingBoardFacilityInventoryProvider(providerHttp, illinoisRevenue, illinoisOptions),
         new MichiganGamingFacilityInventoryProvider(providerHttp, michiganOptions),
         new OhioCasinoControlCommissionFacilityInventoryProvider(providerHttp, ohioRevenue, ohioOptions),
@@ -845,6 +847,9 @@ if (validateProviderIngestion)
     var ohioLotteryOptions = Options.Create(new OhioLotteryVideoLotteryProviderOptions());
     var igcRevenueProvider = new IndianaGamingCommissionMonthlyRevenueProvider(providerHttp, igcOptions);
     var igcFacilityProvider = new IndianaGamingCommissionFacilityInventoryProvider(providerHttp, igcOptions);
+    var indianaTribalFacilityProvider = new IndianaTribalGamingFacilityInventoryProvider(
+        providerHttp,
+        Options.Create(new IndianaTribalGamingFacilityProviderOptions()));
     var igbRevenueProvider = new IllinoisGamingBoardRevenueProvider(providerHttp, igbOptions);
     var igbFacilityProvider = new IllinoisGamingBoardFacilityInventoryProvider(
         providerHttp,
@@ -872,7 +877,7 @@ if (validateProviderIngestion)
         new DateOnly(2025, 12, 31));
     var facilitySnapshotId = await providerIngestion.IngestGamingFacilitiesAsync(
         new CompositeGamingFacilityInventoryProvider(
-            new IGamingFacilityInventoryProvider[] { igcFacilityProvider, igbFacilityProvider, mgcbFacilityProvider, occcFacilityProvider, ohioLotteryFacilityProvider }),
+            new IGamingFacilityInventoryProvider[] { igcFacilityProvider, indianaTribalFacilityProvider, igbFacilityProvider, mgcbFacilityProvider, occcFacilityProvider, ohioLotteryFacilityProvider }),
         igcFacilityPeriod);
     var performanceSnapshotId = await providerIngestion.IngestGamingPerformanceAsync(
         new CompositeGamingRegulatorPerformanceProvider(
@@ -965,7 +970,7 @@ if (validateProviderIngestion)
         .Select(snapshot => new { snapshot.Id, snapshot.DatasetKey, snapshot.IsSealed, snapshot.ValidationState })
         .OrderBy(snapshot => snapshot.DatasetKey)
         .ToArrayAsync();
-    if (facilityCount != 68 || unknownHotelCount != 68 || performanceCount != 838 || trafficCount != 1 ||
+    if (facilityCount != 69 || unknownHotelCount != 68 || performanceCount != 838 || trafficCount != 1 ||
         originCount != irsDataset.Rows.Count || incomeCount != irsDataset.Rows.Count ||
         ageBinCount != irsDataset.Rows.Count * 23 || tourismCount != 1 ||
         snapshotStates.Length != 7 || snapshotStates.Any(snapshot => !snapshot.IsSealed))
