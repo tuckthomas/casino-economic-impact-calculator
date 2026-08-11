@@ -109,16 +109,17 @@ namespace SaveNEIN.Server.Controllers
                     });
                 }
 
-                var connString = _db.Database.GetConnectionString();
-                if (string.IsNullOrWhiteSpace(connString))
+                // Reuse the DbContext-owned connection. Reconstructing an NpgsqlConnection
+                // from Database.GetConnectionString() is unsafe because Npgsql may redact the
+                // password after the configured data source has been initialized.
+                var conn = _db.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
                 {
-                    return StatusCode(500, new { error = "DefaultConnection is not configured." });
+                    await conn.OpenAsync();
                 }
 
-                await using var conn = new NpgsqlConnection(connString);
-                await conn.OpenAsync();
-
-                await using var cmd = new NpgsqlCommand(@"
+                await using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
                     SELECT geoid, name
                     FROM tiger_places
                     WHERE state_fp = @stateFips
@@ -126,11 +127,22 @@ namespace SaveNEIN.Server.Controllers
                       AND ST_Covers(geom, ST_SetSRID(ST_Point(@lon, @lat), 4326))
                     ORDER BY COALESCE(aland, 0) ASC, geoid
                     LIMIT 1;
-                ", conn);
+                ";
 
-                cmd.Parameters.AddWithValue("lat", lat);
-                cmd.Parameters.AddWithValue("lon", lon);
-                cmd.Parameters.AddWithValue("stateFips", stateFips);
+                var latParameter = cmd.CreateParameter();
+                latParameter.ParameterName = "lat";
+                latParameter.Value = lat;
+                cmd.Parameters.Add(latParameter);
+
+                var lonParameter = cmd.CreateParameter();
+                lonParameter.ParameterName = "lon";
+                lonParameter.Value = lon;
+                cmd.Parameters.Add(lonParameter);
+
+                var stateFipsParameter = cmd.CreateParameter();
+                stateFipsParameter.ParameterName = "stateFips";
+                stateFipsParameter.Value = stateFips;
+                cmd.Parameters.Add(stateFipsParameter);
 
                 await using var reader = await cmd.ExecuteReaderAsync();
                 if (await reader.ReadAsync())
@@ -159,7 +171,7 @@ namespace SaveNEIN.Server.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"[CensusController] Municipality lookup failed: {ex}");
-                return StatusCode(500, new { error = ex.ToString() });
+                return StatusCode(500, new { error = "Municipality lookup failed." });
             }
         }
 
