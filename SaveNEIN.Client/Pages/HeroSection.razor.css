@@ -309,6 +309,7 @@
     box-shadow: inset 0 0 0 1px rgba(255, 70, 88, 0.2), inset 0 12px 18px rgba(0, 0, 0, 0.35), 0 8px 17px rgba(0, 0, 0, 0.35);
 }
 
+::deep .modern-slot-grid,
 .modern-slot-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -322,6 +323,7 @@
     box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
+::deep .modern-slot-column,
 .modern-slot-column {
     position: relative;
     overflow: hidden;
@@ -331,6 +333,7 @@
     container-type: inline-size;
 }
 
+::deep .modern-slot-reel-strip,
 .modern-slot-reel-strip {
     position: absolute;
     top: 0;
@@ -343,10 +346,12 @@
     transform: translate3d(0, 0, 0);
 }
 
+::deep .modern-slot-reel-strip.is-spinning-strip,
 .modern-slot-reel-strip.is-spinning-strip {
     filter: blur(0.5px);
 }
 
+::deep .modern-slot-cell,
 .modern-slot-cell {
     position: relative;
     min-width: 0;
@@ -362,13 +367,14 @@
     justify-content: center;
     gap: clamp(0.15rem, 0.4vw, 0.3rem);
     text-align: center;
-    color: var(--slot-ink);
-    background: radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.92), transparent 42%), linear-gradient(180deg, #fffefa 0%, var(--slot-cell) 58%, #e8e3dd 100%);
+    color: var(--slot-ink, #16181d);
+    background: radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.92), transparent 42%), linear-gradient(180deg, #fffefa 0%, var(--slot-cell, #f7f4ef) 58%, #e8e3dd 100%);
     box-shadow: inset 0 0 0 1px rgba(32, 33, 36, 0.1), inset 0 -9px 14px rgba(60, 53, 48, 0.07);
     overflow: hidden;
     transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
+::deep .modern-slot-cell::after,
 .modern-slot-cell::after {
     content: "";
     position: absolute;
@@ -378,6 +384,7 @@
     opacity: 0.36;
 }
 
+::deep .modern-slot-cell-icon,
 .modern-slot-cell-icon {
     position: relative;
     z-index: 1;
@@ -393,6 +400,7 @@
     flex-shrink: 0;
 }
 
+::deep .modern-slot-cell-label,
 .modern-slot-cell-label {
     position: relative;
     z-index: 1;
@@ -410,14 +418,16 @@
     hyphens: none;
 }
 
+::deep .modern-slot-cell.is-truth,
 .modern-slot-cell.is-truth {
-    color: var(--slot-truth);
+    color: var(--slot-truth, #8f1522);
     background: radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.98), transparent 40%), linear-gradient(180deg, #fff9f6 0%, #f7e9e6 100%);
     box-shadow: inset 0 0 0 2px rgba(143, 21, 34, 0.18), inset 0 -10px 18px rgba(143, 21, 34, 0.08);
 }
 
+::deep .modern-slot-cell.is-truth .modern-slot-cell-icon,
 .modern-slot-cell.is-truth .modern-slot-cell-icon {
-    color: var(--slot-truth);
+    color: var(--slot-truth, #8f1522);
 }
 
 .modern-slot-payline-arrow {
@@ -532,6 +542,7 @@
 }
 
 /* --- 3D QUARTER COIN ANIMATION --- */
+::deep .modern-coin-scene,
 .modern-coin-scene {
     position: absolute;
     pointer-events: none;
@@ -539,6 +550,7 @@
     perspective: 2000px;
 }
 
+::deep .modern-coin-wrapper,
 .modern-coin-wrapper {
     position: absolute;
     top: 0;
@@ -553,10 +565,12 @@
     transform-origin: center center;
 }
 
+::deep .modern-coin-wrapper.anim-insert,
 .modern-coin-wrapper.anim-insert {
     animation: modernInsertCoin 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
+::deep .modern-coin-layer,
 .modern-coin-layer {
     position: absolute;
     top: 0;
@@ -566,6 +580,7 @@
     border-radius: 50%;
 }
 
+::deep .modern-coin-face,
 .modern-coin-face {
     background-size: cover;
     background-position: center;
@@ -573,14 +588,17 @@
     background-color: #d6d6d6;
 }
 
+::deep .modern-coin-face-front,
 .modern-coin-face-front {
     background-image: url('assets/quarter/USA_QUARTER_FRONT.svg');
 }
 
+::deep .modern-coin-face-back,
 .modern-coin-face-back {
     background-image: url('assets/quarter/USA_QUARTER_BACK.svg');
 }
 
+::deep .modern-coin-edge,
 .modern-coin-edge {
     background: #888;
     border: 1px solid #666;
@@ -777,7 +795,7 @@
     }
 
     .hero-desktop-learn-more {
-        animation: heroDesktopLearnMoreIn 0.55s ease 3.7s forwards;
+        animation: heroDesktopLearnMoreIn 0.5s ease 0.9s forwards;
     }
 }
 
@@ -855,7 +873,7 @@
         filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
         transform: translateY(10px);
         transform-origin: center center;
-        animation: heroMobileLogoFadeIn 0.95s ease 0.35s forwards;
+        animation: heroMobileLogoFadeIn 0.5s ease 0.05s forwards;
     }
 
     #hero-section .hero-mobile-intro {
@@ -901,7 +919,7 @@
         pointer-events: none;
         opacity: 0;
         transform: translateY(10px);
-        animation: heroMobileSwipeHintIn 0.7s ease 5.2s forwards;
+        animation: heroMobileSwipeHintIn 0.5s ease 0.9s forwards;
     }
 
     .hero-mobile-swipe-hint .swipe-text {
@@ -940,7 +958,7 @@
         pointer-events: auto;
         z-index: 50;
         opacity: 0;
-        animation: heroMobileScrollHintIn 0.7s ease 5.2s forwards;
+        animation: heroMobileScrollHintIn 0.5s ease 0.9s forwards;
     }
 
     .hero-mobile-scroll-hint .hero-mobile-scroll-link {

@@ -713,7 +713,7 @@ window.SlotMachine = (function ()
     function init(optionsOrMobileMaxWidth, mobileRevealDelayMsArg)
     {
         let mobileMaxWidth = 1023;
-        let mobileRevealDelayMs = 6200;
+        let mobileRevealDelayMs = 0;
 
         if (optionsOrMobileMaxWidth && typeof optionsOrMobileMaxWidth === 'object')
         {
@@ -727,9 +727,8 @@ window.SlotMachine = (function ()
         }
 
         sequenceMobileMaxWidth = mobileMaxWidth;
-        mobileSequenceReady = false;
+        mobileSequenceReady = true;
         setupHeroSwipeNavigation();
-        applyEarlyMobileGate();
 
         if (deferredInitTimer)
         {
@@ -737,28 +736,8 @@ window.SlotMachine = (function ()
             deferredInitTimer = null;
         }
 
-        if (!isMobileViewport(mobileMaxWidth))
-        {
-            setMobileSequenceState('ready');
-            initializeMachine();
-            return;
-        }
-
-        setMobileSequenceState('pending');
-        deferredInitTimer = setTimeout(() =>
-        {
-            try
-            {
-                initializeMachine();
-            } catch (error)
-            {
-                console.error('SlotMachine initialization failed; forcing mobile ready state.', error);
-            } finally
-            {
-                setMobileSequenceState('ready');
-                deferredInitTimer = null;
-            }
-        }, Math.max(0, mobileRevealDelayMs));
+        setMobileSequenceState('ready');
+        initializeMachine();
     }
 
     initEarlyMobileGate();
