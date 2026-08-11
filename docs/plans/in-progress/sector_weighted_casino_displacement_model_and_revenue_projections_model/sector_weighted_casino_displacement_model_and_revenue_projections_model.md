@@ -13,7 +13,8 @@
 > **Verified implementation evidence and checklist cadence (2026-08-11):**
 >
 > - Checklist state was independently reviewed against commit `cf37a1a`; items are checked only when they meet the completion rule in this document, not merely when an interface, entity, or provisional provider exists.
-> - **SUCCESS:** `SaveNEIN.Server.Tests` passes 114/114 tests in the isolated feature worktree, including stored-run report integration, dynamic origin reconciliation, artifact immutability/cache identity, draft-run rejection, model-foundation seed metadata/default upgrades, schema defaults, multi-provider jurisdiction composition, and Michigan/Ohio regulator-source discovery, reconciliation, and failure handling.
+> - **SUCCESS:** `SaveNEIN.Server.Tests` passes 119/119 tests in the isolated feature worktree, including stored-run report integration, dynamic origin reconciliation, artifact immutability/cache identity, draft-run rejection, model-foundation seed metadata/default upgrades, schema defaults, multi-provider jurisdiction composition, Michigan/Ohio regulator-source discovery/reconciliation/failure handling, and the numerical-robustness cases below.
+> - **SUCCESS:** The gravity robustness tranche proves a user-overridden facility-attraction coefficient flows through parameter resolution, structural attraction, and allocation; a 5,000-facility choice set remains finite and demand-conserving; sparse rural origins preserve unreachable alternatives as excluded/auditable while the outside option absorbs demand; and zero plus `1e-12` demand remain finite and exactly conserved.
 > - **SUCCESS:** A disposable remote PostGIS/Valhalla integration run persisted exact routed travel and finalized 45 calibration candidates. Its selected holdout MAPE improved from 98.20% to 68.85%, but still fails the production-quality gate; calibration and production acceptance items therefore remain unchecked.
 > - **SUCCESS:** Live Illinois regulator ingestion returned 17 facilities, 34 performance rows, and $1.9437 billion in reconciled annual AGR; a multi-jurisdiction Indiana/Illinois ingestion persisted sealed source snapshots.
 > - **SUCCESS:** Live Michigan inventory ingestion returned 27 facilities (24 tribal and 3 commercial), stable identities, geocoded coordinates, provenance checksum, and an explicit structural-attraction fallback warning where audited tribal GGR is unavailable. Michigan performance-history coverage remains incomplete.
@@ -1415,7 +1416,7 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
 
 - [x] Full model run with stored data snapshots.
 - [x] Default vs overridden beta.
-- [ ] Default vs overridden facility weights.
+- [x] Default vs overridden facility weights.
 - [x] Scenario reset to defaults.
 - [x] Indiana jurisdiction profile failure/selection behavior. *(Production fiscal-rule validation remains open.)*
 - [x] At least one non-Indiana mock/test jurisdiction proving no Indiana hard-coding.
@@ -1428,12 +1429,12 @@ The long-term deliverable is not merely an interactive calculator. The .NET 10 b
 - [x] Extreme travel times.
 - [x] Very high/low beta.
 - [x] Very high/low attraction.
-- [ ] Large competitive sets.
+- [x] Large competitive sets.
 - [x] Missing route.
 - [x] Missing facility attribute.
-- [ ] Sparse rural origin data.
+- [x] Sparse rural origin data.
 - [x] Missing state-specific fiscal rules.
-- [ ] Zero/near-zero demand.
+- [x] Zero/near-zero demand.
 
 ---
 

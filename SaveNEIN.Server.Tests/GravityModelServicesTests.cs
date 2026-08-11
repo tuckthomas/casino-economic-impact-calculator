@@ -1,5 +1,6 @@
 using SaveNEIN.Server.Services.Gravity;
 using SaveNEIN.Server.Data.Entities;
+using SaveNEIN.Server.Services;
 
 namespace SaveNEIN.Server.Tests;
 
@@ -288,5 +289,129 @@ public sealed class GravityModelServicesTests
         Assert.All(
             result.Facilities.Where(facility => !facility.IsProposedFacility),
             incumbent => Assert.True(incumbent.ChangeInAllocatedDemand < 0));
+    }
+
+    [Fact]
+    public void FacilityWeightOverride_FlowsThroughResolutionAttractionAndGravityAllocation()
+    {
+        var definition = new ModelParameterDefinition
+        {
+            Id = 1,
+            Key = "facility.gaming_positions_coefficient",
+            Category = "facility-attraction",
+            DisplayName = "Gaming positions coefficient",
+            TechnicalDescription = "test",
+            PlainLanguageDescription = "test",
+            Units = "coefficient",
+            SystemDefaultValue = 0,
+            ComputationalMinimum = -10,
+            ComputationalMaximum = 10,
+            IsUserOverridable = true,
+            ModelVersionApplicability = "gravity-v1",
+            IsCalibrated = true
+        };
+        var baselineCoefficient = Assert.Single(ModelParameterResolver.Resolve(
+            [definition], [], new ParameterResolutionRequest("gravity-v1", null, null, null, null)));
+        var overrideCoefficient = Assert.Single(ModelParameterResolver.Resolve(
+            [definition], [], new ParameterResolutionRequest(
+                "gravity-v1", null, null, null,
+                [new ParameterOverride(definition.Key, 1)])));
+        var attractiveness = new FacilityAttractivenessService();
+        var baselineAttraction = attractiveness.CalculateStructural(new StructuralAttractivenessInput(
+            "proposed", [new FacilityFeatureTerm("positions", 2_000, 1_000, baselineCoefficient.FinalValue)]));
+        var overrideAttraction = attractiveness.CalculateStructural(new StructuralAttractivenessInput(
+            "proposed", [new FacilityFeatureTerm("positions", 2_000, 1_000, overrideCoefficient.FinalValue)]));
+        var gravity = new GravityModelService();
+        var parameters = new GravityParameters(1, TravelFrictionForm.InversePower, 1.5, 1);
+
+        var baseline = gravity.Allocate(new GravityOriginInput(
+            "origin", 1_000, 0,
+            [
+                new GravityAlternativeInput("incumbent", 1, 30, true),
+                new GravityAlternativeInput("proposed", baselineAttraction.NormalizedAttraction, 30, true)
+            ]), parameters);
+        var overridden = gravity.Allocate(new GravityOriginInput(
+            "origin", 1_000, 0,
+            [
+                new GravityAlternativeInput("incumbent", 1, 30, true),
+                new GravityAlternativeInput("proposed", overrideAttraction.NormalizedAttraction, 30, true)
+            ]), parameters);
+
+        Assert.Equal("user-override", overrideCoefficient.SourceLayer);
+        Assert.Equal(0.5, baseline.FacilityAllocations.Single(row => row.FacilityKey == "proposed").Share, 12);
+        Assert.True(
+            overridden.FacilityAllocations.Single(row => row.FacilityKey == "proposed").Share >
+            baseline.FacilityAllocations.Single(row => row.FacilityKey == "proposed").Share);
+        Assert.Equal(1_000, overridden.AllocatedDemandSum, 8);
+    }
+
+    [Fact]
+    public void Gravity_ReconcilesLargeCompetitiveSetWithoutOverflow()
+    {
+        var alternatives = Enumerable.Range(1, 5_000)
+            .Select(index => new GravityAlternativeInput(
+                $"facility-{index:D5}",
+                Attraction: 0.5 + index / 5_000d,
+                NetworkTravelTimeMinutes: 5 + index / 100d,
+                RouteFound: true))
+            .ToArray();
+
+        var result = new GravityModelService().Allocate(
+            new GravityOriginInput("large-field-origin", 25_000_000, 1, alternatives),
+            new GravityParameters(1.2, TravelFrictionForm.InversePower, 1.7, 1));
+
+        Assert.Equal(5_000, result.FacilityAllocations.Count);
+        Assert.All(result.FacilityAllocations, allocation =>
+        {
+            Assert.True(double.IsFinite(allocation.Share));
+            Assert.True(double.IsFinite(allocation.AllocatedDemand));
+        });
+        Assert.Equal(1, result.ShareSum, 12);
+        Assert.Equal(25_000_000, result.AllocatedDemandSum, 6);
+    }
+
+    [Fact]
+    public void Gravity_SparseRuralOriginKeepsUnreachableFacilitiesAuditableAndConservesDemand()
+    {
+        var result = new GravityModelService().Allocate(
+            new GravityOriginInput(
+                "sparse-rural-origin",
+                25,
+                1,
+                [
+                    new GravityAlternativeInput("distant-reachable", 0.4, 360, true),
+                    new GravityAlternativeInput("unreachable-a", 1, null, false),
+                    new GravityAlternativeInput("unreachable-b", 2, null, false)
+                ]),
+            new GravityParameters(
+                1,
+                TravelFrictionForm.InversePower,
+                2,
+                1,
+                MissingRouteBehavior.ExcludeFacility));
+
+        Assert.Equal(2, result.FacilityAllocations.Count(allocation => !allocation.RouteIncluded));
+        Assert.True(result.OutsideOptionShare > 0.99);
+        Assert.Equal(1, result.ShareSum, 12);
+        Assert.Equal(25, result.AllocatedDemandSum, 12);
+    }
+
+    [Theory]
+    [InlineData(0d)]
+    [InlineData(0.000000000001d)]
+    public void Gravity_ZeroAndNearZeroDemandRemainFiniteAndConserved(double demand)
+    {
+        var result = new GravityModelService().Allocate(
+            new GravityOriginInput(
+                "zero-safe-origin",
+                demand,
+                0.5,
+                [new GravityAlternativeInput("facility", 1, 20, true)]),
+            new GravityParameters(1, TravelFrictionForm.InversePower, 1.5, 1));
+
+        Assert.All(result.FacilityAllocations, allocation => Assert.True(double.IsFinite(allocation.AllocatedDemand)));
+        Assert.True(double.IsFinite(result.OutsideOptionAllocatedDemand));
+        Assert.Equal(1, result.ShareSum, 12);
+        Assert.InRange(Math.Abs(result.AllocatedDemandSum - demand), 0, 1e-24);
     }
 }
