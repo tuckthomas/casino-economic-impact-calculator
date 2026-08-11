@@ -29,6 +29,13 @@ public sealed class ReportRendererTests
         Assert.Contains("effective-rules@2026-08-09#test", first, StringComparison.Ordinal);
         Assert.Contains("User overrides: gravity.beta=1.6 exponent", first, StringComparison.Ordinal);
         Assert.Contains("Stabilized GGR composition", first, StringComparison.Ordinal);
+        Assert.Contains("Proposed site and competitive facilities", first, StringComparison.Ordinal);
+        Assert.Contains("Patron-origin intensity", first, StringComparison.Ordinal);
+        Assert.Contains("Revenue composition waterfall", first, StringComparison.Ordinal);
+        Assert.Contains("Social-cost bridge", first, StringComparison.Ordinal);
+        Assert.Contains("Net host-local impact waterfall", first, StringComparison.Ordinal);
+        Assert.Contains("Sensitivity tornado", first, StringComparison.Ordinal);
+        Assert.Contains("WGS84 coordinates", first, StringComparison.Ordinal);
         Assert.DoesNotContain("html2canvas", first, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -55,6 +62,8 @@ public sealed class ReportRendererTests
         Assert.Equal(first, second);
         Assert.Contains("revenue,stabilized,total_ggr,1250000,USD", first, StringComparison.Ordinal);
         Assert.Contains("origin,ZCTA:46802,total_proposed_resident_ggr,900000,USD", first, StringComparison.Ordinal);
+        Assert.Contains("origin,ZCTA:46802,latitude,41.08,degrees", first, StringComparison.Ordinal);
+        Assert.Contains("facility,scenario:test,longitude,-85.1,degrees", first, StringComparison.Ordinal);
         Assert.Contains("sensitivity,gravity.beta,low_model_run_id,10000000-0000-0000-0000-000000000001,uuid", first, StringComparison.Ordinal);
     }
 
@@ -65,7 +74,7 @@ public sealed class ReportRendererTests
             Identity: new ReportIdentity(
                 runId,
                 "gravity-v1",
-                "professional-v3",
+                "professional-v4",
                 new DateTime(2026, 8, 9, 12, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 8, 9, 11, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 8, 9, 11, 1, 0, DateTimeKind.Utc),
@@ -120,7 +129,7 @@ public sealed class ReportRendererTests
             Origins:
             [
                 new ReportOrigin(
-                    "ZCTA:46802", "zcta", "46802", "IN", "003", "23060", 1_500_000,
+                    "ZCTA:46802", "zcta", "46802", "IN", "003", "23060", 41.08, -85.14, 1_500_000,
                     800_000, 100_000, 900_000, 600_000, 200_000, 50_000, 150_000, 1)
             ],
             OriginStates: [new ReportOriginGroup("state", "IN", 800_000, 100_000, 900_000, 1, 1)],
@@ -128,7 +137,7 @@ public sealed class ReportRendererTests
             Facilities:
             [
                 new ReportFacility(
-                    "scenario:test", "Test development", "scenario", true, 1.2, 0, 900_000, 900_000,
+                    "scenario:test", "Test development", "scenario", true, 41.1, -85.1, 1.2, 0, 900_000, 900_000,
                     100_000, 900_000, 200_000, 150_000, 1_250_000)
             ],
             DemandComponents: [],

@@ -34,6 +34,10 @@ public sealed class ReportModelFactoryIntegrationTests
         Assert.Equal("agi-share", model.Scenario.DemandSpecification);
         Assert.Equal("observed-ggr", model.Scenario.AttractionSpecification);
         Assert.Equal("inverse-power", model.Scenario.FrictionForm);
+        Assert.Equal(41.08, model.Origins[0].Latitude, 6);
+        Assert.Equal(-85.14, model.Origins[0].Longitude, 6);
+        Assert.Equal(41.08, model.Facilities.Single(facility => facility.IsProposedFacility).Latitude, 6);
+        Assert.Equal(-85.14, model.Facilities.Single(facility => facility.IsProposedFacility).Longitude, 6);
         Assert.StartsWith("effective-rules@2026-08-11#", model.Identity.JurisdictionProfileVersion, StringComparison.Ordinal);
         Assert.Equal(["First warning.", "Second warning."], model.Warnings);
 
@@ -50,13 +54,15 @@ public sealed class ReportModelFactoryIntegrationTests
 
         Assert.Equal(first.Id, second.Id);
         Assert.True(first.IsImmutable);
-        Assert.Equal("professional-v3", first.TemplateVersion);
+        Assert.Equal("professional-v4", first.TemplateVersion);
         Assert.Equal(64, first.ReportModelHash.Length);
         Assert.Equal(64, first.HtmlContentHash.Length);
         Assert.Equal(64, first.PdfContentHash.Length);
         Assert.Equal(64, first.CsvContentHash.Length);
         Assert.Contains("USA-ZCTA-46802", first.HtmlContent, StringComparison.Ordinal);
         Assert.Contains("County/parish composition", first.HtmlContent, StringComparison.Ordinal);
+        Assert.Contains("Proposed site and competitive facilities", first.HtmlContent, StringComparison.Ordinal);
+        Assert.Contains("Patron-origin intensity", first.HtmlContent, StringComparison.Ordinal);
         Assert.Contains("origin_county,IN-003,total_proposed_resident_ggr,700,USD", first.CsvContent, StringComparison.Ordinal);
         Assert.Contains("origin,USA-ZCTA-46802,total_proposed_resident_ggr,700,USD", first.CsvContent, StringComparison.Ordinal);
         Assert.Equal(1, await db.ModelRunReportArtifacts.CountAsync());

@@ -84,7 +84,7 @@ public sealed class ReportArtifactService(
     IPdfReportRenderer pdfRenderer,
     ICsvReportRenderer csvRenderer) : IReportArtifactService
 {
-    public const string TemplateVersion = "professional-v3";
+    public const string TemplateVersion = "professional-v4";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true
@@ -167,6 +167,135 @@ public sealed class ReportArtifactService(
     }
 }
 
+internal static class ReportExhibitBuilder
+{
+    private sealed record MapPoint(
+        string Label,
+        double Latitude,
+        double Longitude,
+        string Kind,
+        double Weight);
+
+    public static string CoordinateMapSvg(CasinoImpactReportModel model, bool includeOrigins)
+    {
+        var points = new List<MapPoint>();
+        if (includeOrigins)
+        {
+            points.AddRange(model.Origins
+                .Where(origin => ValidCoordinate(origin.Latitude, origin.Longitude))
+                .Select(origin => new MapPoint(
+                    origin.StableOriginId,
+                    origin.Latitude,
+                    origin.Longitude,
+                    "origin",
+                    Math.Max(0, origin.ShareOfProposedResidentGgr))));
+            points.AddRange(model.Facilities
+                .Where(facility => facility.IsProposedFacility && ValidCoordinate(facility.Latitude, facility.Longitude))
+                .Select(facility => new MapPoint(facility.FacilityName, facility.Latitude, facility.Longitude, "proposed", 1)));
+        }
+        else
+        {
+            points.AddRange(model.Facilities
+                .Where(facility => ValidCoordinate(facility.Latitude, facility.Longitude))
+                .Select(facility => new MapPoint(
+                    facility.FacilityName,
+                    facility.Latitude,
+                    facility.Longitude,
+                    facility.IsProposedFacility ? "proposed" : "incumbent",
+                    facility.IsProposedFacility ? 1 : Math.Max(0.05, facility.NormalizedAttraction))));
+        }
+
+        if (points.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        const double width = 760;
+        const double height = 360;
+        const double left = 55;
+        const double right = 25;
+        const double top = 24;
+        const double bottom = 42;
+        var minimumLongitude = points.Min(point => point.Longitude);
+        var maximumLongitude = points.Max(point => point.Longitude);
+        var minimumLatitude = points.Min(point => point.Latitude);
+        var maximumLatitude = points.Max(point => point.Latitude);
+        var longitudePadding = Math.Max((maximumLongitude - minimumLongitude) * 0.12, 0.08);
+        var latitudePadding = Math.Max((maximumLatitude - minimumLatitude) * 0.12, 0.08);
+        minimumLongitude -= longitudePadding;
+        maximumLongitude += longitudePadding;
+        minimumLatitude -= latitudePadding;
+        maximumLatitude += latitudePadding;
+        var plotWidth = width - left - right;
+        var plotHeight = height - top - bottom;
+        var maximumOriginWeight = Math.Max(
+            points.Where(point => point.Kind == "origin").Select(point => point.Weight).DefaultIfEmpty(0).Max(),
+            double.Epsilon);
+
+        double X(double longitude) => left + (longitude - minimumLongitude) / (maximumLongitude - minimumLongitude) * plotWidth;
+        double Y(double latitude) => top + (maximumLatitude - latitude) / (maximumLatitude - minimumLatitude) * plotHeight;
+
+        var svg = new StringBuilder(12_000);
+        svg.Append("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 760 360\" role=\"img\" aria-label=\"")
+            .Append(includeOrigins ? "Patron-origin intensity map" : "Proposed site and competitive facilities map")
+            .Append("\"><rect x=\"0\" y=\"0\" width=\"760\" height=\"360\" fill=\"#f8fafc\"/>");
+        for (var index = 0; index <= 4; index++)
+        {
+            var gridX = left + plotWidth * index / 4;
+            var gridY = top + plotHeight * index / 4;
+            var longitude = minimumLongitude + (maximumLongitude - minimumLongitude) * index / 4;
+            var latitude = maximumLatitude - (maximumLatitude - minimumLatitude) * index / 4;
+            svg.Append("<line x1=\"").Append(F(gridX)).Append("\" y1=\"").Append(F(top)).Append("\" x2=\"")
+                .Append(F(gridX)).Append("\" y2=\"").Append(F(top + plotHeight)).Append("\" stroke=\"#dbe2ea\" stroke-width=\"1\"/>")
+                .Append("<line x1=\"").Append(F(left)).Append("\" y1=\"").Append(F(gridY)).Append("\" x2=\"")
+                .Append(F(left + plotWidth)).Append("\" y2=\"").Append(F(gridY)).Append("\" stroke=\"#dbe2ea\" stroke-width=\"1\"/>")
+                .Append("<text x=\"").Append(F(gridX)).Append("\" y=\"348\" text-anchor=\"middle\" font-size=\"11\" fill=\"#526174\">")
+                .Append(F(longitude, 2)).Append("°</text>")
+                .Append("<text x=\"48\" y=\"").Append(F(gridY + 4)).Append("\" text-anchor=\"end\" font-size=\"11\" fill=\"#526174\">")
+                .Append(F(latitude, 2)).Append("°</text>");
+        }
+
+        foreach (var point in points.OrderBy(point => point.Kind == "origin" ? 0 : 1).ThenBy(point => point.Label, StringComparer.Ordinal))
+        {
+            var x = X(point.Longitude);
+            var y = Y(point.Latitude);
+            var title = WebUtility.HtmlEncode(
+                $"{point.Label} · {point.Latitude:F6}, {point.Longitude:F6}" +
+                (point.Kind == "origin" ? $" · {point.Weight:P2} of proposed resident GGR" : string.Empty));
+            if (point.Kind == "origin")
+            {
+                var radius = 4 + 11 * Math.Sqrt(point.Weight / maximumOriginWeight);
+                svg.Append("<circle cx=\"").Append(F(x)).Append("\" cy=\"").Append(F(y)).Append("\" r=\"")
+                    .Append(F(radius)).Append("\" fill=\"#256c8f\" fill-opacity=\"0.42\" stroke=\"#164e63\" stroke-width=\"1\"><title>")
+                    .Append(title).Append("</title></circle>");
+            }
+            else if (point.Kind == "proposed")
+            {
+                svg.Append("<polygon points=\"").Append(F(x)).Append(',').Append(F(y - 9)).Append(' ')
+                    .Append(F(x + 9)).Append(',').Append(F(y)).Append(' ').Append(F(x)).Append(',').Append(F(y + 9)).Append(' ')
+                    .Append(F(x - 9)).Append(',').Append(F(y)).Append("\" fill=\"#0f2948\" stroke=\"#ffffff\" stroke-width=\"2\"><title>")
+                    .Append(title).Append("</title></polygon>")
+                    .Append("<text x=\"").Append(F(x + 12)).Append("\" y=\"").Append(F(y - 7)).Append("\" font-size=\"11\" font-weight=\"700\" fill=\"#0f2948\">")
+                    .Append(WebUtility.HtmlEncode(ShortLabel(point.Label))).Append("</text>");
+            }
+            else
+            {
+                svg.Append("<rect x=\"").Append(F(x - 5)).Append("\" y=\"").Append(F(y - 5)).Append("\" width=\"10\" height=\"10\" fill=\"#c26b36\" stroke=\"#ffffff\" stroke-width=\"1\"><title>")
+                    .Append(title).Append("</title></rect>");
+            }
+        }
+
+        svg.Append("</svg>");
+        return svg.ToString();
+    }
+
+    private static bool ValidCoordinate(double latitude, double longitude) =>
+        double.IsFinite(latitude) && double.IsFinite(longitude) && latitude is >= -90 and <= 90 && longitude is >= -180 and <= 180;
+
+    private static string ShortLabel(string value) => value.Length <= 36 ? value : value[..33] + "…";
+    private static string F(double value, int decimals = 1) => value.ToString($"F{decimals}", CultureInfo.InvariantCulture);
+}
+
 public sealed class HtmlReportRenderer : IHtmlReportRenderer
 {
     public string Render(CasinoImpactReportModel model, ReportPresentationOptions options)
@@ -181,7 +310,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             .Append("@page{size:letter;margin:.65in}body{font:15px/1.5 'Public Sans',Arial,sans-serif;color:#172033;margin:0;background:#fff}")
             .Append("main{max-width:1050px;margin:auto;padding:36px}h1{font-size:34px;line-height:1.15;color:#0f2948;margin:0 0 12px}h2{font-size:23px;color:#0f2948;border-bottom:2px solid #cbd5e1;padding-bottom:7px;margin-top:36px}h3{font-size:18px;color:#244d74;margin-top:25px}")
             .Append(".eyebrow{font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#2c6b8f}.subtitle{font-size:18px;color:#526174}.meta,.note{color:#526174}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.metric{border:1px solid #cbd5e1;border-radius:8px;padding:14px}.metric strong{display:block;font-size:20px;color:#0f2948}")
-            .Append("table{width:100%;border-collapse:collapse;margin:14px 0 24px;font-size:13px}th{text-align:left;background:#e8eef4;color:#0f2948}th,td{padding:8px;border-bottom:1px solid #dbe2ea;vertical-align:top}.number{text-align:right;font-variant-numeric:tabular-nums}.warning{border-left:4px solid #b45309;background:#fff7ed;padding:9px 12px;margin:8px 0}.repro{background:#eef3f7;padding:14px;border-radius:8px;font-family:ui-monospace,monospace;font-size:12px;overflow-wrap:anywhere}.chart{border:1px solid #dbe2ea;border-radius:8px;padding:14px;margin:14px 0 24px}.chart-row{display:grid;grid-template-columns:minmax(160px,1.2fr) 3fr minmax(100px,.8fr);gap:10px;align-items:center;margin:8px 0}.chart-track{height:12px;background:#e8eef4;border-radius:3px;overflow:hidden}.chart-bar{height:100%;background:#2c6b8f}.chart-value{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}")
+            .Append("table{width:100%;border-collapse:collapse;margin:14px 0 24px;font-size:13px}th{text-align:left;background:#e8eef4;color:#0f2948}th,td{padding:8px;border-bottom:1px solid #dbe2ea;vertical-align:top}.number{text-align:right;font-variant-numeric:tabular-nums}.warning{border-left:4px solid #b45309;background:#fff7ed;padding:9px 12px;margin:8px 0}.repro{background:#eef3f7;padding:14px;border-radius:8px;font-family:ui-monospace,monospace;font-size:12px;overflow-wrap:anywhere}.chart,.map-exhibit{border:1px solid #dbe2ea;border-radius:8px;padding:14px;margin:14px 0 24px}.chart-row{display:grid;grid-template-columns:minmax(160px,1.2fr) 3fr minmax(100px,.8fr);gap:10px;align-items:center;margin:8px 0}.chart-track{height:12px;background:#e8eef4;border-radius:3px;overflow:hidden}.chart-bar{height:100%;background:#2c6b8f}.chart-value{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}.map-exhibit svg{display:block;width:100%;height:auto;background:#f8fafc}.map-caption{display:flex;gap:18px;flex-wrap:wrap;color:#526174;font-size:12px}.legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}.bridge-row{display:grid;grid-template-columns:minmax(190px,1.3fr) 3fr minmax(100px,.8fr);gap:10px;align-items:center;margin:8px 0}.bridge-track{position:relative;height:16px;background:linear-gradient(90deg,#f1f5f9 0 49.6%,#94a3b8 49.6% 50.4%,#f1f5f9 50.4% 100%);border-radius:3px}.tornado-track{position:relative;height:22px;background:linear-gradient(90deg,#f1f5f9 0 49.6%,#94a3b8 49.6% 50.4%,#f1f5f9 50.4% 100%);border-radius:3px}.bridge-bar{position:absolute;top:2px;height:12px;border-radius:2px}.tornado-low,.tornado-high{position:absolute;height:8px;border-radius:2px}.tornado-low{top:2px;background:#c26b36}.tornado-high{top:12px;background:#256c8f}.bridge-bar.positive{background:#256c8f}.bridge-bar.negative{background:#c26b36}.bridge-total{border-top:1px solid #94a3b8;padding-top:8px;font-weight:700}.tornado-row{display:grid;grid-template-columns:minmax(190px,1.3fr) 3fr minmax(150px,1fr);gap:10px;align-items:center;margin:9px 0}")
             .Append("@media print{main{padding:0}.page-break{break-before:page}a{color:inherit;text-decoration:none}}@media(max-width:700px){main{padding:20px}.metrics{grid-template-columns:1fr}table{display:block;overflow:auto}}")
             .Append("</style></head><body><main>");
         html.Append("<header><div class=\"eyebrow\">Stored model-run report</div><h1>").Append(E(title)).Append("</h1>")
@@ -244,6 +373,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             ("Counties / parishes represented", model.OriginCounties.Count.ToString("N0", CultureInfo.InvariantCulture)),
             ("Competitive facilities represented", model.Facilities.Count.ToString("N0", CultureInfo.InvariantCulture))
         ]);
+        CoordinateMap(html, "Proposed site and competitive facilities", model, includeOrigins: false);
 
         Section(html, "Demographics, eligible population, and income");
         html.Append("<p>Eligible population and income are resolved by the stored demand specification and pinned source snapshots. The renderer reports the resulting resident gaming-demand base without re-estimating it.</p>");
@@ -291,6 +421,13 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             ("Tourism GGR", model.Revenue.TourismGgr),
             ("Through-traffic GGR", model.Revenue.TrafficGgr)
         ]);
+        WaterfallChart(html, "Revenue composition waterfall",
+        [
+            ("Redistributed resident", model.Revenue.RedistributedResidentGgr),
+            ("Accessibility-induced", model.Revenue.InducedResidentGgr),
+            ("Tourism", model.Revenue.TourismGgr),
+            ("Through traffic", model.Revenue.TrafficGgr)
+        ], model.Revenue.StabilizedTotalGgr);
         if (model.Capacity is not null)
         {
             html.Append("<p class=\"note\">Capacity diagnostic range: ").Append(Money(model.Capacity.PlausibleCapacityMinimum))
@@ -306,6 +443,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             }));
 
         Section(html, "Patron-origin analysis");
+        CoordinateMap(html, "Patron-origin intensity", model, includeOrigins: true);
         Subsection(html, "State composition");
         Table(html, ["State", "Origins", "Redistributed GGR", "Induced GGR", "Total", "Share"],
             model.OriginStates.Select(row => new[]
@@ -443,6 +581,9 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
                 row.DomainKey, row.IncrementalCases.ToString("N2"), Money(row.PerCaseCost), Money(row.AnnualCost),
                 Money(row.LowAnnualCost), Money(row.HighAnnualCost), row.Included ? "Yes" : "No"
             }));
+        WaterfallChart(html, "Social-cost bridge",
+            model.SocialCosts.Where(row => row.Included).Select(row => (row.DomainKey, -row.AnnualCost)),
+            -model.SocialCosts.Where(row => row.Included).Sum(row => row.AnnualCost));
 
         Section(html, "Net economic impact");
         if (model.NetImpact is not null)
@@ -459,6 +600,15 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
                 ("Net host-local impact", Money(model.NetImpact.NetHostLocalImpact)),
                 ("Net host-state impact", Money(model.NetImpact.NetHostStateImpact))
             ]);
+            WaterfallChart(html, "Net host-local impact waterfall",
+            [
+                ("Cross-jurisdiction imported GGR", model.NetImpact.CrossJurisdictionImportedGgr),
+                ("Induced resident GGR", model.NetImpact.InducedResidentGgr),
+                ("Tourism and traffic imported GGR", model.NetImpact.TourismAndTrafficImportGgr),
+                ("Local discretionary displacement", -model.NetImpact.LocalDiscretionaryDisplacement),
+                ("Net host-local fiscal impact", model.NetImpact.NetHostLocalFiscalImpact),
+                ("Gross social cost", -model.NetImpact.GrossSocialCost)
+            ], model.NetImpact.NetHostLocalImpact);
         }
 
         if (model.Sensitivity is not null)
@@ -467,6 +617,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             html.Append("<p class=\"note\">Each point is a complete stored model run. Analysis ")
                 .Append(E(model.Sensitivity.Name)).Append(" · ").Append(model.Sensitivity.SensitivityAnalysisId)
                 .Append(" · output metric ").Append(E(model.Sensitivity.OutputMetric)).Append(".</p>");
+            TornadoChart(html, model.Sensitivity);
             Table(html,
                 ["Parameter", "Low input", "Low result", "Baseline input", "Baseline result", "High input", "High result", "Full range", "Point run IDs"],
                 model.Sensitivity.Rows.Select(row => new[]
@@ -574,6 +725,95 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
                 .Append(E(Money(row.Value))).Append("</span></div>");
         }
         html.Append("</div>");
+    }
+
+    private static void CoordinateMap(
+        StringBuilder html,
+        string title,
+        CasinoImpactReportModel model,
+        bool includeOrigins)
+    {
+        var svg = ReportExhibitBuilder.CoordinateMapSvg(model, includeOrigins);
+        if (string.IsNullOrWhiteSpace(svg))
+        {
+            return;
+        }
+
+        html.Append("<figure class=\"map-exhibit\"><strong>").Append(E(title)).Append("</strong>")
+            .Append(svg)
+            .Append("<figcaption class=\"map-caption\">")
+            .Append("<span><i class=\"legend-dot\" style=\"background:#0f2948\"></i>Proposed site</span>");
+        if (includeOrigins)
+        {
+            html.Append("<span><i class=\"legend-dot\" style=\"background:#256c8f\"></i>Origin contribution (proportional symbol)</span>");
+        }
+        else
+        {
+            html.Append("<span><i class=\"legend-dot\" style=\"background:#c26b36\"></i>Incumbent facility</span>");
+        }
+        html.Append("<span>WGS84 coordinates · schematic equirectangular exhibit · no basemap</span></figcaption></figure>");
+    }
+
+    private static void WaterfallChart(
+        StringBuilder html,
+        string title,
+        IEnumerable<(string Label, decimal Value)> rows,
+        decimal storedTotal)
+    {
+        var values = rows.ToArray();
+        if (values.Length == 0)
+        {
+            return;
+        }
+        var maximum = Math.Max(values.Select(row => Math.Abs(row.Value)).Append(Math.Abs(storedTotal)).Max(), 1m);
+        var running = 0m;
+        html.Append("<div class=\"chart\"><strong>").Append(E(title)).Append("</strong>");
+        foreach (var row in values)
+        {
+            running += row.Value;
+            var width = Math.Abs(row.Value) / maximum * 50;
+            var left = row.Value < 0 ? 50 - width : 50;
+            html.Append("<div class=\"bridge-row\"><span>").Append(E(row.Label))
+                .Append("</span><div class=\"bridge-track\" role=\"img\" aria-label=\"")
+                .Append(E($"{row.Label}: {Money(row.Value)}; running total {Money(running)}"))
+                .Append("\"><div class=\"bridge-bar ").Append(row.Value < 0 ? "negative" : "positive")
+                .Append("\" style=\"left:").Append(left.ToString("F2", CultureInfo.InvariantCulture))
+                .Append("%;width:").Append(width.ToString("F2", CultureInfo.InvariantCulture))
+                .Append("%\"></div></div><span class=\"chart-value\">")
+                .Append(E(Money(row.Value))).Append("</span></div>");
+        }
+        html.Append("<div class=\"bridge-row bridge-total\"><span>Stored total</span><span>Exact persisted output</span><span class=\"chart-value\">")
+            .Append(E(Money(storedTotal))).Append("</span></div></div>");
+    }
+
+    private static void TornadoChart(StringBuilder html, ReportSensitivityAnalysis sensitivity)
+    {
+        if (sensitivity.Rows.Count == 0)
+        {
+            return;
+        }
+        var maximumDelta = Math.Max(
+            sensitivity.Rows.SelectMany(row => new[] { Math.Abs(row.LowDelta), Math.Abs(row.HighDelta) }).Max(),
+            1m);
+        html.Append("<div class=\"chart\"><strong>Sensitivity tornado — ").Append(E(sensitivity.OutputMetric)).Append("</strong>");
+        foreach (var row in sensitivity.Rows.OrderByDescending(row => row.TotalRange))
+        {
+            var lowWidth = Math.Abs(row.LowDelta) / maximumDelta * 50;
+            var highWidth = Math.Abs(row.HighDelta) / maximumDelta * 50;
+            var lowLeft = row.LowDelta < 0 ? 50 - lowWidth : 50;
+            var highLeft = row.HighDelta < 0 ? 50 - highWidth : 50;
+            html.Append("<div class=\"tornado-row\"><span>").Append(E(row.ParameterKey))
+                .Append("</span><div class=\"tornado-track\" role=\"img\" aria-label=\"")
+                .Append(E($"{row.ParameterKey}: low {SensitivityValue(row.LowMetricValue, sensitivity.OutputUnits)}, baseline {SensitivityValue(row.BaseMetricValue, sensitivity.OutputUnits)}, high {SensitivityValue(row.HighMetricValue, sensitivity.OutputUnits)}"))
+                .Append("\"><div class=\"tornado-low\" style=\"left:")
+                .Append(lowLeft.ToString("F2", CultureInfo.InvariantCulture)).Append("%;width:")
+                .Append(lowWidth.ToString("F2", CultureInfo.InvariantCulture)).Append("%\"></div><div class=\"tornado-high\" style=\"left:")
+                .Append(highLeft.ToString("F2", CultureInfo.InvariantCulture)).Append("%;width:")
+                .Append(highWidth.ToString("F2", CultureInfo.InvariantCulture)).Append("%\"></div></div><span class=\"chart-value\">")
+                .Append(E($"{SensitivityValue(row.LowMetricValue, sensitivity.OutputUnits)} – {SensitivityValue(row.HighMetricValue, sensitivity.OutputUnits)}"))
+                .Append("</span></div>");
+        }
+        html.Append("<p class=\"note\">Orange = low parameter setting; blue = high parameter setting. Bar side shows the signed output change from baseline.</p></div>");
     }
 
     private static void Table(StringBuilder html, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
@@ -696,6 +936,7 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         ("States / counties represented", $"{model.OriginStates.Count:N0} / {model.OriginCounties.Count:N0}"),
                         ("Competitive facilities", model.Facilities.Count.ToString("N0"))
                     ]);
+                    CoordinateMap(column, "Proposed site and competitive facilities", model, includeOrigins: false);
 
                     Heading(column, "Demographics, eligible population, and income");
                     column.Item().Text("Eligible population and income are resolved by the stored demand specification and pinned source snapshots. The renderer reports the resulting resident gaming-demand base without re-estimating it.")
@@ -745,6 +986,13 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         ("Tourism", model.Revenue.TourismGgr),
                         ("Through-traffic", model.Revenue.TrafficGgr)
                     ]);
+                    WaterfallChart(column, "Revenue composition waterfall",
+                    [
+                        ("Redistributed resident", model.Revenue.RedistributedResidentGgr),
+                        ("Accessibility-induced", model.Revenue.InducedResidentGgr),
+                        ("Tourism", model.Revenue.TourismGgr),
+                        ("Through traffic", model.Revenue.TrafficGgr)
+                    ], model.Revenue.StabilizedTotalGgr);
                     SimpleTable(column,
                         ["Year", "Operating year", "Ramp", "Projected GGR"],
                         model.Ramp.Select(row => new[]
@@ -754,6 +1002,7 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         }));
 
                     Heading(column, "Patron-origin analysis");
+                    CoordinateMap(column, "Patron-origin intensity", model, includeOrigins: true);
                     SimpleTable(column,
                         ["State", "Origins", "Resident GGR", "Share"],
                         model.OriginStates.Select(row => new[]
@@ -866,6 +1115,9 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                             row.DomainKey, row.IncrementalCases.ToString("N2"), Money(row.AnnualCost),
                             Money(row.LowAnnualCost), Money(row.HighAnnualCost)
                         }));
+                    WaterfallChart(column, "Social-cost bridge",
+                        model.SocialCosts.Where(row => row.Included).Select(row => (row.DomainKey, -row.AnnualCost)),
+                        -model.SocialCosts.Where(row => row.Included).Sum(row => row.AnnualCost));
 
                     Heading(column, "Net economic impact");
                     if (model.NetImpact is not null)
@@ -880,6 +1132,15 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                             ("Net host-local impact", Money(model.NetImpact.NetHostLocalImpact)),
                             ("Net host-state impact", Money(model.NetImpact.NetHostStateImpact))
                         ]);
+                        WaterfallChart(column, "Net host-local impact waterfall",
+                        [
+                            ("Cross-jurisdiction imported GGR", model.NetImpact.CrossJurisdictionImportedGgr),
+                            ("Induced resident GGR", model.NetImpact.InducedResidentGgr),
+                            ("Tourism and traffic imported GGR", model.NetImpact.TourismAndTrafficImportGgr),
+                            ("Local discretionary displacement", -model.NetImpact.LocalDiscretionaryDisplacement),
+                            ("Net host-local fiscal impact", model.NetImpact.NetHostLocalFiscalImpact),
+                            ("Gross social cost", -model.NetImpact.GrossSocialCost)
+                        ], model.NetImpact.NetHostLocalImpact);
                     }
 
                     if (model.Sensitivity is not null)
@@ -887,6 +1148,7 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         Heading(column, "One-at-a-time sensitivity");
                         column.Item().Text($"{model.Sensitivity.Name} · analysis {model.Sensitivity.SensitivityAnalysisId:D} · {model.Sensitivity.OutputMetric}. Every point is a complete stored model run.")
                             .FontSize(8);
+                        TornadoChart(column, model.Sensitivity);
                         SimpleTable(column,
                             ["Parameter", "Low input / result", "Base input / result", "High input / result", "Range"],
                             model.Sensitivity.Rows.Select(row => new[]
@@ -1007,6 +1269,124 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
         }
     }
 
+    private static void CoordinateMap(
+        ColumnDescriptor column,
+        string title,
+        CasinoImpactReportModel model,
+        bool includeOrigins)
+    {
+        var svg = ReportExhibitBuilder.CoordinateMapSvg(model, includeOrigins);
+        if (string.IsNullOrWhiteSpace(svg))
+        {
+            return;
+        }
+        column.Item().PaddingTop(4).Text(title).SemiBold().FontSize(8);
+        column.Item().Height(235).Svg(svg);
+        column.Item().Text(includeOrigins
+                ? "WGS84 coordinates · proportional symbols show stored origin contribution · schematic equirectangular exhibit · no basemap."
+                : "WGS84 coordinates · proposed site and incumbent facilities · schematic equirectangular exhibit · no basemap.")
+            .FontSize(6).FontColor(Colors.Grey.Darken1);
+    }
+
+    private static void WaterfallChart(
+        ColumnDescriptor column,
+        string title,
+        IEnumerable<(string Label, decimal Value)> rows,
+        decimal storedTotal)
+    {
+        var values = rows.ToArray();
+        if (values.Length == 0)
+        {
+            return;
+        }
+        var maximum = Math.Max(values.Select(row => Math.Abs(row.Value)).Append(Math.Abs(storedTotal)).Max(), 1m);
+        var running = 0m;
+        column.Item().PaddingTop(4).Text(title).SemiBold().FontSize(8);
+        foreach (var value in values)
+        {
+            running += value.Value;
+            var ratio = Convert.ToSingle(Math.Abs(value.Value) / maximum);
+            column.Item().Row(row =>
+            {
+                row.ConstantItem(145).Text(value.Label).FontSize(7);
+                row.ConstantItem(90).Height(8).Layers(layers =>
+                {
+                    layers.PrimaryLayer().Background(Colors.BlueGrey.Lighten5);
+                    if (value.Value < 0 && ratio > 0)
+                    {
+                        layers.Layer().AlignRight().Width(90 * ratio).Background(Colors.Orange.Darken1);
+                    }
+                });
+                row.ConstantItem(1).Height(8).Background(Colors.BlueGrey.Darken1);
+                row.ConstantItem(90).Height(8).Layers(layers =>
+                {
+                    layers.PrimaryLayer().Background(Colors.BlueGrey.Lighten5);
+                    if (value.Value >= 0 && ratio > 0)
+                    {
+                        layers.Layer().Width(90 * ratio).Background(Colors.Blue.Darken1);
+                    }
+                });
+                row.RelativeItem().AlignRight().Text($"{Money(value.Value)} · running {Money(running)}").FontSize(6.5f);
+            });
+        }
+        column.Item().BorderTop(0.75f).BorderColor(Colors.BlueGrey.Lighten2).PaddingTop(2).Row(row =>
+        {
+            row.RelativeItem().Text("Stored total").SemiBold().FontSize(7);
+            row.AutoItem().Text(Money(storedTotal)).SemiBold().FontSize(7);
+        });
+    }
+
+    private static void TornadoChart(ColumnDescriptor column, ReportSensitivityAnalysis sensitivity)
+    {
+        if (sensitivity.Rows.Count == 0)
+        {
+            return;
+        }
+        var maximumDelta = Math.Max(
+            sensitivity.Rows.SelectMany(row => new[] { Math.Abs(row.LowDelta), Math.Abs(row.HighDelta) }).Max(),
+            1m);
+        column.Item().PaddingTop(4).Text($"Sensitivity tornado — {sensitivity.OutputMetric}").SemiBold().FontSize(8);
+        foreach (var value in sensitivity.Rows.OrderByDescending(row => row.TotalRange))
+        {
+            var lowRatio = Convert.ToSingle(Math.Abs(value.LowDelta) / maximumDelta);
+            var highRatio = Convert.ToSingle(Math.Abs(value.HighDelta) / maximumDelta);
+            column.Item().Row(row =>
+            {
+                row.ConstantItem(145).Text(value.ParameterKey).FontSize(7);
+                row.ConstantItem(90).Height(12).Layers(layers =>
+                {
+                    layers.PrimaryLayer().Background(Colors.BlueGrey.Lighten5);
+                    if (value.LowDelta < 0 && lowRatio > 0)
+                    {
+                        layers.Layer().AlignRight().Width(90 * lowRatio).Height(5).Background(Colors.Orange.Darken1);
+                    }
+                    if (value.HighDelta < 0 && highRatio > 0)
+                    {
+                        layers.Layer().AlignBottom().AlignRight().Width(90 * highRatio).Height(5).Background(Colors.Blue.Darken1);
+                    }
+                });
+                row.ConstantItem(1).Height(12).Background(Colors.BlueGrey.Darken1);
+                row.ConstantItem(90).Height(12).Layers(layers =>
+                {
+                    layers.PrimaryLayer().Background(Colors.BlueGrey.Lighten5);
+                    if (value.LowDelta >= 0 && lowRatio > 0)
+                    {
+                        layers.Layer().Width(90 * lowRatio).Height(5).Background(Colors.Orange.Darken1);
+                    }
+                    if (value.HighDelta >= 0 && highRatio > 0)
+                    {
+                        layers.Layer().AlignBottom().Width(90 * highRatio).Height(5).Background(Colors.Blue.Darken1);
+                    }
+                });
+                row.RelativeItem().AlignRight().Text(
+                        $"{SensitivityValue(value.LowMetricValue, sensitivity.OutputUnits)} – {SensitivityValue(value.HighMetricValue, sensitivity.OutputUnits)}")
+                    .FontSize(6.5f);
+            });
+        }
+        column.Item().PaddingTop(2).Text("Orange = low parameter setting; blue = high parameter setting. Bar side shows the signed output change from baseline.")
+            .FontSize(6.5f).FontColor(Colors.BlueGrey.Darken2);
+    }
+
     private static void SimpleTable(
         ColumnDescriptor column,
         IReadOnlyList<string> headers,
@@ -1061,6 +1441,8 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
         Row(csv, "identity", "run", "template_version", model.Identity.TemplateVersion, "");
         Row(csv, "scenario", "site", "candidate_latitude", model.Scenario.CandidateLatitude, "degrees");
         Row(csv, "scenario", "site", "candidate_longitude", model.Scenario.CandidateLongitude, "degrees");
+        Row(csv, "revenue", "stabilized", "redistributed_resident_ggr", model.Revenue.RedistributedResidentGgr, "USD");
+        Row(csv, "revenue", "stabilized", "induced_resident_ggr", model.Revenue.InducedResidentGgr, "USD");
         Row(csv, "revenue", "stabilized", "resident_ggr", model.Revenue.TotalResidentGgr, "USD");
         Row(csv, "revenue", "stabilized", "tourism_ggr", model.Revenue.TourismGgr, "USD");
         Row(csv, "revenue", "stabilized", "traffic_ggr", model.Revenue.TrafficGgr, "USD");
@@ -1074,6 +1456,8 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
         foreach (var origin in model.Origins)
         {
             Row(csv, "origin", origin.StableOriginId, "state_code", origin.StateCode, origin.OriginType);
+            Row(csv, "origin", origin.StableOriginId, "latitude", origin.Latitude, "degrees");
+            Row(csv, "origin", origin.StableOriginId, "longitude", origin.Longitude, "degrees");
             Row(csv, "origin", origin.StableOriginId, "redistributed_resident_ggr", origin.RedistributedResidentGgr, "USD");
             Row(csv, "origin", origin.StableOriginId, "induced_resident_ggr", origin.InducedResidentGgr, "USD");
             Row(csv, "origin", origin.StableOriginId, "total_proposed_resident_ggr", origin.TotalProposedResidentGgr, "USD");
@@ -1081,6 +1465,8 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
         foreach (var facility in model.Facilities)
         {
             Row(csv, "facility", facility.FacilityKey, "facility_name", facility.FacilityName, facility.FacilityKind);
+            Row(csv, "facility", facility.FacilityKey, "latitude", facility.Latitude, "degrees");
+            Row(csv, "facility", facility.FacilityKey, "longitude", facility.Longitude, "degrees");
             Row(csv, "facility", facility.FacilityKey, "baseline_resident_ggr", facility.BaselineResidentGgr, "USD");
             Row(csv, "facility", facility.FacilityKey, "with_project_resident_ggr", facility.WithProjectResidentGgr, "USD");
             Row(csv, "facility", facility.FacilityKey, "change_in_resident_ggr", facility.ChangeInResidentGgr, "USD");
@@ -1097,9 +1483,15 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
             Row(csv, "social_cost", cost.DomainKey, "annual_cost", cost.AnnualCost, "USD");
             Row(csv, "social_cost", cost.DomainKey, "low_annual_cost", cost.LowAnnualCost, "USD");
             Row(csv, "social_cost", cost.DomainKey, "high_annual_cost", cost.HighAnnualCost, "USD");
+            Row(csv, "social_cost", cost.DomainKey, "included", cost.Included, "boolean");
         }
         if (model.NetImpact is not null)
         {
+            Row(csv, "net_impact", "host", "cross_jurisdiction_imported_ggr", model.NetImpact.CrossJurisdictionImportedGgr, "USD");
+            Row(csv, "net_impact", "host", "induced_resident_ggr", model.NetImpact.InducedResidentGgr, "USD");
+            Row(csv, "net_impact", "host", "tourism_and_traffic_import_ggr", model.NetImpact.TourismAndTrafficImportGgr, "USD");
+            Row(csv, "net_impact", "host", "local_discretionary_displacement", model.NetImpact.LocalDiscretionaryDisplacement, "USD");
+            Row(csv, "net_impact", "host", "net_host_local_fiscal_impact", model.NetImpact.NetHostLocalFiscalImpact, "USD");
             Row(csv, "net_impact", "host", "net_host_local_impact", model.NetImpact.NetHostLocalImpact, "USD");
             Row(csv, "net_impact", "host", "net_host_state_impact", model.NetImpact.NetHostStateImpact, "USD");
             Row(csv, "net_impact", "host", "gross_social_cost", model.NetImpact.GrossSocialCost, "USD");
