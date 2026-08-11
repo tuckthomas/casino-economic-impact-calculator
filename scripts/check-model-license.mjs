@@ -33,6 +33,7 @@ const designatedFiles = [
   'scripts/validation/run-gravity-model-integration.sh',
   'scripts/validation/run-incumbent-calibration.sh',
   'scripts/validation/run-provider-ingestion.sh',
+  'scripts/validation/run-michigan-provider-bundle-ingestion.sh',
   'scripts/validation/GravityModelIntegrationHarness/Program.cs'
 ];
 

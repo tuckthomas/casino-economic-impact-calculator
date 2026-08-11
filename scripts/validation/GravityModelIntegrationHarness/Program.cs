@@ -250,14 +250,81 @@ if (args is ["--probe-michigan-facilities"])
     return;
 }
 
+if (args is ["--probe-michigan-performance"])
+{
+    using var providerProbeHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+    var dataset = await new MichiganGamingControlBoardRevenueProvider(
+            providerProbeHttp,
+            Options.Create(new MichiganGamingFacilityProviderOptions()))
+        .FetchAsync(new ProviderFetchRequest(
+            "US-MI",
+            new DateOnly(2025, 1, 1),
+            new DateOnly(2025, 12, 31)));
+    var comparable = dataset.Rows
+        .Where(row => row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
+        .ToArray();
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        dataset.Source.Url,
+        dataset.Period,
+        RowCount = dataset.Rows.Count,
+        FacilityCount = comparable.Select(row => row.StableVenueId).Distinct().Count(),
+        MonthCount = comparable.Select(row => row.PeriodStart).Distinct().Count(),
+        MetricKeys = dataset.Rows.Select(row => row.ReportedMetricKey).Distinct().Order().ToArray(),
+        TotalComparableRevenue = comparable.Sum(row => row.ReportedAmount),
+        AnnualByFacility = comparable
+            .GroupBy(row => row.StableVenueId)
+            .OrderBy(group => group.Key)
+            .Select(group => new { StableVenueId = group.Key, Revenue = group.Sum(row => row.ReportedAmount) }),
+        dataset.Warnings,
+        dataset.ContentChecksum
+    }));
+    return;
+}
+
+if (args is ["--export-michigan-provider-bundle", var bundleOutputPath])
+{
+    var fullOutputPath = Path.GetFullPath(bundleOutputPath);
+    if (!string.Equals(Path.GetExtension(fullOutputPath), ".json", StringComparison.OrdinalIgnoreCase) ||
+        !Directory.Exists(Path.GetDirectoryName(fullOutputPath)))
+    {
+        throw new ArgumentException("Michigan provider bundle output must be a .json file in an existing directory.");
+    }
+    using var providerProbeHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+    var configured = Options.Create(new MichiganGamingFacilityProviderOptions());
+    var request = new ProviderFetchRequest(
+        "US-MI",
+        new DateOnly(2025, 1, 1),
+        new DateOnly(2025, 12, 31));
+    var facilities = await new MichiganGamingFacilityInventoryProvider(providerProbeHttp, configured)
+        .FetchAsync(request);
+    var performance = await new MichiganGamingControlBoardRevenueProvider(providerProbeHttp, configured)
+        .FetchAsync(request);
+    var bundle = new MichiganProviderValidationBundle(facilities, performance);
+    await File.WriteAllTextAsync(
+        fullOutputPath,
+        JsonSerializer.Serialize(bundle, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        BundlePath = fullOutputPath,
+        FacilityRows = facilities.Rows.Count,
+        PerformanceRows = performance.Rows.Count,
+        facilities.ContentChecksum,
+        PerformanceChecksum = performance.ContentChecksum
+    }));
+    return;
+}
+
 var validateIncumbentCalibration = args is ["--validate-incumbent-calibration", _, _];
+var validateMichiganProviderBundle = args is ["--validate-michigan-provider-bundle", _, _];
 var validateProviderIngestion = args is ["--validate-provider-ingestion", _] ||
-                                validateIncumbentCalibration;
-if ((!validateIncumbentCalibration && args.Length != 2) ||
-    (validateIncumbentCalibration && args.Length != 3))
+                                 validateIncumbentCalibration ||
+                                 validateMichiganProviderBundle;
+if ((!validateIncumbentCalibration && !validateMichiganProviderBundle && args.Length != 2) ||
+    ((validateIncumbentCalibration || validateMichiganProviderBundle) && args.Length != 3))
 {
     throw new ArgumentException(
-        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url>");
+        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url>");
 }
 
 var validationDatabase = validateProviderIngestion ? args[1] : args[0];
@@ -286,6 +353,59 @@ await using var db = new AppDbContext(dbOptions);
 await ModelFoundationInitializer.ApplySchemaAsync(db);
 await ModelFoundationInitializer.SeedAsync(db);
 
+if (validateMichiganProviderBundle)
+{
+    var bundlePath = Path.GetFullPath(args[2]);
+    if (!File.Exists(bundlePath) || !string.Equals(Path.GetExtension(bundlePath), ".json", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new FileNotFoundException("The Michigan provider validation bundle was not found.", bundlePath);
+    }
+    var bundle = JsonSerializer.Deserialize<MichiganProviderValidationBundle>(
+            await File.ReadAllTextAsync(bundlePath))
+        ?? throw new InvalidDataException("The Michigan provider validation bundle is empty or invalid.");
+    var request = new ProviderFetchRequest(
+        "US-MI",
+        new DateOnly(2025, 1, 1),
+        new DateOnly(2025, 12, 31));
+    var snapshots = new DataSnapshotService(db);
+    var rows = new ModelDataIngestionService(db);
+    var bundleIngestion = new ProviderSnapshotIngestionService(snapshots, rows);
+    var facilitySnapshotId = await bundleIngestion.IngestGamingFacilitiesAsync(
+        new FrozenMichiganFacilityProvider(bundle.Facilities),
+        request);
+    var performanceSnapshotId = await bundleIngestion.IngestGamingPerformanceAsync(
+        new FrozenMichiganPerformanceProvider(bundle.Performance),
+        request,
+        facilitySnapshotId);
+    var facilityCount = await db.CasinoCompetitors.CountAsync(row => row.DatasetSnapshotId == facilitySnapshotId);
+    var performanceCount = await db.CasinoGamingRevenuePeriods.CountAsync(row => row.DatasetSnapshotId == performanceSnapshotId);
+    var comparableTotal = await db.CasinoGamingRevenuePeriods
+        .Where(row => row.DatasetSnapshotId == performanceSnapshotId &&
+                      row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
+        .SumAsync(row => row.ReportedAmount);
+    var snapshotStates = await db.DatasetSnapshots
+        .Where(snapshot => snapshot.Id == facilitySnapshotId || snapshot.Id == performanceSnapshotId)
+        .Select(snapshot => new { snapshot.DatasetKey, snapshot.IsSealed, snapshot.ValidationState, snapshot.Checksum })
+        .OrderBy(snapshot => snapshot.DatasetKey)
+        .ToArrayAsync();
+    if (facilityCount != 27 || performanceCount != 72 || comparableTotal != 1_265_324_361.46m ||
+        snapshotStates.Length != 2 || snapshotStates.Any(snapshot => !snapshot.IsSealed))
+    {
+        throw new InvalidOperationException("The Michigan provider bundle did not persist the expected sealed regulator rows.");
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        facilitySnapshotId,
+        performanceSnapshotId,
+        facilityCount,
+        performanceCount,
+        comparableTotal,
+        snapshotStates,
+        SourceMode = "Official MGCB provider outputs fetched locally because michigan.gov returned HTTP 403 to the VPS source IP; exact provider checksums and rows were transferred for disposable PostGIS ingestion validation."
+    }));
+    return;
+}
+
 if (validateProviderIngestion)
 {
     var providerSnapshots = new DataSnapshotService(db);
@@ -294,6 +414,7 @@ if (validateProviderIngestion)
     using var providerHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
     var igcOptions = Options.Create(new IndianaGamingCommissionProviderOptions());
     var igbOptions = Options.Create(new IllinoisGamingBoardProviderOptions());
+    var mgcbOptions = Options.Create(new MichiganGamingFacilityProviderOptions());
     var igcRevenueProvider = new IndianaGamingCommissionMonthlyRevenueProvider(providerHttp, igcOptions);
     var igcFacilityProvider = new IndianaGamingCommissionFacilityInventoryProvider(providerHttp, igcOptions);
     var igbRevenueProvider = new IllinoisGamingBoardRevenueProvider(providerHttp, igbOptions);
@@ -301,21 +422,23 @@ if (validateProviderIngestion)
         providerHttp,
         igbRevenueProvider,
         igbOptions);
+    var mgcbRevenueProvider = new MichiganGamingControlBoardRevenueProvider(providerHttp, mgcbOptions);
+    var mgcbFacilityProvider = new MichiganGamingFacilityInventoryProvider(providerHttp, mgcbOptions);
     var igcFacilityPeriod = new ProviderFetchRequest(
-        "US-IN,US-IL",
+        "US-IN,US-IL,US-MI",
         new DateOnly(2025, 12, 1),
         new DateOnly(2025, 12, 31));
     var igcPerformancePeriod = new ProviderFetchRequest(
-        "US-IN,US-IL",
+        "US-IN,US-IL,US-MI",
         new DateOnly(2025, 1, 1),
         new DateOnly(2025, 12, 31));
     var facilitySnapshotId = await providerIngestion.IngestGamingFacilitiesAsync(
         new CompositeGamingFacilityInventoryProvider(
-            new IGamingFacilityInventoryProvider[] { igcFacilityProvider, igbFacilityProvider }),
+            new IGamingFacilityInventoryProvider[] { igcFacilityProvider, igbFacilityProvider, mgcbFacilityProvider }),
         igcFacilityPeriod);
     var performanceSnapshotId = await providerIngestion.IngestGamingPerformanceAsync(
         new CompositeGamingRegulatorPerformanceProvider(
-            new IGamingRegulatorPerformanceProvider[] { igcRevenueProvider, igbRevenueProvider }),
+            new IGamingRegulatorPerformanceProvider[] { igcRevenueProvider, igbRevenueProvider, mgcbRevenueProvider }),
         igcPerformancePeriod,
         facilitySnapshotId);
     var trafficSnapshotId = await providerIngestion.IngestTrafficAsync(
@@ -404,7 +527,7 @@ if (validateProviderIngestion)
         .Select(snapshot => new { snapshot.Id, snapshot.DatasetKey, snapshot.IsSealed, snapshot.ValidationState })
         .OrderBy(snapshot => snapshot.DatasetKey)
         .ToArrayAsync();
-    if (facilityCount != 30 || unknownHotelCount != 30 || performanceCount != 502 || trafficCount != 1 ||
+    if (facilityCount != 57 || unknownHotelCount != 57 || performanceCount != 574 || trafficCount != 1 ||
         originCount != irsDataset.Rows.Count || incomeCount != irsDataset.Rows.Count ||
         ageBinCount != irsDataset.Rows.Count * 23 || tourismCount != 1 ||
         snapshotStates.Length != 7 || snapshotStates.Any(snapshot => !snapshot.IsSealed))
@@ -602,7 +725,7 @@ if (validateProviderIngestion)
                 JsonSerializer.Serialize(new
                 {
                     purpose = "Disposable execution proof against authoritative live source snapshots.",
-                    limitation = "Indiana and Illinois regulator coverage is live; Ohio, Michigan, Kentucky, tribal facilities, local tourism, and corridor-complete traffic remain incomplete. Results are not production calibration evidence.",
+                    limitation = "Indiana, Illinois, and Michigan commercial regulator coverage is live; Ohio, Kentucky, tribal performance, local tourism, and corridor-complete traffic remain incomplete. Results are not production calibration evidence.",
                     zctaAssignment = "Dominant 2020 Census county by land-area overlap."
                 }),
                 sourceParameterSet.Id,
@@ -641,7 +764,7 @@ if (validateProviderIngestion)
                 caseCount,
                 finalizedRunCount,
                 indianaOriginCount,
-                limitation = "Disposable pipeline proof only: Illinois coverage is live; Ohio, Michigan, Kentucky, tribal facilities, and local visitor/traffic capture remain incomplete."
+                limitation = "Disposable pipeline proof only: Indiana, Illinois, and Michigan commercial coverage is live; Ohio, Kentucky, tribal performance, and local visitor/traffic capture remain incomplete."
             }
         }));
     }
@@ -1407,6 +1530,32 @@ file sealed class FrozenOriginIncomeProvider(
     public string ProviderKey => "frozen-live-irs-soi-validation";
 
     public Task<ProviderDataset<OriginIncomeImportRow>> FetchAsync(
+        ProviderFetchRequest request,
+        CancellationToken cancellationToken = default) => Task.FromResult(dataset);
+}
+
+file sealed record MichiganProviderValidationBundle(
+    ProviderDataset<CasinoCompetitorImportRow> Facilities,
+    ProviderDataset<CasinoGamingRevenueImportRow> Performance);
+
+file sealed class FrozenMichiganFacilityProvider(
+    ProviderDataset<CasinoCompetitorImportRow> dataset) : IGamingFacilityInventoryProvider
+{
+    public string ProviderKey => "frozen-official-michigan-facilities-validation";
+    public string GeographicCoverage => "US-MI";
+
+    public Task<ProviderDataset<CasinoCompetitorImportRow>> FetchAsync(
+        ProviderFetchRequest request,
+        CancellationToken cancellationToken = default) => Task.FromResult(dataset);
+}
+
+file sealed class FrozenMichiganPerformanceProvider(
+    ProviderDataset<CasinoGamingRevenueImportRow> dataset) : IGamingRegulatorPerformanceProvider
+{
+    public string ProviderKey => "frozen-official-michigan-performance-validation";
+    public string GeographicCoverage => "US-MI";
+
+    public Task<ProviderDataset<CasinoGamingRevenueImportRow>> FetchAsync(
         ProviderFetchRequest request,
         CancellationToken cancellationToken = default) => Task.FromResult(dataset);
 }

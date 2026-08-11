@@ -16,6 +16,8 @@ public sealed class MichiganGamingFacilityProviderOptions
         "https://www.michigan.gov/mgcb/-/media/Project/Websites/mgcb/Annual-Reports/2025/2025-Tribal-Gaming-Report-Final.pdf";
     public string DetroitCasinosUrl { get; set; } =
         "https://www.michigan.gov/mgcb/detroit-casinos";
+    public string RevenueDownloadsPageUrl { get; set; } =
+        "https://www.michigan.gov/mgcb/Detroit-Casinos/resources/revenues-and-wagering-tax-information";
     public string GeocoderUrl { get; set; } =
         "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates";
 }
