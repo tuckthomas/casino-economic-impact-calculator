@@ -15,29 +15,59 @@
         }
     </select>
     
+    <!-- Trigger Button (Matches InputText height & styling) -->
     <button type="button"
-            class="sfw-modern-select sfw-modern-select-trigger w-full px-4 py-3 text-sm font-medium bg-slate-900/95 border border-slate-600 text-slate-100 rounded-xl flex items-center justify-between shadow-sm hover:bg-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-accent group relative z-[100]"
+            id="@(Id)-trigger"
+            class="sfw-modern-select sfw-modern-select-trigger w-full h-[50px] min-h-[50px] px-4 py-3 text-sm bg-slate-900/95 border border-slate-600 rounded-xl flex items-center justify-between shadow-sm hover:bg-slate-700/60 transition-all focus:outline-none focus:ring-2 focus:ring-accent group relative z-[100]"
             aria-label="State or Province"
             aria-haspopup="listbox"
             aria-expanded="@isOpen"
             @onclick="ToggleMenu">
-        <span class="truncate">@(string.IsNullOrEmpty(Value) ? "Select State..." : GetStateName(Value))</span>
-        <span class="material-symbols-outlined text-[18px] transition-transform @(isOpen ? "rotate-180" : "") text-slate-400">expand_more</span>
+        @if (string.IsNullOrEmpty(Value))
+        {
+            <span class="text-slate-500 font-normal truncate">Select State...</span>
+        }
+        else
+        {
+            <span class="text-white font-medium truncate">@GetStateName(Value)</span>
+        }
+        <span class="material-symbols-outlined text-[18px] transition-transform @(isOpen ? "rotate-180" : "") text-slate-400 group-hover:text-slate-200">expand_more</span>
     </button>
     
     @if (isOpen)
     {
         <div class="fixed inset-0 z-[110]" aria-hidden="true" @onclick="CloseMenu"></div>
         <div role="listbox" class="absolute top-full left-0 w-full mt-2 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden transform origin-top transition-all duration-200 z-[120]">
-            <div class="max-h-60 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
-                @foreach (var state in USStates)
+            <!-- Search / Filter Input -->
+            <div class="p-2.5 border-b border-slate-700 bg-slate-900/95 sticky top-0 z-10">
+                <div class="relative flex items-center">
+                    <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px]" aria-hidden="true">search</span>
+                    <input type="text"
+                           @bind="searchTerm"
+                           @bind:event="oninput"
+                           placeholder="Type to filter (e.g. IN, Indiana)..."
+                           class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent" />
+                </div>
+            </div>
+
+            <!-- Scrollable State List -->
+            <div class="max-h-56 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                @if (!FilteredStates.Any())
                 {
-                    var isActive = string.Equals(Value, state.Value, StringComparison.OrdinalIgnoreCase);
-                    <button type="button"
-                            class="w-full text-left px-4 py-3 text-sm transition-colors hover:bg-slate-800 hover:text-white @(isActive ? "bg-slate-800 text-accent font-bold" : "text-slate-200 font-medium")"
-                            @onclick="(() => SelectState(state.Value))">
-                        @state.Key
-                    </button>
+                    <div class="p-4 text-center text-sm text-slate-400">No states match "@searchTerm"</div>
+                }
+                else
+                {
+                    @foreach (var state in FilteredStates)
+                    {
+                        var isActive = string.Equals(Value, state.Value, StringComparison.OrdinalIgnoreCase);
+                        <button type="button"
+                                class="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-slate-800 hover:text-white flex items-center justify-between group @(isActive ? "bg-slate-800 text-accent font-bold" : "text-slate-200 font-medium")"
+                                @onclick="(() => SelectState(state.Value))">
+                            <span>@state.Key</span>
+                            <span class="text-sm font-mono text-slate-400 bg-slate-800 group-hover:bg-slate-700 px-2 py-0.5 rounded transition-colors">@state.Value</span>
+                        </button>
+                    }
                 }
             </div>
         </div>
@@ -50,19 +80,34 @@
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
     private bool isOpen;
+    private string searchTerm = string.Empty;
 
-    private Task ToggleMenu()
+    private IEnumerable<KeyValuePair<string, string>> FilteredStates =>
+        string.IsNullOrWhiteSpace(searchTerm)
+            ? USStates
+            : USStates.Where(s => s.Key.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                                  s.Value.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private void ToggleMenu()
     {
         isOpen = !isOpen;
-        return Task.CompletedTask;
+        if (!isOpen)
+        {
+            searchTerm = string.Empty;
+        }
     }
 
-    private void CloseMenu() => isOpen = false;
+    private void CloseMenu()
+    {
+        isOpen = false;
+        searchTerm = string.Empty;
+    }
 
     private async Task SelectState(string stateValue)
     {
         Value = stateValue;
         isOpen = false;
+        searchTerm = string.Empty;
         await ValueChanged.InvokeAsync(Value);
     }
 
@@ -70,6 +115,7 @@
     {
         Value = args.Value?.ToString() ?? string.Empty;
         isOpen = false;
+        searchTerm = string.Empty;
         ValueChanged.InvokeAsync(Value);
     }
 

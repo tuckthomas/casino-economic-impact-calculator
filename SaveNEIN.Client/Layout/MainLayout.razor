@@ -5,30 +5,30 @@
 <div class="bg-slate-900 dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100 font-display selection:bg-accent selection:text-black">
     @if (!IsHomeRoute)
     {
-    <nav class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-background-dark/90 backdrop-blur-md">
+    <nav class="sticky top-0 z-50 w-full border-b border-slate-800 bg-slate-950/90 backdrop-blur-md text-white">
         <div class="mx-auto flex min-h-20 max-w-7xl items-center gap-6 px-4 py-3 sm:px-6 lg:px-8">
-            <a class="flex items-center gap-3 group" href="/">
+            <a class="flex items-center gap-3 group shrink-0" href="/">
                 <img src="assets/SaveNEIN_SVG_Dark_Mode_Small.svg" alt="Save Northeast Indiana" class="h-12 w-auto object-contain" />
             </a>
             <div class="hidden min-w-0 flex-1 items-center justify-center gap-6 lg:flex xl:gap-8">
-                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-sm font-semibold text-slate-300 hover:text-white transition-colors"
                     href="/">Home</a>
-                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-sm font-semibold text-slate-300 hover:text-white transition-colors"
                     href="/archive">Archive</a>
-                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-sm font-semibold text-slate-300 hover:text-white transition-colors"
                     href="/#proponents-critique">Casino Proponents Critique</a>
-                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-sm font-semibold text-slate-300 hover:text-white transition-colors"
                     href="/#economic-analysis">Economic Impact Calculator</a>
-                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-sm font-semibold text-slate-300 hover:text-white transition-colors"
                     href="/#economic-analysis-part-2">Substitution Effect</a>
-                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-sm font-semibold text-slate-300 hover:text-white transition-colors"
                     href="/#tribal-analysis">Tribal Fact Check</a>
-                <a class="text-sm font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-sm font-semibold text-slate-300 hover:text-white transition-colors"
                     href="/#crime-safety">Crime & Safety</a>
             </div>
             <div class="flex items-center gap-3">
-                <a href="https://github.com/tuckthomas/casino-economic-impact-calculator.git" target="_blank"
-                    class="flex size-10 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-white transition-colors"
+                <a href="https://github.com/tuckthomas/casino-economic-impact-calculator.git" target="_blank" rel="noopener noreferrer"
+                    class="flex size-10 items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
                     id="main-github-source-link" aria-label="View Source on GitHub">
                     <svg class="size-7 fill-current" viewBox="0 0 24 24" aria-hidden="true">
                         <path fill-rule="evenodd" clip-rule="evenodd"
@@ -36,9 +36,9 @@
                         </path>
                     </svg>
                 </a>
-        <AppTooltip TargetId="main-github-source-link" Text="View Source on GitHub" />
+                <AppTooltip TargetId="main-github-source-link" Text="View Source on GitHub" />
                 <button onclick="openDrawer()"
-                    class="flex md:hidden size-10 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
+                    class="flex md:hidden size-10 items-center justify-center rounded-lg border border-slate-700 text-white hover:bg-slate-800 transition-colors">
                     <span class="material-symbols-outlined">menu</span>
                 </button>
             </div>
@@ -50,34 +50,34 @@
 
     <!-- Mobile Drawer -->
     <div id="drawer-overlay"
-        class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300"
+        class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300"
         onclick="closeDrawer()"></div>
     <div id="drawer"
-        class="fixed inset-y-0 right-0 z-50 w-64 bg-white dark:bg-black shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out">
+        class="fixed inset-y-0 right-0 z-50 w-64 bg-slate-900 border-l border-slate-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out text-white">
         <div class="flex flex-col h-full">
-            <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-                <span class="font-bold text-lg text-slate-900 dark:text-white">Menu</span>
+            <div class="flex items-center justify-between p-4 border-b border-slate-800">
+                <span class="font-bold text-lg text-white">Menu</span>
                 <button onclick="closeDrawer()"
-                    class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                    class="p-2 text-slate-400 hover:text-white transition-colors">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
             <div class="flex flex-col p-4 gap-4">
-                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-lg font-medium text-slate-300 hover:text-white transition-colors"
                     href="/" onclick="closeDrawer()">Home</a>
-                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-lg font-medium text-slate-300 hover:text-white transition-colors"
                     href="/archive" onclick="closeDrawer()">Archive</a>
-                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-lg font-medium text-slate-300 hover:text-white transition-colors"
                     href="/#proponents-critique" onclick="closeDrawer()">Casino Proponents Critique</a>
-                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-lg font-medium text-slate-300 hover:text-white transition-colors"
                     href="/#economic-analysis" onclick="closeDrawer()">Economic Impact Calculator</a>
-                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-lg font-medium text-slate-300 hover:text-white transition-colors"
                     href="/#economic-analysis-part-2" onclick="closeDrawer()">Substitution Effect</a>
-                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-lg font-medium text-slate-300 hover:text-white transition-colors"
                     href="/#tribal-analysis" onclick="closeDrawer()">Tribal Fact Check</a>
-                <a class="block py-3 text-lg font-bold border-b border-slate-800" href="/#crime-safety"
+                <a class="block py-3 text-lg font-bold border-b border-slate-800 text-slate-300 hover:text-white" href="/#crime-safety"
                     onclick="closeDrawer()">Crime & Safety</a>
-                <a class="text-lg font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors"
+                <a class="text-lg font-medium text-slate-300 hover:text-white transition-colors"
                     href="mailto:outreach@savenein.com" onclick="closeDrawer()">Contact</a>
             </div>
         </div>
