@@ -1,0 +1,98 @@
+@namespace SaveNEIN.Client.Components
+@inject IJSRuntime JSRuntime
+
+<div class="relative block">
+    <select id="@Id"
+            value="@Value"
+            @onchange="HandleNativeChanged"
+            aria-hidden="true"
+            tabindex="-1"
+            class="hidden">
+        <option value="">Select State...</option>
+        @foreach (var state in USStates)
+        {
+            <option value="@state.Value">@state.Key</option>
+        }
+    </select>
+    
+    <button type="button"
+            class="sfw-modern-select sfw-modern-select-trigger w-full px-4 py-3 text-sm font-medium bg-slate-900/95 border border-slate-600 text-slate-100 rounded-xl flex items-center justify-between shadow-sm hover:bg-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-accent group relative z-[100]"
+            aria-label="State or Province"
+            aria-haspopup="listbox"
+            aria-expanded="@isOpen"
+            @onclick="ToggleMenu">
+        <span class="truncate">@(string.IsNullOrEmpty(Value) ? "Select State..." : GetStateName(Value))</span>
+        <span class="material-symbols-outlined text-[18px] transition-transform @(isOpen ? "rotate-180" : "") text-slate-400">expand_more</span>
+    </button>
+    
+    @if (isOpen)
+    {
+        <div class="fixed inset-0 z-[110]" aria-hidden="true" @onclick="CloseMenu"></div>
+        <div role="listbox" class="absolute top-full left-0 w-full mt-2 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden transform origin-top transition-all duration-200 z-[120]">
+            <div class="max-h-60 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                @foreach (var state in USStates)
+                {
+                    var isActive = string.Equals(Value, state.Value, StringComparison.OrdinalIgnoreCase);
+                    <button type="button"
+                            class="w-full text-left px-4 py-3 text-sm transition-colors hover:bg-slate-800 hover:text-white @(isActive ? "bg-slate-800 text-accent font-bold" : "text-slate-200 font-medium")"
+                            @onclick="(() => SelectState(state.Value))">
+                        @state.Key
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    private bool isOpen;
+
+    private Task ToggleMenu()
+    {
+        isOpen = !isOpen;
+        return Task.CompletedTask;
+    }
+
+    private void CloseMenu() => isOpen = false;
+
+    private async Task SelectState(string stateValue)
+    {
+        Value = stateValue;
+        isOpen = false;
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    private void HandleNativeChanged(ChangeEventArgs args)
+    {
+        Value = args.Value?.ToString() ?? string.Empty;
+        isOpen = false;
+        ValueChanged.InvokeAsync(Value);
+    }
+
+    private string GetStateName(string value)
+    {
+        var state = USStates.FirstOrDefault(s => s.Value == value);
+        return state.Key ?? value;
+    }
+
+    private static readonly Dictionary<string, string> USStates = new()
+    {
+        { "Alabama", "AL" }, { "Alaska", "AK" }, { "Arizona", "AZ" }, { "Arkansas", "AR" },
+        { "California", "CA" }, { "Colorado", "CO" }, { "Connecticut", "CT" }, { "Delaware", "DE" },
+        { "District of Columbia", "DC" }, { "Florida", "FL" }, { "Georgia", "GA" }, { "Hawaii", "HI" },
+        { "Idaho", "ID" }, { "Illinois", "IL" }, { "Indiana", "IN" }, { "Iowa", "IA" },
+        { "Kansas", "KS" }, { "Kentucky", "KY" }, { "Louisiana", "LA" }, { "Maine", "ME" },
+        { "Maryland", "MD" }, { "Massachusetts", "MA" }, { "Michigan", "MI" }, { "Minnesota", "MN" },
+        { "Mississippi", "MS" }, { "Missouri", "MO" }, { "Montana", "MT" }, { "Nebraska", "NE" },
+        { "Nevada", "NV" }, { "New Hampshire", "NH" }, { "New Jersey", "NJ" }, { "New Mexico", "NM" },
+        { "New York", "NY" }, { "North Carolina", "NC" }, { "North Dakota", "ND" }, { "Ohio", "OH" },
+        { "Oklahoma", "OK" }, { "Oregon", "OR" }, { "Pennsylvania", "PA" }, { "Rhode Island", "RI" },
+        { "South Carolina", "SC" }, { "South Dakota", "SD" }, { "Tennessee", "TN" }, { "Texas", "TX" },
+        { "Utah", "UT" }, { "Vermont", "VT" }, { "Virginia", "VA" }, { "Washington", "WA" },
+        { "West Virginia", "WV" }, { "Wisconsin", "WI" }, { "Wyoming", "WY" }
+    };
+}

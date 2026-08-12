@@ -1,0 +1,245 @@
+@page "/get-involved"
+@using SaveNEIN.Shared
+@using SaveNEIN.Client.Components
+@inject HttpClient Http
+
+<PageTitle>Get Involved | Save Northeast Indiana</PageTitle>
+
+<div class="min-h-screen pt-24 pb-16 bg-primary-dark">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="mb-10 text-center">
+            <h1 class="text-4xl font-black uppercase tracking-tight text-white sm:text-5xl mb-4">
+                Get <span class="text-accent underline decoration-4 underline-offset-4">Involved</span>
+            </h1>
+            <p class="text-lg text-slate-300 max-w-2xl mx-auto">
+                Join our coalition of supporters. Choose how you want to participate and help us defend Northeast Indiana's future.
+            </p>
+        </div>
+
+        <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 sm:p-8 lg:p-10 shadow-2xl relative overflow-hidden">
+            <!-- Subtle glow effect -->
+            <div class="absolute -top-40 -right-40 w-80 h-80 bg-accent/10 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
+
+            @if (isSuccess)
+            {
+                <div class="text-center py-10" role="alert" aria-live="polite">
+                    <span class="material-symbols-outlined text-6xl text-accent mb-4" aria-hidden="true">task_alt</span>
+                    <h2 class="text-3xl font-bold text-white mb-3">Welcome to the Coalition</h2>
+                    <p class="text-lg text-slate-300 mb-8">@successMessage</p>
+                    <AppButton type="button" OnButtonClick="ResetForm" Class="bg-slate-700 hover:bg-slate-600 text-white">
+                        Submit Another
+                    </AppButton>
+                </div>
+            }
+            else
+            {
+                <EditForm Model="@request" OnValidSubmit="HandleValidSubmit" class="space-y-8 relative z-10">
+                    <DataAnnotationsValidator />
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="bg-red-900/30 border border-red-500 text-red-200 px-4 py-3 rounded-lg flex items-start gap-3" role="alert">
+                            <span class="material-symbols-outlined text-red-400 mt-0.5">error</span>
+                            <div>
+                                <h3 class="font-bold text-red-400">Submission Error</h3>
+                                <p class="text-sm">@errorMessage</p>
+                            </div>
+                        </div>
+                    }
+
+                    <ValidationSummary class="bg-red-900/20 border border-red-500/50 text-red-300 text-sm p-4 rounded-lg list-inside list-disc" />
+
+                    <!-- Contact Info -->
+                    <div>
+                        <h3 class="text-xl font-bold text-white border-b border-slate-700 pb-2 mb-4">Contact Information</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+                            <div class="space-y-2">
+                                <label for="FirstName" class="block text-sm font-semibold text-slate-300">First Name <span class="text-accent">*</span></label>
+                                <InputText id="FirstName" @bind-Value="request.FirstName" class="w-full bg-slate-900/95 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors" placeholder="Jane" />
+                                <ValidationMessage For="@(() => request.FirstName)" class="text-sm text-red-400 font-medium" />
+                            </div>
+                            <div class="space-y-2">
+                                <label for="LastName" class="block text-sm font-semibold text-slate-300">Last Name <span class="text-accent">*</span></label>
+                                <InputText id="LastName" @bind-Value="request.LastName" class="w-full bg-slate-900/95 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors" placeholder="Doe" />
+                                <ValidationMessage For="@(() => request.LastName)" class="text-sm text-red-400 font-medium" />
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 mb-4 md:mb-6">
+                            <label for="Email" class="block text-sm font-semibold text-slate-300">Email Address <span class="text-accent">*</span></label>
+                            <InputText id="Email" type="email" @bind-Value="request.Email" class="w-full bg-slate-900/95 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors" placeholder="jane@example.com" />
+                            <ValidationMessage For="@(() => request.Email)" class="text-sm text-red-400 font-medium" />
+                        </div>
+                    </div>
+
+                    <!-- Address Info -->
+                    <div>
+                        <h3 class="text-xl font-bold text-white border-b border-slate-700 pb-2 mb-4">Mailing Address</h3>
+                        
+                        <div class="space-y-2 mb-4 md:mb-6">
+                            <label for="AddressLine1" class="block text-sm font-semibold text-slate-300">Address Line 1 <span class="text-accent">*</span></label>
+                            <InputText id="AddressLine1" @bind-Value="request.AddressLine1" class="w-full bg-slate-900/95 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors" placeholder="123 Main St" />
+                            <ValidationMessage For="@(() => request.AddressLine1)" class="text-sm text-red-400 font-medium" />
+                        </div>
+                        
+                        <div class="space-y-2 mb-4 md:mb-6">
+                            <label for="AddressLine2" class="block text-sm font-semibold text-slate-300">Address Line 2 <span class="text-slate-500 font-normal">(Optional)</span></label>
+                            <InputText id="AddressLine2" @bind-Value="request.AddressLine2" class="w-full bg-slate-900/95 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors" placeholder="Apt, Suite, Bldg" />
+                            <ValidationMessage For="@(() => request.AddressLine2)" class="text-sm text-red-400 font-medium" />
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                            <div class="space-y-2">
+                                <label for="City" class="block text-sm font-semibold text-slate-300">City <span class="text-accent">*</span></label>
+                                <InputText id="City" @bind-Value="request.City" class="w-full bg-slate-900/95 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors" placeholder="Fort Wayne" />
+                                <ValidationMessage For="@(() => request.City)" class="text-sm text-red-400 font-medium" />
+                            </div>
+                            <div class="space-y-2">
+                                <label for="StateProvince" class="block text-sm font-semibold text-slate-300">State/Province <span class="text-accent">*</span></label>
+                                <!-- Using our custom dropdown component for the state -->
+                                <StateSelect Id="StateProvince" @bind-Value="request.StateProvince" />
+                                <ValidationMessage For="@(() => request.StateProvince)" class="text-sm text-red-400 font-medium" />
+                            </div>
+                            <div class="space-y-2">
+                                <label for="PostalCode" class="block text-sm font-semibold text-slate-300">ZIP/Postal Code <span class="text-accent">*</span></label>
+                                <InputText id="PostalCode" @bind-Value="request.PostalCode" class="w-full bg-slate-900/95 border border-slate-600 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors" placeholder="46802" />
+                                <ValidationMessage For="@(() => request.PostalCode)" class="text-sm text-red-400 font-medium" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Participation Preferences -->
+                    <div>
+                        <h3 class="text-xl font-bold text-white border-b border-slate-700 pb-2 mb-2">I Want To... <span class="text-accent">*</span></h3>
+                        <p class="text-sm text-slate-400 mb-4">Please select at least one way you would like to help.</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <div class="relative flex items-center h-5 mt-0.5">
+                                    <InputCheckbox @bind-Value="request.DisplayYardSign" class="peer h-5 w-5 rounded border-slate-600 bg-slate-900 text-accent focus:ring-accent focus:ring-2 focus:ring-offset-slate-800 transition-all cursor-pointer" />
+                                </div>
+                                <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Display a yard sign</span>
+                            </label>
+
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <div class="relative flex items-center h-5 mt-0.5">
+                                    <InputCheckbox @bind-Value="request.WorkEventBooth" class="peer h-5 w-5 rounded border-slate-600 bg-slate-900 text-accent focus:ring-accent focus:ring-2 focus:ring-offset-slate-800 transition-all cursor-pointer" />
+                                </div>
+                                <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Work an event booth</span>
+                            </label>
+
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <div class="relative flex items-center h-5 mt-0.5">
+                                    <InputCheckbox @bind-Value="request.GoDoorToDoor" class="peer h-5 w-5 rounded border-slate-600 bg-slate-900 text-accent focus:ring-accent focus:ring-2 focus:ring-offset-slate-800 transition-all cursor-pointer" />
+                                </div>
+                                <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Go door to door</span>
+                            </label>
+
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <div class="relative flex items-center h-5 mt-0.5">
+                                    <InputCheckbox @bind-Value="request.WriteLetterToEditor" class="peer h-5 w-5 rounded border-slate-600 bg-slate-900 text-accent focus:ring-accent focus:ring-2 focus:ring-offset-slate-800 transition-all cursor-pointer" />
+                                </div>
+                                <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Write a letter to the editor</span>
+                            </label>
+
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <div class="relative flex items-center h-5 mt-0.5">
+                                    <InputCheckbox @bind-Value="request.ShareSocialMedia" class="peer h-5 w-5 rounded border-slate-600 bg-slate-900 text-accent focus:ring-accent focus:ring-2 focus:ring-offset-slate-800 transition-all cursor-pointer" />
+                                </div>
+                                <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Share on social media</span>
+                            </label>
+
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <div class="relative flex items-center h-5 mt-0.5">
+                                    <InputCheckbox @bind-Value="request.WorkPollingSiteElectionDay" class="peer h-5 w-5 rounded border-slate-600 bg-slate-900 text-accent focus:ring-accent focus:ring-2 focus:ring-offset-slate-800 transition-all cursor-pointer" />
+                                </div>
+                                <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Work at a polling site on Election Day</span>
+                            </label>
+
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <div class="relative flex items-center h-5 mt-0.5">
+                                    <InputCheckbox @bind-Value="request.MakePhoneCalls" class="peer h-5 w-5 rounded border-slate-600 bg-slate-900 text-accent focus:ring-accent focus:ring-2 focus:ring-offset-slate-800 transition-all cursor-pointer" />
+                                </div>
+                                <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Make phone calls</span>
+                            </label>
+
+                            <label class="flex items-start gap-3 cursor-pointer group">
+                                <div class="relative flex items-center h-5 mt-0.5">
+                                    <InputCheckbox @bind-Value="request.BeListedAsSupporter" class="peer h-5 w-5 rounded border-slate-600 bg-slate-900 text-accent focus:ring-accent focus:ring-2 focus:ring-offset-slate-800 transition-all cursor-pointer" />
+                                </div>
+                                <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Be listed as a supporter</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-slate-700">
+                        <button type="submit" disabled="@isSubmitting" class="w-full sm:w-auto bg-accent hover:bg-red-700 text-white text-lg font-bold py-4 px-8 rounded-xl transition-all shadow-lg hover:shadow-accent/25 flex items-center justify-center gap-2 @(isSubmitting ? "opacity-75 cursor-not-allowed" : "")">
+                            @if (isSubmitting)
+                            {
+                                <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Joining...</span>
+                            }
+                            else
+                            {
+                                <span>Join the Coalition</span>
+                                <span class="material-symbols-outlined font-bold text-[20px]" aria-hidden="true">arrow_forward</span>
+                            }
+                        </button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private CoalitionSignupRequest request = new();
+    private bool isSubmitting = false;
+    private bool isSuccess = false;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    private async Task HandleValidSubmit()
+    {
+        if (isSubmitting) return;
+
+        isSubmitting = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/coalition-signups", request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<CoalitionSignupResponse>();
+                isSuccess = true;
+                successMessage = result?.Message ?? "Thanks for getting involved. Your information has been received.";
+            }
+            else
+            {
+                errorMessage = "We could not submit your information at this time. Please try again later.";
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "A network error occurred. Please check your connection and try again.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void ResetForm()
+    {
+        request = new CoalitionSignupRequest();
+        isSuccess = false;
+        errorMessage = string.Empty;
+    }
+}

@@ -21,6 +21,8 @@ public class AppDbContext : DbContext
     public DbSet<SaveNEIN.Server.Data.Entities.AddressPoint> AddressPoints => Set<SaveNEIN.Server.Data.Entities.AddressPoint>();
     public DbSet<SaveNEIN.Server.Data.Entities.TigerAddressRange> TigerAddressRanges => Set<SaveNEIN.Server.Data.Entities.TigerAddressRange>();
     public DbSet<SaveNEIN.Server.Data.Entities.CasinoCompetitor> CasinoCompetitors => Set<SaveNEIN.Server.Data.Entities.CasinoCompetitor>();
+    
+    public DbSet<SaveNEIN.Server.Data.Entities.CoalitionSignup> CoalitionSignups => Set<SaveNEIN.Server.Data.Entities.CoalitionSignup>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -74,5 +76,10 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.CasinoCompetitor>()
             .HasIndex(c => c.Geom)
             .HasMethod("gist");
+
+        // CoalitionSignup: Unique index on NormalizedEmail
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.CoalitionSignup>()
+            .HasIndex(c => c.NormalizedEmail)
+            .IsUnique();
     }
 }
