@@ -4991,7 +4991,7 @@ window.MapLibreImpactMap = (function ()
                 badgeEl.textContent = 'Step 3 of 3 (Optional)';
                 badgeEl.className = 'px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
                 titleEl.textContent = 'Move Casino Marker (Optional)';
-                textEl.innerHTML = `Casino marker placed${contextName ? ` in <strong class="text-white">${escapeHtml(contextName)}</strong>` : ''}! You <strong>can move the casino marker</strong> around within the county or into other counties to test alternative locations.`;
+                textEl.innerHTML = `You <strong>can move the casino marker</strong> around within the county or into other counties to test alternative locations.`;
                 iconEl.textContent = 'pin_drop';
                 if (iconContainer) iconContainer.className = 'mt-0.5 shrink-0 w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shadow-inner';
                 if (accentLine) accentLine.className = 'absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 transition-all duration-500';
