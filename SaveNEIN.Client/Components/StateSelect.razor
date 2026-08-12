@@ -38,14 +38,18 @@
     {
         <div class="fixed inset-0 z-[110]" aria-hidden="true" @onclick="CloseMenu"></div>
         <div role="listbox" class="absolute top-full left-0 w-full mt-2 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden transform origin-top transition-all duration-200 z-[120]">
-            <!-- Search / Filter Input -->
+            <!-- Search / Filter Input (Automatically focused on expansion) -->
             <div class="p-2.5 border-b border-slate-700 bg-slate-900/95 sticky top-0 z-10">
                 <div class="relative flex items-center">
                     <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px]" aria-hidden="true">search</span>
                     <input type="text"
+                           id="@(Id)-search-input"
+                           @ref="searchInputRef"
                            @bind="searchTerm"
                            @bind:event="oninput"
+                           @onkeydown="HandleSearchKeyDown"
                            placeholder="Type to filter (e.g. IN, Indiana)..."
+                           autofocus
                            class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent" />
                 </div>
             </div>
@@ -81,6 +85,8 @@
 
     private bool isOpen;
     private string searchTerm = string.Empty;
+    private ElementReference searchInputRef;
+    private bool shouldFocusSearch;
 
     private IEnumerable<KeyValuePair<string, string>> FilteredStates =>
         string.IsNullOrWhiteSpace(searchTerm)
@@ -91,9 +97,46 @@
     private void ToggleMenu()
     {
         isOpen = !isOpen;
-        if (!isOpen)
+        if (isOpen)
+        {
+            shouldFocusSearch = true;
+        }
+        else
         {
             searchTerm = string.Empty;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (isOpen && shouldFocusSearch)
+        {
+            shouldFocusSearch = false;
+            try
+            {
+                await searchInputRef.FocusAsync();
+            }
+            catch
+            {
+                // Fallback for JS interop focus
+                await JSRuntime.InvokeVoidAsync("eval", $"document.getElementById('{Id}-search-input')?.focus()");
+            }
+        }
+    }
+
+    private void HandleSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            var first = FilteredStates.FirstOrDefault();
+            if (!string.IsNullOrEmpty(first.Value))
+            {
+                _ = SelectState(first.Value);
+            }
+        }
+        else if (args.Key == "Escape")
+        {
+            CloseMenu();
         }
     }
 
