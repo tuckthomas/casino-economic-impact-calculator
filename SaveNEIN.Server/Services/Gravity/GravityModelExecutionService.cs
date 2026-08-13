@@ -124,6 +124,7 @@ public sealed class GravityModelExecutionService(
     ITourismDemandService tourismDemandService,
     ITrafficInterceptService trafficInterceptService,
     ICapacityDiagnosticService capacityDiagnosticService,
+    ICapacityProductivityBenchmarkService capacityProductivityBenchmarkService,
     IRampScheduleService rampScheduleService,
     IGamingTaxCalculator gamingTaxCalculator,
     IGamingFiscalAllocationCalculator gamingFiscalAllocationCalculator,
@@ -570,15 +571,18 @@ public sealed class GravityModelExecutionService(
             expansions,
             nonresidentDemand,
             proposedFacilityKey);
-        var capacityAndRamp = PersistCapacityAndRamp(
+        var capacityAndRamp = await PersistCapacityAndRampAsync(
             run.Id,
+            request,
+            context,
             context.DevelopmentProgram,
             proposedFacilityKey,
             equilibrium.ProposedFacilityDemand +
             expansions.Values.Sum(item => item.ProposedInducedResidentGgr) +
             nonresidentDemand.TourismGgr +
             nonresidentDemand.TrafficGgr,
-            parameters);
+            parameters,
+            cancellationToken);
         var impact = await BuildAndPersistImpactAsync(
             run.Id,
             request,
@@ -1073,15 +1077,37 @@ public sealed class GravityModelExecutionService(
         return new NonresidentDemandContext(tourismGgr, trafficGgr, warnings);
     }
 
-    private CapacityAndRampContext PersistCapacityAndRamp(
+    private async Task<CapacityAndRampContext> PersistCapacityAndRampAsync(
         Guid modelRunId,
+        GravityModelRunRequest request,
+        ExecutionContext context,
         DevelopmentProgram program,
         string proposedFacilityKey,
         double stabilizedTotalGgr,
-        IReadOnlyDictionary<string, double> parameters)
+        IReadOnlyDictionary<string, double> parameters,
+        CancellationToken cancellationToken)
     {
         var warnings = new List<string>();
-        var capacityEnabled = RequireParameter(parameters, "capacity.diagnostic_enabled") >= 0.5;
+        var competitorIds = context.Competitors.Select(competitor => competitor.Id).ToArray();
+        var componentPeriods = await db.CasinoGamingRevenuePeriods
+            .AsNoTracking()
+            .Where(period => competitorIds.Contains(period.CasinoCompetitorId) &&
+                             period.DatasetSnapshotId == request.ObservedPerformanceSnapshotId &&
+                             (period.ReportedMetricKey == GamingRevenueMetricKeys.SlotOrVltGamingRevenue ||
+                              period.ReportedMetricKey == GamingRevenueMetricKeys.TableGameGamingRevenue) &&
+                             period.PeriodStart >= request.ObservedPeriodStart &&
+                             period.PeriodEnd <= request.ObservedPeriodEnd)
+            .ToListAsync(cancellationToken);
+        var benchmarkResolution = capacityProductivityBenchmarkService.Resolve(
+            new CapacityProductivityBenchmarkInput(
+                request.ObservedPerformanceSnapshotId,
+                request.ObservedPeriodStart,
+                request.ObservedPeriodEnd,
+                context.Competitors,
+                componentPeriods));
+        var benchmark = benchmarkResolution.Benchmark;
+        var capacityEnabled = benchmark is not null ||
+                              RequireParameter(parameters, "capacity.diagnostic_enabled") >= 0.5;
         if (!capacityEnabled)
         {
             const string warning = "Capacity diagnostic was not evaluated because no validated productivity benchmark set is active.";
@@ -1097,15 +1123,23 @@ public sealed class GravityModelExecutionService(
         }
         else
         {
+            var slotMinimum = benchmark?.SlotWinPerUnitDayMinimum ??
+                              RequireParameter(parameters, "capacity.slot_win_per_unit_day_minimum");
+            var slotMaximum = benchmark?.SlotWinPerUnitDayMaximum ??
+                              RequireParameter(parameters, "capacity.slot_win_per_unit_day_maximum");
+            var tableMinimum = benchmark?.TableWinPerTableDayMinimum ??
+                               RequireParameter(parameters, "capacity.table_win_per_table_day_minimum");
+            var tableMaximum = benchmark?.TableWinPerTableDayMaximum ??
+                               RequireParameter(parameters, "capacity.table_win_per_table_day_maximum");
             var capacity = capacityDiagnosticService.Evaluate(new CapacityDiagnosticInput(
                 stabilizedTotalGgr,
                 program.SlotOrVltPositions,
                 program.TableGameCount,
                 IntegerParameter(parameters, "capacity.operating_days_per_year", 1, 366),
-                RequireParameter(parameters, "capacity.slot_win_per_unit_day_minimum"),
-                RequireParameter(parameters, "capacity.slot_win_per_unit_day_maximum"),
-                RequireParameter(parameters, "capacity.table_win_per_table_day_minimum"),
-                RequireParameter(parameters, "capacity.table_win_per_table_day_maximum"),
+                slotMinimum,
+                slotMaximum,
+                tableMinimum,
+                tableMaximum,
                 program.HotelRoomCount,
                 program.EventCapacity));
             var status = capacity.IsAboveValidatedRange
@@ -1122,10 +1156,39 @@ public sealed class GravityModelExecutionService(
                 PlausibleCapacityMinimum = ToMoney(capacity.PlausibleCapacityMinimum),
                 PlausibleCapacityMaximum = ToMoney(capacity.PlausibleCapacityMaximum),
                 ImpliedResidualSlotWinPerUnitDay = capacity.ImpliedResidualSlotWinPerUnitDay,
+                BenchmarkDatasetSnapshotId = benchmark?.ObservedPerformanceSnapshotId,
+                BenchmarkMethod = benchmark?.Method ?? "versioned-parameter-range",
+                BenchmarkSampleSize = benchmark?.Facilities.Count,
+                SlotWinPerUnitDayMinimum = slotMinimum,
+                SlotWinPerUnitDayMaximum = slotMaximum,
+                TableWinPerTableDayMinimum = tableMinimum,
+                TableWinPerTableDayMaximum = tableMaximum,
+                BenchmarkProvenanceJson = benchmark is null
+                    ? JsonSerializer.Serialize(new
+                    {
+                        source = "resolved-model-parameters",
+                        keys = new[]
+                        {
+                            "capacity.slot_win_per_unit_day_minimum",
+                            "capacity.slot_win_per_unit_day_maximum",
+                            "capacity.table_win_per_table_day_minimum",
+                            "capacity.table_win_per_table_day_maximum"
+                        }
+                    })
+                    : JsonSerializer.Serialize(new
+                    {
+                        source = "observed-performance-and-competitor-snapshots",
+                        benchmark.ObservedPerformanceSnapshotId,
+                        benchmark.Method,
+                        benchmark.PeriodStart,
+                        benchmark.PeriodEnd,
+                        Facilities = benchmark.Facilities
+                    }),
                 IsBelowValidatedRange = capacity.IsBelowValidatedRange,
                 IsAboveValidatedRange = capacity.IsAboveValidatedRange,
-                WarningText = string.Join(" ", capacity.Warnings)
+                WarningText = string.Join(" ", benchmarkResolution.Warnings.Concat(capacity.Warnings))
             });
+            warnings.AddRange(benchmarkResolution.Warnings);
             warnings.AddRange(capacity.Warnings);
         }
 

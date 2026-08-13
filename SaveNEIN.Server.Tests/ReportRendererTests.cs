@@ -40,6 +40,8 @@ public sealed class ReportRendererTests
         Assert.Contains("Sensitivity tornado", first, StringComparison.Ordinal);
         Assert.Contains("Direct casino average annual wage", first, StringComparison.Ordinal);
         Assert.Contains("provider-snapshot", first, StringComparison.Ordinal);
+        Assert.Contains("observed-unit-days-v1", first, StringComparison.Ordinal);
+        Assert.Contains("slot win/unit/day: 200", first, StringComparison.Ordinal);
         Assert.Contains("WGS84 coordinates", first, StringComparison.Ordinal);
         Assert.DoesNotContain("html2canvas", first, StringComparison.OrdinalIgnoreCase);
     }
@@ -74,6 +76,8 @@ public sealed class ReportRendererTests
         Assert.Contains("facility,scenario:test,longitude,-85.1,degrees", first, StringComparison.Ordinal);
         Assert.Contains("employment,host,direct_average_annual_wage,60000,USD/job/year", first, StringComparison.Ordinal);
         Assert.Contains("employment,host,assumption_provenance_json", first, StringComparison.Ordinal);
+        Assert.Contains("capacity,scenario:test,benchmark_method,observed-unit-days-v1", first, StringComparison.Ordinal);
+        Assert.Contains("capacity,scenario:test,table_win_per_table_day_maximum,1400,USD/table/day", first, StringComparison.Ordinal);
         Assert.Contains("sensitivity,gravity.beta,low_model_run_id,10000000-0000-0000-0000-000000000001,uuid", first, StringComparison.Ordinal);
     }
 
@@ -153,7 +157,10 @@ public sealed class ReportRendererTests
                     100_000, 900_000, 200_000, 150_000, 1_250_000)
             ],
             DemandComponents: [],
-            Capacity: new ReportCapacity("scenario:test", 1_250_000, 900_000, 1_500_000, false, false, "within-range", null),
+            Capacity: new ReportCapacity(
+                "scenario:test", 1_250_000, 900_000, 1_500_000, false, false, "within-range", null,
+                Guid.Parse("22222222-3333-4444-5555-666666666666"), "observed-unit-days-v1", 4,
+                200, 350, 900, 1_400, "{\"source\":\"regulator\"}"),
             Ramp:
             [
                 new ReportRampYear(2028, 1, "first-full-year", 1, 0.75, 937_500),

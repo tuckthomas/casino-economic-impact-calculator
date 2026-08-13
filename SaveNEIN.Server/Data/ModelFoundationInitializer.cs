@@ -33,7 +33,8 @@ public static class ModelFoundationInitializer
         "019_indiana_benchmark_reconciliation_outputs.sql",
         "020_coordinate_versioned_incumbent_travel_cache.sql",
         "021_component_gaming_fiscal_allocation.sql",
-        "022_employment_assumption_provenance.sql"
+        "022_employment_assumption_provenance.sql",
+        "023_capacity_productivity_benchmark_provenance.sql"
     ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -433,7 +434,7 @@ public static class ModelFoundationInitializer
         yield return Definition("ramp.stabilized_year", "ramp", "Stabilized year", "year number", 3, 1, 20, 2, 5, 1, "standard", false, "Scenario prior requiring comparable-opening validation.");
         yield return Definition("ramp.stabilized_annual_growth_rate", "ramp", "Post-stabilization annual growth", "rate", 0, -0.99, 1, -0.1, 0.1, 0.005, "advanced", false, "Zero real-growth fallback pending a versioned growth scenario.");
         yield return Definition("ramp.projection_years", "ramp", "Ramp projection horizon", "years", 5, 3, 50, 3, 10, 1, "advanced", false, "Five-year reporting horizon prior.");
-        yield return Definition("capacity.diagnostic_enabled", "capacity", "Capacity diagnostic enabled", "indicator", 0, 0, 1, 0, 1, 1, "expert", false, "Disabled until validated productivity benchmarks are supplied.");
+        yield return Definition("capacity.diagnostic_enabled", "capacity", "Parameter-range capacity diagnostic enabled", "indicator", 0, 0, 1, 0, 1, 1, "expert", false, "Enables an explicit versioned parameter range when no complete regulator-observed benchmark is available; a complete observed benchmark activates automatically.");
         yield return Definition("capacity.operating_days_per_year", "capacity", "Operating days per year", "days", 365, 1, 366, 300, 366, 1, "expert", false, "Full-year operation prior.");
         yield return Definition("capacity.slot_win_per_unit_day_minimum", "capacity", "Minimum slot win per unit day", "USD/unit/day", 0, 0, 100000, 0, null, 1, "expert", false, "Zero-safe placeholder pending comparable-facility calibration.");
         yield return Definition("capacity.slot_win_per_unit_day_maximum", "capacity", "Maximum slot win per unit day", "USD/unit/day", 0, 0, 100000, 0, null, 1, "expert", false, "Zero-safe placeholder pending comparable-facility calibration.");

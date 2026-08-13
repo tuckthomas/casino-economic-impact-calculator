@@ -156,6 +156,15 @@ public sealed class ModelRunCapacityDiagnostic
     public decimal? PlausibleCapacityMinimum { get; set; }
     public decimal? PlausibleCapacityMaximum { get; set; }
     public double? ImpliedResidualSlotWinPerUnitDay { get; set; }
+    public Guid? BenchmarkDatasetSnapshotId { get; set; }
+    [MaxLength(80)]
+    public string? BenchmarkMethod { get; set; }
+    public int? BenchmarkSampleSize { get; set; }
+    public double? SlotWinPerUnitDayMinimum { get; set; }
+    public double? SlotWinPerUnitDayMaximum { get; set; }
+    public double? TableWinPerTableDayMinimum { get; set; }
+    public double? TableWinPerTableDayMaximum { get; set; }
+    public string? BenchmarkProvenanceJson { get; set; }
     public bool IsBelowValidatedRange { get; set; }
     public bool IsAboveValidatedRange { get; set; }
     public string? WarningText { get; set; }

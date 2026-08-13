@@ -70,6 +70,21 @@ public sealed class OhioCasinoControlCommissionProviderTests
         Assert.Equal(0, handler.RequestCount);
     }
 
+    [Fact]
+    public void RevenueTransform_PreservesPublishedComponentRevenueAndMonthlyUnitCounts()
+    {
+        var pages = CompleteReportPages();
+        var source = OhioCasinoRevenuePdfParser.ParsePageTexts(pages, 2025, 12);
+        var rows = source.SelectMany(OhioCasinoControlCommissionRevenueProvider.RevenueRows).ToArray();
+
+        Assert.Equal(192, rows.Length);
+        var january = rows.Where(row => row.PeriodStart == new DateOnly(2025, 1, 1)).ToArray();
+        Assert.Equal(4, january.Count(row => row.ReportedMetricKey == GamingRevenueMetricKeys.SlotOrVltGamingRevenue));
+        Assert.Equal(4, january.Count(row => row.ReportedMetricKey == GamingRevenueMetricKeys.TableGameGamingRevenue));
+        Assert.All(january.Where(row => row.ReportedMetricKey is GamingRevenueMetricKeys.SlotOrVltGamingRevenue or GamingRevenueMetricKeys.TableGameGamingRevenue),
+            row => Assert.True(row.ReportedUnitCount > 0));
+    }
+
     private static List<string> CompleteReportPages()
     {
         var facilityPages = OhioCasinoFacilityCatalog.Entries
@@ -155,4 +170,5 @@ public sealed class OhioCasinoControlCommissionProviderTests
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError));
         }
     }
+
 }

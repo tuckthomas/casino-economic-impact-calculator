@@ -141,6 +141,7 @@ builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IAccessibilityExpans
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ITourismDemandService, SaveNEIN.Server.Services.Gravity.TourismDemandService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ITrafficInterceptService, SaveNEIN.Server.Services.Gravity.TrafficInterceptService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ICapacityDiagnosticService, SaveNEIN.Server.Services.Gravity.CapacityDiagnosticService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ICapacityProductivityBenchmarkService, SaveNEIN.Server.Services.Gravity.CapacityProductivityBenchmarkService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IRampScheduleService, SaveNEIN.Server.Services.Gravity.RampScheduleService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ICannibalizationAccountingService, SaveNEIN.Server.Services.Gravity.CannibalizationAccountingService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ILocalEconomicInventoryWeightService, SaveNEIN.Server.Services.Gravity.LocalEconomicInventoryWeightService>();

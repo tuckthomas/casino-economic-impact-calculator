@@ -197,6 +197,17 @@ public sealed class ModelFoundationSchemaTests
         Assert.Contains("assumption_provenance_json", employmentAssumptionSql, StringComparison.Ordinal);
         Assert.Contains("ck_model_run_employment_wages_nonnegative", employmentAssumptionSql, StringComparison.Ordinal);
 
+        var capacityBenchmarkMigration = Assert.Single(
+            resourceNames,
+            name => name.EndsWith("023_capacity_productivity_benchmark_provenance.sql", StringComparison.Ordinal));
+        using var capacityBenchmarkStream = typeof(ModelFoundationInitializer).Assembly.GetManifestResourceStream(capacityBenchmarkMigration)!;
+        using var capacityBenchmarkReader = new StreamReader(capacityBenchmarkStream);
+        var capacityBenchmarkSql = capacityBenchmarkReader.ReadToEnd();
+        Assert.Contains("reported_unit_count", capacityBenchmarkSql, StringComparison.Ordinal);
+        Assert.Contains("benchmark_dataset_snapshot_id", capacityBenchmarkSql, StringComparison.Ordinal);
+        Assert.Contains("slot_win_per_unit_day_minimum", capacityBenchmarkSql, StringComparison.Ordinal);
+        Assert.Contains("ck_model_run_capacity_benchmark_values", capacityBenchmarkSql, StringComparison.Ordinal);
+
         var validationMigration = Assert.Single(
             resourceNames,
             name => name.EndsWith("012_validation_and_calibration.sql", StringComparison.Ordinal));

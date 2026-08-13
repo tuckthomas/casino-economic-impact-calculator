@@ -179,7 +179,8 @@ public sealed record CasinoGamingRevenueImportRow(
     decimal? InflationAdjustedAmount,
     int? InflationAdjustmentDollarYear,
     IReadOnlyCollection<string>? AnomalyFlags,
-    string? Notes);
+    string? Notes,
+    double? ReportedUnitCount = null);
 
 public sealed record CasinoGamingRevenueImportRequest(
     Guid CompetitorSnapshotId,
@@ -503,6 +504,10 @@ public sealed class ModelDataIngestionService(AppDbContext db) : IModelDataInges
             {
                 throw new ArgumentOutOfRangeException(nameof(request), "Reported gaming revenue cannot be negative.");
             }
+            if (row.ReportedUnitCount is <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(request), "A reported gaming unit count must be positive when supplied.");
+            }
             return new CasinoGamingRevenuePeriod
             {
                 CasinoCompetitorId = competitors[Required(row.StableVenueId, nameof(row.StableVenueId))].Id,
@@ -515,6 +520,7 @@ public sealed class ModelDataIngestionService(AppDbContext db) : IModelDataInges
                 ReportedAmount = row.ReportedAmount,
                 InflationAdjustedAmount = row.InflationAdjustedAmount,
                 InflationAdjustmentDollarYear = row.InflationAdjustmentDollarYear,
+                ReportedUnitCount = row.ReportedUnitCount,
                 AnomalyFlagsJson = JsonSerializer.Serialize(row.AnomalyFlags ?? []),
                 Notes = TrimOrNull(row.Notes)
             };

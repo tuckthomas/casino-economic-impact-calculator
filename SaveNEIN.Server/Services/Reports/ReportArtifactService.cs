@@ -629,6 +629,12 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             html.Append("<p class=\"note\">Capacity diagnostic range: ").Append(Money(model.Capacity.PlausibleCapacityMinimum))
                 .Append(" to ").Append(Money(model.Capacity.PlausibleCapacityMaximum))
                 .Append(". Capacity status: ").Append(E(model.Capacity.Status))
+                .Append(". Benchmark: ").Append(E(model.Capacity.BenchmarkMethod ?? "unavailable"))
+                .Append("; sample: ").Append(E(model.Capacity.BenchmarkSampleSize?.ToString(CultureInfo.InvariantCulture) ?? "unavailable"))
+                .Append("; slot win/unit/day: ").Append(NullableNumber(model.Capacity.SlotWinPerUnitDayMinimum))
+                .Append(" to ").Append(NullableNumber(model.Capacity.SlotWinPerUnitDayMaximum))
+                .Append("; table win/table/day: ").Append(NullableNumber(model.Capacity.TableWinPerTableDayMinimum))
+                .Append(" to ").Append(NullableNumber(model.Capacity.TableWinPerTableDayMaximum))
                 .Append(". Capacity is diagnostic and did not cap modeled GGR.</p>");
         }
         Table(html, ["Calendar year", "Operating year", "Ramp factor", "Projected GGR", "Stabilized"],
@@ -1232,6 +1238,19 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         ("Tourism", model.Revenue.TourismGgr),
                         ("Through traffic", model.Revenue.TrafficGgr)
                     ], model.Revenue.StabilizedTotalGgr);
+                    if (model.Capacity is not null)
+                    {
+                        KeyValues(column,
+                        [
+                            ("Capacity status", model.Capacity.Status),
+                            ("Plausible GGR range", $"{Money(model.Capacity.PlausibleCapacityMinimum)} – {Money(model.Capacity.PlausibleCapacityMaximum)}"),
+                            ("Productivity benchmark", model.Capacity.BenchmarkMethod ?? "Unavailable"),
+                            ("Benchmark sample", model.Capacity.BenchmarkSampleSize?.ToString("N0") ?? "Unavailable"),
+                            ("Slot win / unit / day", $"{NullableNumber(model.Capacity.SlotWinPerUnitDayMinimum)} – {NullableNumber(model.Capacity.SlotWinPerUnitDayMaximum)}"),
+                            ("Table win / table / day", $"{NullableNumber(model.Capacity.TableWinPerTableDayMinimum)} – {NullableNumber(model.Capacity.TableWinPerTableDayMaximum)}")
+                        ]);
+                        column.Item().Text("The productivity benchmark is diagnostic and did not cap modeled GGR.").Italic().FontSize(8);
+                    }
                     SimpleTable(column,
                         ["Year", "Operating year", "Ramp", "Projected GGR"],
                         model.Ramp.Select(row => new[]
@@ -1707,6 +1726,8 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
         container.BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3);
 
     private static string Money(decimal value) => value.ToString("C0", CultureInfo.GetCultureInfo("en-US"));
+    private static string Money(decimal? value) => value?.ToString("C0", CultureInfo.GetCultureInfo("en-US")) ?? "not evaluated";
+    private static string NullableNumber(double? value) => value?.ToString("G8", CultureInfo.InvariantCulture) ?? "—";
     private static string SensitivityValue(decimal value, string units) => units == "jobs"
         ? value.ToString("N1", CultureInfo.InvariantCulture)
         : Money(value);
@@ -1729,6 +1750,18 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
         Row(csv, "revenue", "stabilized", "tourism_ggr", model.Revenue.TourismGgr, "USD");
         Row(csv, "revenue", "stabilized", "traffic_ggr", model.Revenue.TrafficGgr, "USD");
         Row(csv, "revenue", "stabilized", "total_ggr", model.Revenue.StabilizedTotalGgr, "USD");
+        if (model.Capacity is not null)
+        {
+            Row(csv, "capacity", model.Capacity.FacilityKey, "status", model.Capacity.Status, "");
+            Row(csv, "capacity", model.Capacity.FacilityKey, "benchmark_dataset_snapshot_id", model.Capacity.BenchmarkDatasetSnapshotId, "uuid");
+            Row(csv, "capacity", model.Capacity.FacilityKey, "benchmark_method", model.Capacity.BenchmarkMethod, "");
+            Row(csv, "capacity", model.Capacity.FacilityKey, "benchmark_sample_size", model.Capacity.BenchmarkSampleSize, "facilities");
+            Row(csv, "capacity", model.Capacity.FacilityKey, "slot_win_per_unit_day_minimum", model.Capacity.SlotWinPerUnitDayMinimum, "USD/unit/day");
+            Row(csv, "capacity", model.Capacity.FacilityKey, "slot_win_per_unit_day_maximum", model.Capacity.SlotWinPerUnitDayMaximum, "USD/unit/day");
+            Row(csv, "capacity", model.Capacity.FacilityKey, "table_win_per_table_day_minimum", model.Capacity.TableWinPerTableDayMinimum, "USD/table/day");
+            Row(csv, "capacity", model.Capacity.FacilityKey, "table_win_per_table_day_maximum", model.Capacity.TableWinPerTableDayMaximum, "USD/table/day");
+            Row(csv, "capacity", model.Capacity.FacilityKey, "benchmark_provenance_json", model.Capacity.BenchmarkProvenanceJson, "json");
+        }
         foreach (var county in model.OriginCounties)
         {
             Row(csv, "origin_county", county.GeographyCode, "origin_count", county.OriginCount, "origins");

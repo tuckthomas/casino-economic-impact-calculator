@@ -395,6 +395,9 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ModelRunDemandComponent>()
             .Property(component => component.DetailsJson)
             .HasColumnType("jsonb");
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ModelRunCapacityDiagnostic>()
+            .Property(diagnostic => diagnostic.BenchmarkProvenanceJson)
+            .HasColumnType("jsonb");
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ModelRunGeographicAccounting>()
             .Property(result => result.LocalOriginIdsJson)
             .HasColumnType("jsonb");

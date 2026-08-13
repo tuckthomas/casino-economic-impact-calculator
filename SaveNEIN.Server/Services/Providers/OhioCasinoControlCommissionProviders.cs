@@ -32,6 +32,7 @@ public sealed class OhioCasinoControlCommissionRevenueProvider(
     IOptions<OhioCasinoControlCommissionProviderOptions> options) : IGamingRegulatorPerformanceProvider
 {
     public const string GrossCasinoRevenueMetricKey = "ohio-gross-casino-revenue";
+    private const string TransformVersion = "occc-casino-revenue-pdf-v2-unit-day-components";
 
     public string ProviderKey => "ohio-casino-control-commission-casino-revenue";
     public string GeographicCoverage => "US-OH";
@@ -55,7 +56,10 @@ public sealed class OhioCasinoControlCommissionRevenueProvider(
         }
 
         var imports = selectedRows.SelectMany(RevenueRows).ToArray();
-        var checksum = Convert.ToHexString(SHA256.HashData(report.PdfBytes)).ToLowerInvariant();
+        var sourceHash = Convert.ToHexString(SHA256.HashData(report.PdfBytes)).ToLowerInvariant();
+        var checksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+                $"{sourceHash}|{TransformVersion}")))
+            .ToLowerInvariant();
         return new ProviderDataset<CasinoGamingRevenueImportRow>(
             new RegisterDataSourceRequest(
                 $"Ohio Casino Control Commission casino gross revenue {selection.PeriodLabel}",
@@ -65,7 +69,7 @@ public sealed class OhioCasinoControlCommissionRevenueProvider(
                 "Ohio's four constitutionally authorized commercial casinos",
                 selection.PeriodLabel,
                 report.RetrievedAtUtc,
-                checksum,
+                sourceHash,
                 true,
                 "Ohio public-record terms apply.",
                 $"Official cumulative monthly report located from deterministic OCCC asset paths documented at {options.Value.PublicationUrl}. " +
@@ -75,7 +79,7 @@ public sealed class OhioCasinoControlCommissionRevenueProvider(
             request.PeriodStart,
             request.PeriodEnd,
             checksum,
-            "occc-casino-revenue-pdf-v1",
+            TransformVersion,
             imports,
             [
                 "Ohio Lottery-regulated video-lottery racino revenue is not included in this OCCC casino report and requires its own provider.",
@@ -123,7 +127,7 @@ public sealed class OhioCasinoControlCommissionRevenueProvider(
         ];
     }
 
-    private static IEnumerable<CasinoGamingRevenueImportRow> RevenueRows(OhioCasinoMonthlyRevenue row)
+    internal static IEnumerable<CasinoGamingRevenueImportRow> RevenueRows(OhioCasinoMonthlyRevenue row)
     {
         var start = new DateOnly(row.Year, row.Month, 1);
         var end = start.AddMonths(1).AddDays(-1);
@@ -157,6 +161,32 @@ public sealed class OhioCasinoControlCommissionRevenueProvider(
             null,
             flags,
             $"Comparable-series transform uses OCCC Total Revenue without numeric adjustment. Regulator-specific metric: {GrossCasinoRevenueMetricKey}. {notes}");
+        yield return new CasinoGamingRevenueImportRow(
+            row.StableVenueId,
+            start,
+            end,
+            "monthly",
+            GamingRevenueMetricKeys.SlotOrVltGamingRevenue,
+            "Ohio Casino Control Commission Slot Revenue, published separately from table-game revenue for the facility and month.",
+            row.SlotRevenue,
+            null,
+            null,
+            flags,
+            $"Capacity-productivity component; month-end inventory was {row.SlotCount} slots. {notes}",
+            ReportedUnitCount: row.SlotCount);
+        yield return new CasinoGamingRevenueImportRow(
+            row.StableVenueId,
+            start,
+            end,
+            "monthly",
+            GamingRevenueMetricKeys.TableGameGamingRevenue,
+            "Ohio Casino Control Commission Table Revenue, published separately from slot revenue for the facility and month.",
+            row.TableRevenue,
+            null,
+            null,
+            flags,
+            $"Capacity-productivity component; month-end inventory was {row.TableCount} tables. {notes}",
+            ReportedUnitCount: row.TableCount);
     }
 
     private static OhioRevenuePeriodSelection RequireSupportedPeriod(ProviderFetchRequest request)

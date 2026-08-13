@@ -71,6 +71,8 @@
                       Link="Data\Migrations\021_component_gaming_fiscal_allocation.sql" />
     <EmbeddedResource Include="..\docs\migrations\022_employment_assumption_provenance.sql"
                       Link="Data\Migrations\022_employment_assumption_provenance.sql" />
+    <EmbeddedResource Include="..\docs\migrations\023_capacity_productivity_benchmark_provenance.sql"
+                      Link="Data\Migrations\023_capacity_productivity_benchmark_provenance.sql" />
   </ItemGroup>
 
 </Project>

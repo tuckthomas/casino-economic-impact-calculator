@@ -199,7 +199,15 @@ public sealed record ReportCapacity(
     bool IsBelowValidatedRange,
     bool IsAboveValidatedRange,
     string Status,
-    string? WarningText);
+    string? WarningText,
+    Guid? BenchmarkDatasetSnapshotId = null,
+    string? BenchmarkMethod = null,
+    int? BenchmarkSampleSize = null,
+    double? SlotWinPerUnitDayMinimum = null,
+    double? SlotWinPerUnitDayMaximum = null,
+    double? TableWinPerTableDayMinimum = null,
+    double? TableWinPerTableDayMaximum = null,
+    string? BenchmarkProvenanceJson = null);
 
 public sealed record ReportRampYear(
     int CalendarYear,
@@ -533,7 +541,15 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
                 item.IsBelowValidatedRange,
                 item.IsAboveValidatedRange,
                 item.Status,
-                item.WarningText))
+                item.WarningText,
+                item.BenchmarkDatasetSnapshotId,
+                item.BenchmarkMethod,
+                item.BenchmarkSampleSize,
+                item.SlotWinPerUnitDayMinimum,
+                item.SlotWinPerUnitDayMaximum,
+                item.TableWinPerTableDayMinimum,
+                item.TableWinPerTableDayMaximum,
+                item.BenchmarkProvenanceJson))
             .SingleOrDefaultAsync(cancellationToken);
         var ramp = await db.ModelRunRampResults.AsNoTracking()
             .Where(item => item.ModelRunId == modelRunId)

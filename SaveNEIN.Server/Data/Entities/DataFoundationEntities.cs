@@ -217,6 +217,7 @@ public sealed class CasinoGamingRevenuePeriod
     public decimal ReportedAmount { get; set; }
     public decimal? InflationAdjustedAmount { get; set; }
     public int? InflationAdjustmentDollarYear { get; set; }
+    public double? ReportedUnitCount { get; set; }
 
     [Required]
     public string AnomalyFlagsJson { get; set; } = "[]";

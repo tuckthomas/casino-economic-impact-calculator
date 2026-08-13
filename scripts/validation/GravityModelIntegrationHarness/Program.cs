@@ -696,6 +696,47 @@ if (args is ["--refresh-four-state-indiana-facilities", var baseBundlePath, var 
     return;
 }
 
+if (args is ["--export-ohio-capacity-provider-bundle", var ohioCapacityBundleOutputPath])
+{
+    var fullOutputPath = Path.GetFullPath(ohioCapacityBundleOutputPath);
+    if (!string.Equals(Path.GetExtension(fullOutputPath), ".json", StringComparison.OrdinalIgnoreCase) ||
+        !Directory.Exists(Path.GetDirectoryName(fullOutputPath)))
+    {
+        throw new ArgumentException("Ohio capacity provider bundle output must be a .json file in an existing directory.");
+    }
+    using var providerProbeHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+    var request = new ProviderFetchRequest(
+        "US-OH",
+        new DateOnly(2025, 1, 1),
+        new DateOnly(2025, 12, 31));
+    var configured = Options.Create(new OhioCasinoControlCommissionProviderOptions());
+    var revenue = new OhioCasinoControlCommissionRevenueProvider(providerProbeHttp, configured);
+    var facilities = await new OhioCasinoControlCommissionFacilityInventoryProvider(
+            providerProbeHttp,
+            revenue,
+            configured)
+        .FetchAsync(request);
+    var performance = await revenue.FetchAsync(request);
+    var bundle = new ProviderValidationBundle(facilities, performance);
+    await File.WriteAllTextAsync(
+        fullOutputPath,
+        JsonSerializer.Serialize(bundle, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        BundlePath = fullOutputPath,
+        FacilityRows = facilities.Rows.Count,
+        PerformanceRows = performance.Rows.Count,
+        UnitCountRows = performance.Rows.Count(row => row.ReportedUnitCount is > 0),
+        facilities.ContentChecksum,
+        PerformanceChecksum = performance.ContentChecksum,
+        performance.TransformVersion,
+        ComparableTotal = performance.Rows
+            .Where(row => row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
+            .Sum(row => row.ReportedAmount)
+    }));
+    return;
+}
+
 if (args is ["--export-ohio-provider-bundle", var ohioBundleOutputPath])
 {
     var fullOutputPath = Path.GetFullPath(ohioBundleOutputPath);
@@ -838,7 +879,7 @@ if ((!validateIncumbentCalibration && !validateMichiganProviderBundle && !valida
     (validateIncumbentCalibration && args.Length != 4))
 {
     throw new ArgumentException(
-        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --refresh-four-state-indiana-facilities <base-bundle-json> <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-indiana-fiscal <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
+        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --export-ohio-capacity-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --refresh-four-state-indiana-facilities <base-bundle-json> <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-indiana-fiscal <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
 }
 
 var namedDatabaseValidation = validateProviderIngestion || validateIndianaFiscal;
@@ -1076,12 +1117,33 @@ if (validateOhioProviderBundle)
         .Where(row => row.DatasetSnapshotId == performanceSnapshotId &&
                       row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
         .SumAsync(row => row.ReportedAmount);
+    var capacityCompetitors = await db.CasinoCompetitors.AsNoTracking()
+        .Where(row => row.DatasetSnapshotId == facilitySnapshotId)
+        .ToArrayAsync();
+    var capacityPeriods = await db.CasinoGamingRevenuePeriods.AsNoTracking()
+        .Where(row => row.DatasetSnapshotId == performanceSnapshotId)
+        .ToArrayAsync();
+    var capacityResolution = new CapacityProductivityBenchmarkService().Resolve(
+        new CapacityProductivityBenchmarkInput(
+            performanceSnapshotId,
+            request.PeriodStart,
+            request.PeriodEnd,
+            capacityCompetitors,
+            capacityPeriods));
+    var componentRowCount = capacityPeriods.Count(row =>
+        row.ReportedMetricKey is GamingRevenueMetricKeys.SlotOrVltGamingRevenue or
+            GamingRevenueMetricKeys.TableGameGamingRevenue);
+    var isCapacityBundle = facilityCount == 4;
+    var expectedPerformanceCount = isCapacityBundle ? 192 : componentRowCount == 0 ? 264 : 360;
+    var expectedComparableTotal = isCapacityBundle ? 1_033_920_366m : 2_457_921_705m;
     var snapshotStates = await db.DatasetSnapshots
         .Where(snapshot => snapshot.Id == facilitySnapshotId || snapshot.Id == performanceSnapshotId)
         .Select(snapshot => new { snapshot.DatasetKey, snapshot.IsSealed, snapshot.ValidationState, snapshot.Checksum })
         .OrderBy(snapshot => snapshot.DatasetKey)
         .ToArrayAsync();
-    if (facilityCount != 11 || performanceCount != 264 || comparableTotal != 2_457_921_705m ||
+    if (facilityCount is not (4 or 11) || performanceCount != expectedPerformanceCount ||
+        comparableTotal != expectedComparableTotal ||
+        (componentRowCount > 0 && capacityResolution.Benchmark?.Facilities.Count != 4) ||
         snapshotStates.Length != 2 || snapshotStates.Any(snapshot => !snapshot.IsSealed))
     {
         throw new InvalidOperationException("The Ohio provider bundle did not persist the expected sealed regulator rows.");
@@ -1093,8 +1155,13 @@ if (validateOhioProviderBundle)
         facilityCount,
         performanceCount,
         comparableTotal,
+        componentRowCount,
+        capacityResolution.Benchmark,
+        capacityResolution.Warnings,
         snapshotStates,
-        SourceMode = "Official OCCC and Ohio Lottery provider outputs fetched locally because ohiolottery.com returned HTTP 403 to the VPS source IP; exact composite provider checksums and rows were transferred for disposable PostGIS ingestion validation."
+        SourceMode = isCapacityBundle
+            ? "Official OCCC capacity-provider outputs fetched locally and transferred by exact checksum for disposable PostGIS ingestion validation."
+            : "Official OCCC and Ohio Lottery provider outputs fetched locally because ohiolottery.com returned HTTP 403 to the VPS source IP; exact composite provider checksums and rows were transferred for disposable PostGIS ingestion validation."
     }));
     return;
 }
@@ -1134,12 +1201,28 @@ if (validateOhioProviderIngestion)
         .Where(row => row.DatasetSnapshotId == performanceSnapshotId &&
                       row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
         .SumAsync(row => row.ReportedAmount);
+    var capacityCompetitors = await db.CasinoCompetitors.AsNoTracking()
+        .Where(row => row.DatasetSnapshotId == facilitySnapshotId)
+        .ToArrayAsync();
+    var capacityPeriods = await db.CasinoGamingRevenuePeriods.AsNoTracking()
+        .Where(row => row.DatasetSnapshotId == performanceSnapshotId)
+        .ToArrayAsync();
+    var capacityResolution = new CapacityProductivityBenchmarkService().Resolve(
+        new CapacityProductivityBenchmarkInput(
+            performanceSnapshotId,
+            request.PeriodStart,
+            request.PeriodEnd,
+            capacityCompetitors,
+            capacityPeriods));
+    var capacityBenchmark = capacityResolution.Benchmark
+        ?? throw new InvalidOperationException(string.Join(" ", capacityResolution.Warnings));
     var snapshotStates = await db.DatasetSnapshots
         .Where(snapshot => snapshot.Id == facilitySnapshotId || snapshot.Id == performanceSnapshotId)
         .Select(snapshot => new { snapshot.DatasetKey, snapshot.IsSealed, snapshot.ValidationState, snapshot.Checksum })
         .OrderBy(snapshot => snapshot.DatasetKey)
         .ToArrayAsync();
-    if (facilityCount != 11 || performanceCount != 264 || comparableTotal != 2_457_921_705m ||
+    if (facilityCount != 11 || performanceCount != 360 || comparableTotal != 2_457_921_705m ||
+        capacityBenchmark.Facilities.Count != 4 ||
         snapshotStates.Length != 2 || snapshotStates.Any(snapshot => !snapshot.IsSealed))
     {
         throw new InvalidOperationException("The live Ohio provider ingestion did not persist the expected sealed regulator rows.");
@@ -1151,6 +1234,8 @@ if (validateOhioProviderIngestion)
         facilityCount,
         performanceCount,
         comparableTotal,
+        capacityBenchmark,
+        capacityResolution.Warnings,
         snapshotStates
     }));
     return;
@@ -1538,6 +1623,7 @@ if (validateProviderIngestion)
             new TourismDemandService(),
             new TrafficInterceptService(),
             new CapacityDiagnosticService(),
+            new CapacityProductivityBenchmarkService(),
             new RampScheduleService(),
             new GamingTaxCalculator(profiles),
             new GamingFiscalAllocationCalculator(profiles, new CandidateFiscalLocationResolver(db)),
@@ -2016,6 +2102,7 @@ var execution = new GravityModelExecutionService(
     new TourismDemandService(),
     new TrafficInterceptService(),
     new CapacityDiagnosticService(),
+    new CapacityProductivityBenchmarkService(),
     new RampScheduleService(),
     new GamingTaxCalculator(new JurisdictionProfileService(db)),
     new GamingFiscalAllocationCalculator(

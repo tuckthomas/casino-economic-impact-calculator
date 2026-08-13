@@ -83,6 +83,8 @@ public interface IGamingRegulatorPerformanceProvider
 public static class GamingRevenueMetricKeys
 {
     public const string ComparableLandBasedGamingRevenue = "comparable-land-based-gaming-revenue";
+    public const string SlotOrVltGamingRevenue = "slot-or-vlt-gaming-revenue";
+    public const string TableGameGamingRevenue = "table-game-gaming-revenue";
 }
 
 public interface ITrafficObservationProvider

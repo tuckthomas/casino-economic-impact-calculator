@@ -245,7 +245,8 @@ internal static class CompositeProviderSupport
             .OrderBy(dataset => dataset.Source.GeographicCoverage, StringComparer.Ordinal)
             .ThenBy(dataset => dataset.Source.Publisher, StringComparer.Ordinal)
             .ThenBy(dataset => dataset.Source.Url, StringComparer.Ordinal)
-            .Select(dataset => $"{dataset.Source.Publisher}|{dataset.Source.Url}|{dataset.ContentChecksum}")
+            .Select(dataset =>
+                $"{dataset.Source.Publisher}|{dataset.Source.Url}|{dataset.ContentChecksum}|{dataset.TransformVersion}")
             .ToArray();
         var checksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', components))))
             .ToLowerInvariant();
@@ -258,7 +259,7 @@ internal static class CompositeProviderSupport
             .SelectMany(dataset => dataset.Warnings.Select(warning => $"{dataset.Source.Publisher}: {warning}"))
             .ToArray();
         var notes = string.Join("; ", datasets.Select(dataset =>
-            $"{dataset.Source.Publisher} [{dataset.Source.Url}] checksum={dataset.ContentChecksum}"));
+            $"{dataset.Source.Publisher} [{dataset.Source.Url}] checksum={dataset.ContentChecksum} transform={dataset.TransformVersion}"));
 
         return new ProviderDataset<T>(
             new RegisterDataSourceRequest(

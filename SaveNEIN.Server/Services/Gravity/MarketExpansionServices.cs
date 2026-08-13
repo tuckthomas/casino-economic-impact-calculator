@@ -3,6 +3,8 @@
 // Copyright (C) 2026 Save Fort Wayne Contributors & Model Authors
 // Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
 
+using SaveNEIN.Server.Data.Entities;
+
 namespace SaveNEIN.Server.Services.Gravity;
 
 public sealed record AccessibilityExpansionInput(
@@ -214,7 +216,7 @@ public sealed record CapacityDiagnosticResult(
     double StabilizedGgr,
     double PlausibleCapacityMinimum,
     double PlausibleCapacityMaximum,
-    double ImpliedResidualSlotWinPerUnitDay,
+    double? ImpliedResidualSlotWinPerUnitDay,
     bool IsBelowValidatedRange,
     bool IsAboveValidatedRange,
     IReadOnlyList<string> Warnings);
@@ -229,13 +231,17 @@ public sealed class CapacityDiagnosticService : ICapacityDiagnosticService
     public CapacityDiagnosticResult Evaluate(CapacityDiagnosticInput input)
     {
         DemandLayerValidation.RequireNonnegative(input.StabilizedGgr, nameof(input.StabilizedGgr));
-        if (input.SlotOrVltPositions < 1)
+        if (input.SlotOrVltPositions < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(input.SlotOrVltPositions), "At least one slot or VLT position is required.");
+            throw new ArgumentOutOfRangeException(nameof(input.SlotOrVltPositions), "Slot or VLT positions cannot be negative.");
         }
         if (input.TableGameCount < 0 || input.HotelRoomCount < 0 || input.EventCapacity < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(input), "Facility counts cannot be negative.");
+        }
+        if (input.SlotOrVltPositions == 0 && input.TableGameCount == 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(input), "At least one slot/VLT position or table game is required.");
         }
         if (input.OperatingDaysPerYear is < 1 or > 366)
         {
@@ -259,7 +265,9 @@ public sealed class CapacityDiagnosticService : ICapacityDiagnosticService
             input.TableGameCount * input.ValidatedTableWinPerTableDayMaximum);
         var midpointTableWin = (input.ValidatedTableWinPerTableDayMinimum + input.ValidatedTableWinPerTableDayMaximum) / 2;
         var residualSlotGgr = Math.Max(0, input.StabilizedGgr - input.TableGameCount * midpointTableWin * days);
-        var impliedSlotWin = residualSlotGgr / (input.SlotOrVltPositions * days);
+        var impliedSlotWin = input.SlotOrVltPositions == 0
+            ? (double?)null
+            : residualSlotGgr / (input.SlotOrVltPositions * days);
         var below = input.StabilizedGgr < capacityMinimum;
         var above = input.StabilizedGgr > capacityMaximum;
         var warnings = new List<string>();
@@ -284,6 +292,147 @@ public sealed class CapacityDiagnosticService : ICapacityDiagnosticService
             above,
             warnings);
     }
+}
+
+public sealed record CapacityProductivityBenchmarkInput(
+    Guid ObservedPerformanceSnapshotId,
+    DateOnly PeriodStart,
+    DateOnly PeriodEnd,
+    IReadOnlyCollection<CasinoCompetitor> Competitors,
+    IReadOnlyCollection<CasinoGamingRevenuePeriod> PerformancePeriods);
+
+public sealed record FacilityCapacityProductivity(
+    string StableVenueId,
+    double SlotWinPerUnitDay,
+    double TableWinPerTableDay);
+
+public sealed record CapacityProductivityBenchmark(
+    Guid ObservedPerformanceSnapshotId,
+    string Method,
+    DateOnly PeriodStart,
+    DateOnly PeriodEnd,
+    double SlotWinPerUnitDayMinimum,
+    double SlotWinPerUnitDayMaximum,
+    double TableWinPerTableDayMinimum,
+    double TableWinPerTableDayMaximum,
+    IReadOnlyList<FacilityCapacityProductivity> Facilities);
+
+public sealed record CapacityProductivityBenchmarkResolution(
+    CapacityProductivityBenchmark? Benchmark,
+    IReadOnlyList<string> Warnings);
+
+public interface ICapacityProductivityBenchmarkService
+{
+    CapacityProductivityBenchmarkResolution Resolve(CapacityProductivityBenchmarkInput input);
+}
+
+/// <summary>
+/// Resolves a capacity range only from regulator-published slot/table revenue components
+/// joined to the exact versioned competitor inventory used by the run. It does not split
+/// total GGR using an assumed ratio or synthesize missing facility counts.
+/// </summary>
+public sealed class CapacityProductivityBenchmarkService : ICapacityProductivityBenchmarkService
+{
+    private const int MinimumFacilitySample = 3;
+    private const string Method = "observed-facility-min-max-v1";
+
+    public CapacityProductivityBenchmarkResolution Resolve(CapacityProductivityBenchmarkInput input)
+    {
+        if (input.PeriodEnd < input.PeriodStart)
+        {
+            throw new ArgumentException("Benchmark period end cannot precede its start.", nameof(input));
+        }
+
+        var periodsByFacilityAndMetric = input.PerformancePeriods
+            .Where(period => period.DatasetSnapshotId == input.ObservedPerformanceSnapshotId &&
+                             period.PeriodStart >= input.PeriodStart &&
+                             period.PeriodEnd <= input.PeriodEnd &&
+                             (period.ReportedMetricKey == GamingRevenueMetricKeys.SlotOrVltGamingRevenue ||
+                              period.ReportedMetricKey == GamingRevenueMetricKeys.TableGameGamingRevenue))
+            .GroupBy(period => (period.CasinoCompetitorId, period.ReportedMetricKey))
+            .ToDictionary(group => group.Key, group => group.OrderBy(period => period.PeriodStart).ToArray());
+        var facilities = new List<FacilityCapacityProductivity>();
+        foreach (var competitor in input.Competitors.OrderBy(item => item.StableVenueId, StringComparer.Ordinal))
+        {
+            if (!periodsByFacilityAndMetric.TryGetValue(
+                    (competitor.Id, GamingRevenueMetricKeys.SlotOrVltGamingRevenue),
+                    out var slotPeriods) ||
+                !periodsByFacilityAndMetric.TryGetValue(
+                    (competitor.Id, GamingRevenueMetricKeys.TableGameGamingRevenue),
+                    out var tablePeriods) ||
+                !HasCompleteCleanCoverage(slotPeriods, input.PeriodStart, input.PeriodEnd) ||
+                !HasCompleteCleanCoverage(tablePeriods, input.PeriodStart, input.PeriodEnd))
+            {
+                continue;
+            }
+
+            var slotRevenue = slotPeriods.Sum(period => Convert.ToDouble(
+                period.InflationAdjustedAmount ?? period.ReportedAmount));
+            var tableRevenue = tablePeriods.Sum(period => Convert.ToDouble(
+                period.InflationAdjustedAmount ?? period.ReportedAmount));
+            var slotUnitDays = slotPeriods.Sum(UnitDays);
+            var tableUnitDays = tablePeriods.Sum(UnitDays);
+            facilities.Add(new FacilityCapacityProductivity(
+                competitor.StableVenueId,
+                slotRevenue / slotUnitDays,
+                tableRevenue / tableUnitDays));
+        }
+
+        if (facilities.Count < MinimumFacilitySample)
+        {
+            return new CapacityProductivityBenchmarkResolution(
+                null,
+                [
+                    $"Observed-performance snapshot '{input.ObservedPerformanceSnapshotId}' supplied {facilities.Count} " +
+                    $"complete facility-level slot/table productivity comparable(s); at least {MinimumFacilitySample} are required. " +
+                    "No component split or facility inventory was synthesized."
+                ]);
+        }
+
+        var slotProductivity = facilities.Select(item => item.SlotWinPerUnitDay).ToArray();
+        var tableProductivity = facilities.Select(item => item.TableWinPerTableDay).ToArray();
+        return new CapacityProductivityBenchmarkResolution(
+            new CapacityProductivityBenchmark(
+                input.ObservedPerformanceSnapshotId,
+                Method,
+                input.PeriodStart,
+                input.PeriodEnd,
+                slotProductivity.Min(),
+                slotProductivity.Max(),
+                tableProductivity.Min(),
+                tableProductivity.Max(),
+                facilities),
+            [
+                $"Capacity productivity uses the observed minimum-to-maximum range across {facilities.Count} complete regulator-published facilities. " +
+                "Revenue and monthly unit counts come from the same versioned observed-performance snapshot and cover the requested period; explicit operating-hour normalization remains unavailable."
+            ]);
+    }
+
+    private static bool HasCompleteCleanCoverage(
+        IReadOnlyList<CasinoGamingRevenuePeriod> periods,
+        DateOnly periodStart,
+        DateOnly periodEnd)
+    {
+        if (periods.Count == 0 || periods[0].PeriodStart != periodStart || periods[^1].PeriodEnd != periodEnd ||
+            periods.Any(period =>
+                period.ReportedAmount < 0 ||
+                period.ReportedUnitCount is not > 0 ||
+                period.AnomalyFlagsJson != "[]"))
+        {
+            return false;
+        }
+        for (var index = 1; index < periods.Count; index++)
+        {
+            if (periods[index].PeriodStart != periods[index - 1].PeriodEnd.AddDays(1))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static double UnitDays(CasinoGamingRevenuePeriod period) =>
+        period.ReportedUnitCount!.Value * (period.PeriodEnd.DayNumber - period.PeriodStart.DayNumber + 1);
 }
 
 public sealed record RampScheduleInput(

@@ -1,3 +1,5 @@
+using SaveNEIN.Server.Data.Entities;
+using SaveNEIN.Server.Services;
 using SaveNEIN.Server.Services.Gravity;
 
 namespace SaveNEIN.Server.Tests;
@@ -105,6 +107,77 @@ public sealed class MarketExpansionServicesTests
     }
 
     [Fact]
+    public void CapacityDiagnostic_SupportsTableOnlyFacilityWithoutInventingSlotProductivity()
+    {
+        var result = new CapacityDiagnosticService().Evaluate(new CapacityDiagnosticInput(
+            10_000_000, 0, 25, 365, 100, 400, 1_000, 4_000, 0, 0));
+
+        Assert.Null(result.ImpliedResidualSlotWinPerUnitDay);
+        Assert.Equal(9_125_000, result.PlausibleCapacityMinimum, 6);
+    }
+
+    [Fact]
+    public void CapacityBenchmark_UsesPublishedMonthlyUnitDaysAndComponentRevenue()
+    {
+        var snapshotId = Guid.NewGuid();
+        var competitors = Enumerable.Range(1, 3).Select(index => new CasinoCompetitor
+        {
+            Id = index,
+            StableVenueId = $"facility-{index}"
+        }).ToArray();
+        var periods = competitors.SelectMany((competitor, index) => new[]
+        {
+            Performance(competitor.Id, snapshotId, GamingRevenueMetricKeys.SlotOrVltGamingRevenue,
+                new DateOnly(2025, 1, 1), new DateOnly(2025, 1, 31), 31 * (100 + index * 10) * (200 + index * 20), 100 + index * 10),
+            Performance(competitor.Id, snapshotId, GamingRevenueMetricKeys.SlotOrVltGamingRevenue,
+                new DateOnly(2025, 2, 1), new DateOnly(2025, 2, 28), 28 * (120 + index * 10) * (200 + index * 20), 120 + index * 10),
+            Performance(competitor.Id, snapshotId, GamingRevenueMetricKeys.TableGameGamingRevenue,
+                new DateOnly(2025, 1, 1), new DateOnly(2025, 1, 31), 31 * (10 + index) * (1_000 + index * 100), 10 + index),
+            Performance(competitor.Id, snapshotId, GamingRevenueMetricKeys.TableGameGamingRevenue,
+                new DateOnly(2025, 2, 1), new DateOnly(2025, 2, 28), 28 * (12 + index) * (1_000 + index * 100), 12 + index)
+        }).ToArray();
+
+        var resolution = new CapacityProductivityBenchmarkService().Resolve(
+            new CapacityProductivityBenchmarkInput(
+                snapshotId,
+                new DateOnly(2025, 1, 1),
+                new DateOnly(2025, 2, 28),
+                competitors,
+                periods));
+
+        var benchmark = Assert.IsType<CapacityProductivityBenchmark>(resolution.Benchmark);
+        Assert.Equal(3, benchmark.Facilities.Count);
+        Assert.Equal(200, benchmark.SlotWinPerUnitDayMinimum, 9);
+        Assert.Equal(240, benchmark.SlotWinPerUnitDayMaximum, 9);
+        Assert.Equal(1_000, benchmark.TableWinPerTableDayMinimum, 9);
+        Assert.Equal(1_200, benchmark.TableWinPerTableDayMaximum, 9);
+        Assert.Contains(resolution.Warnings, warning => warning.Contains("operating-hour", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void CapacityBenchmark_RefusesToSynthesizeMissingComponentOrUnitEvidence()
+    {
+        var snapshotId = Guid.NewGuid();
+        var competitor = new CasinoCompetitor { Id = 1, StableVenueId = "incomplete" };
+        var periods = new[]
+        {
+            Performance(1, snapshotId, GamingRevenueMetricKeys.SlotOrVltGamingRevenue,
+                new DateOnly(2025, 1, 1), new DateOnly(2025, 1, 31), 1_000, null)
+        };
+
+        var resolution = new CapacityProductivityBenchmarkService().Resolve(
+            new CapacityProductivityBenchmarkInput(
+                snapshotId,
+                new DateOnly(2025, 1, 1),
+                new DateOnly(2025, 1, 31),
+                [competitor],
+                periods));
+
+        Assert.Null(resolution.Benchmark);
+        Assert.Contains(resolution.Warnings, warning => warning.Contains("No component split or facility inventory was synthesized", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void RampSchedule_SeparatesPartialFirstSecondAndStabilizedYears()
     {
         var results = new RampScheduleService().Build(new RampScheduleInput(
@@ -132,4 +205,24 @@ public sealed class MarketExpansionServicesTests
         Assert.Throws<InvalidOperationException>(() => new CapacityDiagnosticService().Evaluate(
             new CapacityDiagnosticInput(1, 1, 0, 365, 2, 1, 0, 0, 0, 0)));
     }
+
+    private static CasinoGamingRevenuePeriod Performance(
+        int competitorId,
+        Guid snapshotId,
+        string metricKey,
+        DateOnly start,
+        DateOnly end,
+        double amount,
+        double? unitCount) => new()
+    {
+        CasinoCompetitorId = competitorId,
+        DatasetSnapshotId = snapshotId,
+        PeriodStart = start,
+        PeriodEnd = end,
+        ReportedMetricKey = metricKey,
+        ReportedMetricDefinition = metricKey,
+        ReportedAmount = Convert.ToDecimal(amount),
+        ReportedUnitCount = unitCount,
+        AnomalyFlagsJson = "[]"
+    };
 }
