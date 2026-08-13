@@ -3,6 +3,7 @@
 // Copyright (C) 2026 Save Fort Wayne Contributors & Model Authors
 // Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
 
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -616,7 +617,7 @@ if (args is ["--ingest-four-state-provider-bundle", var fourStateDatabase, var f
     return;
 }
 
-var validateIncumbentCalibration = args is ["--validate-incumbent-calibration", _, _];
+var validateIncumbentCalibration = args is ["--validate-incumbent-calibration", _, _, _];
 var validateMichiganProviderBundle = args is ["--validate-michigan-provider-bundle", _, _];
 var validateOhioProviderBundle = args is ["--validate-ohio-provider-bundle", _, _];
 var validateOhioProviderIngestion = args is ["--validate-ohio-provider-ingestion", _];
@@ -626,10 +627,11 @@ var validateProviderIngestion = args is ["--validate-provider-ingestion", _] ||
                                  validateOhioProviderBundle ||
                                  validateOhioProviderIngestion;
 if ((!validateIncumbentCalibration && !validateMichiganProviderBundle && !validateOhioProviderBundle && args.Length != 2) ||
-    ((validateIncumbentCalibration || validateMichiganProviderBundle || validateOhioProviderBundle) && args.Length != 3))
+    ((validateMichiganProviderBundle || validateOhioProviderBundle) && args.Length != 3) ||
+    (validateIncumbentCalibration && args.Length != 4))
 {
     throw new ArgumentException(
-        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --probe-ohio-providers | --export-michigan-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url>");
+        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --probe-ohio-providers | --export-michigan-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
 }
 
 var validationDatabase = validateProviderIngestion ? args[1] : args[0];
@@ -836,6 +838,30 @@ if (validateOhioProviderIngestion)
 
 if (validateProviderIngestion)
 {
+    ProviderValidationBundle? calibrationProviderBundle = null;
+    if (validateIncumbentCalibration)
+    {
+        var bundlePath = Path.GetFullPath(args[3]);
+        if (!File.Exists(bundlePath) || !string.Equals(Path.GetExtension(bundlePath), ".json", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new FileNotFoundException("The checksum-pinned four-state calibration provider bundle was not found.", bundlePath);
+        }
+        const string expectedBundleChecksum = "fccb73b93a777f49af7ed82b5ccba376d68631e5443038873a1cb29dcf4c9d50";
+        await using (var bundleStream = File.OpenRead(bundlePath))
+        {
+            var actualBundleChecksum = Convert.ToHexString(
+                    await SHA256.HashDataAsync(bundleStream))
+                .ToLowerInvariant();
+            if (!string.Equals(actualBundleChecksum, expectedBundleChecksum, StringComparison.Ordinal))
+            {
+                throw new InvalidDataException(
+                    $"The four-state calibration provider bundle checksum was '{actualBundleChecksum}', expected '{expectedBundleChecksum}'.");
+            }
+        }
+        calibrationProviderBundle = JsonSerializer.Deserialize<ProviderValidationBundle>(
+                await File.ReadAllTextAsync(bundlePath))
+            ?? throw new InvalidDataException("The four-state calibration provider bundle is empty or invalid.");
+    }
     var providerSnapshots = new DataSnapshotService(db);
     var providerRows = new ModelDataIngestionService(db);
     var providerIngestion = new ProviderSnapshotIngestionService(providerSnapshots, providerRows);
@@ -876,12 +902,22 @@ if (validateProviderIngestion)
         new DateOnly(2025, 1, 1),
         new DateOnly(2025, 12, 31));
     var facilitySnapshotId = await providerIngestion.IngestGamingFacilitiesAsync(
-        new CompositeGamingFacilityInventoryProvider(
-            new IGamingFacilityInventoryProvider[] { igcFacilityProvider, indianaTribalFacilityProvider, igbFacilityProvider, mgcbFacilityProvider, occcFacilityProvider, ohioLotteryFacilityProvider }),
+        calibrationProviderBundle is null
+            ? new CompositeGamingFacilityInventoryProvider(
+                new IGamingFacilityInventoryProvider[] { igcFacilityProvider, indianaTribalFacilityProvider, igbFacilityProvider, mgcbFacilityProvider, occcFacilityProvider, ohioLotteryFacilityProvider })
+            : new FrozenGamingFacilityProvider(
+                calibrationProviderBundle.Facilities,
+                "checksum-pinned-four-state-calibration-facilities",
+                "US-IN,US-IL,US-MI,US-OH"),
         igcFacilityPeriod);
     var performanceSnapshotId = await providerIngestion.IngestGamingPerformanceAsync(
-        new CompositeGamingRegulatorPerformanceProvider(
-            new IGamingRegulatorPerformanceProvider[] { igcRevenueProvider, igbRevenueProvider, mgcbRevenueProvider, occcRevenueProvider, ohioLotteryRevenueProvider }),
+        calibrationProviderBundle is null
+            ? new CompositeGamingRegulatorPerformanceProvider(
+                new IGamingRegulatorPerformanceProvider[] { igcRevenueProvider, igbRevenueProvider, mgcbRevenueProvider, occcRevenueProvider, ohioLotteryRevenueProvider })
+            : new FrozenGamingPerformanceProvider(
+                calibrationProviderBundle.Performance,
+                "checksum-pinned-four-state-calibration-performance",
+                "US-IN,US-IL,US-MI,US-OH"),
         igcPerformancePeriod,
         facilitySnapshotId);
     var trafficSnapshotId = await providerIngestion.IngestTrafficAsync(
@@ -1065,11 +1101,13 @@ if (validateProviderIngestion)
             group);
         var targets = new[]
         {
-            Target("USA-IN-IGC-french-lick-resort", ValidationPartitions.Training, "southern-indiana"),
-            Target("USA-IN-IGC-caesars-southern-indiana", ValidationPartitions.Training, "southern-indiana-border"),
-            Target("USA-IN-IGC-terre-haute-casino", ValidationPartitions.Training, "western-indiana"),
-            Target("USA-IN-IGC-ballys-evansville", ValidationPartitions.Holdout, "southwestern-indiana"),
-            Target("USA-IN-IGC-hollywood-lawrenceburg", ValidationPartitions.Holdout, "cincinnati-border-market")
+            Target("USA-IN-IGC-horseshoe-indianapolis", ValidationPartitions.Training, "indianapolis-market"),
+            Target("USA-IN-IGC-harrahs-hoosier-park", ValidationPartitions.Training, "indianapolis-market"),
+            Target("USA-IN-IGC-blue-chip-casino", ValidationPartitions.Training, "michigan-city-market"),
+            Target("USA-IN-IGC-terre-haute-casino", ValidationPartitions.Training, "terre-haute-market"),
+            Target("USA-IN-IGC-hard-rock-casino-northern-indiana", ValidationPartitions.Holdout, "chicago-indiana-market"),
+            Target("USA-IN-IGC-horseshoe-hammond", ValidationPartitions.Holdout, "chicago-indiana-market"),
+            Target("USA-IN-IGC-ameristar-casino", ValidationPartitions.Holdout, "chicago-indiana-market")
         };
         var sourceParameterSet = await db.ModelParameterSets.AsNoTracking().SingleAsync(
             set => set.Key == "national-base" && set.Version == "0.1.0-provisional");
@@ -1137,6 +1175,23 @@ if (validateProviderIngestion)
             ImpactGeography: new ImpactGeographyDefinition(ImpactScopeKinds.HostState, "US-IN"),
             MissingRoutePolicy: MissingRoutePolicies.ExcludeFacility);
         var metricsService = new ValidationMetricsService();
+        var candidates = new[]
+        {
+            new { Key = "compact", ComparableScale = 2d, GamingPositions = 0.5d, Tables = 0.1d, RegionalIntensity = 0.9d },
+            new { Key = "destination", ComparableScale = 4d, GamingPositions = 1d, Tables = 0.4d, RegionalIntensity = 1.1d }
+        }.SelectMany(profile => new[] { 1.4d, 1.5d, 1.6d }.SelectMany(beta =>
+            new[] { 0.75d, 1d, 1.25d }.Select(alpha => new IncumbentCalibrationCandidate(
+                $"{profile.Key}-beta-{beta:0.0}-alpha-{alpha:0.00}",
+                new Dictionary<string, double>
+                {
+                    ["gravity.beta"] = beta,
+                    ["gravity.alpha"] = alpha,
+                    ["gravity.outside_option_weight"] = 0.00000001,
+                    ["facility.comparable_scale_multiplier"] = profile.ComparableScale,
+                    ["facility.gaming_positions_coefficient"] = profile.GamingPositions,
+                    ["facility.table_games_coefficient"] = profile.Tables,
+                    ["demand.regional_intensity_multiplier"] = profile.RegionalIntensity
+                })))).ToArray();
         var calibration = await new IncumbentBacktestCalibrationService(
             db,
             new DevelopmentProgramService(db),
@@ -1153,26 +1208,18 @@ if (validateProviderIngestion)
                 ValidationObjectiveFunctions.Smape,
                 baseRequest,
                 targets,
-                [
-                    new IncumbentCalibrationCandidate("beta-1.4-outside-0.001", new Dictionary<string, double> { ["gravity.beta"] = 1.4, ["gravity.outside_option_weight"] = 0.001 }),
-                    new IncumbentCalibrationCandidate("beta-1.4-outside-0.01", new Dictionary<string, double> { ["gravity.beta"] = 1.4, ["gravity.outside_option_weight"] = 0.01 }),
-                    new IncumbentCalibrationCandidate("beta-1.4-outside-0.1", new Dictionary<string, double> { ["gravity.beta"] = 1.4, ["gravity.outside_option_weight"] = 0.1 }),
-                    new IncumbentCalibrationCandidate("beta-1.5-outside-0.001", new Dictionary<string, double> { ["gravity.beta"] = 1.5, ["gravity.outside_option_weight"] = 0.001 }),
-                    new IncumbentCalibrationCandidate("beta-1.5-outside-0.01", new Dictionary<string, double> { ["gravity.beta"] = 1.5, ["gravity.outside_option_weight"] = 0.01 }),
-                    new IncumbentCalibrationCandidate("beta-1.5-outside-0.1", new Dictionary<string, double> { ["gravity.beta"] = 1.5, ["gravity.outside_option_weight"] = 0.1 }),
-                    new IncumbentCalibrationCandidate("beta-1.6-outside-0.001", new Dictionary<string, double> { ["gravity.beta"] = 1.6, ["gravity.outside_option_weight"] = 0.001 }),
-                    new IncumbentCalibrationCandidate("beta-1.6-outside-0.01", new Dictionary<string, double> { ["gravity.beta"] = 1.6, ["gravity.outside_option_weight"] = 0.01 }),
-                    new IncumbentCalibrationCandidate("beta-1.6-outside-0.1", new Dictionary<string, double> { ["gravity.beta"] = 1.6, ["gravity.outside_option_weight"] = 0.1 })
-                ],
+                candidates,
                 ["total-resident-demand", "gaming-positions"],
                 JsonSerializer.Serialize(new
                 {
-                    purpose = "Disposable execution proof against authoritative live source snapshots.",
-                    limitation = "Indiana, Illinois, and Michigan commercial regulator coverage is live; Ohio, Kentucky, tribal performance, local tourism, and corridor-complete traffic remain incomplete. Results are not production calibration evidence.",
+                    purpose = "Leakage-safe northern and central Indiana incumbent calibration against authoritative 2025 regulator observations.",
+                    inclusion = "Training properties are Indianapolis, Michigan City, and Terre Haute markets. The independent holdout is the three-property Indiana side of the Chicago market.",
+                    exclusion = "Southern and Ohio River properties are excluded because the sealed competitor field does not yet contain Kentucky facilities. Four Winds South Bend remains in the competitive field with structural attraction because public tribal GGR is unavailable.",
+                    parameterDesign = "Predeclared 18-cell grid crossing beta 1.4/1.5/1.6, alpha 0.75/1.00/1.25, and two bounded facility/demand profiles. Outside-option weight remains at the common public-benchmark surface of 1e-8.",
                     zctaAssignment = "Dominant 2020 Census county by land-area overlap."
                 }),
                 sourceParameterSet.Id,
-                "0.1.0-live-backtest-disposable",
+                "0.2.0-indiana-incumbent-calibration",
                 OriginPrefilterMiles: 50));
         var evaluation = await db.ValidationEvaluations.AsNoTracking()
             .SingleAsync(item => item.Id == calibration.Evaluation.ValidationEvaluationId);
@@ -1182,7 +1229,7 @@ if (validateProviderIngestion)
             run.Status == ModelRunStatuses.Finalized);
         if (evaluation.Status != ValidationEvaluationStatuses.Finalized || !evaluation.IsImmutable ||
             calibration.Evaluation.PublishedParameterSetId is null || caseCount != targets.Length ||
-            finalizedRunCount != targets.Length * 9)
+            finalizedRunCount != targets.Length * candidates.Length)
         {
             throw new InvalidOperationException("Live incumbent calibration did not persist complete immutable evidence.");
         }
@@ -1207,7 +1254,7 @@ if (validateProviderIngestion)
                 caseCount,
                 finalizedRunCount,
                 indianaOriginCount,
-                limitation = "Disposable pipeline proof only: Indiana, Illinois, and Michigan commercial coverage is live; Ohio, Kentucky, tribal performance, and local visitor/traffic capture remain incomplete."
+                limitation = "Public tribal GGR, market-specific tourism, and corridor-complete traffic remain unavailable and are excluded from the incumbent revenue target. Public benchmark reconciliation is a separate post-calibration test."
             }
         }));
     }

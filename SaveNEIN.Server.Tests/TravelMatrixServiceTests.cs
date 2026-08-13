@@ -52,6 +52,36 @@ public sealed class TravelMatrixServiceTests
     }
 
     [Fact]
+    public async Task ScenarioAtIncumbentCoordinate_ReusesExactValhallaRouteAndMaterializesCandidateEvidence()
+    {
+        await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"incumbent-to-candidate-route-cache-{Guid.NewGuid():N}")
+            .Options);
+        var handler = new ValhallaMatrixHandler();
+        var client = new ValhallaClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://valhalla.test") },
+            NullLogger<ValhallaClient>.Instance);
+        var service = new TravelMatrixService(db, client);
+        var origin = new TravelMatrixOrigin(1, "USA-ZCTA-46802", 41.08, -85.14);
+        var runId = Guid.Parse("30000000-0000-0000-0000-000000000003");
+
+        var incumbent = await service.ResolveAsync(
+            [origin],
+            [new TravelMatrixFacility("USA-IN-stable", FacilityKinds.Incumbent, 10, null, 41.0793, -85.1394)]);
+        var scenario = await service.ResolveAsync(
+            [origin],
+            [new TravelMatrixFacility("scenario:held-out", FacilityKinds.Scenario, null, runId, 41.0793, -85.1394)]);
+
+        Assert.Equal(1, handler.MatrixRequestCount);
+        Assert.Equal(incumbent.Routes.Single().TravelTimeMinutes, scenario.Routes.Single().TravelTimeMinutes);
+        Assert.Equal(runId, scenario.Routes.Single().ModelRunId);
+        Assert.Equal(FacilityKinds.Scenario, scenario.Routes.Single().FacilityKind);
+        Assert.Equal(2, await db.OriginFacilityTravel.CountAsync());
+        var candidate = Assert.Single(await db.CandidateLocationTravelCache.AsNoTracking().ToListAsync());
+        Assert.Equal(TravelMatrixService.CandidateCoordinateHash(41.0793, -85.1394), candidate.CandidateCoordinateHash);
+    }
+
+    [Fact]
     public void CandidateCoordinateHash_PreservesExactCoordinatesInsteadOfRoundingToNearbySite()
     {
         var exact = TravelMatrixService.CandidateCoordinateHash(41.0793, -85.1394);

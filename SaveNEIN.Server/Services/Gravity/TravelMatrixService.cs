@@ -107,6 +107,19 @@ public sealed class TravelMatrixService(
                 .ToListAsync(cancellationToken);
         var candidateRouteByKey = cachedCandidateRoutes.ToDictionary(
             route => (route.OriginZoneId, route.CandidateCoordinateHash));
+        var cachedCoordinateRoutes = candidateHashes.Length == 0
+            ? []
+            : await db.OriginFacilityTravel
+                .Where(route => originIds.Contains(route.OriginZoneId) &&
+                                candidateHashes.Contains(route.FacilityCoordinateHash) &&
+                                route.RoutingGraphHash == graph.GraphHash &&
+                                route.CostingProfile == costingProfile)
+                .ToListAsync(cancellationToken);
+        var coordinateRouteByKey = cachedCoordinateRoutes
+            .GroupBy(route => (route.OriginZoneId, route.FacilityCoordinateHash))
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderByDescending(route => route.CalculatedAtUtc).First());
         var materializedCandidateRoute = false;
         foreach (var origin in orderedOrigins)
         {
@@ -119,8 +132,11 @@ public sealed class TravelMatrixService(
                 }
 
                 var identity = candidateIdentities[facility.FacilityKey];
-                if (!candidateRouteByKey.TryGetValue((origin.OriginZoneId, identity.Hash), out var cachedCandidate) ||
-                    !CoordinatesMatch(cachedCandidate, identity))
+                candidateRouteByKey.TryGetValue((origin.OriginZoneId, identity.Hash), out var cachedCandidate);
+                coordinateRouteByKey.TryGetValue((origin.OriginZoneId, identity.Hash), out var cachedCoordinate);
+                var reuseCandidate = cachedCandidate is not null && CoordinatesMatch(cachedCandidate, identity);
+                var reuseCoordinate = cachedCoordinate is not null && CoordinatesMatch(cachedCoordinate, identity);
+                if (!reuseCandidate && !reuseCoordinate)
                 {
                     continue;
                 }
@@ -134,16 +150,17 @@ public sealed class TravelMatrixService(
                     FacilityCoordinateHash = identity.Hash,
                     FacilityLatitude = identity.Latitude,
                     FacilityLongitude = identity.Longitude,
-                    RoutingGraphHash = cachedCandidate.RoutingGraphHash,
-                    CostingProfile = cachedCandidate.CostingProfile,
-                    TravelTimeMinutes = cachedCandidate.TravelTimeMinutes,
-                    RoutedDistanceMeters = cachedCandidate.RoutedDistanceMeters,
-                    RouteFound = cachedCandidate.RouteFound,
-                    RouteFailureReason = cachedCandidate.RouteFailureReason,
-                    CalculatedAtUtc = cachedCandidate.CalculatedAtUtc
+                    RoutingGraphHash = reuseCandidate ? cachedCandidate!.RoutingGraphHash : cachedCoordinate!.RoutingGraphHash,
+                    CostingProfile = reuseCandidate ? cachedCandidate!.CostingProfile : cachedCoordinate!.CostingProfile,
+                    TravelTimeMinutes = reuseCandidate ? cachedCandidate!.TravelTimeMinutes : cachedCoordinate!.TravelTimeMinutes,
+                    RoutedDistanceMeters = reuseCandidate ? cachedCandidate!.RoutedDistanceMeters : cachedCoordinate!.RoutedDistanceMeters,
+                    RouteFound = reuseCandidate ? cachedCandidate!.RouteFound : cachedCoordinate!.RouteFound,
+                    RouteFailureReason = reuseCandidate ? cachedCandidate!.RouteFailureReason : cachedCoordinate!.RouteFailureReason,
+                    CalculatedAtUtc = reuseCandidate ? cachedCandidate!.CalculatedAtUtc : cachedCoordinate!.CalculatedAtUtc
                 };
                 db.OriginFacilityTravel.Add(route);
                 routeByKey.Add(routeKey, route);
+                AddCandidateCacheIfNeeded(origin, facility, route);
                 materializedCandidateRoute = true;
             }
         }
