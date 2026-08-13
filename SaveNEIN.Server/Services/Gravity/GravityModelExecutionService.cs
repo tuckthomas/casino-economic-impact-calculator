@@ -1609,6 +1609,7 @@ public sealed class GravityModelExecutionService(
                 gamingTax.RevenueDefinition,
                 gamingTax.SourceUrl,
                 gamingFiscalAllocation.SourceUrls,
+                gamingFiscalAllocation.RecipientAllocations,
                 gamingFiscalAllocation.Location.StateFips,
                 gamingFiscalAllocation.Location.CountyFips,
                 gamingFiscalAllocation.Location.CountyName,

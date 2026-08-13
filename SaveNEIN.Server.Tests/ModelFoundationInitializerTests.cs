@@ -193,14 +193,34 @@ public sealed class ModelFoundationInitializerTests
             .Select(rule => JsonSerializer.Deserialize<GamingTaxDistributionPayload>(
                 rule.RuleValueJson,
                 new JsonSerializerOptions(JsonSerializerDefaults.Web))!)
-            .OrderBy(payload => payload.Component)
             .ToArray();
-        Assert.Equal(2, distributions.Length);
-        Assert.Equal(1m, distributions[0].StateShare);
-        Assert.True(distributions[1].MunicipalityRequired);
-        Assert.Equal(0.45m, distributions[1].CountyShare);
-        Assert.Equal(0.45m, distributions[1].MunicipalityShare);
-        Assert.Equal(0.10m, distributions[1].RegionalShare);
+        Assert.Equal(5, distributions.Length);
+        Assert.All(distributions, payload =>
+        {
+            Assert.NotEmpty(payload.Recipients!);
+            Assert.Single(payload.Recipients!, recipient => recipient.ReceivesResidual);
+        });
+        var northeastBaseDistribution = Assert.Single(distributions, payload =>
+            payload.Component == GamingTaxComponents.Base);
+        Assert.Equal(1m, northeastBaseDistribution.StateShare);
+
+        var northeastSupplementalDistribution = Assert.Single(distributions, payload =>
+            payload.Component == GamingTaxComponents.Supplemental &&
+            payload.EligibleStableVenueIds is null);
+        Assert.True(northeastSupplementalDistribution.MunicipalityRequired);
+        Assert.Equal(0.45m, northeastSupplementalDistribution.CountyShare);
+        Assert.Equal(0.45m, northeastSupplementalDistribution.MunicipalityShare);
+        Assert.Equal(0.10m, northeastSupplementalDistribution.RegionalShare);
+        Assert.Contains(northeastSupplementalDistribution.Recipients!, recipient =>
+            recipient.RecipientKey == "northeast-indiana-rda" && recipient.Share == 0.10m);
+
+        var vigoDistribution = Assert.Single(distributions, payload =>
+            payload.EligibleStableVenueIds?.Contains("USA-IN-IGC-terre-haute-casino") == true);
+        Assert.Equal(0.40m, vigoDistribution.MunicipalityShare);
+        Assert.Contains(vigoDistribution.Recipients!, recipient =>
+            recipient.RecipientKey == "vigo-county-school-corporation" && recipient.Share == 0.15m);
+        Assert.Equal(2, distributions.Count(payload =>
+            payload.Recipients!.Any(recipient => recipient.RecipientKey.StartsWith("not-applicable-", StringComparison.Ordinal))));
     }
 
     private static AppDbContext CreateDb()

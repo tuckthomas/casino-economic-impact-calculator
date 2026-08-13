@@ -518,6 +518,102 @@ public sealed class JurisdictionServicesTests
     }
 
     [Fact]
+    public async Task GamingFiscalAllocationCalculator_AllocatesVigoSupplementalTaxToNamedRecipients()
+    {
+        var calculator = new GamingFiscalAllocationCalculator(
+            new FakeProfiles(Rule(
+                JurisdictionRuleTypes.GamingTaxDistribution,
+                new GamingTaxDistributionPayload(
+                    "commercial-casino",
+                    GamingTaxComponents.Supplemental,
+                    ["18167"],
+                    true,
+                    0m,
+                    0.45m,
+                    0.40m,
+                    0.15m,
+                    ["USA-IN-IGC-terre-haute-casino"],
+                    [
+                        new GamingTaxRecipientPayload(
+                            "terre-haute", "City of Terre Haute", GamingTaxRecipientScopeKinds.HostMunicipality, 0.40m),
+                        new GamingTaxRecipientPayload(
+                            "vigo-county", "Vigo County", GamingTaxRecipientScopeKinds.HostCounty, 0.30m),
+                        new GamingTaxRecipientPayload(
+                            "vigo-schools", "Vigo County school corporation", GamingTaxRecipientScopeKinds.HostCounty, 0.15m),
+                        new GamingTaxRecipientPayload(
+                            "west-central-2025", "West Central 2025", GamingTaxRecipientScopeKinds.HostRegion, 0.15m,
+                            ReceivesResidual: true)
+                    ]),
+                JurisdictionRuleValidationStates.Validated)),
+            new FakeFiscalLocation("18167", "Terre Haute", "1875428"));
+
+        var result = await calculator.CalculateDistributionAsync(new GamingTaxDistributionRequest(
+            "US-IN",
+            "commercial-casino",
+            new DateOnly(2026, 8, 13),
+            GamingTaxComponents.Supplemental,
+            2_900_000m,
+            39.433810860613,
+            -87.347525598996,
+            "USA-IN-IGC-terre-haute-casino"));
+
+        Assert.Equal(1_160_000m, result.HostMunicipalityShare);
+        Assert.Equal(1_305_000m, result.HostCountyShare);
+        Assert.Equal(435_000m, result.HostRegionalShare);
+        Assert.Equal(0m, result.HostStateShare);
+        Assert.Equal(435_000m, result.RecipientAllocations.Single(row => row.RecipientKey == "vigo-schools").Amount);
+        Assert.Equal(2_900_000m, result.RecipientAllocations.Sum(row => row.Amount));
+    }
+
+    [Fact]
+    public async Task GamingFiscalAllocationCalculator_AppliesPeriodCapAndPoolRemainder()
+    {
+        var calculator = new GamingFiscalAllocationCalculator(
+            new FakeProfiles(Rule(
+                JurisdictionRuleTypes.GamingTaxDistribution,
+                new GamingTaxDistributionPayload(
+                    "commercial-casino",
+                    GamingTaxComponents.Supplemental,
+                    ["18089"],
+                    true,
+                    0.6666666667m,
+                    0m,
+                    0.3333333333m,
+                    0m,
+                    ["test-lake-venue"],
+                    [
+                        new GamingTaxRecipientPayload(
+                            "city-rda-obligation", "City RDA obligation", GamingTaxRecipientScopeKinds.HostRegion,
+                            0.3333333333m, MaximumAmountPerPeriod: 875_000m),
+                        new GamingTaxRecipientPayload(
+                            "host-city", "Host city", GamingTaxRecipientScopeKinds.HostMunicipality,
+                            0.3333333333m, SubtractRecipientKey: "city-rda-obligation"),
+                        new GamingTaxRecipientPayload(
+                            "state-residual", "State and other statutory recipients", GamingTaxRecipientScopeKinds.HostState,
+                            0m, ReceivesResidual: true)
+                    ]),
+                JurisdictionRuleValidationStates.Validated)),
+            new FakeFiscalLocation("18089", "East Chicago", "1821290"));
+
+        var result = await calculator.CalculateDistributionAsync(new GamingTaxDistributionRequest(
+            "US-IN",
+            "commercial-casino",
+            new DateOnly(2026, 8, 13),
+            GamingTaxComponents.Supplemental,
+            12_000_000m,
+            41.6521503,
+            -87.4356793,
+            "test-lake-venue",
+            DistributionPeriodCount: 4));
+
+        Assert.Equal(3_500_000m, result.RecipientAllocations.Single(row => row.RecipientKey == "city-rda-obligation").Amount);
+        Assert.Equal(500_000m, result.HostMunicipalityShare);
+        Assert.Equal(3_500_000m, result.HostRegionalShare);
+        Assert.Equal(8_000_000m, result.HostStateShare);
+        Assert.Equal(12_000_000m, result.RecipientAllocations.Sum(row => row.Amount));
+    }
+
+    [Fact]
     public async Task GamingFiscalAllocationCalculator_RejectsUnincorporatedSiteWhenStatuteRequiresCity()
     {
         var calculator = NortheastIndianaFiscalCalculator(new FakeFiscalLocation("18033", null, null));

@@ -1014,6 +1014,16 @@ if (validateIndianaFiscal)
         new SupplementalGamingTaxRequest(
             "US-IN", "commercial-casino", effectiveOn, 12_092_657m,
             39.433810860613, -87.347525598996, "USA-IN-IGC-terre-haute-casino"));
+    var terreHauteDistribution = await allocationCalculator.CalculateDistributionAsync(
+        new GamingTaxDistributionRequest(
+            "US-IN",
+            "commercial-casino",
+            effectiveOn,
+            GamingTaxComponents.Supplemental,
+            terreHauteSupplemental.SupplementalGamingTax,
+            39.433810860613,
+            -87.347525598996,
+            "USA-IN-IGC-terre-haute-casino"));
     var frenchLickSupplemental = await allocationCalculator.CalculateSupplementalTaxAsync(
         new SupplementalGamingTaxRequest(
             "US-IN", "commercial-casino", effectiveOn, 20_000_000m,
@@ -1066,6 +1076,11 @@ if (validateIndianaFiscal)
         northeastAllocation.HostCountyShare != 1_260_000m ||
         northeastAllocation.HostRegionalShare != 280_000m ||
         northeastAllocation.HostStateShare != 15_250_000m ||
+        northeastAllocation.RecipientAllocations.Count != 4 ||
+        northeastAllocation.RecipientAllocations.Single(row => row.RecipientKey == "host-city").Amount != 1_260_000m ||
+        northeastAllocation.RecipientAllocations.Single(row => row.RecipientKey == "host-county").Amount != 1_260_000m ||
+        northeastAllocation.RecipientAllocations.Single(row => row.RecipientKey == "northeast-indiana-rda").Amount != 280_000m ||
+        northeastAllocation.RecipientAllocations.Sum(row => row.Amount) != northeastAllocation.GrossGamingTax ||
         northeastAllocation.Location.CountyFips != "18003" ||
         northeastAllocation.Location.MunicipalityName != "Fort Wayne" ||
         ameristarSupplemental.Rate != 0.0316m ||
@@ -1076,11 +1091,17 @@ if (validateIndianaFiscal)
         hardRockSupplemental.SupplementalGamingTax != 1_064_156.66m ||
         terreHauteSupplemental.Rate != 0.029m ||
         terreHauteSupplemental.SupplementalGamingTax != 350_687.05m ||
+        terreHauteDistribution.HostMunicipalityShare != 140_274.82m ||
+        terreHauteDistribution.HostCountyShare != 157_809.18m ||
+        terreHauteDistribution.HostRegionalShare != 52_603.05m ||
+        terreHauteDistribution.HostStateShare != 0m ||
+        terreHauteDistribution.RecipientAllocations.Count != 4 ||
+        terreHauteDistribution.RecipientAllocations.Sum(row => row.Amount) != terreHauteSupplemental.SupplementalGamingTax ||
         frenchLickSupplemental.SupplementalGamingTax != 0m ||
         hoosierParkSupplemental.SupplementalGamingTax != 0m ||
         fiscalComponentColumnCount != 6 ||
         casinoAge != 21 || racinoAge != 21 ||
-        fiscalRules.Length != 17 || supplementalRules.Length != 13 ||
+        fiscalRules.Length != 20 || supplementalRules.Length != 13 ||
         statutoryQuotientRuleCount != 8 || explicitZeroSupplementalRuleCount != 2 ||
         legacyRuleCount != 0)
     {
@@ -1098,12 +1119,21 @@ if (validateIndianaFiscal)
         BlueChipSupplementalTax = blueChipSupplemental.SupplementalGamingTax,
         HardRockSupplementalTax = hardRockSupplemental.SupplementalGamingTax,
         TerreHauteSupplementalTax = terreHauteSupplemental.SupplementalGamingTax,
+        TerreHauteDistribution = new
+        {
+            terreHauteDistribution.HostMunicipalityShare,
+            terreHauteDistribution.HostCountyShare,
+            terreHauteDistribution.HostRegionalShare,
+            terreHauteDistribution.HostStateShare,
+            terreHauteDistribution.RecipientAllocations
+        },
         FrenchLickSupplementalTax = frenchLickSupplemental.SupplementalGamingTax,
         HoosierParkSupplementalTax = hoosierParkSupplemental.SupplementalGamingTax,
         northeastAllocation.HostMunicipalityShare,
         northeastAllocation.HostCountyShare,
         northeastAllocation.HostRegionalShare,
         northeastAllocation.HostStateShare,
+        northeastAllocation.RecipientAllocations,
         FiscalLocation = northeastAllocation.Location,
         FiscalComponentColumnCount = fiscalComponentColumnCount,
         RacinoTax = racino.GamingTax,

@@ -130,6 +130,18 @@ public static class ModelFoundationInitializer
             db.JurisdictionRules.RemoveRange(obsoleteUnversionedSupplementalRules);
             await db.SaveChangesAsync(cancellationToken);
         }
+        var distributionRulesForUpgrade = await db.JurisdictionRules
+            .Where(rule => rule.JurisdictionId == indiana.Id &&
+                           rule.RuleType == JurisdictionRuleTypes.GamingTaxDistribution)
+            .ToArrayAsync(cancellationToken);
+        var obsoleteAggregateOnlyDistributionRules = distributionRulesForUpgrade
+            .Where(rule => !rule.RuleValueJson.Contains("\"recipients\"", StringComparison.Ordinal))
+            .ToArray();
+        if (obsoleteAggregateOnlyDistributionRules.Length > 0)
+        {
+            db.JurisdictionRules.RemoveRange(obsoleteAggregateOnlyDistributionRules);
+            await db.SaveChangesAsync(cancellationToken);
+        }
 
         await AddRuleIfMissingAsync(
             db,
@@ -366,7 +378,16 @@ public static class ModelFoundationInitializer
                 StateShare: 1m,
                 CountyShare: 0m,
                 MunicipalityShare: 0m,
-                RegionalShare: 0m),
+                RegionalShare: 0m,
+                Recipients:
+                [
+                    new GamingTaxRecipientPayload(
+                        "indiana-public-revenue-after-fixed-set-asides",
+                        "Indiana public revenue after fixed statewide distributions",
+                        GamingTaxRecipientScopeKinds.HostState,
+                        0m,
+                        ReceivesResidual: true)
+                ]),
             new DateOnly(2026, 3, 12),
             null,
             JurisdictionRuleValidationStates.Validated,
@@ -385,12 +406,133 @@ public static class ModelFoundationInitializer
                 StateShare: 0m,
                 CountyShare: 0.45m,
                 MunicipalityShare: 0.45m,
-                RegionalShare: 0.10m),
+                RegionalShare: 0.10m,
+                Recipients:
+                [
+                    new GamingTaxRecipientPayload(
+                        "host-city",
+                        "Host city",
+                        GamingTaxRecipientScopeKinds.HostMunicipality,
+                        0.45m),
+                    new GamingTaxRecipientPayload(
+                        "host-county",
+                        "Host county",
+                        GamingTaxRecipientScopeKinds.HostCounty,
+                        0.45m),
+                    new GamingTaxRecipientPayload(
+                        "northeast-indiana-rda",
+                        "Northeast Indiana Regional Development Authority",
+                        GamingTaxRecipientScopeKinds.HostRegion,
+                        0.10m,
+                        ReceivesResidual: true)
+                ]),
             new DateOnly(2026, 3, 4),
             null,
             JurisdictionRuleValidationStates.Validated,
             "https://iga.in.gov/laws/2026/ic/titles/4#4-33-12-8.7",
             "IC 4-33-12-8.7, added by P.L.77-2026 effective March 4, 2026, distributes the new northeast casino's supplemental tax 45% to the city, 45% to the county, and 10% to the Northeast Indiana Regional Development Authority. The statute supplies no unincorporated-site county fallback.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.GamingTaxDistribution,
+            new GamingTaxDistributionPayload(
+                "commercial-casino",
+                GamingTaxComponents.Supplemental,
+                ["18167"],
+                MunicipalityRequired: true,
+                StateShare: 0m,
+                CountyShare: 0.45m,
+                MunicipalityShare: 0.40m,
+                RegionalShare: 0.15m,
+                EligibleStableVenueIds: ["USA-IN-IGC-terre-haute-casino"],
+                Recipients:
+                [
+                    new GamingTaxRecipientPayload(
+                        "terre-haute",
+                        "City of Terre Haute",
+                        GamingTaxRecipientScopeKinds.HostMunicipality,
+                        0.40m),
+                    new GamingTaxRecipientPayload(
+                        "vigo-county",
+                        "Vigo County",
+                        GamingTaxRecipientScopeKinds.HostCounty,
+                        0.30m),
+                    new GamingTaxRecipientPayload(
+                        "vigo-county-school-corporation",
+                        "Vigo County school corporation",
+                        GamingTaxRecipientScopeKinds.HostCounty,
+                        0.15m),
+                    new GamingTaxRecipientPayload(
+                        "west-central-2025",
+                        "West Central 2025",
+                        GamingTaxRecipientScopeKinds.HostRegion,
+                        0.15m,
+                        ReceivesResidual: true)
+                ]),
+            new DateOnly(2024, 4, 5),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-33-12-8.5",
+            "IC 4-33-12-8.5 distributes Vigo County inland-casino supplemental tax to four named recipients: 40% Terre Haute, 30% Vigo County, 15% the Vigo County school corporation, and 15% West Central 2025.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.GamingTaxDistribution,
+            new GamingTaxDistributionPayload(
+                "commercial-casino",
+                GamingTaxComponents.Supplemental,
+                ["18117"],
+                MunicipalityRequired: false,
+                StateShare: 1m,
+                CountyShare: 0m,
+                MunicipalityShare: 0m,
+                RegionalShare: 0m,
+                EligibleStableVenueIds: ["USA-IN-IGC-french-lick-resort"],
+                Recipients:
+                [
+                    new GamingTaxRecipientPayload(
+                        "not-applicable-historic-hotel-district",
+                        "No supplemental tax: historic hotel district exclusion",
+                        GamingTaxRecipientScopeKinds.HostState,
+                        0m,
+                        ReceivesResidual: true)
+                ]),
+            new DateOnly(2015, 7, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-33-12-0.5",
+            "The supplemental-tax chapter does not apply to the historic-hotel-district riverboat; the named distribution therefore reconciles an explicit zero liability.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.GamingTaxDistribution,
+            new GamingTaxDistributionPayload(
+                "commercial-racino",
+                GamingTaxComponents.Supplemental,
+                ["18095", "18145"],
+                MunicipalityRequired: false,
+                StateShare: 1m,
+                CountyShare: 0m,
+                MunicipalityShare: 0m,
+                RegionalShare: 0m,
+                EligibleStableVenueIds: ["USA-IN-IGC-harrahs-hoosier-park", "USA-IN-IGC-horseshoe-indianapolis"],
+                Recipients:
+                [
+                    new GamingTaxRecipientPayload(
+                        "not-applicable-expired-racino-supplemental-fee",
+                        "No supplemental tax: former racino fee expired",
+                        GamingTaxRecipientScopeKinds.HostState,
+                        0m,
+                        ReceivesResidual: true)
+                ]),
+            new DateOnly(2012, 7, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-35-8.9-1",
+            "The former racino supplemental-fee chapter expired before July 1, 2012; the named distribution therefore reconciles an explicit zero liability.",
             cancellationToken);
         await AddRuleIfMissingAsync(
             db,

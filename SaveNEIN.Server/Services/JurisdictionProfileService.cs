@@ -316,7 +316,8 @@ public sealed record GamingFiscalAllocationRequest(
     decimal BaseGamingTax,
     double CandidateLatitude,
     double CandidateLongitude,
-    string? StableVenueId = null);
+    string? StableVenueId = null,
+    int DistributionPeriodCount = 4);
 
 public sealed record SupplementalGamingTaxRequest(
     string JurisdictionCode,
@@ -342,7 +343,36 @@ public sealed record GamingFiscalAllocationResult(
     decimal HostRegionalShare,
     decimal HostStateShare,
     CandidateFiscalLocation Location,
-    IReadOnlyList<string> SourceUrls);
+    IReadOnlyList<string> SourceUrls,
+    IReadOnlyList<GamingTaxRecipientAllocation> RecipientAllocations);
+
+public sealed record GamingTaxRecipientAllocation(
+    string Component,
+    string RecipientKey,
+    string RecipientLabel,
+    string ScopeKind,
+    decimal Amount);
+
+public sealed record GamingTaxDistributionRequest(
+    string JurisdictionCode,
+    string FacilityRegime,
+    DateOnly EffectiveOn,
+    string Component,
+    decimal TaxAmount,
+    double FacilityLatitude,
+    double FacilityLongitude,
+    string? StableVenueId = null,
+    int DistributionPeriodCount = 4);
+
+public sealed record GamingTaxDistributionResult(
+    string Component,
+    decimal HostMunicipalityShare,
+    decimal HostCountyShare,
+    decimal HostRegionalShare,
+    decimal HostStateShare,
+    CandidateFiscalLocation Location,
+    string SourceUrl,
+    IReadOnlyList<GamingTaxRecipientAllocation> RecipientAllocations);
 
 public interface IGamingFiscalAllocationCalculator
 {
@@ -352,6 +382,10 @@ public interface IGamingFiscalAllocationCalculator
 
     Task<SupplementalGamingTaxResult> CalculateSupplementalTaxAsync(
         SupplementalGamingTaxRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<GamingTaxDistributionResult> CalculateDistributionAsync(
+        GamingTaxDistributionRequest request,
         CancellationToken cancellationToken = default);
 }
 
@@ -366,6 +400,12 @@ public sealed class GamingFiscalAllocationCalculator(
         if (request.CurrentTaxableGamingRevenue < 0 || request.BaseGamingTax < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(request), "Gaming revenue and tax cannot be negative.");
+        }
+        if (request.DistributionPeriodCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(request),
+                "Gaming-tax distribution period count must be positive.");
         }
 
         var location = await locations.ResolveAsync(
@@ -389,7 +429,8 @@ public sealed class GamingFiscalAllocationCalculator(
                            rule.ValidationState == JurisdictionRuleValidationStates.Validated)
             .Select(rule => (Rule: rule, Payload: Deserialize<GamingTaxDistributionPayload>(rule)))
             .Where(item => RegimeMatches(item.Payload.FacilityRegime, request.FacilityRegime) &&
-                           CountyMatches(item.Payload.EligibleCountyFips, location.CountyFips))
+                           CountyMatches(item.Payload.EligibleCountyFips, location.CountyFips) &&
+                           VenueMatches(item.Payload.EligibleStableVenueIds, request.StableVenueId))
             .ToArray();
         var baseDistribution = SelectDistribution(
             distributionRules,
@@ -402,8 +443,14 @@ public sealed class GamingFiscalAllocationCalculator(
             request,
             location);
 
-        var baseShares = Allocate(request.BaseGamingTax, baseDistribution.Payload);
-        var supplementalShares = Allocate(supplemental.SupplementalGamingTax, supplementalDistribution.Payload);
+        var baseShares = Allocate(
+            request.BaseGamingTax,
+            baseDistribution.Payload,
+            request.DistributionPeriodCount);
+        var supplementalShares = Allocate(
+            supplemental.SupplementalGamingTax,
+            supplementalDistribution.Payload,
+            request.DistributionPeriodCount);
         return new GamingFiscalAllocationResult(
             request.BaseGamingTax,
             supplemental.SupplementalGamingTax,
@@ -418,7 +465,8 @@ public sealed class GamingFiscalAllocationCalculator(
                 supplemental.SourceUrl,
                 baseDistribution.Rule.SourceUrl,
                 supplementalDistribution.Rule.SourceUrl
-            }.Where(url => !string.IsNullOrWhiteSpace(url)).Select(url => url!).Distinct(StringComparer.Ordinal).ToArray());
+            }.Where(url => !string.IsNullOrWhiteSpace(url)).Select(url => url!).Distinct(StringComparer.Ordinal).ToArray(),
+            baseShares.Recipients.Concat(supplementalShares.Recipients).ToArray());
     }
 
     public async Task<SupplementalGamingTaxResult> CalculateSupplementalTaxAsync(
@@ -447,6 +495,65 @@ public sealed class GamingFiscalAllocationCalculator(
             request.StableVenueId,
             location,
             rules);
+    }
+
+    public async Task<GamingTaxDistributionResult> CalculateDistributionAsync(
+        GamingTaxDistributionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.TaxAmount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(request), "Gaming-tax amount cannot be negative.");
+        }
+        if (request.DistributionPeriodCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(request),
+                "Gaming-tax distribution period count must be positive.");
+        }
+        if (request.Component is not GamingTaxComponents.Base and not GamingTaxComponents.Supplemental)
+        {
+            throw new ArgumentException($"Unsupported gaming-tax component '{request.Component}'.", nameof(request));
+        }
+
+        var location = await locations.ResolveAsync(
+            request.FacilityLatitude,
+            request.FacilityLongitude,
+            cancellationToken);
+        var rules = await profiles.GetEffectiveProfileRulesAsync(
+            request.JurisdictionCode,
+            request.EffectiveOn,
+            cancellationToken);
+        var matchingRules = rules
+            .Where(rule => rule.RuleType == JurisdictionRuleTypes.GamingTaxDistribution &&
+                           rule.ValidationState == JurisdictionRuleValidationStates.Validated)
+            .Select(rule => (Rule: rule, Payload: Deserialize<GamingTaxDistributionPayload>(rule)))
+            .Where(item => RegimeMatches(item.Payload.FacilityRegime, request.FacilityRegime) &&
+                           CountyMatches(item.Payload.EligibleCountyFips, location.CountyFips) &&
+                           VenueMatches(item.Payload.EligibleStableVenueIds, request.StableVenueId) &&
+                           item.Payload.Component.Equals(request.Component, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        var selected = SelectSingleRule(
+            matchingRules,
+            request.JurisdictionCode,
+            request.FacilityRegime,
+            $"{request.Component} gaming-tax distribution");
+        if (selected.Payload.MunicipalityRequired && location.MunicipalityGeoid is null)
+        {
+            throw new UnsupportedJurisdictionException(
+                $"The effective {request.Component} gaming-tax distribution requires an incorporated host municipality, but facility " +
+                $"{request.FacilityLatitude:R},{request.FacilityLongitude:R} in county {location.CountyFips} is not contained by an active TIGER place. No county fallback is authorized.");
+        }
+        var allocation = Allocate(request.TaxAmount, selected.Payload, request.DistributionPeriodCount);
+        return new GamingTaxDistributionResult(
+            request.Component,
+            allocation.Municipality,
+            allocation.County,
+            allocation.Regional,
+            allocation.State,
+            location,
+            selected.Rule.SourceUrl ?? string.Empty,
+            allocation.Recipients);
     }
 
     private static SupplementalGamingTaxResult CalculateSupplementalTax(
@@ -545,19 +652,129 @@ public sealed class GamingFiscalAllocationCalculator(
         return selected;
     }
 
-    private static GamingTaxShares Allocate(decimal tax, GamingTaxDistributionPayload payload)
+    private static GamingTaxAllocationBreakdown Allocate(
+        decimal tax,
+        GamingTaxDistributionPayload payload,
+        int distributionPeriodCount)
     {
+        if (payload.Recipients is { Count: > 0 })
+        {
+            return AllocateRecipients(tax, payload, distributionPeriodCount);
+        }
         var shares = new[] { payload.StateShare, payload.CountyShare, payload.MunicipalityShare, payload.RegionalShare };
         if (shares.Any(share => share is < 0 or > 1) || decimal.Abs(shares.Sum() - 1m) > 0.0000001m)
         {
             throw new InvalidOperationException($"Gaming-tax distribution '{payload.Component}' must contain nonnegative shares summing to one.");
         }
-        return new GamingTaxShares(
-            Round(tax * payload.StateShare),
-            Round(tax * payload.CountyShare),
-            Round(tax * payload.MunicipalityShare),
-            Round(tax * payload.RegionalShare));
+        var municipality = Round(tax * payload.MunicipalityShare);
+        var county = Round(tax * payload.CountyShare);
+        var regional = Round(tax * payload.RegionalShare);
+        var state = tax - municipality - county - regional;
+        return new GamingTaxAllocationBreakdown(
+            state,
+            county,
+            municipality,
+            regional,
+            LegacyRecipientAllocations(payload.Component, state, county, municipality, regional));
     }
+
+    private static GamingTaxAllocationBreakdown AllocateRecipients(
+        decimal tax,
+        GamingTaxDistributionPayload payload,
+        int distributionPeriodCount)
+    {
+        var recipients = payload.Recipients!.ToArray();
+        if (recipients.Select(recipient => recipient.RecipientKey).Distinct(StringComparer.Ordinal).Count() != recipients.Length)
+        {
+            throw new InvalidOperationException(
+                $"Gaming-tax distribution '{payload.Component}' contains duplicate recipient keys.");
+        }
+        if (recipients.Any(recipient => recipient.Share is < 0 or > 1 ||
+                                        recipient.MaximumAmountPerPeriod is < 0 ||
+                                        recipient.MaximumAmount is < 0))
+        {
+            throw new InvalidOperationException(
+                $"Gaming-tax distribution '{payload.Component}' contains an invalid recipient share or cap.");
+        }
+        var residualRecipients = recipients.Where(recipient => recipient.ReceivesResidual).ToArray();
+        if (residualRecipients.Length != 1)
+        {
+            throw new InvalidOperationException(
+                $"Gaming-tax distribution '{payload.Component}' with named recipients must contain exactly one reconciliation-residual recipient.");
+        }
+
+        var calculated = new Dictionary<string, decimal>(StringComparer.Ordinal);
+        foreach (var recipient in recipients.Where(recipient => !recipient.ReceivesResidual))
+        {
+            var amount = Round(tax * recipient.Share);
+            if (recipient.MaximumAmountPerPeriod is { } maximumAmountPerPeriod)
+            {
+                amount = decimal.Min(
+                    amount,
+                    maximumAmountPerPeriod * distributionPeriodCount);
+            }
+            if (recipient.MaximumAmount is { } maximumAmount)
+            {
+                amount = decimal.Min(amount, maximumAmount);
+            }
+            if (!string.IsNullOrWhiteSpace(recipient.SubtractRecipientKey))
+            {
+                if (!calculated.TryGetValue(recipient.SubtractRecipientKey, out var subtraction))
+                {
+                    throw new InvalidOperationException(
+                        $"Gaming-tax recipient '{recipient.RecipientKey}' subtracts unknown or later recipient '{recipient.SubtractRecipientKey}'.");
+                }
+                amount -= subtraction;
+            }
+            if (amount < 0)
+            {
+                throw new InvalidOperationException(
+                    $"Gaming-tax recipient '{recipient.RecipientKey}' resolved to a negative amount.");
+            }
+            calculated.Add(recipient.RecipientKey, amount);
+        }
+
+        var residual = tax - calculated.Values.Sum();
+        if (residual < 0)
+        {
+            throw new InvalidOperationException(
+                $"Gaming-tax distribution '{payload.Component}' allocates more than the available tax by {-residual}.");
+        }
+        calculated.Add(residualRecipients[0].RecipientKey, residual);
+
+        var allocations = recipients.Select(recipient => new GamingTaxRecipientAllocation(
+            payload.Component,
+            recipient.RecipientKey,
+            recipient.RecipientLabel,
+            recipient.ScopeKind,
+            calculated[recipient.RecipientKey])).ToArray();
+        decimal SumScope(string scopeKind) => allocations
+            .Where(allocation => allocation.ScopeKind == scopeKind)
+            .Sum(allocation => allocation.Amount);
+        var municipality = SumScope(GamingTaxRecipientScopeKinds.HostMunicipality);
+        var county = SumScope(GamingTaxRecipientScopeKinds.HostCounty);
+        var regional = SumScope(GamingTaxRecipientScopeKinds.HostRegion);
+        var state = SumScope(GamingTaxRecipientScopeKinds.HostState);
+        if (municipality + county + regional + state != tax)
+        {
+            throw new InvalidOperationException(
+                $"Gaming-tax distribution '{payload.Component}' contains an unsupported recipient scope.");
+        }
+        return new GamingTaxAllocationBreakdown(state, county, municipality, regional, allocations);
+    }
+
+    private static IReadOnlyList<GamingTaxRecipientAllocation> LegacyRecipientAllocations(
+        string component,
+        decimal state,
+        decimal county,
+        decimal municipality,
+        decimal regional) =>
+    [
+        new(component, "host-municipality", "Host municipality", GamingTaxRecipientScopeKinds.HostMunicipality, municipality),
+        new(component, "host-county", "Host county", GamingTaxRecipientScopeKinds.HostCounty, county),
+        new(component, "host-region", "Host regional public entities", GamingTaxRecipientScopeKinds.HostRegion, regional),
+        new(component, "host-state", "Host state public revenue", GamingTaxRecipientScopeKinds.HostState, state)
+    ];
 
     private static (JurisdictionRule Rule, T Payload) SelectSingleRule<T>(
         IReadOnlyCollection<(JurisdictionRule Rule, T Payload)> matchingRules,
@@ -603,7 +820,12 @@ public sealed class GamingFiscalAllocationCalculator(
 
     private static decimal Round(decimal value) => decimal.Round(value, 2, MidpointRounding.AwayFromZero);
 
-    private sealed record GamingTaxShares(decimal State, decimal County, decimal Municipality, decimal Regional);
+    private sealed record GamingTaxAllocationBreakdown(
+        decimal State,
+        decimal County,
+        decimal Municipality,
+        decimal Regional,
+        IReadOnlyList<GamingTaxRecipientAllocation> Recipients);
 
     private static T Deserialize<T>(JurisdictionRule rule) where T : class =>
         JsonSerializer.Deserialize<T>(rule.RuleValueJson, JurisdictionJson.Options)
@@ -727,7 +949,25 @@ public sealed record GamingTaxDistributionPayload(
     decimal StateShare,
     decimal CountyShare,
     decimal MunicipalityShare,
-    decimal RegionalShare);
+    decimal RegionalShare,
+    IReadOnlyCollection<string>? EligibleStableVenueIds = null,
+    IReadOnlyCollection<GamingTaxRecipientPayload>? Recipients = null);
+public sealed record GamingTaxRecipientPayload(
+    string RecipientKey,
+    string RecipientLabel,
+    string ScopeKind,
+    decimal Share,
+    decimal? MaximumAmountPerPeriod = null,
+    string? SubtractRecipientKey = null,
+    bool ReceivesResidual = false,
+    decimal? MaximumAmount = null);
+public static class GamingTaxRecipientScopeKinds
+{
+    public const string HostMunicipality = "host-municipality";
+    public const string HostCounty = "host-county";
+    public const string HostRegion = "host-region";
+    public const string HostState = "host-state";
+}
 public static class GamingTaxComponents
 {
     public const string Base = "base";
