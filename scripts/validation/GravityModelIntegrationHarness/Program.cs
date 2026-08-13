@@ -903,6 +903,7 @@ var validateOhioProviderBundle = args is ["--validate-ohio-provider-bundle", _, 
 var validateOhioProviderIngestion = args is ["--validate-ohio-provider-ingestion", _];
 var validateIndianaFiscal = args is ["--validate-indiana-fiscal", _];
 var validateIndianaEmployment = args is ["--validate-indiana-employment", _];
+var validateIndianaSocial = args is ["--validate-indiana-social", _];
 var validateProviderIngestion = args is ["--validate-provider-ingestion", _] ||
                                  validateIncumbentCalibration ||
                                  validateMichiganProviderBundle ||
@@ -913,10 +914,10 @@ if ((!validateIncumbentCalibration && !validateMichiganProviderBundle && !valida
     (validateIncumbentCalibration && args.Length != 4))
 {
     throw new ArgumentException(
-        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --export-ohio-capacity-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --refresh-four-state-indiana-facilities <base-bundle-json> <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-indiana-fiscal <validation-db> | --validate-indiana-employment <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
+        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --export-ohio-capacity-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --refresh-four-state-indiana-facilities <base-bundle-json> <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-indiana-fiscal <validation-db> | --validate-indiana-employment <validation-db> | --validate-indiana-social <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
 }
 
-var namedDatabaseValidation = validateProviderIngestion || validateIndianaFiscal || validateIndianaEmployment;
+var namedDatabaseValidation = validateProviderIngestion || validateIndianaFiscal || validateIndianaEmployment || validateIndianaSocial;
 var validationDatabase = namedDatabaseValidation ? args[1] : args[0];
 var hasRequiredDatabasePrefix = namedDatabaseValidation
     ? validationDatabase.StartsWith(
@@ -926,6 +927,8 @@ var hasRequiredDatabasePrefix = namedDatabaseValidation
                 ? "savenein_fiscal_validation_"
                 : validateIndianaEmployment
                     ? "savenein_employment_validation_"
+                    : validateIndianaSocial
+                        ? "savenein_social_validation_"
                 : "savenein_provider_validation_",
         StringComparison.Ordinal)
     : validationDatabase.StartsWith("savenein_gravity_validation_", StringComparison.Ordinal) ||
@@ -1140,6 +1143,34 @@ if (validateIndianaEmployment)
         SchemaColumnCount = schemaColumnCount,
         ValidatedConstraintCount = validatedConstraintCount,
         snapshots
+    }));
+    return;
+}
+
+if (validateIndianaSocial)
+{
+    var effectiveOn = new DateOnly(2026, 8, 13);
+    var resolver = new ProblemGamblingPrevalenceResolver(new JurisdictionProfileService(db));
+    var assumption = await resolver.ResolveAsync("US-IN", effectiveOn)
+        ?? throw new InvalidOperationException("The validated Indiana prevalence rule was not resolved.");
+    var ruleCount = await db.JurisdictionRules.CountAsync(rule =>
+        rule.RuleType == JurisdictionRuleTypes.ProblemGamblingPrevalence &&
+        rule.ValidationState == JurisdictionRuleValidationStates.Validated &&
+        rule.EffectiveFrom <= effectiveOn &&
+        (rule.EffectiveTo == null || rule.EffectiveTo >= effectiveOn));
+    if (ruleCount != 1 || assumption.Prevalence != 0.041 ||
+        assumption.LowerConfidenceBound != 0.018 || assumption.UpperConfidenceBound != 0.090 ||
+        assumption.ObservationYear != 2021 || assumption.Instrument != "DSM-V" ||
+        assumption.SourceSha256 != "9414096e164ce4a68ba700a46e659e662328403aaa82ec0209c0d03a25a47ee3")
+    {
+        throw new InvalidOperationException("The seeded Indiana social-cost prevalence rule did not reproduce its official evidence.");
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        Database = validationDatabase,
+        EffectiveOn = effectiveOn,
+        RuleCount = ruleCount,
+        assumption
     }));
     return;
 }
@@ -1750,6 +1781,7 @@ if (validateProviderIngestion)
             new GamingTaxCalculator(profiles),
             new GamingFiscalAllocationCalculator(profiles, new CandidateFiscalLocationResolver(db)),
             new GeneralFiscalRuleResolver(profiles),
+            new ProblemGamblingPrevalenceResolver(profiles),
             new CannibalizationAccountingService(),
             new LocalEconomicInventoryWeightService(),
             new DisplacementModelService(),
@@ -2232,6 +2264,7 @@ var execution = new GravityModelExecutionService(
         new JurisdictionProfileService(db),
         new CandidateFiscalLocationResolver(db)),
     new GeneralFiscalRuleResolver(new JurisdictionProfileService(db)),
+    new ProblemGamblingPrevalenceResolver(new JurisdictionProfileService(db)),
     new CannibalizationAccountingService(),
     new LocalEconomicInventoryWeightService(),
     new DisplacementModelService(),

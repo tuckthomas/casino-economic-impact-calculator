@@ -20,6 +20,7 @@ public static class JurisdictionRuleTypes
     public const string GamingTaxDistribution = "gaming-tax-distribution";
     public const string PromotionalCreditTreatment = "promotional-credit-treatment";
     public const string GeneralFiscalRates = "general-fiscal-rates";
+    public const string ProblemGamblingPrevalence = "problem-gambling-prevalence";
 }
 
 public sealed class UnsupportedJurisdictionException(string message) : InvalidOperationException(message);
@@ -617,6 +618,15 @@ public sealed record GeneralFiscalRulePayload(
     decimal PayrollIncomeTaxRate,
     decimal AnnualPropertyTax,
     decimal NonGamingTaxableRevenueShareOfGgr);
+public sealed record ProblemGamblingPrevalenceRulePayload(
+    double Prevalence,
+    double LowerConfidenceBound,
+    double UpperConfidenceBound,
+    int ObservationYear,
+    string Instrument,
+    string Population,
+    string Citation,
+    string SourceSha256);
 
 internal static class JurisdictionJson
 {

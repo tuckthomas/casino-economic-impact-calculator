@@ -277,6 +277,25 @@ public static class ModelFoundationInitializer
             "https://iga.in.gov/laws/2026/ic/titles/4#4-33-12-8.7",
             "IC 4-33-12-8.7, added by P.L.77-2026 effective March 4, 2026, distributes the new northeast casino's supplemental tax 45% to the city, 45% to the county, and 10% to the Northeast Indiana Regional Development Authority. The statute supplies no unincorporated-site county fallback.",
             cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.ProblemGamblingPrevalence,
+            new ProblemGamblingPrevalenceRulePayload(
+                Prevalence: 0.041,
+                LowerConfidenceBound: 0.018,
+                UpperConfidenceBound: 0.090,
+                ObservationYear: 2021,
+                Instrument: "DSM-V",
+                Population: "Indiana adults",
+                Citation: "Indiana State Epidemiological Outcomes Workgroup, 2025 annual report, Table 8.2 (Jun et al., 2021)",
+                SourceSha256: "9414096e164ce4a68ba700a46e659e662328403aaa82ec0209c0d03a25a47ee3"),
+            new DateOnly(2021, 1, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://secure.in.gov/fssa/dmha/files/2025SEOWAnnualReport.pdf",
+            "Official Indiana FSSA/DMHA report page 117: DSM-V gambling-disorder prevalence 4.1%, 95% CI 1.8%-9.0%. This is observed existing prevalence, not a causal estimate of incremental cases from a new casino; exposure response and nonoverlapping cost domains require separate evidence.",
+            cancellationToken);
 
         var definitions = ParameterDefinitionSeeds().ToArray();
         var existingDefinitionKeys = await db.ModelParameterDefinitions
@@ -466,7 +485,7 @@ public static class ModelFoundationInitializer
         yield return Definition("employment.indirect_average_annual_wage", "employment", "Indirect/induced average annual wage", "USD/job/year", 0, 0, 1_000_000, 0, null, 100, "expert", false, "Zero-safe fallback pending geography-specific wage evidence.");
         yield return Definition("employment.incumbent_average_annual_wage", "employment", "Incumbent casino average annual wage", "USD/job/year", 0, 0, 1_000_000, 0, null, 100, "expert", false, "Zero-safe fallback pending geography-specific wage evidence.");
         yield return Definition("fiscal.non_gaming_business_margin", "fiscal", "Non-gaming business income margin", "share", 0, 0, 1, 0, 1, 0.01, "expert", false, "Zero-safe fallback pending a jurisdiction/property operating assumption.");
-        yield return Definition("social_cost.prevalence", "social-cost", "Problem-gambling prevalence", "share", 0, 0, 1, 0, 0.20, 0.001, "advanced", false, "Zero-safe fallback until a location-appropriate source is selected.");
+        yield return Definition("social_cost.prevalence", "social-cost", "Problem-gambling prevalence", "share", 0, 0, 1, 0, 0.20, 0.001, "advanced", false, "Zero-safe system fallback. When no parameter set or user override supplies this key, runtime may select one validated effective jurisdiction prevalence rule; any explicit resolved value, including zero, supersedes that evidence rule.");
         yield return Definition("social_cost.exposure_response", "social-cost", "Exposure risk-response", "coefficient", 0, 0, 100, 0, null, 0.01, "expert", false, "Zero-safe fallback pending calibration.");
         yield return Definition("social_cost.per_case_cost", "social-cost", "Social cost per case", "USD/case/year", 0, 0, 1_000_000, 0, null, 100, "advanced", false, "Zero-safe fallback until included domains and source year are selected.");
         yield return Definition("social_cost.crime_public_safety_productivity_scale", "social-cost", "Crime/public-safety/productivity scale", "multiplier", 1, 0, 10, 0, 4, 0.05, "expert", false, "Neutral scaling prior; component overlap must be resolved before activation.");

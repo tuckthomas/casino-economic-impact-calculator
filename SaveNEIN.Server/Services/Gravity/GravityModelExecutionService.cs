@@ -129,6 +129,7 @@ public sealed class GravityModelExecutionService(
     IGamingTaxCalculator gamingTaxCalculator,
     IGamingFiscalAllocationCalculator gamingFiscalAllocationCalculator,
     IGeneralFiscalRuleResolver generalFiscalRuleResolver,
+    IProblemGamblingPrevalenceResolver problemGamblingPrevalenceResolver,
     ICannibalizationAccountingService cannibalizationAccountingService,
     ILocalEconomicInventoryWeightService localEconomicInventoryWeightService,
     IDisplacementModelService displacementModelService,
@@ -593,6 +594,7 @@ public sealed class GravityModelExecutionService(
             expansions,
             nonresidentDemand,
             parameters,
+            resolved,
             cancellationToken);
         PersistParameterSnapshot(run.Id, resolved, selectedSetLayers);
         context.DevelopmentProgram.IsImmutable = true;
@@ -1239,6 +1241,7 @@ public sealed class GravityModelExecutionService(
         IReadOnlyDictionary<string, OriginExpansionContext> expansions,
         NonresidentDemandContext nonresidentDemand,
         IReadOnlyDictionary<string, double> parameters,
+        IReadOnlyCollection<ResolvedModelParameter> resolvedParameters,
         CancellationToken cancellationToken)
     {
         var warnings = new List<string>();
@@ -1466,10 +1469,24 @@ public sealed class GravityModelExecutionService(
         var localEligiblePopulation = originDemand
             .Where(origin => localOriginIds.Contains(origin.Origin.StableOriginId))
             .Sum(origin => origin.EligiblePopulation);
+        var prevalenceParameter = resolvedParameters.Single(parameter =>
+            parameter.Definition.Key == "social_cost.prevalence");
+        var jurisdictionPrevalence = await problemGamblingPrevalenceResolver.ResolveAsync(
+            request.JurisdictionCode,
+            request.EffectiveOn,
+            cancellationToken);
+        var prevalenceSelection = SocialCostPrevalenceSelector.Select(
+            prevalenceParameter,
+            jurisdictionPrevalence);
+        if (prevalenceSelection.JurisdictionAssumption is not null)
+        {
+            warnings.Add(
+                $"Problem-gambling prevalence uses the validated effective jurisdiction rule ({prevalenceSelection.AppliedPrevalence:P1}); this observed prevalence does not replace the separately resolved causal exposure-response parameter.");
+        }
         var socialScale = RequireParameter(parameters, "social_cost.crime_public_safety_productivity_scale");
         var socialCost = socialCostService.Calculate(new SocialCostInput(
             localEligiblePopulation,
-            RequireParameter(parameters, "social_cost.prevalence"),
+            prevalenceSelection.AppliedPrevalence,
             RequireParameter(parameters, "social_cost.exposure_response"),
             RequireParameter(parameters, "social_cost.low_case_multiplier"),
             RequireParameter(parameters, "social_cost.high_case_multiplier"),
@@ -1614,7 +1631,16 @@ public sealed class GravityModelExecutionService(
             LowAnnualCost = ToMoney(domain.LowAnnualCost),
             HighAnnualCost = ToMoney(domain.HighAnnualCost),
             Included = true,
-            ProvenanceNotes = "Resolved from the immutable model-run parameter snapshot; zero values mean the domain was not activated."
+            ProvenanceNotes = JsonSerializer.Serialize(new
+            {
+                prevalenceSelection.AppliedPrevalence,
+                prevalenceSelection.SourceKey,
+                prevalenceSelection.JurisdictionAssumption,
+                exposureResponse = RequireParameter(parameters, "social_cost.exposure_response"),
+                populationObservationYear = request.PopulationObservationYear,
+                scenarioYear = request.EffectiveOn.Year,
+                note = "Per-case domain values and scaling remain in the immutable model-run parameter snapshot; zero values mean the domain was not activated."
+            })
         }));
         db.ModelRunNetImpacts.Add(new ModelRunNetImpact
         {

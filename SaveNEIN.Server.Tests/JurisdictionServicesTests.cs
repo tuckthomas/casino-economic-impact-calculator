@@ -83,6 +83,113 @@ public sealed class JurisdictionServicesTests
     }
 
     [Fact]
+    public async Task ProblemGamblingPrevalenceResolver_ReturnsValidatedJurisdictionEvidence()
+    {
+        var rule = Rule(
+            JurisdictionRuleTypes.ProblemGamblingPrevalence,
+            IndianaProblemGamblingPrevalence(),
+            JurisdictionRuleValidationStates.Validated);
+        rule.Id = 117;
+        rule.SourceUrl = "https://secure.in.gov/fssa/dmha/files/2025SEOWAnnualReport.pdf";
+        var resolver = new ProblemGamblingPrevalenceResolver(new FakeProfiles(rule));
+
+        var result = await resolver.ResolveAsync("US-IN", new DateOnly(2026, 8, 13));
+
+        Assert.NotNull(result);
+        Assert.Equal(0.041, result.Prevalence);
+        Assert.Equal(0.018, result.LowerConfidenceBound);
+        Assert.Equal(0.090, result.UpperConfidenceBound);
+        Assert.Equal(117, result.JurisdictionRuleId);
+    }
+
+    [Fact]
+    public async Task ProblemGamblingPrevalenceResolver_RejectsInvalidConfidenceInterval()
+    {
+        var invalid = IndianaProblemGamblingPrevalence() with
+        {
+            LowerConfidenceBound = 0.05,
+            UpperConfidenceBound = 0.03
+        };
+        var resolver = new ProblemGamblingPrevalenceResolver(new FakeProfiles(Rule(
+            JurisdictionRuleTypes.ProblemGamblingPrevalence,
+            invalid,
+            JurisdictionRuleValidationStates.Validated)));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            resolver.ResolveAsync("US-IN", new DateOnly(2026, 8, 13)));
+    }
+
+    [Fact]
+    public void SocialCostPrevalenceSelector_PreservesExplicitZeroOverride()
+    {
+        var definition = new ModelParameterDefinition
+        {
+            Key = "social_cost.prevalence",
+            DisplayName = "Problem-gambling prevalence",
+            Category = "social-cost",
+            Units = "share",
+            TechnicalDescription = "test",
+            PlainLanguageDescription = "test",
+            ProvenanceNotes = "test",
+            ModelVersionApplicability = "gravity-v1"
+        };
+        var resolved = new ResolvedModelParameter(
+            definition,
+            0,
+            0,
+            null,
+            0,
+            0,
+            "user-override",
+            false,
+            null);
+        var evidence = new ProblemGamblingPrevalenceAssumption(
+            0.041, 0.018, 0.090, 2021, "DSM-V", "Indiana adults", "Jun et al. 2021",
+            "https://example.test/source", new string('a', 64), 1, 117);
+
+        var selection = SocialCostPrevalenceSelector.Select(resolved, evidence);
+
+        Assert.Equal(0, selection.AppliedPrevalence);
+        Assert.Equal("user-override", selection.SourceKey);
+        Assert.Null(selection.JurisdictionAssumption);
+    }
+
+    [Fact]
+    public void SocialCostPrevalenceSelector_PrefersValidatedLocalEvidenceOverNationalPrior()
+    {
+        var definition = new ModelParameterDefinition
+        {
+            Key = "social_cost.prevalence",
+            DisplayName = "Problem-gambling prevalence",
+            Category = "social-cost",
+            Units = "share",
+            TechnicalDescription = "test",
+            PlainLanguageDescription = "test",
+            ProvenanceNotes = "test",
+            ModelVersionApplicability = "gravity-v1"
+        };
+        var resolved = new ResolvedModelParameter(
+            definition,
+            0,
+            0.01,
+            null,
+            null,
+            0.01,
+            "national-calibrated-set",
+            false,
+            null);
+        var evidence = new ProblemGamblingPrevalenceAssumption(
+            0.041, 0.018, 0.090, 2021, "DSM-V", "Indiana adults", "Jun et al. 2021",
+            "https://example.test/source", new string('a', 64), 1, 117);
+
+        var selection = SocialCostPrevalenceSelector.Select(resolved, evidence);
+
+        Assert.Equal(0.041, selection.AppliedPrevalence);
+        Assert.Equal("validated-jurisdiction-rule", selection.SourceKey);
+        Assert.Same(evidence, selection.JurisdictionAssumption);
+    }
+
+    [Fact]
     public async Task GamingTaxCalculator_AppliesIncrementalBracketsAcrossThreshold()
     {
         var schedule = new GamingTaxSchedulePayload(
@@ -320,6 +427,16 @@ public sealed class JurisdictionServicesTests
                 75_000_000m,
                 2_500_000m)
         ]);
+
+    private static ProblemGamblingPrevalenceRulePayload IndianaProblemGamblingPrevalence() => new(
+        0.041,
+        0.018,
+        0.090,
+        2021,
+        "DSM-V",
+        "Indiana adults",
+        "Indiana SEOW Table 8.2 (Jun et al., 2021)",
+        "9414096e164ce4a68ba700a46e659e662328403aaa82ec0209c0d03a25a47ee3");
 
     private static JurisdictionRule Rule<T>(string type, T payload, string validationState) => new()
     {

@@ -133,6 +133,17 @@ public sealed class ModelFoundationInitializerTests
         Assert.DoesNotContain(rules, rule => rule.SourceUrl == "https://www.in.gov/igc/files/FY2025-Annual.pdf");
         Assert.DoesNotContain(rules, rule => rule.RuleType == "local-revenue-share");
 
+        var prevalenceRule = Assert.Single(rules, rule =>
+            rule.RuleType == JurisdictionRuleTypes.ProblemGamblingPrevalence);
+        var prevalence = JsonSerializer.Deserialize<ProblemGamblingPrevalenceRulePayload>(
+            prevalenceRule.RuleValueJson,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        Assert.Equal(JurisdictionRuleValidationStates.Validated, prevalenceRule.ValidationState);
+        Assert.Equal(0.041, prevalence.Prevalence);
+        Assert.Equal(0.018, prevalence.LowerConfidenceBound);
+        Assert.Equal(0.090, prevalence.UpperConfidenceBound);
+        Assert.Equal("9414096e164ce4a68ba700a46e659e662328403aaa82ec0209c0d03a25a47ee3", prevalence.SourceSha256);
+
         var supplemental = Assert.Single(rules, rule =>
             rule.RuleType == JurisdictionRuleTypes.SupplementalGamingTaxSchedule);
         var supplementalPayload = JsonSerializer.Deserialize<SupplementalGamingTaxPayload>(

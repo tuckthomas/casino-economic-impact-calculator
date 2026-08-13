@@ -120,6 +120,7 @@ builder.Services.AddScoped<SaveNEIN.Server.Services.IsochroneSeedingService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.IModelParameterService, SaveNEIN.Server.Services.ModelParameterService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.IJurisdictionProfileService, SaveNEIN.Server.Services.JurisdictionProfileService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingAgeResolver, SaveNEIN.Server.Services.GamingAgeResolver>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.IProblemGamblingPrevalenceResolver, SaveNEIN.Server.Services.ProblemGamblingPrevalenceResolver>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingTaxCalculator, SaveNEIN.Server.Services.GamingTaxCalculator>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.ICandidateFiscalLocationResolver, SaveNEIN.Server.Services.CandidateFiscalLocationResolver>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.IGamingFiscalAllocationCalculator, SaveNEIN.Server.Services.GamingFiscalAllocationCalculator>();
