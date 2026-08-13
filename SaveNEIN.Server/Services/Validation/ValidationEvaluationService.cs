@@ -32,7 +32,9 @@ public sealed record ValidationEvaluationResult(
     ValidationMetrics ComparableTrainingMetrics,
     ValidationMetrics ComparableHoldoutMetrics,
     ValidationMetrics? ComparableBenchmarkMetrics,
-    ComparableMarketModel ComparableModel);
+    ComparableMarketModel ComparableModel,
+    IReadOnlyCollection<GeographicResidualPattern> GravityGeographicResidualPatterns,
+    IReadOnlyCollection<GeographicResidualPattern> ComparableGeographicResidualPatterns);
 
 public interface IValidationEvaluationService
 {
@@ -45,7 +47,8 @@ public sealed class ValidationEvaluationService(
     AppDbContext db,
     IValidationMetricsService metricsService,
     IComparableMarketModelService comparableMarketModelService,
-    IModelParameterSetService parameterSetService) : IValidationEvaluationService
+    IModelParameterSetService parameterSetService,
+    IGeographicResidualPatternService? geographicResidualPatternService = null) : IValidationEvaluationService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -139,6 +142,12 @@ public sealed class ValidationEvaluationService(
         var comparableTraining = MetricsForPartition(cases, comparableObservations, ValidationPartitions.Training)!;
         var comparableHoldout = MetricsForPartition(cases, comparableObservations, ValidationPartitions.Holdout)!;
         var comparableBenchmark = MetricsForPartition(cases, comparableObservations, ValidationPartitions.Benchmark);
+        var residualPatternService = geographicResidualPatternService ??
+                                     new GeographicResidualPatternService(metricsService);
+        var gravityGeographicResidualPatterns = residualPatternService.Calculate(
+            BuildGeographicObservations(cases, gravityObservations));
+        var comparableGeographicResidualPatterns = residualPatternService.Calculate(
+            BuildGeographicObservations(cases, comparableObservations));
 
         var evaluation = new ValidationEvaluation
         {
@@ -167,6 +176,14 @@ public sealed class ValidationEvaluationService(
             evaluation.Id, cases, gravityObservations, ValidationPredictionKinds.Gravity));
         db.ValidationCaseResults.AddRange(BuildResults(
             evaluation.Id, cases, comparableObservations, ValidationPredictionKinds.Comparable));
+        db.ValidationGeographicResidualPatterns.AddRange(BuildPatternEntities(
+            evaluation.Id,
+            ValidationPredictionKinds.Gravity,
+            gravityGeographicResidualPatterns));
+        db.ValidationGeographicResidualPatterns.AddRange(BuildPatternEntities(
+            evaluation.Id,
+            ValidationPredictionKinds.Comparable,
+            comparableGeographicResidualPatterns));
         await db.SaveChangesAsync(cancellationToken);
 
         long? publishedParameterSetId = null;
@@ -224,7 +241,9 @@ public sealed class ValidationEvaluationService(
             comparableTraining,
             comparableHoldout,
             comparableBenchmark,
-            comparableModel);
+            comparableModel,
+            gravityGeographicResidualPatterns,
+            comparableGeographicResidualPatterns);
     }
 
     private ValidationMetrics? MetricsForPartition(
@@ -277,6 +296,49 @@ public sealed class ValidationEvaluationService(
             };
         }).ToArray();
     }
+
+    private static IReadOnlyCollection<GeographicResidualObservation> BuildGeographicObservations(
+        IReadOnlyCollection<ValidationCase> cases,
+        IReadOnlyCollection<ValidationObservation> observations)
+    {
+        var byKey = observations.ToDictionary(observation => observation.CaseKey, StringComparer.Ordinal);
+        return cases.Select(validationCase =>
+        {
+            var observation = byKey[validationCase.CaseKey];
+            return new GeographicResidualObservation(
+                validationCase.CaseKey,
+                validationCase.DatasetPartition,
+                validationCase.MarketCode,
+                validationCase.JurisdictionCode,
+                validationCase.HoldoutGroup,
+                observation.Observed,
+                observation.Predicted);
+        }).ToArray();
+    }
+
+    private static IReadOnlyCollection<ValidationGeographicResidualPattern> BuildPatternEntities(
+        Guid evaluationId,
+        string predictionKind,
+        IReadOnlyCollection<GeographicResidualPattern> patterns) =>
+        patterns.Select(pattern => new ValidationGeographicResidualPattern
+        {
+            ValidationEvaluationId = evaluationId,
+            PredictionKind = predictionKind,
+            DatasetPartition = pattern.DatasetPartition,
+            GeographyKind = pattern.GeographyKind,
+            GeographyCode = pattern.GeographyCode,
+            ObservationCount = pattern.ObservationCount,
+            ObservedRevenue = Money(pattern.ObservedRevenue),
+            PredictedRevenue = Money(pattern.PredictedRevenue),
+            Residual = Money(pattern.Residual),
+            MeanResidual = Money(pattern.MeanResidual),
+            MeanAbsoluteError = Money(pattern.MeanAbsoluteError),
+            MeanAbsolutePercentageError = pattern.MeanAbsolutePercentageError,
+            SymmetricMeanAbsolutePercentageError = pattern.SymmetricMeanAbsolutePercentageError,
+            OverpredictionCount = pattern.OverpredictionCount,
+            UnderpredictionCount = pattern.UnderpredictionCount,
+            ExactPredictionCount = pattern.ExactPredictionCount
+        }).ToArray();
 
     private static Dictionary<string, double> DeserializePredictors(ValidationCase validationCase)
     {

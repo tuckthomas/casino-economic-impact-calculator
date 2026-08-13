@@ -204,6 +204,39 @@ public sealed class ValidationCaseResult
     public string DiagnosticsJson { get; set; } = "{}";
 }
 
+[Table("validation_geographic_residual_patterns")]
+public sealed class ValidationGeographicResidualPattern
+{
+    [Key]
+    public long Id { get; set; }
+
+    public Guid ValidationEvaluationId { get; set; }
+
+    [Required, MaxLength(40)]
+    public string PredictionKind { get; set; } = ValidationPredictionKinds.Gravity;
+
+    [Required, MaxLength(30)]
+    public string DatasetPartition { get; set; } = ValidationPartitions.Training;
+
+    [Required, MaxLength(40)]
+    public string GeographyKind { get; set; } = ValidationGeographyKinds.Market;
+
+    [Required, MaxLength(160)]
+    public string GeographyCode { get; set; } = string.Empty;
+
+    public int ObservationCount { get; set; }
+    public decimal ObservedRevenue { get; set; }
+    public decimal PredictedRevenue { get; set; }
+    public decimal Residual { get; set; }
+    public decimal MeanResidual { get; set; }
+    public decimal MeanAbsoluteError { get; set; }
+    public double? MeanAbsolutePercentageError { get; set; }
+    public double SymmetricMeanAbsolutePercentageError { get; set; }
+    public int OverpredictionCount { get; set; }
+    public int UnderpredictionCount { get; set; }
+    public int ExactPredictionCount { get; set; }
+}
+
 public static class BenchmarkValidationStates
 {
     public const string Registered = "registered";
@@ -243,4 +276,11 @@ public static class ValidationPredictionKinds
 {
     public const string Gravity = "gravity";
     public const string Comparable = "comparable-log-linear";
+}
+
+public static class ValidationGeographyKinds
+{
+    public const string Market = "market";
+    public const string Jurisdiction = "jurisdiction";
+    public const string HoldoutGroup = "holdout-group";
 }

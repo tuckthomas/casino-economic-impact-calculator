@@ -58,6 +58,7 @@ public class AppDbContext : DbContext
     public DbSet<SaveNEIN.Server.Data.Entities.ValidationCase> ValidationCases => Set<SaveNEIN.Server.Data.Entities.ValidationCase>();
     public DbSet<SaveNEIN.Server.Data.Entities.ValidationEvaluation> ValidationEvaluations => Set<SaveNEIN.Server.Data.Entities.ValidationEvaluation>();
     public DbSet<SaveNEIN.Server.Data.Entities.ValidationCaseResult> ValidationCaseResults => Set<SaveNEIN.Server.Data.Entities.ValidationCaseResult>();
+    public DbSet<SaveNEIN.Server.Data.Entities.ValidationGeographicResidualPattern> ValidationGeographicResidualPatterns => Set<SaveNEIN.Server.Data.Entities.ValidationGeographicResidualPattern>();
     public DbSet<SaveNEIN.Server.Data.Entities.ModelRunReportArtifact> ModelRunReportArtifacts => Set<SaveNEIN.Server.Data.Entities.ModelRunReportArtifact>();
     public DbSet<SaveNEIN.Server.Data.Entities.SensitivityAnalysis> SensitivityAnalyses => Set<SaveNEIN.Server.Data.Entities.SensitivityAnalysis>();
     public DbSet<SaveNEIN.Server.Data.Entities.SensitivityAnalysisPoint> SensitivityAnalysisPoints => Set<SaveNEIN.Server.Data.Entities.SensitivityAnalysisPoint>();
@@ -255,6 +256,16 @@ public class AppDbContext : DbContext
             .IsUnique();
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ValidationCaseResult>()
             .HasIndex(result => new { result.ValidationEvaluationId, result.ValidationCaseId, result.PredictionKind })
+            .IsUnique();
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ValidationGeographicResidualPattern>()
+            .HasIndex(pattern => new
+            {
+                pattern.ValidationEvaluationId,
+                pattern.PredictionKind,
+                pattern.DatasetPartition,
+                pattern.GeographyKind,
+                pattern.GeographyCode
+            })
             .IsUnique();
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ModelRunReportArtifact>()
             .HasIndex(artifact => new { artifact.ModelRunId, artifact.TemplateVersion, artifact.PresentationOptionsHash })
@@ -499,6 +510,21 @@ public class AppDbContext : DbContext
             .HasPrecision(20, 2);
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ValidationCaseResult>()
             .Property(result => result.Residual)
+            .HasPrecision(20, 2);
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ValidationGeographicResidualPattern>()
+            .Property(pattern => pattern.ObservedRevenue)
+            .HasPrecision(20, 2);
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ValidationGeographicResidualPattern>()
+            .Property(pattern => pattern.PredictedRevenue)
+            .HasPrecision(20, 2);
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ValidationGeographicResidualPattern>()
+            .Property(pattern => pattern.Residual)
+            .HasPrecision(20, 2);
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ValidationGeographicResidualPattern>()
+            .Property(pattern => pattern.MeanResidual)
+            .HasPrecision(20, 2);
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ValidationGeographicResidualPattern>()
+            .Property(pattern => pattern.MeanAbsoluteError)
             .HasPrecision(20, 2);
 
         var impactAccountingTypes = new HashSet<Type>
@@ -811,6 +837,11 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(result => result.ModelRunId)
             .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ValidationGeographicResidualPattern>()
+            .HasOne<SaveNEIN.Server.Data.Entities.ValidationEvaluation>()
+            .WithMany()
+            .HasForeignKey(pattern => pattern.ValidationEvaluationId)
+            .OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ModelRunReportArtifact>()
             .HasOne<SaveNEIN.Server.Data.Entities.ModelRun>()
             .WithMany()
@@ -862,6 +893,7 @@ public class AppDbContext : DbContext
             typeof(Entities.ValidationCase),
             typeof(Entities.ValidationEvaluation),
             typeof(Entities.ValidationCaseResult),
+            typeof(Entities.ValidationGeographicResidualPattern),
             typeof(Entities.ModelRunReportArtifact),
             typeof(Entities.SensitivityAnalysis),
             typeof(Entities.SensitivityAnalysisPoint)

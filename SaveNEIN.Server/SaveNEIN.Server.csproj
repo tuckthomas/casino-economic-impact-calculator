@@ -75,6 +75,8 @@
                       Link="Data\Migrations\023_capacity_productivity_benchmark_provenance.sql" />
     <EmbeddedResource Include="..\docs\migrations\024_reported_casino_employment.sql"
                       Link="Data\Migrations\024_reported_casino_employment.sql" />
+    <EmbeddedResource Include="..\docs\migrations\025_validation_geographic_residual_patterns.sql"
+                      Link="Data\Migrations\025_validation_geographic_residual_patterns.sql" />
   </ItemGroup>
 
 </Project>

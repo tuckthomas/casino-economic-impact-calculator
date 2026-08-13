@@ -155,6 +155,7 @@ builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.INetImpactService, S
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IOriginSummaryService, SaveNEIN.Server.Services.Gravity.OriginSummaryService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IGravityModelExecutionService, SaveNEIN.Server.Services.Gravity.GravityModelExecutionService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.IValidationMetricsService, SaveNEIN.Server.Services.Validation.ValidationMetricsService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.IGeographicResidualPatternService, SaveNEIN.Server.Services.Validation.GeographicResidualPatternService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.ICalibrationSearchService, SaveNEIN.Server.Services.Validation.CalibrationSearchService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.IComparableMarketModelService, SaveNEIN.Server.Services.Validation.ComparableMarketModelService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.IBenchmarkOutputReader, SaveNEIN.Server.Services.Validation.BenchmarkOutputReader>();

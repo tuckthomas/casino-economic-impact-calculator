@@ -233,10 +233,12 @@ INSERT INTO model_runs (
 INSERT INTO origin_facility_travel (
     id, origin_zone_id, model_run_id, facility_key, facility_kind,
     routing_graph_hash, costing_profile, travel_time_minutes,
-    routed_distance_meters, route_found
+    routed_distance_meters, route_found, facility_coordinate_hash,
+    facility_latitude, facility_longitude
 ) VALUES (
     7000000001, 7000000001, '00000000-0000-0000-0000-000000000702',
-    'scenario:smoke', 'scenario', 'smoke-graph', 'auto', 10, 10000, TRUE
+    'scenario:smoke', 'scenario', 'smoke-graph', 'auto', 10, 10000, TRUE,
+    'smoke-candidate-0-0', 0, 0
 );
 
 INSERT INTO model_run_origin_results (
@@ -373,11 +375,14 @@ INSERT INTO model_run_fiscal_impacts (
     displaced_local_fiscal_loss, host_incumbent_gaming_tax_loss,
     other_jurisdiction_gaming_tax_loss, net_host_local_fiscal_impact,
     net_host_state_fiscal_impact, other_jurisdiction_fiscal_impact,
-    rule_provenance_json
+    rule_provenance_json, base_gaming_tax, supplemental_gaming_tax,
+    host_municipality_gaming_tax_share, host_county_gaming_tax_share,
+    host_regional_gaming_tax_share, host_state_gaming_tax_share
 ) VALUES (
     7000000001, '00000000-0000-0000-0000-000000000702',
     'host-state', 'US-IN', 50000, 15000, 40000, 2475, 10000, 5000,
-    12525, 30000, -5000, '{"fixture":true}'::jsonb
+    12525, 30000, -5000, '{"fixture":true}'::jsonb,
+    50000, 0, 0, 0, 0, 50000
 );
 
 INSERT INTO model_run_social_costs (
@@ -450,6 +455,18 @@ INSERT INTO validation_case_results (
     '00000000-0000-0000-0000-000000000704', '00000000-0000-0000-0000-000000000702',
     'gravity', 'training', 500000, 502000, 2000, 0.4, 0.3992015968,
     '{"fixture":true}'::jsonb
+);
+
+INSERT INTO validation_geographic_residual_patterns (
+    id, validation_evaluation_id, prediction_kind, dataset_partition,
+    geography_kind, geography_code, observation_count, observed_revenue,
+    predicted_revenue, residual, mean_residual, mean_absolute_error,
+    mean_absolute_percentage_error, symmetric_mean_absolute_percentage_error,
+    overprediction_count, underprediction_count, exact_prediction_count
+) VALUES (
+    7000000001, '00000000-0000-0000-0000-000000000705', 'gravity', 'training',
+    'market', 'US-IN-FIXTURE', 1, 500000, 502000, 2000, 2000, 2000,
+    0.4, 0.3992015968, 1, 0, 0
 );
 
 UPDATE validation_evaluations
@@ -646,6 +663,18 @@ BEGIN
         RAISE EXCEPTION 'Finalized validation-result trigger did not reject an update.';
     EXCEPTION WHEN OTHERS THEN
         IF SQLERRM = 'Finalized validation-result trigger did not reject an update.' OR
+           position('immutable' IN SQLERRM) = 0 THEN
+            RAISE;
+        END IF;
+    END;
+
+    BEGIN
+        UPDATE validation_geographic_residual_patterns
+        SET residual = 0
+        WHERE id = 7000000001;
+        RAISE EXCEPTION 'Finalized geographic-residual trigger did not reject an update.';
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM = 'Finalized geographic-residual trigger did not reject an update.' OR
            position('immutable' IN SQLERRM) = 0 THEN
             RAISE;
         END IF;

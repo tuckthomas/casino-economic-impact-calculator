@@ -399,7 +399,19 @@ public sealed class ModelValidationController(
             .ThenBy(result => result.DatasetPartition)
             .ThenBy(result => result.CaseKey)
             .ToListAsync(cancellationToken);
-        return Ok(new { Evaluation = evaluation, Results = results });
+        var geographicResidualPatterns = await db.ValidationGeographicResidualPatterns.AsNoTracking()
+            .Where(pattern => pattern.ValidationEvaluationId == validationEvaluationId)
+            .OrderBy(pattern => pattern.PredictionKind)
+            .ThenBy(pattern => pattern.DatasetPartition)
+            .ThenBy(pattern => pattern.GeographyKind)
+            .ThenBy(pattern => pattern.GeographyCode)
+            .ToListAsync(cancellationToken);
+        return Ok(new
+        {
+            Evaluation = evaluation,
+            Results = results,
+            GeographicResidualPatterns = geographicResidualPatterns
+        });
     }
 
     private static string CanonicalJson(string? json)

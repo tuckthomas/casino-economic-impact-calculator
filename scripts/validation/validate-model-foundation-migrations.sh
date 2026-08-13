@@ -72,7 +72,15 @@ for validation_pass in 1 2; do
     014_indiana_benchmark_evidence.sql \
     015_sensitivity_analyses.sql \
     016_local_economic_inventory.sql \
-    017_nullable_facility_evidence_flags.sql
+    017_nullable_facility_evidence_flags.sql \
+    018_candidate_location_travel_cache.sql \
+    019_indiana_benchmark_reconciliation_outputs.sql \
+    020_coordinate_versioned_incumbent_travel_cache.sql \
+    021_component_gaming_fiscal_allocation.sql \
+    022_employment_assumption_provenance.sql \
+    023_capacity_productivity_benchmark_provenance.sql \
+    024_reported_casino_employment.sql \
+    025_validation_geographic_residual_patterns.sql
   do
     echo "  $validation_file"
     "${validation_compose[@]}" exec -T -e VALIDATION_DB="$validation_db" db \
@@ -83,7 +91,7 @@ done
 
 "${validation_compose[@]}" exec -T -e VALIDATION_DB="$validation_db" db \
   sh -lc 'psql -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$VALIDATION_DB"' \
-  < "$validation_dir/model_foundation_smoke_test.sql"
+  < "$validation_dir/validation/model_foundation_smoke_test.sql"
 
 "${validation_compose[@]}" exec -T -e VALIDATION_DB="$validation_db" db \
   sh -lc 'psql -v ON_ERROR_STOP=1 -At -U "$POSTGRES_USER" -d "$VALIDATION_DB" -c "SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgname LIKE '\''trg_prevent_%'\'';"' \
