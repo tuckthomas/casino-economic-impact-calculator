@@ -187,6 +187,16 @@ public sealed class ModelFoundationSchemaTests
         Assert.Contains("host_municipality_gaming_tax_share", fiscalComponentSql, StringComparison.Ordinal);
         Assert.Contains("ck_model_run_fiscal_component_reconciliation", fiscalComponentSql, StringComparison.Ordinal);
 
+        var employmentAssumptionMigration = Assert.Single(
+            resourceNames,
+            name => name.EndsWith("022_employment_assumption_provenance.sql", StringComparison.Ordinal));
+        using var employmentAssumptionStream = typeof(ModelFoundationInitializer).Assembly.GetManifestResourceStream(employmentAssumptionMigration)!;
+        using var employmentAssumptionReader = new StreamReader(employmentAssumptionStream);
+        var employmentAssumptionSql = employmentAssumptionReader.ReadToEnd();
+        Assert.Contains("direct_average_annual_wage", employmentAssumptionSql, StringComparison.Ordinal);
+        Assert.Contains("assumption_provenance_json", employmentAssumptionSql, StringComparison.Ordinal);
+        Assert.Contains("ck_model_run_employment_wages_nonnegative", employmentAssumptionSql, StringComparison.Ordinal);
+
         var validationMigration = Assert.Single(
             resourceNames,
             name => name.EndsWith("012_validation_and_calibration.sql", StringComparison.Ordinal));

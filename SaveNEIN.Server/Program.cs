@@ -51,6 +51,9 @@ builder.Services.Configure<SaveNEIN.Server.Services.Providers.CensusAcsProviderO
     builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.CensusAcsProviderOptions.ConfigurationSection));
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.CensusAcsAgePopulationProvider>();
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.CensusAcsMedianIncomeProvider>();
+builder.Services.Configure<SaveNEIN.Server.Services.Providers.CensusCountyBusinessPatternsProviderOptions>(
+    builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.CensusCountyBusinessPatternsProviderOptions.ConfigurationSection));
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.CensusCountyBusinessPatternsProvider>();
 builder.Services.Configure<SaveNEIN.Server.Services.Providers.CensusZctaOriginProviderOptions>(
     builder.Configuration.GetSection(SaveNEIN.Server.Services.Providers.CensusZctaOriginProviderOptions.ConfigurationSection));
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.Providers.CensusZctaOriginProvider>();

@@ -70,6 +70,10 @@ public sealed class ModelRunEmploymentImpact
     public decimal DirectLaborIncome { get; set; }
     public decimal IndirectLaborIncome { get; set; }
     public decimal IncumbentLaborIncomeLost { get; set; }
+    public decimal DirectAverageAnnualWage { get; set; }
+    public decimal IndirectAverageAnnualWage { get; set; }
+    public decimal IncumbentAverageAnnualWage { get; set; }
+    [Required] public string AssumptionProvenanceJson { get; set; } = "{}";
 }
 
 [Table("model_run_fiscal_impacts")]
@@ -156,4 +160,10 @@ public static class DisplacementSectorKeys
     public const string RestaurantHospitality = "restaurant-hospitality";
     public const string Retail = "retail";
     public const string ArtsEntertainmentRecreation = "arts-entertainment-recreation";
+}
+
+public static class LocalEconomicSectorKeys
+{
+    public const string AllIndustries = "all-industries";
+    public const string CasinoGambling = "casino-gambling";
 }

@@ -11,6 +11,13 @@ public sealed record LocalInventoryWeightResolution(
     IReadOnlyDictionary<string, double> Modifiers,
     string WeightBasis);
 
+public sealed record LocalLaborAssumptionResolution(
+    double DirectAverageAnnualWage,
+    double IndirectAverageAnnualWage,
+    double IncumbentAverageAnnualWage,
+    string AssumptionBasis,
+    IReadOnlyCollection<string> Warnings);
+
 public interface ILocalEconomicInventoryWeightService
 {
     LocalInventoryWeightResolution Resolve(
@@ -19,6 +26,15 @@ public interface ILocalEconomicInventoryWeightService
         string scopeCode,
         IReadOnlyDictionary<string, double> priors,
         IReadOnlyDictionary<string, double> configuredModifiers,
+        bool inventorySnapshotSelected);
+
+    LocalLaborAssumptionResolution ResolveLaborAssumptions(
+        IReadOnlyCollection<LocalEconomicSectorObservation> observations,
+        string scopeKind,
+        string scopeCode,
+        double directAverageAnnualWageFallback,
+        double indirectAverageAnnualWageFallback,
+        double incumbentAverageAnnualWageFallback,
         bool inventorySnapshotSelected);
 }
 
@@ -112,5 +128,91 @@ public sealed class LocalEconomicInventoryWeightService : ILocalEconomicInventor
         throw new InvalidOperationException(
             "The selected local-economic inventory does not contain one complete positive measure " +
             "(receipts/sales, payroll, employment, or establishments) across all displacement sectors.");
+    }
+
+    public LocalLaborAssumptionResolution ResolveLaborAssumptions(
+        IReadOnlyCollection<LocalEconomicSectorObservation> observations,
+        string scopeKind,
+        string scopeCode,
+        double directAverageAnnualWageFallback,
+        double indirectAverageAnnualWageFallback,
+        double incumbentAverageAnnualWageFallback,
+        bool inventorySnapshotSelected)
+    {
+        var fallbackValues = new[]
+        {
+            directAverageAnnualWageFallback,
+            indirectAverageAnnualWageFallback,
+            incumbentAverageAnnualWageFallback
+        };
+        if (fallbackValues.Any(value => !double.IsFinite(value) || value < 0))
+        {
+            throw new ArgumentOutOfRangeException(nameof(directAverageAnnualWageFallback),
+                "Labor-assumption fallbacks must be finite and nonnegative.");
+        }
+        if (!inventorySnapshotSelected)
+        {
+            return new LocalLaborAssumptionResolution(
+                directAverageAnnualWageFallback,
+                indirectAverageAnnualWageFallback,
+                incumbentAverageAnnualWageFallback,
+                "versioned-parameter-fallbacks",
+                []);
+        }
+
+        var matching = observations.Where(observation =>
+                string.Equals(observation.GeographyType, scopeKind, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(observation.GeographyCode, scopeCode, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (matching.Length == 0)
+        {
+            throw new InvalidOperationException(
+                $"The selected local-economic inventory has no observations for impact geography " +
+                $"'{scopeKind}:{scopeCode}'.");
+        }
+
+        static double? AverageAnnualWage(
+            IReadOnlyCollection<LocalEconomicSectorObservation> source,
+            string sectorKey)
+        {
+            var sector = source.Where(observation =>
+                    string.Equals(observation.SectorKey, sectorKey, StringComparison.OrdinalIgnoreCase) &&
+                    observation.AnnualPayroll is > 0 && observation.Employment is > 0)
+                .ToArray();
+            if (sector.Length == 0)
+            {
+                return null;
+            }
+            var employment = sector.Sum(observation => observation.Employment!.Value);
+            var payroll = sector.Sum(observation => observation.AnnualPayroll!.Value);
+            return employment <= 0 || payroll <= 0 ? null : Convert.ToDouble(payroll / employment);
+        }
+
+        var casinoWage = AverageAnnualWage(matching, LocalEconomicSectorKeys.CasinoGambling);
+        var allIndustriesWage = AverageAnnualWage(matching, LocalEconomicSectorKeys.AllIndustries);
+        var warnings = new List<string>();
+        if (casinoWage is null)
+        {
+            warnings.Add(
+                $"The selected local-economic inventory has no positive payroll/employment pair for sector " +
+                $"'{LocalEconomicSectorKeys.CasinoGambling}' at '{scopeKind}:{scopeCode}'; direct and incumbent " +
+                "casino wage assumptions remain at their versioned parameter values.");
+        }
+        if (allIndustriesWage is null)
+        {
+            warnings.Add(
+                $"The selected local-economic inventory has no positive payroll/employment pair for sector " +
+                $"'{LocalEconomicSectorKeys.AllIndustries}' at '{scopeKind}:{scopeCode}'; the indirect/induced " +
+                "wage assumption remains at its versioned parameter value.");
+        }
+        return new LocalLaborAssumptionResolution(
+            casinoWage ?? directAverageAnnualWageFallback,
+            allIndustriesWage ?? indirectAverageAnnualWageFallback,
+            casinoWage ?? incumbentAverageAnnualWageFallback,
+            $"provider-snapshot:annual-payroll-per-employee:{scopeKind}:{scopeCode};" +
+            $"direct={(casinoWage is null ? "parameter" : LocalEconomicSectorKeys.CasinoGambling)};" +
+            $"indirect={(allIndustriesWage is null ? "parameter" : LocalEconomicSectorKeys.AllIndustries)};" +
+            $"incumbent={(casinoWage is null ? "parameter" : LocalEconomicSectorKeys.CasinoGambling)}",
+            warnings);
     }
 }

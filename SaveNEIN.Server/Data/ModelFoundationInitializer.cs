@@ -32,7 +32,8 @@ public static class ModelFoundationInitializer
         "018_candidate_location_travel_cache.sql",
         "019_indiana_benchmark_reconciliation_outputs.sql",
         "020_coordinate_versioned_incumbent_travel_cache.sql",
-        "021_component_gaming_fiscal_allocation.sql"
+        "021_component_gaming_fiscal_allocation.sql",
+        "022_employment_assumption_provenance.sql"
     ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

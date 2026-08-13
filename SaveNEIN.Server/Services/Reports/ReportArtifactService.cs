@@ -753,7 +753,11 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
                 ("Displaced-sector jobs", model.Employment.DisplacedSectorJobs.ToString("N1")),
                 ("Incumbent casino jobs lost", model.Employment.IncumbentCasinoJobsLost.ToString("N1")),
                 ("Net permanent jobs", model.Employment.NetPermanentJobs.ToString("N1")),
-                ("Construction job-years", model.Employment.ConstructionJobYears.ToString("N1"))
+                ("Construction job-years", model.Employment.ConstructionJobYears.ToString("N1")),
+                ("Direct casino average annual wage", Money(model.Employment.DirectAverageAnnualWage)),
+                ("Indirect/induced average annual wage", Money(model.Employment.IndirectAverageAnnualWage)),
+                ("Incumbent casino average annual wage", Money(model.Employment.IncumbentAverageAnnualWage)),
+                ("Labor-assumption provenance", model.Employment.AssumptionProvenanceJson)
             ]);
         }
         Section(html, "Fiscal impact");
@@ -1328,7 +1332,11 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                             ("Direct casino jobs", model.Employment.DirectCasinoJobs.ToString("N1")),
                             ("Indirect and induced jobs", model.Employment.IndirectAndInducedJobs.ToString("N1")),
                             ("Displaced + incumbent jobs lost", (model.Employment.DisplacedSectorJobs + model.Employment.IncumbentCasinoJobsLost).ToString("N1")),
-                            ("Net permanent jobs", model.Employment.NetPermanentJobs.ToString("N1"))
+                            ("Net permanent jobs", model.Employment.NetPermanentJobs.ToString("N1")),
+                            ("Direct average wage", Money(model.Employment.DirectAverageAnnualWage)),
+                            ("Indirect average wage", Money(model.Employment.IndirectAverageAnnualWage)),
+                            ("Incumbent average wage", Money(model.Employment.IncumbentAverageAnnualWage)),
+                            ("Labor-assumption provenance", model.Employment.AssumptionProvenanceJson)
                         ]);
                     }
                     Heading(column, "Fiscal impact");
@@ -1762,6 +1770,13 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
             Row(csv, "social_cost", cost.DomainKey, "low_annual_cost", cost.LowAnnualCost, "USD");
             Row(csv, "social_cost", cost.DomainKey, "high_annual_cost", cost.HighAnnualCost, "USD");
             Row(csv, "social_cost", cost.DomainKey, "included", cost.Included, "boolean");
+        }
+        if (model.Employment is not null)
+        {
+            Row(csv, "employment", "host", "direct_average_annual_wage", model.Employment.DirectAverageAnnualWage, "USD/job/year");
+            Row(csv, "employment", "host", "indirect_average_annual_wage", model.Employment.IndirectAverageAnnualWage, "USD/job/year");
+            Row(csv, "employment", "host", "incumbent_average_annual_wage", model.Employment.IncumbentAverageAnnualWage, "USD/job/year");
+            Row(csv, "employment", "host", "assumption_provenance_json", model.Employment.AssumptionProvenanceJson, "json");
         }
         if (model.NetImpact is not null)
         {

@@ -24,6 +24,7 @@ public sealed class ModelProviderIngestionController(
     CensusZctaOriginProvider censusZctaOrigins,
     CensusAcsAgePopulationProvider censusAge,
     CensusAcsMedianIncomeProvider censusIncome,
+    CensusCountyBusinessPatternsProvider censusCountyBusinessPatterns,
     IrsSoiExactCodeZctaIncomeProvider irsSoiIncome,
     IndianaGamingCommissionMonthlyRevenueProvider indianaGamingRevenue,
     IndianaGamingCommissionFacilityInventoryProvider indianaGamingFacilities,
@@ -69,6 +70,18 @@ public sealed class ModelProviderIngestionController(
             censusIncome,
             request.Fetch,
             request.OriginGeographySnapshotId,
+            cancellationToken);
+        return Created($"/api/model-data/snapshots/{snapshotId:D}", new { SnapshotId = snapshotId });
+    }
+
+    [HttpPost("census-cbp/local-economic-inventory")]
+    public async Task<IActionResult> IngestCensusCountyBusinessPatterns(
+        [FromBody] ProviderFetchRequest request,
+        CancellationToken cancellationToken)
+    {
+        var snapshotId = await ingestion.IngestLocalEconomicInventoryAsync(
+            censusCountyBusinessPatterns,
+            request,
             cancellationToken);
         return Created($"/api/model-data/snapshots/{snapshotId:D}", new { SnapshotId = snapshotId });
     }

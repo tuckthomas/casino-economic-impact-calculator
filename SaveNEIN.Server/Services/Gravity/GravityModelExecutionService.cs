@@ -1243,6 +1243,15 @@ public sealed class GravityModelExecutionService(
             displacementPriors,
             configuredInventoryModifiers,
             request.LocalEconomicInventorySnapshotId is not null);
+        var laborAssumptions = localEconomicInventoryWeightService.ResolveLaborAssumptions(
+            context.LocalEconomicObservations,
+            geography.ScopeKind,
+            geography.ScopeCode,
+            RequireParameter(parameters, "employment.direct_average_annual_wage"),
+            RequireParameter(parameters, "employment.indirect_average_annual_wage"),
+            RequireParameter(parameters, "employment.incumbent_average_annual_wage"),
+            request.LocalEconomicInventorySnapshotId is not null);
+        warnings.AddRange(laborAssumptions.Warnings);
         var displacement = displacementModelService.Calculate(new DisplacementInput(
             localResidentGamingBase,
             localCasinoCannibalization,
@@ -1291,9 +1300,9 @@ public sealed class GravityModelExecutionService(
             RequireParameter(parameters, "employment.construction_job_years_per_million_capital_cost"),
             RequireParameter(parameters, "employment.indirect_induced_jobs_per_direct_job"),
             RequireParameter(parameters, "employment.incumbent_jobs_per_million_lost_ggr"),
-            RequireParameter(parameters, "employment.direct_average_annual_wage"),
-            RequireParameter(parameters, "employment.indirect_average_annual_wage"),
-            RequireParameter(parameters, "employment.incumbent_average_annual_wage"),
+            laborAssumptions.DirectAverageAnnualWage,
+            laborAssumptions.IndirectAverageAnnualWage,
+            laborAssumptions.IncumbentAverageAnnualWage,
             displacement.Sectors));
         if (employment.DirectCasinoJobs == 0)
         {
@@ -1429,7 +1438,16 @@ public sealed class GravityModelExecutionService(
             NetPermanentJobs = employment.NetPermanentJobs,
             DirectLaborIncome = ToMoney(employment.DirectLaborIncome),
             IndirectLaborIncome = ToMoney(employment.IndirectLaborIncome),
-            IncumbentLaborIncomeLost = ToMoney(employment.IncumbentLaborIncomeLost)
+            IncumbentLaborIncomeLost = ToMoney(employment.IncumbentLaborIncomeLost),
+            DirectAverageAnnualWage = ToMoney(laborAssumptions.DirectAverageAnnualWage),
+            IndirectAverageAnnualWage = ToMoney(laborAssumptions.IndirectAverageAnnualWage),
+            IncumbentAverageAnnualWage = ToMoney(laborAssumptions.IncumbentAverageAnnualWage),
+            AssumptionProvenanceJson = JsonSerializer.Serialize(new
+            {
+                laborAssumptions.AssumptionBasis,
+                inventoryResolution.WeightBasis,
+                localEconomicInventorySnapshotId = request.LocalEconomicInventorySnapshotId
+            })
         });
         db.ModelRunFiscalImpacts.Add(new ModelRunFiscalImpact
         {

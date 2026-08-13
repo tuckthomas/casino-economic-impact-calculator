@@ -38,6 +38,8 @@ public sealed class ReportRendererTests
         Assert.Contains("Social-cost bridge", first, StringComparison.Ordinal);
         Assert.Contains("Net host-local impact waterfall", first, StringComparison.Ordinal);
         Assert.Contains("Sensitivity tornado", first, StringComparison.Ordinal);
+        Assert.Contains("Direct casino average annual wage", first, StringComparison.Ordinal);
+        Assert.Contains("provider-snapshot", first, StringComparison.Ordinal);
         Assert.Contains("WGS84 coordinates", first, StringComparison.Ordinal);
         Assert.DoesNotContain("html2canvas", first, StringComparison.OrdinalIgnoreCase);
     }
@@ -70,6 +72,8 @@ public sealed class ReportRendererTests
         Assert.Contains("origin,ZCTA:46802,candidate_route_found,True,boolean", first, StringComparison.Ordinal);
         Assert.Contains("origin,ZCTA:46802,presentation_area_geometry", first, StringComparison.Ordinal);
         Assert.Contains("facility,scenario:test,longitude,-85.1,degrees", first, StringComparison.Ordinal);
+        Assert.Contains("employment,host,direct_average_annual_wage,60000,USD/job/year", first, StringComparison.Ordinal);
+        Assert.Contains("employment,host,assumption_provenance_json", first, StringComparison.Ordinal);
         Assert.Contains("sensitivity,gravity.beta,low_model_run_id,10000000-0000-0000-0000-000000000001,uuid", first, StringComparison.Ordinal);
     }
 
@@ -160,7 +164,9 @@ public sealed class ReportRendererTests
             [
                 new ReportSectorDisplacement("restaurants", 1, 500_000, 0.5, 250_000, 150_000, 50_000, 10_000, 2_000, 3)
             ],
-            Employment: new ReportEmployment(100, 400, 20, 3, 5, 112, 6_000_000, 1_000_000, 300_000),
+            Employment: new ReportEmployment(
+                100, 400, 20, 3, 5, 112, 6_000_000, 1_000_000, 300_000,
+                60_000, 50_000, 60_000, "{\"assumptionBasis\":\"provider-snapshot\"}"),
             Fiscal: new ReportFiscal(
                 100_000, 25_000, 125_000, 12_500, 12_500, 0, 100_000,
                 50_000, 125_000, 12_000, 5_000, 2_000, 33_000, 108_000, -2_000, "{}"),

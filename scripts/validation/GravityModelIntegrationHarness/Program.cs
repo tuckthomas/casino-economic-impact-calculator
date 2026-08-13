@@ -20,6 +20,117 @@ using SaveNEIN.Server.Services.Validation;
 using SaveNEIN.Server.Services.Valhalla;
 using QuestPDF.Infrastructure;
 
+if (args is ["--probe-census-cbp"])
+{
+    using var providerProbeHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+    var provider = new CensusCountyBusinessPatternsProvider(
+        providerProbeHttp,
+        Options.Create(new CensusCountyBusinessPatternsProviderOptions()));
+    static ProviderFetchRequest CbpRequest(
+        string sourceGeography,
+        string sourceFips,
+        string impactScopeKind,
+        string impactScopeCode) => new(
+        "US-CBP",
+        new DateOnly(2023, 1, 1),
+        new DateOnly(2023, 12, 31),
+        new Dictionary<string, string>
+        {
+            ["source-geography"] = sourceGeography,
+            ["source-fips"] = sourceFips,
+            ["impact-scope-kind"] = impactScopeKind,
+            ["impact-scope-code"] = impactScopeCode
+        });
+    var state = await provider.FetchAsync(CbpRequest("state", "18", ImpactScopeKinds.HostState, "US-IN"));
+    var county = await provider.FetchAsync(CbpRequest("county", "18003", ImpactScopeKinds.HostCounty, "18003"));
+    var requiredSectors = new[]
+    {
+        DisplacementSectorKeys.RestaurantHospitality,
+        DisplacementSectorKeys.Retail,
+        DisplacementSectorKeys.ArtsEntertainmentRecreation
+    };
+    if (state.Rows.Count(row => requiredSectors.Contains(row.SectorKey, StringComparer.Ordinal)) != 3 ||
+        county.Rows.Count(row => requiredSectors.Contains(row.SectorKey, StringComparer.Ordinal)) != 3 ||
+        state.Rows.Any(row => row.AnnualReceiptsOrSales is not null) ||
+        county.Rows.Any(row => row.AnnualReceiptsOrSales is not null))
+    {
+        throw new InvalidOperationException("The live CBP probe did not return the required non-synthetic local inventory sectors.");
+    }
+    static LocalEconomicSectorObservation CbpObservation(LocalEconomicSectorObservationImportRow row) => new()
+    {
+        StableObservationId = row.StableObservationId,
+        GeographyType = row.GeographyType,
+        GeographyCode = row.GeographyCode,
+        SectorKey = row.SectorKey,
+        NaicsCodesJson = JsonSerializer.Serialize(row.NaicsCodes),
+        PeriodStart = row.PeriodStart,
+        PeriodEnd = row.PeriodEnd,
+        Establishments = row.Establishments,
+        Employment = row.Employment,
+        AnnualPayroll = row.AnnualPayroll,
+        AnnualReceiptsOrSales = row.AnnualReceiptsOrSales,
+        SourceMetricDefinition = row.SourceMetricDefinition,
+        Notes = row.Notes
+    };
+    var laborService = new LocalEconomicInventoryWeightService();
+    var stateLabor = laborService.ResolveLaborAssumptions(
+        state.Rows.Select(CbpObservation).ToArray(),
+        ImpactScopeKinds.HostState,
+        "US-IN",
+        1,
+        1,
+        1,
+        true);
+    var countyLabor = laborService.ResolveLaborAssumptions(
+        county.Rows.Select(CbpObservation).ToArray(),
+        ImpactScopeKinds.HostCounty,
+        "18003",
+        45_000,
+        35_000,
+        46_000,
+        true);
+    if (stateLabor.DirectAverageAnnualWage <= 0 || stateLabor.IndirectAverageAnnualWage <= 0 ||
+        countyLabor.DirectAverageAnnualWage != 45_000 || countyLabor.IndirectAverageAnnualWage <= 0 ||
+        countyLabor.Warnings.Count != 1)
+    {
+        throw new InvalidOperationException("The live CBP labor-assumption resolution did not preserve geography and fallback boundaries.");
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        State = new
+        {
+            state.Source.Url,
+            state.ContentChecksum,
+            Rows = state.Rows.Select(row => new
+            {
+                row.SectorKey,
+                row.Employment,
+                row.AnnualPayroll,
+                row.Establishments,
+                row.NaicsCodes
+            }),
+            LaborAssumptions = stateLabor,
+            state.Warnings
+        },
+        County = new
+        {
+            county.Source.Url,
+            county.ContentChecksum,
+            Rows = county.Rows.Select(row => new
+            {
+                row.SectorKey,
+                row.Employment,
+                row.AnnualPayroll,
+                row.Establishments,
+                row.NaicsCodes
+            }),
+            LaborAssumptions = countyLabor,
+            county.Warnings
+        }
+    }));
+    return;
+}
+
 if (args is ["--probe-zcta-origins"])
 {
     using var providerProbeHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };

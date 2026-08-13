@@ -248,7 +248,11 @@ public sealed record ReportEmployment(
     double NetPermanentJobs,
     decimal DirectLaborIncome,
     decimal IndirectLaborIncome,
-    decimal IncumbentLaborIncomeLost);
+    decimal IncumbentLaborIncomeLost,
+    decimal DirectAverageAnnualWage,
+    decimal IndirectAverageAnnualWage,
+    decimal IncumbentAverageAnnualWage,
+    string AssumptionProvenanceJson);
 
 public sealed record ReportFiscal(
     decimal BaseGamingTax,
@@ -568,7 +572,11 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
                 item.NetPermanentJobs,
                 item.DirectLaborIncome,
                 item.IndirectLaborIncome,
-                item.IncumbentLaborIncomeLost))
+                item.IncumbentLaborIncomeLost,
+                item.DirectAverageAnnualWage,
+                item.IndirectAverageAnnualWage,
+                item.IncumbentAverageAnnualWage,
+                item.AssumptionProvenanceJson))
             .SingleOrDefaultAsync(cancellationToken);
         var fiscal = await db.ModelRunFiscalImpacts.AsNoTracking()
             .Where(item => item.ModelRunId == modelRunId)

@@ -69,6 +69,8 @@
                       Link="Data\Migrations\020_coordinate_versioned_incumbent_travel_cache.sql" />
     <EmbeddedResource Include="..\docs\migrations\021_component_gaming_fiscal_allocation.sql"
                       Link="Data\Migrations\021_component_gaming_fiscal_allocation.sql" />
+    <EmbeddedResource Include="..\docs\migrations\022_employment_assumption_provenance.sql"
+                      Link="Data\Migrations\022_employment_assumption_provenance.sql" />
   </ItemGroup>
 
 </Project>

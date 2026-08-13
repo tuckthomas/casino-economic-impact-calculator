@@ -92,6 +92,52 @@ public sealed class LocalEconomicInventoryServiceTests
         Assert.Equal("parameterized-prior-modifiers", result.WeightBasis);
     }
 
+    [Fact]
+    public void ResolveLaborAssumptions_UsesGeographyMatchedCbpPayrollPerEmployee()
+    {
+        var result = new LocalEconomicInventoryWeightService().ResolveLaborAssumptions(
+            [
+                Observation(LocalEconomicSectorKeys.CasinoGambling, employment: 100, payroll: 5_000_000),
+                Observation(LocalEconomicSectorKeys.AllIndustries, employment: 1_000, payroll: 40_000_000)
+            ],
+            "host-state",
+            "US-IN",
+            1,
+            2,
+            3,
+            true);
+
+        Assert.Equal(50_000, result.DirectAverageAnnualWage);
+        Assert.Equal(40_000, result.IndirectAverageAnnualWage);
+        Assert.Equal(50_000, result.IncumbentAverageAnnualWage);
+        Assert.Empty(result.Warnings);
+        Assert.Contains("annual-payroll-per-employee:host-state:US-IN", result.AssumptionBasis, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ResolveLaborAssumptions_DoesNotPretendStateCasinoWageIsCountySpecificWhenMissing()
+    {
+        var result = new LocalEconomicInventoryWeightService().ResolveLaborAssumptions(
+            [Observation(
+                LocalEconomicSectorKeys.AllIndustries,
+                employment: 1_000,
+                payroll: 40_000_000,
+                geographyType: "host-county",
+                geographyCode: "18003")],
+            "host-county",
+            "18003",
+            45_000,
+            35_000,
+            46_000,
+            true);
+
+        Assert.Equal(45_000, result.DirectAverageAnnualWage);
+        Assert.Equal(40_000, result.IndirectAverageAnnualWage);
+        Assert.Equal(46_000, result.IncumbentAverageAnnualWage);
+        Assert.Single(result.Warnings);
+        Assert.Contains("remain at their versioned parameter values", result.Warnings.Single(), StringComparison.Ordinal);
+    }
+
     private static IReadOnlyDictionary<string, double> ConfiguredModifiers() =>
         new Dictionary<string, double>(StringComparer.Ordinal)
         {
@@ -103,17 +149,21 @@ public sealed class LocalEconomicInventoryServiceTests
     private static LocalEconomicSectorObservation Observation(
         string sector,
         decimal? receipts = null,
-        long? employment = null) => new()
+        long? employment = null,
+        decimal? payroll = null,
+        string geographyType = "host-state",
+        string geographyCode = "US-IN") => new()
     {
         StableObservationId = $"{sector}-fixture",
-        GeographyType = "host-state",
-        GeographyCode = "US-IN",
+        GeographyType = geographyType,
+        GeographyCode = geographyCode,
         SectorKey = sector,
         NaicsCodesJson = "[\"00\"]",
         PeriodStart = new DateOnly(2025, 1, 1),
         PeriodEnd = new DateOnly(2025, 12, 31),
         AnnualReceiptsOrSales = receipts,
         Employment = employment,
+        AnnualPayroll = payroll,
         SourceMetricDefinition = "Fixture"
     };
 }
