@@ -5,8 +5,10 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Services.Gravity;
+using System.Text.Json;
 
 namespace SaveNEIN.Server.Controllers;
 
@@ -14,7 +16,8 @@ namespace SaveNEIN.Server.Controllers;
 [Route("api/gravity-model-runs")]
 public sealed class GravityModelRunsController(
     AppDbContext db,
-    IGravityModelExecutionService executionService) : ControllerBase
+    IGravityModelExecutionService executionService,
+    IOriginSummaryService originSummaryService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(
@@ -244,6 +247,119 @@ public sealed class GravityModelRunsController(
         return Ok(new { Total = total, Skip = skip, Take = take, Origins = origins });
     }
 
+    [HttpGet("{modelRunId:guid}/origin-summaries")]
+    public async Task<IActionResult> GetOriginSummary(
+        Guid modelRunId,
+        string dimension = OriginSummaryDimensions.Zcta,
+        int top = 25,
+        decimal minimumShare = 0.001m,
+        CancellationToken cancellationToken = default)
+    {
+        if (!OriginSummaryDimensions.Supported.Contains(dimension))
+        {
+            return BadRequest(
+                $"Unsupported dimension '{dimension}'. Supported dimensions: {string.Join(", ", OriginSummaryDimensions.Supported.Order())}.");
+        }
+        if (top is < 1 or > 100)
+        {
+            return BadRequest("top must be between 1 and 100.");
+        }
+        if (minimumShare is < 0 or > 1)
+        {
+            return BadRequest("minimumShare must be between 0 and 1.");
+        }
+
+        var runContext = await db.ModelRuns
+            .AsNoTracking()
+            .Where(run => run.Id == modelRunId)
+            .Join(
+                db.Jurisdictions.AsNoTracking(),
+                run => run.JurisdictionId,
+                jurisdiction => jurisdiction.Id,
+                (run, jurisdiction) => new { Run = run, Jurisdiction = jurisdiction })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (runContext is null)
+        {
+            return NotFound();
+        }
+
+        var sourceRows = await db.ModelRunOriginResults
+            .AsNoTracking()
+            .Where(result => result.ModelRunId == modelRunId)
+            .Join(
+                db.OriginZones.AsNoTracking(),
+                result => result.OriginZoneId,
+                origin => origin.Id,
+                (result, origin) => new OriginSummaryMaterializedRow(
+                    new OriginSummarySourceRow(
+                        origin.Id,
+                        origin.StableOriginId,
+                        origin.OriginType,
+                        origin.GeographyCode,
+                        origin.CountryCode,
+                        origin.StateOrTerritoryCode,
+                        origin.CountyEquivalentCode,
+                        origin.MetropolitanStatisticalAreaCode,
+                        origin.CombinedStatisticalAreaCode,
+                        result.ResidentDemand,
+                        result.InducedResidentDemand,
+                        result.ProposedResidentGgr,
+                        result.ProposedInducedResidentGgr,
+                        result.TotalProposedResidentGgr,
+                        result.HostJurisdictionCapture,
+                        result.ExternalJurisdictionCapture,
+                        result.TribalOrOtherJurisdictionCapture,
+                        result.OutsideOptionCapture),
+                    origin.AreaGeometry))
+            .ToListAsync(cancellationToken);
+        if (sourceRows.Count == 0)
+        {
+            return Conflict("The stored run does not contain origin results to summarize.");
+        }
+        if (string.Equals(dimension, OriginSummaryDimensions.Zcta, StringComparison.OrdinalIgnoreCase) &&
+            sourceRows.Any(row => !string.Equals(row.Source.OriginType, "zcta", StringComparison.OrdinalIgnoreCase) &&
+                                  !string.Equals(row.Source.OriginType, "zip-compatible", StringComparison.OrdinalIgnoreCase)))
+        {
+            return Conflict(
+                "A ZIP/ZCTA summary cannot be synthesized from this run's non-ZCTA computational origins without a versioned crosswalk.");
+        }
+
+        var accounting = await db.ModelRunGeographicAccounting
+            .AsNoTracking()
+            .SingleOrDefaultAsync(result => result.ModelRunId == modelRunId, cancellationToken);
+        var localStableOriginIds = ReadStableOriginIds(accounting?.LocalOriginIdsJson);
+        var inJurisdictionOriginZoneIds = sourceRows
+            .Where(row => localStableOriginIds.Contains(row.Source.StableOriginId))
+            .Select(row => row.Source.OriginZoneId)
+            .ToHashSet();
+
+        var candidate = new Point(runContext.Run.CandidateLongitude, runContext.Run.CandidateLatitude) { SRID = 4326 };
+        var hostOrigin = sourceRows
+            .Where(row => SafelyCovers(row.AreaGeometry, candidate))
+            .OrderBy(row => row.AreaGeometry.Area)
+            .ThenBy(row => row.Source.StableOriginId, StringComparer.Ordinal)
+            .Select(row => row.Source)
+            .FirstOrDefault();
+        var jurisdictionStateCode = string.Equals(runContext.Jurisdiction.Kind, "state", StringComparison.OrdinalIgnoreCase)
+            ? runContext.Jurisdiction.Code.Split('-', StringSplitOptions.RemoveEmptyEntries)[^1]
+            : null;
+        var hostCountryCode = hostOrigin?.CountryCode ??
+                              (runContext.Jurisdiction.Code.StartsWith("US", StringComparison.OrdinalIgnoreCase)
+                                  ? "USA"
+                                  : null);
+        var context = new OriginSummaryContext(
+            hostCountryCode,
+            hostOrigin?.StateOrTerritoryCode ?? jurisdictionStateCode,
+            hostOrigin?.CountyEquivalentCode,
+            hostOrigin?.MetropolitanStatisticalAreaCode,
+            hostOrigin?.CombinedStatisticalAreaCode,
+            inJurisdictionOriginZoneIds);
+        return Ok(originSummaryService.Summarize(
+            sourceRows.Select(row => row.Source).ToArray(),
+            context,
+            new OriginSummaryOptions(dimension, top, minimumShare)));
+    }
+
     [HttpGet("comparison")]
     public async Task<IActionResult> Compare(
         [FromQuery] Guid[] modelRunIds,
@@ -360,4 +476,37 @@ public sealed class GravityModelRunsController(
             return "Unnamed scenario";
         }
     }
+
+    private static IReadOnlySet<string> ReadStableOriginIds(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new HashSet<string>(StringComparer.Ordinal);
+        }
+        try
+        {
+            return (JsonSerializer.Deserialize<string[]>(json) ?? [])
+                .ToHashSet(StringComparer.Ordinal);
+        }
+        catch (JsonException)
+        {
+            return new HashSet<string>(StringComparer.Ordinal);
+        }
+    }
+
+    private static bool SafelyCovers(Geometry geometry, Point candidate)
+    {
+        try
+        {
+            return geometry.Covers(candidate);
+        }
+        catch (TopologyException)
+        {
+            return false;
+        }
+    }
+
+    private sealed record OriginSummaryMaterializedRow(
+        OriginSummarySourceRow Source,
+        Geometry AreaGeometry);
 }

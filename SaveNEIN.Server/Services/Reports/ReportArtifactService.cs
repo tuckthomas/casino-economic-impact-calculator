@@ -79,6 +79,50 @@ internal static class ReportDisclosure
     private static string ShortHash(string value) => value.Length <= 12 ? value : value[..12];
 }
 
+internal static class ReportOriginPresentation
+{
+    internal static IReadOnlyList<OriginPresentationRow> Top(
+        IReadOnlyList<ReportOrigin> origins,
+        int topOriginCount)
+    {
+        var selected = origins.Take(topOriginCount)
+            .Select(origin => new OriginPresentationRow(
+                origin.StableOriginId,
+                origin.OriginType,
+                origin.StateCode,
+                origin.CountyCode ?? "—",
+                origin.RedistributedResidentGgr,
+                origin.InducedResidentGgr,
+                origin.TotalProposedResidentGgr,
+                origin.ShareOfProposedResidentGgr))
+            .ToList();
+        var residual = origins.Skip(topOriginCount).ToArray();
+        if (residual.Length > 0)
+        {
+            selected.Add(new OriginPresentationRow(
+                "Other origins",
+                $"Grouped residual ({residual.Length:N0})",
+                "—",
+                "—",
+                residual.Sum(origin => origin.RedistributedResidentGgr),
+                residual.Sum(origin => origin.InducedResidentGgr),
+                residual.Sum(origin => origin.TotalProposedResidentGgr),
+                residual.Sum(origin => origin.ShareOfProposedResidentGgr)));
+        }
+        return selected;
+    }
+
+    internal sealed record OriginPresentationRow(
+        string Label,
+        string OriginType,
+        string StateCode,
+        string CountyCode,
+        decimal RedistributedResidentGgr,
+        decimal InducedResidentGgr,
+        decimal TotalProposedResidentGgr,
+        double ShareOfProposedResidentGgr);
+}
+
 public sealed class ReportArtifactService(
     AppDbContext db,
     ICasinoImpactReportModelFactory reportModelFactory,
@@ -666,9 +710,9 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             }));
         Subsection(html, $"Top {Math.Min(options.TopOriginCount, model.Origins.Count)} contributing origins");
         Table(html, ["Origin", "Type", "State", "County", "Redistributed GGR", "Induced GGR", "Total", "Share"],
-            model.Origins.Take(options.TopOriginCount).Select(row => new[]
+            ReportOriginPresentation.Top(model.Origins, options.TopOriginCount).Select(row => new[]
             {
-                row.StableOriginId, row.OriginType, row.StateCode, row.CountyCode ?? "—",
+                row.Label, row.OriginType, row.StateCode, row.CountyCode,
                 Money(row.RedistributedResidentGgr), Money(row.InducedResidentGgr),
                 Money(row.TotalProposedResidentGgr), Percent(row.ShareOfProposedResidentGgr)
             }));
@@ -1283,9 +1327,9 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                     column.Item().Text($"Top {Math.Min(options.TopOriginCount, model.Origins.Count)} contributing origins").SemiBold();
                     SimpleTable(column,
                         ["Origin", "Type", "State / county", "Resident GGR", "Share"],
-                        model.Origins.Take(options.TopOriginCount).Select(row => new[]
+                        ReportOriginPresentation.Top(model.Origins, options.TopOriginCount).Select(row => new[]
                         {
-                            row.StableOriginId, row.OriginType, $"{row.StateCode} / {row.CountyCode ?? "—"}",
+                            row.Label, row.OriginType, $"{row.StateCode} / {row.CountyCode}",
                             Money(row.TotalProposedResidentGgr), row.ShareOfProposedResidentGgr.ToString("P1")
                         }));
 
@@ -1866,4 +1910,5 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
 
     private static string Escape(string value) =>
         value.IndexOfAny([',', '"', '\r', '\n']) < 0 ? value : '"' + value.Replace("\"", "\"\"") + '"';
+
 }

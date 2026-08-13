@@ -47,6 +47,33 @@ public sealed class ReportRendererTests
     }
 
     [Fact]
+    public void HtmlRenderer_GroupsOriginsBeyondConfiguredTopNAndCsvPreservesCompleteDetail()
+    {
+        var template = CreateModel();
+        var origins = Enumerable.Range(1, 6)
+            .Select(index => template.Origins[0] with
+            {
+                StableOriginId = $"ZCTA:4680{index}",
+                GeographyCode = $"4680{index}",
+                RedistributedResidentGgr = 100_000 - index,
+                InducedResidentGgr = 10_000 - index,
+                TotalProposedResidentGgr = 110_000 - index * 2,
+                ShareOfProposedResidentGgr = 1d / 6d
+            })
+            .ToArray();
+        var model = template with { Origins = origins };
+
+        var html = new HtmlReportRenderer().Render(
+            model,
+            new ReportPresentationOptions("Origin summary", "Validation", TopOriginCount: 5, CurrencyCode: "USD"));
+        var csv = new CsvReportRenderer().Render(model);
+
+        Assert.Contains("Other origins", html, StringComparison.Ordinal);
+        Assert.Contains("Grouped residual (1)", html, StringComparison.Ordinal);
+        Assert.Contains("origin,ZCTA:46806,total_proposed_resident_ggr,109988,USD", csv, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PdfRenderer_ProducesServerSidePdfFromReportModel()
     {
         QuestPDF.Settings.License = LicenseType.Community;

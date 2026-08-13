@@ -447,7 +447,7 @@
                                 <div class="model-result-table-heading">
                                     <div>
                                         <h4 id="model-origin-results-title">Patron-origin results</h4>
-                                        <p>Computed at the run's actual @_latestRun.ComputationalOriginType.ToUpperInvariant() resolution.</p>
+                                        <p>Computed at the run's actual @_latestRun.ComputationalOriginType.ToUpperInvariant() resolution; full detail remains available from the immutable run.</p>
                                     </div>
                                     <span>@_runOriginTotal origin(s)</span>
                                 </div>
@@ -459,7 +459,7 @@
                                 {
                                     <div class="model-result-table-shell">
                                         <table class="model-result-table">
-                                            <caption>Top @_runOrigins.Count origin(s) by proposed resident GGR; complete rows remain stored with the immutable run.</caption>
+                                            <caption>Configurable top origin summary by proposed resident GGR; immaterial rows reconcile in Other origins.</caption>
                                             <thead>
                                                 <tr>
                                                     <th scope="col">Origin</th>
@@ -473,8 +473,8 @@
                                                 {
                                                     <tr>
                                                         <th scope="row">
-                                                            @origin.StableOriginId
-                                                            <small>@OriginGeographyLabel(origin)</small>
+                                                            @origin.Label
+                                                            <small>@origin.OriginCount source origin(s)@(origin.IsResidual ? " · grouped residual" : string.Empty)</small>
                                                         </th>
                                                         <td>@Money(origin.ResidentDemand)</td>
                                                         <td>@Money(origin.TotalProposedResidentGgr)</td>
@@ -764,7 +764,7 @@
     private readonly HashSet<Guid> _comparisonSelection = [];
     private readonly List<ComparisonRun> _comparison = [];
     private readonly List<SensitivityRangeForm> _sensitivityRanges = [];
-    private readonly List<RunOriginResult> _runOrigins = [];
+    private readonly List<RunOriginSummaryRow> _runOrigins = [];
     private readonly List<RunFacilityResult> _runFacilities = [];
     private int _runOriginTotal;
     private RunResult? _latestRun;
@@ -986,7 +986,8 @@
         _runOriginTotal = 0;
 
         var detailsTask = Http.GetFromJsonAsync<RunDetails>($"api/gravity-model-runs/{modelRunId}");
-        var originsTask = Http.GetFromJsonAsync<RunOriginResponse>($"api/gravity-model-runs/{modelRunId}/origins?take=250");
+        var originsTask = Http.GetFromJsonAsync<RunOriginSummaryResponse>(
+            $"api/gravity-model-runs/{modelRunId}/origin-summaries?dimension=origin&top=25&minimumShare=0.001");
         await Task.WhenAll(detailsTask, originsTask);
 
         var details = await detailsTask;
@@ -997,8 +998,8 @@
         var origins = await originsTask;
         if (origins is not null)
         {
-            _runOriginTotal = origins.Total;
-            _runOrigins.AddRange(origins.Origins);
+            _runOriginTotal = origins.UnderlyingOriginCount;
+            _runOrigins.AddRange(origins.Rows);
         }
     }
 
@@ -1784,12 +1785,6 @@
     private static string DevelopmentProgramLabel(DevelopmentProgramOption program) =>
         $"{program.Name} · {program.SlotOrVltPositions:N0} slots/VLTs · {program.TableGameCount:N0} tables · {program.HotelRoomCount:N0} rooms · v{program.Version}";
     private static string StateCode(string jurisdictionCode) => jurisdictionCode.Split('-', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? string.Empty;
-    private static string OriginGeographyLabel(RunOriginResult origin)
-    {
-        var labels = new[] { origin.StateOrTerritoryCode, origin.CountyEquivalentCode, origin.GeographyCode }
-            .Where(value => !string.IsNullOrWhiteSpace(value));
-        return string.Join(" · ", labels);
-    }
     private void ApplySnapshotYears() { }
 
     private bool CanRun =>
@@ -2171,19 +2166,17 @@
         public decimal ChangeInResidentGgr { get; set; }
     }
 
-    private sealed class RunOriginResponse
+    private sealed class RunOriginSummaryResponse
     {
-        public int Total { get; set; }
-        public List<RunOriginResult> Origins { get; set; } = [];
+        public int UnderlyingOriginCount { get; set; }
+        public List<RunOriginSummaryRow> Rows { get; set; } = [];
     }
 
-    private sealed class RunOriginResult
+    private sealed class RunOriginSummaryRow
     {
-        public string StableOriginId { get; set; } = string.Empty;
-        public string OriginType { get; set; } = string.Empty;
-        public string GeographyCode { get; set; } = string.Empty;
-        public string? StateOrTerritoryCode { get; set; }
-        public string? CountyEquivalentCode { get; set; }
+        public string Label { get; set; } = string.Empty;
+        public bool IsResidual { get; set; }
+        public int OriginCount { get; set; }
         public decimal ResidentDemand { get; set; }
         public decimal TotalProposedResidentGgr { get; set; }
         public decimal OutsideOptionCapture { get; set; }

@@ -150,6 +150,7 @@ builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IEmploymentImpactSer
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IFiscalImpactService, SaveNEIN.Server.Services.Gravity.FiscalImpactService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ISocialCostService, SaveNEIN.Server.Services.Gravity.SocialCostService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.INetImpactService, SaveNEIN.Server.Services.Gravity.NetImpactService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IOriginSummaryService, SaveNEIN.Server.Services.Gravity.OriginSummaryService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IGravityModelExecutionService, SaveNEIN.Server.Services.Gravity.GravityModelExecutionService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.IValidationMetricsService, SaveNEIN.Server.Services.Validation.ValidationMetricsService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Validation.ICalibrationSearchService, SaveNEIN.Server.Services.Validation.CalibrationSearchService>();
