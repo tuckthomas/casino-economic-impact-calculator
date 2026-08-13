@@ -451,8 +451,7 @@ public sealed class TravelMatrixService(
     private static bool CoordinatesMatch(
         OriginFacilityTravel cached,
         CandidateLocationIdentity requested) =>
-        (string.Equals(cached.FacilityCoordinateHash, requested.Hash, StringComparison.Ordinal) ||
-         cached.FacilityCoordinateHash.StartsWith("legacy-", StringComparison.Ordinal)) &&
+        string.Equals(cached.FacilityCoordinateHash, requested.Hash, StringComparison.Ordinal) &&
         BitConverter.DoubleToInt64Bits(cached.FacilityLatitude) == BitConverter.DoubleToInt64Bits(requested.Latitude) &&
         BitConverter.DoubleToInt64Bits(cached.FacilityLongitude) == BitConverter.DoubleToInt64Bits(requested.Longitude);
 

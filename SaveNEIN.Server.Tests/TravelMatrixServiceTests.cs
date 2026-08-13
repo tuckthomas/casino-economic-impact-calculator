@@ -92,7 +92,7 @@ public sealed class TravelMatrixServiceTests
     }
 
     [Fact]
-    public async Task IncumbentStableId_ReusesOnlyAnExactFacilityCoordinateAcrossSnapshots()
+    public async Task IncumbentStableId_RejectsPreVersionedCacheRowsEvenAtAnExactCoordinate()
     {
         await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase($"incumbent-coordinate-cache-{Guid.NewGuid():N}")
@@ -107,6 +107,7 @@ public sealed class TravelMatrixServiceTests
         var first = await service.ResolveAsync(
             [origin],
             [new TravelMatrixFacility("USA-IN-stable", FacilityKinds.Incumbent, 10, null, 41.1, -84.9)]);
+        var firstRouteId = first.Routes.Single().Id;
         first.Routes.Single().FacilityCoordinateHash = $"legacy-{first.Routes.Single().Id}";
         await db.SaveChangesAsync();
         var sameCoordinate = await service.ResolveAsync(
@@ -116,10 +117,13 @@ public sealed class TravelMatrixServiceTests
             [origin],
             [new TravelMatrixFacility("USA-IN-stable", FacilityKinds.Incumbent, 30, null, 41.1001, -84.9)]);
 
-        Assert.Equal(2, handler.MatrixRequestCount);
-        Assert.Equal(first.Routes.Single().Id, sameCoordinate.Routes.Single().Id);
-        Assert.NotEqual(first.Routes.Single().Id, movedCoordinate.Routes.Single().Id);
-        Assert.Equal(2, await db.OriginFacilityTravel.CountAsync());
+        Assert.Equal(3, handler.MatrixRequestCount);
+        Assert.NotEqual(firstRouteId, sameCoordinate.Routes.Single().Id);
+        Assert.NotEqual(sameCoordinate.Routes.Single().Id, movedCoordinate.Routes.Single().Id);
+        Assert.Equal(3, await db.OriginFacilityTravel.CountAsync());
+        Assert.Equal(
+            TravelMatrixService.CandidateCoordinateHash(41.1, -84.9),
+            sameCoordinate.Routes.Single().FacilityCoordinateHash);
         Assert.Equal(
             TravelMatrixService.CandidateCoordinateHash(41.1001, -84.9),
             movedCoordinate.Routes.Single().FacilityCoordinateHash);
