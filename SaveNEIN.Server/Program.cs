@@ -53,6 +53,7 @@ builder.Services.AddHttpClient<SaveNEIN.Server.Services.CensusIngestionService>(
 
 // Register Isochrone Seeding Service
 builder.Services.AddScoped<SaveNEIN.Server.Services.IsochroneSeedingService>();
+builder.Services.AddHostedService<SaveNEIN.Server.Workers.NationwideIsochroneWorker>();
 
 // Register Competition Scoring Service
 builder.Services.AddScoped<SaveNEIN.Server.Services.CompetitionScoringService>();

@@ -18,13 +18,20 @@ namespace SaveNEIN.Server.Controllers
         private readonly TigerSeeder _seeder;
         private readonly IMemoryCache _cache;
         private readonly TaxAllocationOptions _taxAllocationOptions;
+        private readonly IConfiguration _config;
 
-        public CensusController(AppDbContext db, TigerSeeder seeder, IMemoryCache cache, IOptions<TaxAllocationOptions> taxAllocationOptions)
+        public CensusController(
+            AppDbContext db,
+            TigerSeeder seeder,
+            IMemoryCache cache,
+            IOptions<TaxAllocationOptions> taxAllocationOptions,
+            IConfiguration config)
         {
             _db = db;
             _seeder = seeder;
             _cache = cache;
             _taxAllocationOptions = taxAllocationOptions.Value;
+            _config = config;
         }
 
         [HttpGet("status")]
@@ -519,12 +526,12 @@ namespace SaveNEIN.Server.Controllers
 
         /// <summary>
         /// Returns compact block-group population points for a selected state and
-        /// the surrounding 50-mile area. The point payload keeps state-scale
-        /// population heatmaps fast while still including nearby cross-border
-        /// population centers.
+        /// the surrounding area within the maximum drive-time buffer distance (e.g. 100 miles / 90 minutes).
+        /// The point payload keeps state-scale population heatmaps fast while still including nearby
+        /// cross-border population centers.
         /// </summary>
         [HttpGet("population-heatmap/{stateFips}")]
-        public async Task<IActionResult> GetPopulationHeatmap(string stateFips)
+        public async Task<IActionResult> GetPopulationHeatmap(string stateFips, [FromQuery] int? bufferMiles = null)
         {
             var normalizedStateFips = string.Concat((stateFips ?? string.Empty).Where(char.IsDigit));
             if (normalizedStateFips.Length != 2)
@@ -532,9 +539,23 @@ namespace SaveNEIN.Server.Controllers
                 return BadRequest("State FIPS must be 2 digits.");
             }
 
-            const int bufferMiles = 50;
-            const double bufferMeters = bufferMiles * 1609.344;
-            var cacheKey = $"population_heatmap_{normalizedStateFips}_{bufferMiles}mi";
+            var resolvedBufferMiles = bufferMiles.GetValueOrDefault();
+            if (resolvedBufferMiles <= 0)
+            {
+                if (int.TryParse(_config["PopulationHeatmap:BufferMiles"], out var configuredBuffer) && configuredBuffer > 0)
+                {
+                    resolvedBufferMiles = configuredBuffer;
+                }
+                else
+                {
+                    var contours = _config.GetSection("IsochroneSeeding:ContoursMinutes").Get<int[]>();
+                    var maxMinutes = contours is { Length: > 0 } ? contours.Max() : 90;
+                    resolvedBufferMiles = Math.Max(50, (int)Math.Ceiling(maxMinutes * (70.0 / 60.0)));
+                }
+            }
+
+            var bufferMeters = resolvedBufferMiles * 1609.344;
+            var cacheKey = $"population_heatmap_{normalizedStateFips}_{resolvedBufferMiles}mi";
             if (_cache.TryGetValue(cacheKey, out string? cachedJson) && !string.IsNullOrEmpty(cachedJson))
             {
                 return Content(cachedJson, "application/json");
@@ -587,7 +608,7 @@ namespace SaveNEIN.Server.Controllers
 
                 var milesParam = cmd.CreateParameter();
                 milesParam.ParameterName = "bufferMiles";
-                milesParam.Value = bufferMiles;
+                milesParam.Value = resolvedBufferMiles;
                 cmd.Parameters.Add(milesParam);
 
                 var metersParam = cmd.CreateParameter();

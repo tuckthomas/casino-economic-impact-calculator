@@ -10,6 +10,8 @@ using SaveNEIN.Server.Services.Valhalla;
 
 namespace SaveNEIN.Server.Services;
 
+public sealed record SeedCounty(string StateFips, string CountyFips, string CountyName);
+
 public class IsochroneSeedingService
 {
     private readonly AppDbContext _db;
@@ -32,6 +34,15 @@ public class IsochroneSeedingService
     public async Task RunSeedingJobAsync(string[] counties, int gridMeters, CancellationToken ct)
     {
         var stateFips = _config["IsochroneSeeding:StateFips"] ?? "18";
+        var seededCounties = counties
+            .Select(countyName => new SeedCounty(stateFips, string.Empty, countyName))
+            .ToArray();
+
+        await RunSeedingJobAsync(seededCounties, gridMeters, ct);
+    }
+
+    public async Task RunSeedingJobAsync(IReadOnlyCollection<SeedCounty> counties, int gridMeters, CancellationToken ct)
+    {
         // var gridMeters = int.TryParse(_config["IsochroneSeeding:GridMeters"], out var meters) ? meters : 10000;
         var contours = _config.GetSection("IsochroneSeeding:ContoursMinutes").Get<int[]>() ?? new[] { 60, 90 };
         var maxContoursPerRequest = int.TryParse(_config["IsochroneSeeding:MaxContoursPerRequest"], out var maxContours)
@@ -46,8 +57,16 @@ public class IsochroneSeedingService
             await EnsureIsochroneCacheTableAsync(ct);
             await EnsureIsochroneRunTableAsync(ct);
 
-            foreach (var countyName in counties)
+            var requestDelayMilliseconds = int.TryParse(
+                _config["IsochroneSeeding:RequestDelayMilliseconds"],
+                out var configuredDelay)
+                ? Math.Max(0, configuredDelay)
+                : 0;
+
+            foreach (var county in counties)
             {
+                var stateFips = county.StateFips;
+                var countyName = county.CountyName;
                 _logger.LogInformation("Starting seeding job for {CountyName} County...", countyName);
 
                 var points = await GetCountyGridPointsAsync(stateFips, countyName, gridMeters, ct);
@@ -108,6 +127,11 @@ public class IsochroneSeedingService
                         }
 
                         insertedIsochrones += await InsertIsochronesAsync(lat, lon, sourceHash, inserts, ct);
+
+                        if (requestDelayMilliseconds > 0)
+                        {
+                            await Task.Delay(requestDelayMilliseconds, ct);
+                        }
                     }
                 }
 
@@ -146,6 +170,101 @@ public class IsochroneSeedingService
         {
             await _db.Database.CloseConnectionAsync();
         }
+    }
+
+    /// <summary>
+    /// Returns the next uncompleted counties in deterministic priority order. A county
+    /// that was interrupted before its run metadata was written is returned again; the
+    /// isochrone cache makes that retry resumable at the point/contour level.
+    /// </summary>
+    public async Task<IReadOnlyList<SeedCounty>> GetNextNationwideCountyBatchAsync(
+        int gridMeters,
+        int countiesPerBatch,
+        IReadOnlyList<string> priorityStateFips,
+        CancellationToken ct)
+    {
+        var contours = _config.GetSection("IsochroneSeeding:ContoursMinutes").Get<int[]>() ?? new[] { 60, 90 };
+        var contoursKey = string.Join(",", contours.OrderBy(value => value));
+        var candidates = new List<SeedCounty>();
+
+        await _db.Database.OpenConnectionAsync(ct);
+        try
+        {
+            await EnsureIsochroneCacheTableAsync(ct);
+            await EnsureIsochroneRunTableAsync(ct);
+
+            var conn = (NpgsqlConnection)_db.Database.GetDbConnection();
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT geoid, state_fp, name
+                FROM tiger_counties AS county
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM isochrone_runs AS run
+                    WHERE run.state_fips = county.state_fp
+                      AND run.county_name = county.name
+                      AND run.grid_meters = @grid_meters
+                      AND run.contours_minutes = @contours_key
+                );
+            ";
+            cmd.Parameters.AddWithValue("grid_meters", gridMeters);
+            cmd.Parameters.AddWithValue("contours_key", contoursKey);
+
+            await using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                candidates.Add(new SeedCounty(
+                    reader.GetString(1),
+                    reader.GetString(0),
+                    reader.GetString(2)));
+            }
+        }
+        finally
+        {
+            await _db.Database.CloseConnectionAsync();
+        }
+
+        return OrderNationwideCountyBatch(candidates, countiesPerBatch, priorityStateFips);
+    }
+
+    public static IReadOnlyList<SeedCounty> OrderNationwideCountyBatch(
+        IEnumerable<SeedCounty> candidates,
+        int countiesPerBatch,
+        IReadOnlyList<string> priorityStateFips)
+    {
+        var priority = priorityStateFips
+            .Select((stateFips, index) => new { stateFips, index })
+            .GroupBy(item => item.stateFips, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().index, StringComparer.Ordinal);
+
+        return candidates
+            .OrderBy(county => priority.TryGetValue(county.StateFips, out var rank) ? rank : int.MaxValue)
+            .ThenBy(county => county.StateFips, StringComparer.Ordinal)
+            .ThenBy(county => county.CountyFips, StringComparer.Ordinal)
+            .Take(Math.Max(1, countiesPerBatch))
+            .ToArray();
+    }
+
+    public async Task<int> RunNationwideBatchAsync(
+        int gridMeters,
+        int countiesPerBatch,
+        IReadOnlyList<string> priorityStateFips,
+        CancellationToken ct)
+    {
+        var counties = await GetNextNationwideCountyBatchAsync(
+            gridMeters,
+            countiesPerBatch,
+            priorityStateFips,
+            ct);
+
+        if (counties.Count == 0)
+        {
+            _logger.LogInformation("Nationwide isochrone queue is complete for grid {GridMeters}m and configured contours.", gridMeters);
+            return 0;
+        }
+
+        await RunSeedingJobAsync(counties, gridMeters, ct);
+        return counties.Count;
     }
 
     private async Task EnsureIsochroneCacheTableAsync(CancellationToken ct)
