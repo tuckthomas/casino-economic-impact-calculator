@@ -27,6 +27,13 @@ public sealed class ModelFoundationInitializerTests
         Assert.Equal("advanced", beta.UiExposureLevel);
         Assert.True(beta.IsUserOverridable);
 
+        var populationGrowth = await db.ModelParameterDefinitions.SingleAsync(
+            definition => definition.Key == "demographics.population_annual_growth_rate");
+        Assert.Equal("rate/year", populationGrowth.Units);
+        Assert.Equal(0, populationGrowth.SystemDefaultValue);
+        Assert.True(populationGrowth.IsUserOverridable);
+        Assert.Contains("Census/ACS", populationGrowth.ProvenanceNotes, StringComparison.OrdinalIgnoreCase);
+
         var scenarioKinds = await db.ModelParameterSets
             .Where(set => set.Scope == "scenario")
             .Select(set => set.ScenarioKind!)

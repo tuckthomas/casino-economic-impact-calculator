@@ -400,6 +400,8 @@ public static class ModelFoundationInitializer
             "Numerical and model-risk bound pending market calibration.");
         yield return Definition("demand.regional_intensity_multiplier", "demand", "Regional gaming intensity", "multiplier", 1.0, 0, 10, 0.5, 1.5, 0.05, "advanced", false,
             "Neutral regional multiplier.");
+        yield return Definition("demographics.population_annual_growth_rate", "demographics", "Annual population growth", "rate/year", 0, -0.10, 0.10, -0.03, 0.03, 0.001, "advanced", false,
+            "Explicit constant-population default. A nonzero versioned value compounds the selected Census/ACS age-population observation year to the scenario effective year; use a jurisdiction-appropriate official projection source and retain it in parameter-set provenance.");
         yield return Definition("facility.gaming_positions_coefficient", "facility-attraction", "Gaming positions coefficient", "coefficient", 0, -10, 10, null, null, 0.01, "expert", false, "Inactive-neutral structural prior pending calibration.");
         yield return Definition("facility.table_games_coefficient", "facility-attraction", "Table games coefficient", "coefficient", 0, -10, 10, null, null, 0.01, "expert", false, "Inactive-neutral structural prior pending calibration.");
         yield return Definition("facility.hotel_rooms_coefficient", "facility-attraction", "Hotel rooms coefficient", "coefficient", 0, -10, 10, null, null, 0.01, "expert", false, "Inactive-neutral structural prior pending calibration.");

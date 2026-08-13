@@ -726,9 +726,14 @@ public sealed class GravityModelExecutionService(
                     throw new InvalidOperationException(
                         $"Age-population snapshot is missing origin '{origin.StableOriginId}'.");
                 }
-                return EligiblePopulationCalculator.Calculate(
+                var observedEligiblePopulation = EligiblePopulationCalculator.Calculate(
                     bins.Select(bin => new AgeBinValue(bin.MinimumAge, bin.MaximumAge, bin.Population)).ToArray(),
                     legalGamingAge).Population;
+                return PopulationProjectionCalculator.Calculate(new PopulationProjectionInput(
+                    observedEligiblePopulation,
+                    request.PopulationObservationYear,
+                    request.EffectiveOn.Year,
+                    RequireParameter(parameters, "demographics.population_annual_growth_rate"))).ProjectedPopulation;
             });
 
         if (request.DemandSpecification == GravityDemandSpecifications.AgiShare)
