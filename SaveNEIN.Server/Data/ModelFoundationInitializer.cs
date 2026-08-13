@@ -31,7 +31,8 @@ public static class ModelFoundationInitializer
         "017_nullable_facility_evidence_flags.sql",
         "018_candidate_location_travel_cache.sql",
         "019_indiana_benchmark_reconciliation_outputs.sql",
-        "020_coordinate_versioned_incumbent_travel_cache.sql"
+        "020_coordinate_versioned_incumbent_travel_cache.sql",
+        "021_component_gaming_fiscal_allocation.sql"
     ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -92,9 +93,8 @@ public static class ModelFoundationInitializer
             cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
-        // Remove the superseded development-only fiscal fixture. The application is still in
-        // development, so retaining an ineligible legacy schedule only makes effective-rule
-        // inspection ambiguous and can conceal seeding defects.
+        // Remove superseded development-only fiscal fixtures. The application is still in
+        // development, so unsupported rules must not remain available to effective-rule selection.
         var obsoleteGamingTaxRules = await db.JurisdictionRules
             .Where(rule => rule.JurisdictionId == indiana.Id &&
                            rule.RuleType == JurisdictionRuleTypes.GamingTaxSchedule &&
@@ -104,6 +104,14 @@ public static class ModelFoundationInitializer
         if (obsoleteGamingTaxRules.Length > 0)
         {
             db.JurisdictionRules.RemoveRange(obsoleteGamingTaxRules);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        var obsoleteFlatRevenueShareRules = await db.JurisdictionRules
+            .Where(rule => rule.JurisdictionId == indiana.Id && rule.RuleType == "local-revenue-share")
+            .ToArrayAsync(cancellationToken);
+        if (obsoleteFlatRevenueShareRules.Length > 0)
+        {
+            db.JurisdictionRules.RemoveRange(obsoleteFlatRevenueShareRules);
             await db.SaveChangesAsync(cancellationToken);
         }
 
@@ -212,6 +220,59 @@ public static class ModelFoundationInitializer
             JurisdictionRuleValidationStates.Validated,
             "https://iga.in.gov/laws/2026/ic/titles/4#4-35-8-1",
             "IC 4-35-8-1, verified in the official 2026 Indiana Code: 25% of the first $100M and 30% above $100M for fiscal years beginning after June 30, 2021.",
+            cancellationToken);
+        var northeastIndianaCountyFips = new[] { "18003", "18033", "18151" };
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+            new SupplementalGamingTaxPayload(
+                "commercial-casino",
+                0.035m,
+                northeastIndianaCountyFips),
+            new DateOnly(2026, 3, 4),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-33-12-1.5",
+            "IC 4-33-12-1.5(a)(6), added by P.L.77-2026 effective March 4, 2026, imposes a 3.5% supplemental wagering tax on the new IC 4-33-6.8 casino in Allen, DeKalb, or Steuben County.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.GamingTaxDistribution,
+            new GamingTaxDistributionPayload(
+                "commercial-casino",
+                GamingTaxComponents.Base,
+                northeastIndianaCountyFips,
+                MunicipalityRequired: false,
+                StateShare: 1m,
+                CountyShare: 0m,
+                MunicipalityShare: 0m,
+                RegionalShare: 0m),
+            new DateOnly(2026, 3, 12),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-33-13-5",
+            "Current IC 4-33-13-5 as amended by P.L.157-2026 effective March 12, 2026 does not include Allen, DeKalb, or Steuben County in the 25% host-local distribution. For host-state accounting, the base tax therefore remains Indiana public revenue rather than host city/county revenue; this classification is not a claim that every dollar enters the state general fund.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.GamingTaxDistribution,
+            new GamingTaxDistributionPayload(
+                "commercial-casino",
+                GamingTaxComponents.Supplemental,
+                northeastIndianaCountyFips,
+                MunicipalityRequired: true,
+                StateShare: 0m,
+                CountyShare: 0.45m,
+                MunicipalityShare: 0.45m,
+                RegionalShare: 0.10m),
+            new DateOnly(2026, 3, 4),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-33-12-8.7",
+            "IC 4-33-12-8.7, added by P.L.77-2026 effective March 4, 2026, distributes the new northeast casino's supplemental tax 45% to the city, 45% to the county, and 10% to the Northeast Indiana Regional Development Authority. The statute supplies no unincorporated-site county fallback.",
             cancellationToken);
 
         var definitions = ParameterDefinitionSeeds().ToArray();

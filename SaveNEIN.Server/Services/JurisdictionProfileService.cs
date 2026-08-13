@@ -16,8 +16,9 @@ public static class JurisdictionRuleTypes
     public const string PermittedGamingProducts = "permitted-gaming-products";
     public const string GamingRevenueDefinition = "gaming-revenue-definition";
     public const string GamingTaxSchedule = "gaming-tax-schedule";
+    public const string SupplementalGamingTaxSchedule = "supplemental-gaming-tax-schedule";
+    public const string GamingTaxDistribution = "gaming-tax-distribution";
     public const string PromotionalCreditTreatment = "promotional-credit-treatment";
-    public const string LocalRevenueShare = "local-revenue-share";
     public const string GeneralFiscalRates = "general-fiscal-rates";
 }
 
@@ -306,67 +307,191 @@ public sealed class GamingTaxCalculator(IJurisdictionProfileService profiles) : 
         ?? throw new InvalidOperationException($"Jurisdiction rule '{rule.Id}' contains invalid JSON.");
 }
 
-public interface ILocalRevenueShareCalculator
+public sealed record GamingFiscalAllocationRequest(
+    string JurisdictionCode,
+    string FacilityRegime,
+    DateOnly EffectiveOn,
+    decimal CurrentTaxableGamingRevenue,
+    decimal BaseGamingTax,
+    double CandidateLatitude,
+    double CandidateLongitude);
+
+public sealed record GamingFiscalAllocationResult(
+    decimal BaseGamingTax,
+    decimal SupplementalGamingTax,
+    decimal GrossGamingTax,
+    decimal HostMunicipalityShare,
+    decimal HostCountyShare,
+    decimal HostRegionalShare,
+    decimal HostStateShare,
+    CandidateFiscalLocation Location,
+    IReadOnlyList<string> SourceUrls);
+
+public interface IGamingFiscalAllocationCalculator
 {
-    Task<decimal> CalculateAsync(
-        string jurisdictionCode,
-        string facilityRegime,
-        DateOnly effectiveOn,
-        decimal gamingTax,
+    Task<GamingFiscalAllocationResult> CalculateAsync(
+        GamingFiscalAllocationRequest request,
         CancellationToken cancellationToken = default);
 }
 
-public sealed class LocalRevenueShareCalculator(IJurisdictionProfileService profiles) : ILocalRevenueShareCalculator
+public sealed class GamingFiscalAllocationCalculator(
+    IJurisdictionProfileService profiles,
+    ICandidateFiscalLocationResolver locations) : IGamingFiscalAllocationCalculator
 {
-    public async Task<decimal> CalculateAsync(
-        string jurisdictionCode,
-        string facilityRegime,
-        DateOnly effectiveOn,
-        decimal gamingTax,
+    public async Task<GamingFiscalAllocationResult> CalculateAsync(
+        GamingFiscalAllocationRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (gamingTax < 0)
+        if (request.CurrentTaxableGamingRevenue < 0 || request.BaseGamingTax < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(gamingTax));
+            throw new ArgumentOutOfRangeException(nameof(request), "Gaming revenue and tax cannot be negative.");
         }
 
-        var rules = await profiles.GetEffectiveProfileRulesAsync(jurisdictionCode, effectiveOn, cancellationToken);
-        var matchingRules = rules
-            .Where(rule => rule.RuleType == JurisdictionRuleTypes.LocalRevenueShare &&
+        var location = await locations.ResolveAsync(
+            request.CandidateLatitude,
+            request.CandidateLongitude,
+            cancellationToken);
+        var rules = await profiles.GetEffectiveProfileRulesAsync(
+            request.JurisdictionCode,
+            request.EffectiveOn,
+            cancellationToken);
+
+        var supplementalRules = rules
+            .Where(rule => rule.RuleType == JurisdictionRuleTypes.SupplementalGamingTaxSchedule &&
                            rule.ValidationState == JurisdictionRuleValidationStates.Validated)
-            .Select(rule => (Rule: rule, Payload: Deserialize<LocalRevenueSharePayload>(rule)))
-            .Where(item => item.Payload.FacilityRegime.Equals(facilityRegime, StringComparison.OrdinalIgnoreCase) ||
-                           item.Payload.FacilityRegime == "*")
+            .Select(rule => (Rule: rule, Payload: Deserialize<SupplementalGamingTaxPayload>(rule)))
+            .Where(item => RegimeMatches(item.Payload.FacilityRegime, request.FacilityRegime) &&
+                           CountyMatches(item.Payload.EligibleCountyFips, location.CountyFips))
             .ToArray();
-        if (matchingRules.Length == 0)
+        var supplemental = SelectSingleRule(
+            supplementalRules,
+            request.JurisdictionCode,
+            request.FacilityRegime,
+            "supplemental gaming-tax schedule");
+        if (supplemental.Payload.Rate is < 0 or > 1)
+        {
+            throw new InvalidOperationException("Supplemental gaming-tax rate must be between zero and one.");
+        }
+
+        var supplementalTax = decimal.Round(
+            request.CurrentTaxableGamingRevenue * supplemental.Payload.Rate,
+            2,
+            MidpointRounding.AwayFromZero);
+        var distributionRules = rules
+            .Where(rule => rule.RuleType == JurisdictionRuleTypes.GamingTaxDistribution &&
+                           rule.ValidationState == JurisdictionRuleValidationStates.Validated)
+            .Select(rule => (Rule: rule, Payload: Deserialize<GamingTaxDistributionPayload>(rule)))
+            .Where(item => RegimeMatches(item.Payload.FacilityRegime, request.FacilityRegime) &&
+                           CountyMatches(item.Payload.EligibleCountyFips, location.CountyFips))
+            .ToArray();
+        var baseDistribution = SelectDistribution(
+            distributionRules,
+            GamingTaxComponents.Base,
+            request,
+            location);
+        var supplementalDistribution = SelectDistribution(
+            distributionRules,
+            GamingTaxComponents.Supplemental,
+            request,
+            location);
+
+        var baseShares = Allocate(request.BaseGamingTax, baseDistribution.Payload);
+        var supplementalShares = Allocate(supplementalTax, supplementalDistribution.Payload);
+        return new GamingFiscalAllocationResult(
+            request.BaseGamingTax,
+            supplementalTax,
+            request.BaseGamingTax + supplementalTax,
+            baseShares.Municipality + supplementalShares.Municipality,
+            baseShares.County + supplementalShares.County,
+            baseShares.Regional + supplementalShares.Regional,
+            baseShares.State + supplementalShares.State,
+            location,
+            new[]
+            {
+                supplemental.Rule.SourceUrl,
+                baseDistribution.Rule.SourceUrl,
+                supplementalDistribution.Rule.SourceUrl
+            }.Where(url => !string.IsNullOrWhiteSpace(url)).Select(url => url!).Distinct(StringComparer.Ordinal).ToArray());
+    }
+
+    private static (JurisdictionRule Rule, GamingTaxDistributionPayload Payload) SelectDistribution(
+        IReadOnlyCollection<(JurisdictionRule Rule, GamingTaxDistributionPayload Payload)> rules,
+        string component,
+        GamingFiscalAllocationRequest request,
+        CandidateFiscalLocation location)
+    {
+        var matching = rules
+            .Where(item => item.Payload.Component.Equals(component, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        var selected = SelectSingleRule(
+            matching,
+            request.JurisdictionCode,
+            request.FacilityRegime,
+            $"{component} gaming-tax distribution");
+        if (selected.Payload.MunicipalityRequired && location.MunicipalityGeoid is null)
         {
             throw new UnsupportedJurisdictionException(
-                $"No validated effective local revenue-sharing rule is configured for jurisdiction '{jurisdictionCode}', regime '{facilityRegime}', on {effectiveOn:yyyy-MM-dd}.");
+                $"The effective {component} gaming-tax distribution requires an incorporated host municipality, but candidate " +
+                $"{request.CandidateLatitude:R},{request.CandidateLongitude:R} in county {location.CountyFips} is not contained by an active TIGER place. No county fallback is authorized.");
         }
-        var highestPriorityJurisdictionId = matchingRules[0].Rule.JurisdictionId;
-        var jurisdictionMatches = matchingRules
-            .Where(item => item.Rule.JurisdictionId == highestPriorityJurisdictionId)
-            .ToArray();
-        var exactMatches = jurisdictionMatches
-            .Where(item => item.Payload.FacilityRegime.Equals(facilityRegime, StringComparison.OrdinalIgnoreCase))
-            .ToArray();
-        var selectedRules = exactMatches.Length > 0
+        return selected;
+    }
+
+    private static GamingTaxShares Allocate(decimal tax, GamingTaxDistributionPayload payload)
+    {
+        var shares = new[] { payload.StateShare, payload.CountyShare, payload.MunicipalityShare, payload.RegionalShare };
+        if (shares.Any(share => share is < 0 or > 1) || decimal.Abs(shares.Sum() - 1m) > 0.0000001m)
+        {
+            throw new InvalidOperationException($"Gaming-tax distribution '{payload.Component}' must contain nonnegative shares summing to one.");
+        }
+        return new GamingTaxShares(
+            Round(tax * payload.StateShare),
+            Round(tax * payload.CountyShare),
+            Round(tax * payload.MunicipalityShare),
+            Round(tax * payload.RegionalShare));
+    }
+
+    private static (JurisdictionRule Rule, T Payload) SelectSingleRule<T>(
+        IReadOnlyCollection<(JurisdictionRule Rule, T Payload)> matchingRules,
+        string jurisdictionCode,
+        string facilityRegime,
+        string ruleLabel) where T : class
+    {
+        if (matchingRules.Count == 0)
+        {
+            throw new UnsupportedJurisdictionException(
+                $"No validated effective {ruleLabel} is configured for jurisdiction '{jurisdictionCode}', regime '{facilityRegime}', and the candidate county.");
+        }
+        var highestPriorityJurisdictionId = matchingRules.First().Rule.JurisdictionId;
+        var jurisdictionMatches = matchingRules.Where(item => item.Rule.JurisdictionId == highestPriorityJurisdictionId).ToArray();
+        var exactMatches = jurisdictionMatches.Where(item => GetFacilityRegime(item.Payload).Equals(facilityRegime, StringComparison.OrdinalIgnoreCase)).ToArray();
+        var selected = exactMatches.Length > 0
             ? exactMatches
-            : jurisdictionMatches.Where(item => item.Payload.FacilityRegime == "*").ToArray();
-        if (selectedRules.Length != 1)
+            : jurisdictionMatches.Where(item => GetFacilityRegime(item.Payload) == "*").ToArray();
+        if (selected.Length != 1)
         {
             throw new InvalidOperationException(
-                $"Multiple effective local-revenue-share rules exist for jurisdiction '{jurisdictionCode}' and regime '{facilityRegime}'.");
+                $"Multiple effective {ruleLabel} rules exist for jurisdiction '{jurisdictionCode}' and regime '{facilityRegime}'.");
         }
-        var matchingRule = selectedRules[0].Payload;
-
-        if (matchingRule.ShareOfGamingTax < 0 || matchingRule.ShareOfGamingTax > 1)
-        {
-            throw new InvalidOperationException("Local revenue-sharing percentage must be between zero and one.");
-        }
-
-        return decimal.Round(gamingTax * matchingRule.ShareOfGamingTax, 2, MidpointRounding.AwayFromZero);
+        return selected[0];
     }
+
+    private static string GetFacilityRegime<T>(T payload) => payload switch
+    {
+        SupplementalGamingTaxPayload supplemental => supplemental.FacilityRegime,
+        GamingTaxDistributionPayload distribution => distribution.FacilityRegime,
+        _ => throw new InvalidOperationException($"Unsupported fiscal rule payload '{typeof(T).Name}'.")
+    };
+
+    private static bool RegimeMatches(string configured, string requested) =>
+        configured == "*" || configured.Equals(requested, StringComparison.OrdinalIgnoreCase);
+
+    private static bool CountyMatches(IReadOnlyCollection<string> configured, string countyFips) =>
+        configured.Count == 0 || configured.Contains(countyFips, StringComparer.Ordinal);
+
+    private static decimal Round(decimal value) => decimal.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    private sealed record GamingTaxShares(decimal State, decimal County, decimal Municipality, decimal Regional);
 
     private static T Deserialize<T>(JurisdictionRule rule) where T : class =>
         JsonSerializer.Deserialize<T>(rule.RuleValueJson, JurisdictionJson.Options)
@@ -467,7 +592,24 @@ public sealed record PriorFiscalYearGamingTaxSchedulePayload(
     IReadOnlyCollection<GamingTaxBracketPayload> Brackets,
     decimal? CurrentFiscalYearAdditionalTaxThreshold = null,
     decimal AdditionalTaxAmount = 0);
-public sealed record LocalRevenueSharePayload(string FacilityRegime, decimal ShareOfGamingTax);
+public sealed record SupplementalGamingTaxPayload(
+    string FacilityRegime,
+    decimal Rate,
+    IReadOnlyCollection<string> EligibleCountyFips);
+public sealed record GamingTaxDistributionPayload(
+    string FacilityRegime,
+    string Component,
+    IReadOnlyCollection<string> EligibleCountyFips,
+    bool MunicipalityRequired,
+    decimal StateShare,
+    decimal CountyShare,
+    decimal MunicipalityShare,
+    decimal RegionalShare);
+public static class GamingTaxComponents
+{
+    public const string Base = "base";
+    public const string Supplemental = "supplemental";
+}
 public sealed record GeneralFiscalRulePayload(
     string FacilityRegime,
     decimal SalesTaxRate,

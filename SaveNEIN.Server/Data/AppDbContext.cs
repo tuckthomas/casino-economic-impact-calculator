@@ -182,6 +182,7 @@ public class AppDbContext : DbContext
             {
                 route.OriginZoneId,
                 route.FacilityKey,
+                route.FacilityCoordinateHash,
                 route.RoutingGraphHash,
                 route.CostingProfile
             })

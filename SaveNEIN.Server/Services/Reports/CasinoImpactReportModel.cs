@@ -251,7 +251,13 @@ public sealed record ReportEmployment(
     decimal IncumbentLaborIncomeLost);
 
 public sealed record ReportFiscal(
+    decimal BaseGamingTax,
+    decimal SupplementalGamingTax,
     decimal GrossGamingTax,
+    decimal HostMunicipalityGamingTaxShare,
+    decimal HostCountyGamingTaxShare,
+    decimal HostRegionalGamingTaxShare,
+    decimal HostStateGamingTaxShare,
     decimal HostLocalGrossPublicRevenue,
     decimal HostStateGrossPublicRevenue,
     decimal DisplacedLocalFiscalLoss,
@@ -567,7 +573,13 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
         var fiscal = await db.ModelRunFiscalImpacts.AsNoTracking()
             .Where(item => item.ModelRunId == modelRunId)
             .Select(item => new ReportFiscal(
+                item.BaseGamingTax,
+                item.SupplementalGamingTax,
                 item.GrossGamingTax,
+                item.HostMunicipalityGamingTaxShare,
+                item.HostCountyGamingTaxShare,
+                item.HostRegionalGamingTaxShare,
+                item.HostStateGamingTaxShare,
                 item.HostLocalGrossPublicRevenue,
                 item.HostStateGrossPublicRevenue,
                 item.DisplacedLocalFiscalLoss,

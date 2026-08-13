@@ -64,7 +64,7 @@ public sealed class ModelFoundationInitializerTests
     }
 
     [Fact]
-    public async Task SeedAsync_ReplacesLegacyFiscalFixtureAndSeedsDistinctValidatedIndianaRegimes()
+    public async Task SeedAsync_ReplacesSupersededFiscalFixturesAndSeedsValidatedIndianaComponents()
     {
         await using var db = CreateDb();
         var indiana = new Jurisdiction { Code = "US-IN", Name = "Indiana", Kind = "state" };
@@ -83,6 +83,15 @@ public sealed class ModelFoundationInitializerTests
             EffectiveFrom = new DateOnly(2024, 7, 1),
             EffectiveTo = new DateOnly(2025, 6, 30),
             SourceUrl = "https://www.in.gov/igc/files/FY2025-Annual.pdf"
+        });
+        db.JurisdictionRules.Add(new JurisdictionRule
+        {
+            JurisdictionId = indiana.Id,
+            RuleType = "local-revenue-share",
+            RuleValueJson = "{\"facilityRegime\":\"commercial-casino\",\"shareOfGamingTax\":0.25}",
+            ValidationState = JurisdictionRuleValidationStates.Validated,
+            EffectiveFrom = new DateOnly(2026, 1, 1),
+            SourceUrl = "https://example.invalid/stale-flat-share"
         });
         await db.SaveChangesAsync();
 
@@ -115,6 +124,29 @@ public sealed class ModelFoundationInitializerTests
         Assert.Equal(["commercial-casino", "commercial-racino"], taxRegimes.Select(item => item.Payload.FacilityRegime));
         Assert.All(taxRegimes, item => Assert.Equal(JurisdictionRuleValidationStates.Validated, item.ValidationState));
         Assert.DoesNotContain(rules, rule => rule.SourceUrl == "https://www.in.gov/igc/files/FY2025-Annual.pdf");
+        Assert.DoesNotContain(rules, rule => rule.RuleType == "local-revenue-share");
+
+        var supplemental = Assert.Single(rules, rule =>
+            rule.RuleType == JurisdictionRuleTypes.SupplementalGamingTaxSchedule);
+        var supplementalPayload = JsonSerializer.Deserialize<SupplementalGamingTaxPayload>(
+            supplemental.RuleValueJson,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        Assert.Equal(0.035m, supplementalPayload.Rate);
+        Assert.Equal(["18003", "18033", "18151"], supplementalPayload.EligibleCountyFips);
+
+        var distributions = rules
+            .Where(rule => rule.RuleType == JurisdictionRuleTypes.GamingTaxDistribution)
+            .Select(rule => JsonSerializer.Deserialize<GamingTaxDistributionPayload>(
+                rule.RuleValueJson,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web))!)
+            .OrderBy(payload => payload.Component)
+            .ToArray();
+        Assert.Equal(2, distributions.Length);
+        Assert.Equal(1m, distributions[0].StateShare);
+        Assert.True(distributions[1].MunicipalityRequired);
+        Assert.Equal(0.45m, distributions[1].CountyShare);
+        Assert.Equal(0.45m, distributions[1].MunicipalityShare);
+        Assert.Equal(0.10m, distributions[1].RegionalShare);
     }
 
     private static AppDbContext CreateDb()

@@ -762,7 +762,13 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             Subsection(html, "Fiscal bridge");
             TwoColumnTable(html,
             [
+                ("Base gaming tax", Money(model.Fiscal.BaseGamingTax)),
+                ("Supplemental gaming tax", Money(model.Fiscal.SupplementalGamingTax)),
                 ("Gross gaming tax", Money(model.Fiscal.GrossGamingTax)),
+                ("Host municipality gaming-tax share", Money(model.Fiscal.HostMunicipalityGamingTaxShare)),
+                ("Host county gaming-tax share", Money(model.Fiscal.HostCountyGamingTaxShare)),
+                ("Host regional gaming-tax share", Money(model.Fiscal.HostRegionalGamingTaxShare)),
+                ("Host-state gaming-tax share", Money(model.Fiscal.HostStateGamingTaxShare)),
                 ("Host-local gross public revenue", Money(model.Fiscal.HostLocalGrossPublicRevenue)),
                 ("Host-state gross public revenue", Money(model.Fiscal.HostStateGrossPublicRevenue)),
                 ("Displaced local fiscal loss", Money(model.Fiscal.DisplacedLocalFiscalLoss)),
@@ -1330,7 +1336,12 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                     {
                         KeyValues(column,
                         [
+                            ("Base gaming tax", Money(model.Fiscal.BaseGamingTax)),
+                            ("Supplemental gaming tax", Money(model.Fiscal.SupplementalGamingTax)),
                             ("Gross gaming tax", Money(model.Fiscal.GrossGamingTax)),
+                            ("Host municipality share", Money(model.Fiscal.HostMunicipalityGamingTaxShare)),
+                            ("Host county share", Money(model.Fiscal.HostCountyGamingTaxShare)),
+                            ("Host regional share", Money(model.Fiscal.HostRegionalGamingTaxShare)),
                             ("Host-local gross public revenue", Money(model.Fiscal.HostLocalGrossPublicRevenue)),
                             ("Displaced local fiscal loss", Money(model.Fiscal.DisplacedLocalFiscalLoss)),
                             ("Net host-local fiscal impact", Money(model.Fiscal.NetHostLocalFiscalImpact)),

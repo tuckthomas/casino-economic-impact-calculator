@@ -277,8 +277,12 @@ public sealed class EmploymentImpactService : IEmploymentImpactService
 }
 
 public sealed record FiscalImpactInput(
-    double GamingTax,
-    double LocalRevenueShare,
+    double BaseGamingTax,
+    double SupplementalGamingTax,
+    double HostMunicipalityGamingTaxShare,
+    double HostCountyGamingTaxShare,
+    double HostRegionalGamingTaxShare,
+    double HostStateGamingTaxShare,
     double NonGamingSalesTax,
     double PayrollIncomeTax,
     double BusinessIncomeTax,
@@ -289,7 +293,13 @@ public sealed record FiscalImpactInput(
     double OtherJurisdictionGamingTaxLoss);
 
 public sealed record FiscalImpactResult(
+    double BaseGamingTax,
+    double SupplementalGamingTax,
     double GrossGamingTax,
+    double HostMunicipalityGamingTaxShare,
+    double HostCountyGamingTaxShare,
+    double HostRegionalGamingTaxShare,
+    double HostStateGamingTaxShare,
     double HostLocalGrossPublicRevenue,
     double HostStateGrossPublicRevenue,
     double DisplacedLocalFiscalLoss,
@@ -310,8 +320,12 @@ public sealed class FiscalImpactService : IFiscalImpactService
     {
         var values = new[]
         {
-            input.GamingTax,
-            input.LocalRevenueShare,
+            input.BaseGamingTax,
+            input.SupplementalGamingTax,
+            input.HostMunicipalityGamingTaxShare,
+            input.HostCountyGamingTaxShare,
+            input.HostRegionalGamingTaxShare,
+            input.HostStateGamingTaxShare,
             input.NonGamingSalesTax,
             input.PayrollIncomeTax,
             input.BusinessIncomeTax,
@@ -325,17 +339,26 @@ public sealed class FiscalImpactService : IFiscalImpactService
         {
             throw new ArgumentOutOfRangeException(nameof(input), "Fiscal inputs must be finite and nonnegative.");
         }
-        if (input.LocalRevenueShare > input.GamingTax)
+        var grossGamingTax = input.BaseGamingTax + input.SupplementalGamingTax;
+        var allocatedGamingTax = input.HostMunicipalityGamingTaxShare + input.HostCountyGamingTaxShare +
+                                 input.HostRegionalGamingTaxShare + input.HostStateGamingTaxShare;
+        if (Math.Abs(allocatedGamingTax - grossGamingTax) > 0.011)
         {
-            throw new InvalidOperationException("Local revenue share cannot exceed total gaming tax.");
+            throw new InvalidOperationException("Gaming-tax component allocations must reconcile to total base plus supplemental gaming tax.");
         }
 
         var displacedLoss = input.DisplacedSalesTaxLoss + input.DisplacedBusinessIncomeTaxLoss;
-        var localGross = input.LocalRevenueShare + input.PropertyTax;
-        var stateGross = input.GamingTax - input.LocalRevenueShare + input.NonGamingSalesTax +
+        var localGross = input.HostMunicipalityGamingTaxShare + input.HostCountyGamingTaxShare + input.PropertyTax;
+        var stateGross = input.HostStateGamingTaxShare + input.HostRegionalGamingTaxShare + input.NonGamingSalesTax +
                          input.PayrollIncomeTax + input.BusinessIncomeTax;
         return new FiscalImpactResult(
-            input.GamingTax,
+            input.BaseGamingTax,
+            input.SupplementalGamingTax,
+            grossGamingTax,
+            input.HostMunicipalityGamingTaxShare,
+            input.HostCountyGamingTaxShare,
+            input.HostRegionalGamingTaxShare,
+            input.HostStateGamingTaxShare,
             localGross,
             stateGross,
             displacedLoss,

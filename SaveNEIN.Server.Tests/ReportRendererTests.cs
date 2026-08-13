@@ -161,7 +161,9 @@ public sealed class ReportRendererTests
                 new ReportSectorDisplacement("restaurants", 1, 500_000, 0.5, 250_000, 150_000, 50_000, 10_000, 2_000, 3)
             ],
             Employment: new ReportEmployment(100, 400, 20, 3, 5, 112, 6_000_000, 1_000_000, 300_000),
-            Fiscal: new ReportFiscal(125_000, 50_000, 125_000, 12_000, 5_000, 2_000, 33_000, 108_000, -2_000, "{}"),
+            Fiscal: new ReportFiscal(
+                100_000, 25_000, 125_000, 12_500, 12_500, 0, 100_000,
+                50_000, 125_000, 12_000, 5_000, 2_000, 33_000, 108_000, -2_000, "{}"),
             SocialCosts: [new ReportSocialCost("treatment-health", 100_000, 10, 10_000, 100_000, 75_000, 125_000, true, "Test")],
             NetImpact: new ReportNetImpact(
                 1_250_000, 800_000, 200_000, 50_000, 100_000, 350_000, 250_000, 7_000_000,

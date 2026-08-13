@@ -214,6 +214,86 @@ public sealed class JurisdictionServicesTests
         Assert.Equal(40_000_000m, result.GamingTax);
     }
 
+    [Fact]
+    public async Task GamingFiscalAllocationCalculator_AppliesNortheastIndianaComponentsWithoutFlatShare()
+    {
+        var calculator = new GamingFiscalAllocationCalculator(
+            new FakeProfiles(
+                Rule(
+                    JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+                    new SupplementalGamingTaxPayload("commercial-casino", 0.035m, ["18003"]),
+                    JurisdictionRuleValidationStates.Validated),
+                Rule(
+                    JurisdictionRuleTypes.GamingTaxDistribution,
+                    new GamingTaxDistributionPayload(
+                        "commercial-casino", GamingTaxComponents.Base, ["18003"], false, 1m, 0m, 0m, 0m),
+                    JurisdictionRuleValidationStates.Validated),
+                Rule(
+                    JurisdictionRuleTypes.GamingTaxDistribution,
+                    new GamingTaxDistributionPayload(
+                        "commercial-casino", GamingTaxComponents.Supplemental, ["18003"], true, 0m, 0.45m, 0.45m, 0.10m),
+                    JurisdictionRuleValidationStates.Validated)),
+            new FakeFiscalLocation("18003", "Fort Wayne", "1825000"));
+
+        var result = await calculator.CalculateAsync(new GamingFiscalAllocationRequest(
+            "US-IN",
+            "commercial-casino",
+            new DateOnly(2026, 8, 13),
+            80_000_000m,
+            15_250_000m,
+            41.0793,
+            -85.1394));
+
+        Assert.Equal(2_800_000m, result.SupplementalGamingTax);
+        Assert.Equal(18_050_000m, result.GrossGamingTax);
+        Assert.Equal(1_260_000m, result.HostMunicipalityShare);
+        Assert.Equal(1_260_000m, result.HostCountyShare);
+        Assert.Equal(280_000m, result.HostRegionalShare);
+        Assert.Equal(15_250_000m, result.HostStateShare);
+        Assert.Equal("1825000", result.Location.MunicipalityGeoid);
+    }
+
+    [Fact]
+    public async Task GamingFiscalAllocationCalculator_RejectsUnincorporatedSiteWhenStatuteRequiresCity()
+    {
+        var calculator = NortheastIndianaFiscalCalculator(new FakeFiscalLocation("18033", null, null));
+
+        var error = await Assert.ThrowsAsync<UnsupportedJurisdictionException>(() =>
+            calculator.CalculateAsync(new GamingFiscalAllocationRequest(
+                "US-IN", "commercial-casino", new DateOnly(2026, 8, 13), 10_000_000m, 1_000_000m, 41.4, -85.0)));
+
+        Assert.Contains("No county fallback is authorized", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GamingFiscalAllocationCalculator_RejectsCountyWithoutValidatedRule()
+    {
+        var calculator = NortheastIndianaFiscalCalculator(new FakeFiscalLocation("18089", "Hammond", "1831000"));
+
+        await Assert.ThrowsAsync<UnsupportedJurisdictionException>(() =>
+            calculator.CalculateAsync(new GamingFiscalAllocationRequest(
+                "US-IN", "commercial-casino", new DateOnly(2026, 8, 13), 10_000_000m, 1_000_000m, 41.6, -87.5)));
+    }
+
+    private static GamingFiscalAllocationCalculator NortheastIndianaFiscalCalculator(ICandidateFiscalLocationResolver location) =>
+        new(
+            new FakeProfiles(
+                Rule(
+                    JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+                    new SupplementalGamingTaxPayload("commercial-casino", 0.035m, ["18003", "18033", "18151"]),
+                    JurisdictionRuleValidationStates.Validated),
+                Rule(
+                    JurisdictionRuleTypes.GamingTaxDistribution,
+                    new GamingTaxDistributionPayload(
+                        "commercial-casino", GamingTaxComponents.Base, ["18003", "18033", "18151"], false, 1m, 0m, 0m, 0m),
+                    JurisdictionRuleValidationStates.Validated),
+                Rule(
+                    JurisdictionRuleTypes.GamingTaxDistribution,
+                    new GamingTaxDistributionPayload(
+                        "commercial-casino", GamingTaxComponents.Supplemental, ["18003", "18033", "18151"], true, 0m, 0.45m, 0.45m, 0.10m),
+                    JurisdictionRuleValidationStates.Validated)),
+            location);
+
     private static GamingTaxSchedulePayload IndianaRiverboatSchedule() => new(
         "commercial-casino",
         "Indiana taxable AGR",
@@ -268,5 +348,22 @@ public sealed class JurisdictionServicesTests
             DateOnly effectiveOn,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<JurisdictionRule>>(rules);
+    }
+
+    private sealed class FakeFiscalLocation(
+        string countyFips,
+        string? municipalityName,
+        string? municipalityGeoid) : ICandidateFiscalLocationResolver
+    {
+        public Task<CandidateFiscalLocation> ResolveAsync(
+            double latitude,
+            double longitude,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new CandidateFiscalLocation(
+                countyFips[..2],
+                countyFips,
+                "Test County",
+                municipalityGeoid,
+                municipalityName));
     }
 }

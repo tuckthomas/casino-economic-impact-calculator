@@ -176,6 +176,17 @@ public sealed class ModelFoundationSchemaTests
         Assert.Contains("model_run_social_costs", impactSql, StringComparison.Ordinal);
         Assert.Contains("model_run_net_impacts", impactSql, StringComparison.Ordinal);
 
+        var fiscalComponentMigration = Assert.Single(
+            resourceNames,
+            name => name.EndsWith("021_component_gaming_fiscal_allocation.sql", StringComparison.Ordinal));
+        using var fiscalComponentStream = typeof(ModelFoundationInitializer).Assembly.GetManifestResourceStream(fiscalComponentMigration)!;
+        using var fiscalComponentReader = new StreamReader(fiscalComponentStream);
+        var fiscalComponentSql = fiscalComponentReader.ReadToEnd();
+        Assert.Contains("base_gaming_tax", fiscalComponentSql, StringComparison.Ordinal);
+        Assert.Contains("supplemental_gaming_tax", fiscalComponentSql, StringComparison.Ordinal);
+        Assert.Contains("host_municipality_gaming_tax_share", fiscalComponentSql, StringComparison.Ordinal);
+        Assert.Contains("ck_model_run_fiscal_component_reconciliation", fiscalComponentSql, StringComparison.Ordinal);
+
         var validationMigration = Assert.Single(
             resourceNames,
             name => name.EndsWith("012_validation_and_calibration.sql", StringComparison.Ordinal));

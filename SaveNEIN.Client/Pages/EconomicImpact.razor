@@ -90,6 +90,11 @@
                             <span>Candidate longitude</span>
                             <input type="number" min="-180" max="180" step="0.000001" @bind="_form.CandidateLongitude" />
                         </label>
+                        <label class="model-field">
+                            <span>Fiscal rule effective date</span>
+                            <input type="date" @bind="_form.EffectiveOn" />
+                            <small>Controls effective-dated tax and distribution rules; observed data keep their own vintages.</small>
+                        </label>
                     </div>
 
                     @if (_showProgramEditor)
@@ -1027,7 +1032,7 @@
                 CompetitorIds = [],
                 PopulationObservationYear = FindSnapshot(_form.AgePopulationSnapshotId!.Value)?.PeriodEnd.Year ?? observedSnapshot.PeriodEnd.Year,
                 IncomeTaxYear = FindSnapshot(_form.IncomeSnapshotId!.Value)?.PeriodEnd.Year ?? observedSnapshot.PeriodEnd.Year,
-                EffectiveOn = observedSnapshot.PeriodEnd,
+                EffectiveOn = _form.EffectiveOn,
                 FacilityRegime = _form.FacilityRegime,
                 DemandSpecification = _form.DemandSpecification,
                 AttractionSpecification = _form.AttractionSpecification,
@@ -1344,6 +1349,7 @@
             DevelopmentProgramId = _form.DevelopmentProgramId,
             CandidateLatitude = _form.CandidateLatitude,
             CandidateLongitude = _form.CandidateLongitude,
+            EffectiveOn = _form.EffectiveOn,
             OriginGeographySnapshotId = _form.OriginGeographySnapshotId,
             AgePopulationSnapshotId = _form.AgePopulationSnapshotId,
             IncomeSnapshotId = _form.IncomeSnapshotId,
@@ -1387,6 +1393,7 @@
             _form.DevelopmentProgramId = document.DevelopmentProgramId;
             _form.CandidateLatitude = document.CandidateLatitude;
             _form.CandidateLongitude = document.CandidateLongitude;
+            _form.EffectiveOn = document.EffectiveOn;
             _form.OriginGeographySnapshotId = document.OriginGeographySnapshotId;
             _form.AgePopulationSnapshotId = document.AgePopulationSnapshotId;
             _form.IncomeSnapshotId = document.IncomeSnapshotId;
@@ -1450,6 +1457,10 @@
         if (document.CandidateLatitude is not (>= -90 and <= 90) || document.CandidateLongitude is not (>= -180 and <= 180))
         {
             throw new InvalidDataException("Imported candidate coordinates are missing or outside valid latitude/longitude bounds.");
+        }
+        if (document.EffectiveOn.Year is < 1900 or > 2200)
+        {
+            throw new InvalidDataException("The fiscal rule effective date must be between 1900 and 2200.");
         }
         if (document.UserOverrides is null)
         {
@@ -1856,6 +1867,7 @@
         public Guid? DevelopmentProgramId { get; set; }
         public double? CandidateLatitude { get; set; }
         public double? CandidateLongitude { get; set; }
+        public DateOnly EffectiveOn { get; set; } = DateOnly.FromDateTime(DateTime.Today);
         public Guid? OriginGeographySnapshotId { get; set; }
         public Guid? AgePopulationSnapshotId { get; set; }
         public Guid? IncomeSnapshotId { get; set; }
@@ -1974,7 +1986,7 @@
 
     private sealed class ScenarioDefinitionDocument
     {
-        public const string CurrentSchemaVersion = "savenein.gravity-scenario.v1";
+        public const string CurrentSchemaVersion = "savenein.gravity-scenario.v2";
 
         public string SchemaVersion { get; set; } = CurrentSchemaVersion;
         public string ModelVersion { get; set; } = string.Empty;
@@ -1984,6 +1996,7 @@
         public Guid? DevelopmentProgramId { get; set; }
         public double? CandidateLatitude { get; set; }
         public double? CandidateLongitude { get; set; }
+        public DateOnly EffectiveOn { get; set; } = DateOnly.FromDateTime(DateTime.Today);
         public Guid? OriginGeographySnapshotId { get; set; }
         public Guid? AgePopulationSnapshotId { get; set; }
         public Guid? IncomeSnapshotId { get; set; }

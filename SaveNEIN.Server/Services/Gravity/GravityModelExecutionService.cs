@@ -126,7 +126,7 @@ public sealed class GravityModelExecutionService(
     ICapacityDiagnosticService capacityDiagnosticService,
     IRampScheduleService rampScheduleService,
     IGamingTaxCalculator gamingTaxCalculator,
-    ILocalRevenueShareCalculator localRevenueShareCalculator,
+    IGamingFiscalAllocationCalculator gamingFiscalAllocationCalculator,
     IGeneralFiscalRuleResolver generalFiscalRuleResolver,
     ICannibalizationAccountingService cannibalizationAccountingService,
     ILocalEconomicInventoryWeightService localEconomicInventoryWeightService,
@@ -1307,11 +1307,15 @@ public sealed class GravityModelExecutionService(
             0,
             ToMoney(accounting.StabilizedGgr),
             PriorFiscalYearTaxableGamingRevenue: 0), cancellationToken);
-        var localRevenueShare = await localRevenueShareCalculator.CalculateAsync(
+        var gamingFiscalAllocation = await gamingFiscalAllocationCalculator.CalculateAsync(
+            new GamingFiscalAllocationRequest(
             request.JurisdictionCode,
             request.FacilityRegime,
             request.EffectiveOn,
+            ToMoney(accounting.StabilizedGgr),
             gamingTax.GamingTax,
+            request.CandidateLatitude,
+            request.CandidateLongitude),
             cancellationToken);
         var incumbentTaxLosses = await CalculateIncumbentGamingTaxLossesAsync(
             request,
@@ -1324,8 +1328,12 @@ public sealed class GravityModelExecutionService(
                                       Convert.ToDouble(generalFiscalRule?.NonGamingTaxableRevenueShareOfGgr ?? 0);
         var directAndIndirectLaborIncome = employment.DirectLaborIncome + employment.IndirectLaborIncome;
         var fiscal = fiscalImpactService.Calculate(new FiscalImpactInput(
-            Convert.ToDouble(gamingTax.GamingTax),
-            Convert.ToDouble(localRevenueShare),
+            Convert.ToDouble(gamingFiscalAllocation.BaseGamingTax),
+            Convert.ToDouble(gamingFiscalAllocation.SupplementalGamingTax),
+            Convert.ToDouble(gamingFiscalAllocation.HostMunicipalityShare),
+            Convert.ToDouble(gamingFiscalAllocation.HostCountyShare),
+            Convert.ToDouble(gamingFiscalAllocation.HostRegionalShare),
+            Convert.ToDouble(gamingFiscalAllocation.HostStateShare),
             nonGamingTaxableRevenue * salesTaxRate,
             directAndIndirectLaborIncome * Convert.ToDouble(generalFiscalRule?.PayrollIncomeTaxRate ?? 0),
             nonGamingTaxableRevenue * RequireParameter(parameters, "fiscal.non_gaming_business_margin") * businessIncomeTaxRate,
@@ -1428,7 +1436,13 @@ public sealed class GravityModelExecutionService(
             ModelRunId = modelRunId,
             ScopeKind = geography.ScopeKind,
             ScopeCode = geography.ScopeCode,
+            BaseGamingTax = ToMoney(fiscal.BaseGamingTax),
+            SupplementalGamingTax = ToMoney(fiscal.SupplementalGamingTax),
             GrossGamingTax = ToMoney(fiscal.GrossGamingTax),
+            HostMunicipalityGamingTaxShare = ToMoney(fiscal.HostMunicipalityGamingTaxShare),
+            HostCountyGamingTaxShare = ToMoney(fiscal.HostCountyGamingTaxShare),
+            HostRegionalGamingTaxShare = ToMoney(fiscal.HostRegionalGamingTaxShare),
+            HostStateGamingTaxShare = ToMoney(fiscal.HostStateGamingTaxShare),
             HostLocalGrossPublicRevenue = ToMoney(fiscal.HostLocalGrossPublicRevenue),
             HostStateGrossPublicRevenue = ToMoney(fiscal.HostStateGrossPublicRevenue),
             DisplacedLocalFiscalLoss = ToMoney(fiscal.DisplacedLocalFiscalLoss),
@@ -1441,6 +1455,12 @@ public sealed class GravityModelExecutionService(
             {
                 gamingTax.RevenueDefinition,
                 gamingTax.SourceUrl,
+                gamingFiscalAllocation.SourceUrls,
+                gamingFiscalAllocation.Location.StateFips,
+                gamingFiscalAllocation.Location.CountyFips,
+                gamingFiscalAllocation.Location.CountyName,
+                gamingFiscalAllocation.Location.MunicipalityGeoid,
+                gamingFiscalAllocation.Location.MunicipalityName,
                 generalFiscalRuleSource = generalFiscalRule?.SourceUrl,
                 effectiveOn = request.EffectiveOn
             })

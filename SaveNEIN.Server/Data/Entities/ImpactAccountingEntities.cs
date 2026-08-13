@@ -80,7 +80,13 @@ public sealed class ModelRunFiscalImpact
     public Guid ModelRunId { get; set; }
     [Required, MaxLength(40)] public string ScopeKind { get; set; } = string.Empty;
     [Required, MaxLength(160)] public string ScopeCode { get; set; } = string.Empty;
+    public decimal BaseGamingTax { get; set; }
+    public decimal SupplementalGamingTax { get; set; }
     public decimal GrossGamingTax { get; set; }
+    public decimal HostMunicipalityGamingTaxShare { get; set; }
+    public decimal HostCountyGamingTaxShare { get; set; }
+    public decimal HostRegionalGamingTaxShare { get; set; }
+    public decimal HostStateGamingTaxShare { get; set; }
     public decimal HostLocalGrossPublicRevenue { get; set; }
     public decimal HostStateGrossPublicRevenue { get; set; }
     public decimal DisplacedLocalFiscalLoss { get; set; }

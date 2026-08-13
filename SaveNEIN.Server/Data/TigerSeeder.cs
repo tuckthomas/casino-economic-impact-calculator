@@ -1,9 +1,10 @@
 using System.Threading.Tasks;
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Npgsql;
-using SaveNEIN.Server.Configuration;
+using SaveNEIN.Server.Data.Entities;
 using SaveNEIN.Server.Services;
 
 namespace SaveNEIN.Server.Data
@@ -13,7 +14,7 @@ namespace SaveNEIN.Server.Data
         private readonly TigerIngestionService _ingestionService;
         private readonly ILogger<TigerSeeder> _logger;
         private readonly IConfiguration _config;
-        private readonly TaxAllocationOptions _taxAllocationOptions;
+        private readonly AppDbContext _db;
         private static readonly string[] BlockGroupStateFips = new[]
         {
             "18", "39", "26", // Launch region first: Indiana, Ohio, Michigan.
@@ -30,63 +31,57 @@ namespace SaveNEIN.Server.Data
             TigerIngestionService ingestionService,
             ILogger<TigerSeeder> logger,
             IConfiguration config,
-            IOptions<TaxAllocationOptions> taxAllocationOptions)
+            AppDbContext db)
         {
             _ingestionService = ingestionService;
             _logger = logger;
             _config = config;
-            _taxAllocationOptions = taxAllocationOptions.Value;
+            _db = db;
         }
 
         /// <summary>
-        /// Ensures the TIGER PLACE data required by active municipal tax-allocation scenarios
-        /// exists before the application begins serving requests. Municipality containment is
-        /// part of the fiscal model, so this dataset is a correctness dependency rather than
-        /// optional background map data.
+        /// Ensures PLACE geometry required by validated, municipality-dependent fiscal rules is
+        /// available before requests are served. Required states are derived from jurisdiction
+        /// data rather than a parallel tax-allocation configuration.
         /// </summary>
-        public async Task EnsureRequiredMunicipalityPlaceDataAsync()
+        public async Task EnsureRequiredFiscalPlaceDataAsync()
         {
-            var requiredStateFips = _taxAllocationOptions
-                .GetMunicipalEligibleCountyFips()
+            var ruleJson = await _db.JurisdictionRules.AsNoTracking()
+                .Where(rule => rule.RuleType == JurisdictionRuleTypes.GamingTaxDistribution &&
+                               rule.ValidationState == JurisdictionRuleValidationStates.Validated)
+                .Select(rule => rule.RuleValueJson)
+                .ToArrayAsync();
+            var requiredStateFips = ruleJson
+                .Select(json => JsonSerializer.Deserialize<GamingTaxDistributionPayload>(json, JurisdictionJson.Options))
+                .Where(payload => payload?.MunicipalityRequired == true)
+                .SelectMany(payload => payload!.EligibleCountyFips)
+                .Where(countyFips => countyFips.Length == 5 && countyFips.All(char.IsAsciiDigit))
                 .Select(countyFips => countyFips[..2])
                 .Distinct(StringComparer.Ordinal)
-                .OrderBy(stateFips => stateFips, StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal)
                 .ToArray();
-
             if (requiredStateFips.Length == 0)
             {
-                _logger.LogInformation("TigerSeeder: No municipality PLACE readiness states are configured.");
                 return;
             }
 
-            var connString = _config.GetConnectionString("DefaultConnection");
-            if (string.IsNullOrWhiteSpace(connString))
-            {
-                throw new InvalidOperationException("DefaultConnection is required to verify municipality PLACE data readiness.");
-            }
-
-            await using var conn = new NpgsqlConnection(connString);
-            await conn.OpenAsync();
-
+            var connectionString = _config.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("DefaultConnection is required for fiscal PLACE readiness.");
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
             foreach (var stateFips in requiredStateFips)
             {
-                if (!await HasUsablePlaceDataForStateAsync(conn, stateFips))
+                if (!await HasUsablePlaceDataForStateAsync(connection, stateFips))
                 {
-                    _logger.LogInformation(
-                        "TigerSeeder: Required municipality PLACE data for state {StateFips} is not ready. Ingesting before application startup...",
-                        stateFips);
                     await _ingestionService.IngestPlacesForState(stateFips);
                 }
-
-                if (!await HasUsablePlaceDataForStateAsync(conn, stateFips))
+                if (!await HasUsablePlaceDataForStateAsync(connection, stateFips))
                 {
                     throw new InvalidOperationException(
-                        $"TIGER PLACE data for required state {stateFips} is still unavailable after ingestion. " +
-                        "The application cannot safely evaluate municipal tax-allocation containment.");
+                        $"TIGER PLACE data required by validated fiscal rules for state {stateFips} is unavailable.");
                 }
-
                 _logger.LogInformation(
-                    "TigerSeeder: Required municipality PLACE data for state {StateFips} is ready.",
+                    "TigerSeeder: Fiscal PLACE readiness verified for state {StateFips}.",
                     stateFips);
             }
         }
@@ -238,7 +233,6 @@ namespace SaveNEIN.Server.Data
             {
                 return false;
             }
-
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 SELECT EXISTS (

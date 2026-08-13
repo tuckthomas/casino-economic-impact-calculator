@@ -764,8 +764,25 @@ await ModelFoundationInitializer.SeedAsync(db);
 
 if (validateIndianaFiscal)
 {
+    var fiscalComponentColumnCount = await db.Database
+        .SqlQueryRaw<int>("""
+            SELECT count(*)::int AS "Value"
+            FROM information_schema.columns
+            WHERE table_name = 'model_run_fiscal_impacts'
+              AND column_name IN (
+                  'base_gaming_tax',
+                  'supplemental_gaming_tax',
+                  'host_municipality_gaming_tax_share',
+                  'host_county_gaming_tax_share',
+                  'host_regional_gaming_tax_share',
+                  'host_state_gaming_tax_share')
+            """)
+        .SingleAsync();
     var profiles = new JurisdictionProfileService(db);
     var taxCalculator = new GamingTaxCalculator(profiles);
+    var allocationCalculator = new GamingFiscalAllocationCalculator(
+        profiles,
+        new CandidateFiscalLocationResolver(db));
     var ageResolver = new GamingAgeResolver(profiles);
     var effectiveOn = new DateOnly(2026, 8, 13);
     var lowPriorYearCasino = await taxCalculator.CalculateAsync(new GamingTaxRequest(
@@ -782,6 +799,14 @@ if (validateIndianaFiscal)
         0,
         80_000_000m,
         PriorFiscalYearTaxableGamingRevenue: 75_000_000m));
+    var northeastAllocation = await allocationCalculator.CalculateAsync(new GamingFiscalAllocationRequest(
+        "US-IN",
+        "commercial-casino",
+        effectiveOn,
+        80_000_000m,
+        ordinaryCasino.GamingTax,
+        41.0793,
+        -85.1394));
     var racino = await taxCalculator.CalculateAsync(new GamingTaxRequest(
         "US-IN",
         "commercial-racino",
@@ -790,19 +815,35 @@ if (validateIndianaFiscal)
         150_000_000m));
     var casinoAge = await ageResolver.ResolveMinimumAgeAsync("US-IN", "commercial-casino", effectiveOn);
     var racinoAge = await ageResolver.ResolveMinimumAgeAsync("US-IN", "commercial-racino", effectiveOn);
+    var fiscalRuleTypes = new[]
+    {
+        JurisdictionRuleTypes.GamingTaxSchedule,
+        JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+        JurisdictionRuleTypes.GamingTaxDistribution
+    };
     var fiscalRules = await db.JurisdictionRules
-        .Where(rule => rule.RuleType == JurisdictionRuleTypes.GamingTaxSchedule)
+        .Where(rule => fiscalRuleTypes.Contains(rule.RuleType))
         .OrderBy(rule => rule.SourceUrl)
         .Select(rule => new { rule.ValidationState, rule.SourceUrl, rule.RuleValueJson })
         .ToArrayAsync();
     var legacyRuleCount = fiscalRules.Count(rule =>
         rule.ValidationState != JurisdictionRuleValidationStates.Validated ||
-        rule.SourceUrl == "https://www.in.gov/igc/files/FY2025-Annual.pdf");
+        rule.SourceUrl == "https://www.in.gov/igc/files/FY2025-Annual.pdf" ||
+        rule.RuleValueJson.Contains("shareOfGamingTax"));
     if (lowPriorYearCasino.GamingTax != 12_125_000m ||
         ordinaryCasino.GamingTax != 15_250_000m ||
         racino.GamingTax != 40_000_000m ||
+        northeastAllocation.SupplementalGamingTax != 2_800_000m ||
+        northeastAllocation.GrossGamingTax != 18_050_000m ||
+        northeastAllocation.HostMunicipalityShare != 1_260_000m ||
+        northeastAllocation.HostCountyShare != 1_260_000m ||
+        northeastAllocation.HostRegionalShare != 280_000m ||
+        northeastAllocation.HostStateShare != 15_250_000m ||
+        northeastAllocation.Location.CountyFips != "18003" ||
+        northeastAllocation.Location.MunicipalityName != "Fort Wayne" ||
+        fiscalComponentColumnCount != 6 ||
         casinoAge != 21 || racinoAge != 21 ||
-        fiscalRules.Length != 2 || legacyRuleCount != 0)
+        fiscalRules.Length != 5 || legacyRuleCount != 0)
     {
         throw new InvalidOperationException("The seeded Indiana fiscal rules did not reproduce the official effective schedules.");
     }
@@ -812,6 +853,14 @@ if (validateIndianaFiscal)
         EffectiveOn = effectiveOn,
         CasinoLowPriorYearTax = lowPriorYearCasino.GamingTax,
         CasinoOrdinaryTax = ordinaryCasino.GamingTax,
+        NortheastSupplementalTax = northeastAllocation.SupplementalGamingTax,
+        NortheastGrossGamingTax = northeastAllocation.GrossGamingTax,
+        northeastAllocation.HostMunicipalityShare,
+        northeastAllocation.HostCountyShare,
+        northeastAllocation.HostRegionalShare,
+        northeastAllocation.HostStateShare,
+        FiscalLocation = northeastAllocation.Location,
+        FiscalComponentColumnCount = fiscalComponentColumnCount,
         RacinoTax = racino.GamingTax,
         CasinoMinimumAge = casinoAge,
         RacinoMinimumAge = racinoAge,
@@ -1289,47 +1338,43 @@ if (validateProviderIngestion)
         }
 
         var validationIndiana = await db.Jurisdictions.SingleAsync(jurisdiction => jurisdiction.Code == "US-IN");
-        if (!await db.JurisdictionRules.AnyAsync(rule =>
-                rule.JurisdictionId == validationIndiana.Id &&
-                rule.SourceUrl == "https://example.invalid/disposable-calibration-gaming-tax"))
+        var obsoleteCalibrationFiscalFixtures = await db.JurisdictionRules
+            .Where(rule => rule.JurisdictionId == validationIndiana.Id &&
+                           rule.SourceUrl != null &&
+                           rule.SourceUrl.StartsWith("https://example.invalid/disposable-calibration-"))
+            .ToArrayAsync();
+        if (obsoleteCalibrationFiscalFixtures.Length > 0)
         {
-            db.JurisdictionRules.AddRange(
+            db.JurisdictionRules.RemoveRange(obsoleteCalibrationFiscalFixtures);
+            await db.SaveChangesAsync();
+        }
+        db.JurisdictionRules.AddRange(
             new JurisdictionRule
             {
                 JurisdictionId = validationIndiana.Id,
-                RuleType = JurisdictionRuleTypes.GamingTaxSchedule,
-                RuleValueJson = JsonSerializer.Serialize(new GamingTaxSchedulePayload(
-                    "commercial-casino",
-                    "Disposable calibration taxable GGR",
-                    [new GamingTaxBracketPayload(null, 0.10m)])),
+                RuleType = JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+                RuleValueJson = JsonSerializer.Serialize(new SupplementalGamingTaxPayload("*", 0m, [])),
                 ValidationState = JurisdictionRuleValidationStates.Validated,
                 EffectiveFrom = new DateOnly(2025, 1, 1),
-                SourceUrl = "https://example.invalid/disposable-calibration-gaming-tax",
-                ProvenanceNotes = "Disposable database-only validation fixture; not an Indiana fiscal calibration."
+                SourceUrl = "https://example.invalid/disposable-calibration-supplemental-tax",
+                ProvenanceNotes = "Disposable impact-accounting fixture only; no supplemental tax enters revenue calibration."
             },
-            new JurisdictionRule
-            {
-                JurisdictionId = validationIndiana.Id,
-                RuleType = JurisdictionRuleTypes.LocalRevenueShare,
-                RuleValueJson = JsonSerializer.Serialize(new LocalRevenueSharePayload("commercial-casino", 0.20m)),
-                ValidationState = JurisdictionRuleValidationStates.Validated,
-                EffectiveFrom = new DateOnly(2025, 1, 1),
-                SourceUrl = "https://example.invalid/disposable-calibration-local-share",
-                ProvenanceNotes = "Disposable database-only validation fixture; not an Indiana fiscal calibration."
-            },
+            DisposableDistribution(validationIndiana.Id, "*", GamingTaxComponents.Base, 0.80m, 0.20m,
+                "https://example.invalid/disposable-calibration-base-distribution"),
+            DisposableDistribution(validationIndiana.Id, "*", GamingTaxComponents.Supplemental, 1m, 0m,
+                "https://example.invalid/disposable-calibration-supplemental-distribution"),
             new JurisdictionRule
             {
                 JurisdictionId = validationIndiana.Id,
                 RuleType = JurisdictionRuleTypes.GeneralFiscalRates,
                 RuleValueJson = JsonSerializer.Serialize(new GeneralFiscalRulePayload(
-                    "commercial-casino", 0.07m, 0.05m, 0.03m, 25_000m, 0.10m)),
+                    "*", 0.07m, 0.05m, 0.03m, 25_000m, 0.10m)),
                 ValidationState = JurisdictionRuleValidationStates.Validated,
                 EffectiveFrom = new DateOnly(2025, 1, 1),
                 SourceUrl = "https://example.invalid/disposable-calibration-general-fiscal",
-                ProvenanceNotes = "Disposable database-only validation fixture; not an Indiana fiscal calibration."
+                ProvenanceNotes = "Disposable impact-accounting fixture only; not an Indiana general-fiscal calibration."
             });
-            await db.SaveChangesAsync();
-        }
+        await db.SaveChangesAsync();
 
         var originIds = await db.OriginZones.AsNoTracking()
             .Where(origin => origin.DatasetSnapshotId == originSnapshotId)
@@ -1384,7 +1429,7 @@ if (validateProviderIngestion)
             new CapacityDiagnosticService(),
             new RampScheduleService(),
             new GamingTaxCalculator(profiles),
-            new LocalRevenueShareCalculator(profiles),
+            new GamingFiscalAllocationCalculator(profiles, new CandidateFiscalLocationResolver(db)),
             new GeneralFiscalRuleResolver(profiles),
             new CannibalizationAccountingService(),
             new LocalEconomicInventoryWeightService(),
@@ -1533,13 +1578,17 @@ db.JurisdictionRules.AddRange(
     new JurisdictionRule
     {
         JurisdictionId = indiana.Id,
-        RuleType = JurisdictionRuleTypes.LocalRevenueShare,
-        RuleValueJson = JsonSerializer.Serialize(new LocalRevenueSharePayload("commercial-casino", 0.20m)),
+        RuleType = JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+        RuleValueJson = JsonSerializer.Serialize(new SupplementalGamingTaxPayload("commercial-casino", 0m, [])),
         ValidationState = JurisdictionRuleValidationStates.Validated,
         EffectiveFrom = new DateOnly(2025, 1, 1),
-        SourceUrl = "https://example.invalid/integration-local-share",
+        SourceUrl = "https://example.invalid/integration-supplemental-tax",
         ProvenanceNotes = "Disposable integration fixture only."
     },
+    DisposableDistribution(indiana.Id, "commercial-casino", GamingTaxComponents.Base, 0.80m, 0.20m,
+        "https://example.invalid/integration-base-distribution"),
+    DisposableDistribution(indiana.Id, "commercial-casino", GamingTaxComponents.Supplemental, 1m, 0m,
+        "https://example.invalid/integration-supplemental-distribution"),
     new JurisdictionRule
     {
         JurisdictionId = indiana.Id,
@@ -1591,13 +1640,17 @@ db.JurisdictionRules.AddRange(
     new JurisdictionRule
     {
         JurisdictionId = ohio.Id,
-        RuleType = JurisdictionRuleTypes.LocalRevenueShare,
-        RuleValueJson = JsonSerializer.Serialize(new LocalRevenueSharePayload("commercial-casino", 0.15m)),
+        RuleType = JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+        RuleValueJson = JsonSerializer.Serialize(new SupplementalGamingTaxPayload("commercial-casino", 0m, [])),
         ValidationState = JurisdictionRuleValidationStates.Validated,
         EffectiveFrom = new DateOnly(2025, 1, 1),
-        SourceUrl = "https://example.invalid/ohio-synthetic-local-share",
+        SourceUrl = "https://example.invalid/ohio-synthetic-supplemental-tax",
         ProvenanceNotes = "Disposable non-Indiana portability fixture only."
     },
+    DisposableDistribution(ohio.Id, "commercial-casino", GamingTaxComponents.Base, 0.85m, 0.15m,
+        "https://example.invalid/ohio-synthetic-base-distribution"),
+    DisposableDistribution(ohio.Id, "commercial-casino", GamingTaxComponents.Supplemental, 1m, 0m,
+        "https://example.invalid/ohio-synthetic-supplemental-distribution"),
     new JurisdictionRule
     {
         JurisdictionId = ohio.Id,
@@ -1854,7 +1907,9 @@ var execution = new GravityModelExecutionService(
     new CapacityDiagnosticService(),
     new RampScheduleService(),
     new GamingTaxCalculator(new JurisdictionProfileService(db)),
-    new LocalRevenueShareCalculator(new JurisdictionProfileService(db)),
+    new GamingFiscalAllocationCalculator(
+        new JurisdictionProfileService(db),
+        new CandidateFiscalLocationResolver(db)),
     new GeneralFiscalRuleResolver(new JurisdictionProfileService(db)),
     new CannibalizationAccountingService(),
     new LocalEconomicInventoryWeightService(),
@@ -2267,6 +2322,31 @@ Console.WriteLine(JsonSerializer.Serialize(new
         route.RouteFound
     })
 }));
+
+static JurisdictionRule DisposableDistribution(
+    int jurisdictionId,
+    string facilityRegime,
+    string component,
+    decimal stateShare,
+    decimal countyShare,
+    string sourceUrl) => new()
+{
+    JurisdictionId = jurisdictionId,
+    RuleType = JurisdictionRuleTypes.GamingTaxDistribution,
+    RuleValueJson = JsonSerializer.Serialize(new GamingTaxDistributionPayload(
+        facilityRegime,
+        component,
+        [],
+        MunicipalityRequired: false,
+        StateShare: stateShare,
+        CountyShare: countyShare,
+        MunicipalityShare: 0m,
+        RegionalShare: 0m)),
+    ValidationState = JurisdictionRuleValidationStates.Validated,
+    EffectiveFrom = new DateOnly(2025, 1, 1),
+    SourceUrl = sourceUrl,
+    ProvenanceNotes = "Disposable integration impact-accounting fixture only."
+};
 
 file sealed class FrozenOriginIncomeProvider(
     ProviderDataset<OriginIncomeImportRow> dataset) : IOriginIncomeProvider
