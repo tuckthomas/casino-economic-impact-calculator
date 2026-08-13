@@ -315,7 +315,23 @@ public sealed record GamingFiscalAllocationRequest(
     decimal CurrentTaxableGamingRevenue,
     decimal BaseGamingTax,
     double CandidateLatitude,
-    double CandidateLongitude);
+    double CandidateLongitude,
+    string? StableVenueId = null);
+
+public sealed record SupplementalGamingTaxRequest(
+    string JurisdictionCode,
+    string FacilityRegime,
+    DateOnly EffectiveOn,
+    decimal CurrentTaxableGamingRevenue,
+    double FacilityLatitude,
+    double FacilityLongitude,
+    string? StableVenueId = null);
+
+public sealed record SupplementalGamingTaxResult(
+    decimal Rate,
+    decimal SupplementalGamingTax,
+    CandidateFiscalLocation Location,
+    string SourceUrl);
 
 public sealed record GamingFiscalAllocationResult(
     decimal BaseGamingTax,
@@ -332,6 +348,10 @@ public interface IGamingFiscalAllocationCalculator
 {
     Task<GamingFiscalAllocationResult> CalculateAsync(
         GamingFiscalAllocationRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<SupplementalGamingTaxResult> CalculateSupplementalTaxAsync(
+        SupplementalGamingTaxRequest request,
         CancellationToken cancellationToken = default);
 }
 
@@ -357,27 +377,13 @@ public sealed class GamingFiscalAllocationCalculator(
             request.EffectiveOn,
             cancellationToken);
 
-        var supplementalRules = rules
-            .Where(rule => rule.RuleType == JurisdictionRuleTypes.SupplementalGamingTaxSchedule &&
-                           rule.ValidationState == JurisdictionRuleValidationStates.Validated)
-            .Select(rule => (Rule: rule, Payload: Deserialize<SupplementalGamingTaxPayload>(rule)))
-            .Where(item => RegimeMatches(item.Payload.FacilityRegime, request.FacilityRegime) &&
-                           CountyMatches(item.Payload.EligibleCountyFips, location.CountyFips))
-            .ToArray();
-        var supplemental = SelectSingleRule(
-            supplementalRules,
+        var supplemental = CalculateSupplementalTax(
             request.JurisdictionCode,
             request.FacilityRegime,
-            "supplemental gaming-tax schedule");
-        if (supplemental.Payload.Rate is < 0 or > 1)
-        {
-            throw new InvalidOperationException("Supplemental gaming-tax rate must be between zero and one.");
-        }
-
-        var supplementalTax = decimal.Round(
-            request.CurrentTaxableGamingRevenue * supplemental.Payload.Rate,
-            2,
-            MidpointRounding.AwayFromZero);
+            request.CurrentTaxableGamingRevenue,
+            request.StableVenueId,
+            location,
+            rules);
         var distributionRules = rules
             .Where(rule => rule.RuleType == JurisdictionRuleTypes.GamingTaxDistribution &&
                            rule.ValidationState == JurisdictionRuleValidationStates.Validated)
@@ -397,11 +403,11 @@ public sealed class GamingFiscalAllocationCalculator(
             location);
 
         var baseShares = Allocate(request.BaseGamingTax, baseDistribution.Payload);
-        var supplementalShares = Allocate(supplementalTax, supplementalDistribution.Payload);
+        var supplementalShares = Allocate(supplemental.SupplementalGamingTax, supplementalDistribution.Payload);
         return new GamingFiscalAllocationResult(
             request.BaseGamingTax,
-            supplementalTax,
-            request.BaseGamingTax + supplementalTax,
+            supplemental.SupplementalGamingTax,
+            request.BaseGamingTax + supplemental.SupplementalGamingTax,
             baseShares.Municipality + supplementalShares.Municipality,
             baseShares.County + supplementalShares.County,
             baseShares.Regional + supplementalShares.Regional,
@@ -409,10 +415,111 @@ public sealed class GamingFiscalAllocationCalculator(
             location,
             new[]
             {
-                supplemental.Rule.SourceUrl,
+                supplemental.SourceUrl,
                 baseDistribution.Rule.SourceUrl,
                 supplementalDistribution.Rule.SourceUrl
             }.Where(url => !string.IsNullOrWhiteSpace(url)).Select(url => url!).Distinct(StringComparer.Ordinal).ToArray());
+    }
+
+    public async Task<SupplementalGamingTaxResult> CalculateSupplementalTaxAsync(
+        SupplementalGamingTaxRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.CurrentTaxableGamingRevenue < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(request),
+                "Current taxable gaming revenue cannot be negative.");
+        }
+
+        var location = await locations.ResolveAsync(
+            request.FacilityLatitude,
+            request.FacilityLongitude,
+            cancellationToken);
+        var rules = await profiles.GetEffectiveProfileRulesAsync(
+            request.JurisdictionCode,
+            request.EffectiveOn,
+            cancellationToken);
+        return CalculateSupplementalTax(
+            request.JurisdictionCode,
+            request.FacilityRegime,
+            request.CurrentTaxableGamingRevenue,
+            request.StableVenueId,
+            location,
+            rules);
+    }
+
+    private static SupplementalGamingTaxResult CalculateSupplementalTax(
+        string jurisdictionCode,
+        string facilityRegime,
+        decimal currentTaxableGamingRevenue,
+        string? stableVenueId,
+        CandidateFiscalLocation location,
+        IReadOnlyCollection<JurisdictionRule> rules)
+    {
+        var supplementalRules = rules
+            .Where(rule => rule.RuleType == JurisdictionRuleTypes.SupplementalGamingTaxSchedule &&
+                           rule.ValidationState == JurisdictionRuleValidationStates.Validated)
+            .Select(rule => (Rule: rule, Payload: Deserialize<SupplementalGamingTaxPayload>(rule)))
+            .Where(item => RegimeMatches(item.Payload.FacilityRegime, facilityRegime) &&
+                           CountyMatches(item.Payload.EligibleCountyFips, location.CountyFips) &&
+                           VenueMatches(item.Payload.EligibleStableVenueIds, stableVenueId))
+            .ToArray();
+        var supplemental = SelectSingleRule(
+            supplementalRules,
+            jurisdictionCode,
+            facilityRegime,
+            "supplemental gaming-tax schedule");
+        ValidateSupplementalRateBasis(supplemental.Payload);
+        var supplementalTax = decimal.Round(
+            currentTaxableGamingRevenue * supplemental.Payload.Rate,
+            2,
+            MidpointRounding.AwayFromZero);
+        return new SupplementalGamingTaxResult(
+            supplemental.Payload.Rate,
+            supplementalTax,
+            location,
+            supplemental.Rule.SourceUrl ?? string.Empty);
+    }
+
+    private static void ValidateSupplementalRateBasis(SupplementalGamingTaxPayload payload)
+    {
+        if (payload.Rate is < 0 or > 1)
+        {
+            throw new InvalidOperationException("Supplemental gaming-tax rate must be between zero and one.");
+        }
+        if (payload.RateSourceKind == SupplementalGamingTaxRateSourceKinds.StatutoryQuotient)
+        {
+            if (payload.ReferenceAdmissionsTax is not > 0 || payload.ReferenceAdjustedGrossReceipts is not > 0)
+            {
+                throw new InvalidOperationException(
+                    "A statutory-quotient supplemental rate requires positive reference admissions tax and adjusted gross receipts.");
+            }
+            if (payload.MaximumRate is { } configuredMaximum &&
+                (configuredMaximum <= 0 || configuredMaximum > 1))
+            {
+                throw new InvalidOperationException("A supplemental gaming-tax maximum rate must be between zero and one.");
+            }
+            var quotient = decimal.Round(
+                payload.ReferenceAdmissionsTax.Value / payload.ReferenceAdjustedGrossReceipts.Value,
+                4,
+                MidpointRounding.AwayFromZero);
+            var expectedRate = payload.MaximumRate is { } maximumRate
+                ? decimal.Min(quotient, maximumRate)
+                : quotient;
+            if (payload.Rate != expectedRate)
+            {
+                throw new InvalidOperationException(
+                    $"Supplemental gaming-tax rate {payload.Rate} does not equal its sourced statutory quotient {expectedRate}.");
+            }
+            return;
+        }
+        if (payload.RateSourceKind is not SupplementalGamingTaxRateSourceKinds.FixedStatute and
+            not SupplementalGamingTaxRateSourceKinds.RegulatorConfirmed)
+        {
+            throw new InvalidOperationException(
+                $"Unsupported supplemental gaming-tax rate source kind '{payload.RateSourceKind}'.");
+        }
     }
 
     private static (JurisdictionRule Rule, GamingTaxDistributionPayload Payload) SelectDistribution(
@@ -489,6 +596,10 @@ public sealed class GamingFiscalAllocationCalculator(
 
     private static bool CountyMatches(IReadOnlyCollection<string> configured, string countyFips) =>
         configured.Count == 0 || configured.Contains(countyFips, StringComparer.Ordinal);
+
+    private static bool VenueMatches(IReadOnlyCollection<string>? configured, string? stableVenueId) =>
+        configured is null || configured.Count == 0 ||
+        (!string.IsNullOrWhiteSpace(stableVenueId) && configured.Contains(stableVenueId, StringComparer.Ordinal));
 
     private static decimal Round(decimal value) => decimal.Round(value, 2, MidpointRounding.AwayFromZero);
 
@@ -596,7 +707,18 @@ public sealed record PriorFiscalYearGamingTaxSchedulePayload(
 public sealed record SupplementalGamingTaxPayload(
     string FacilityRegime,
     decimal Rate,
-    IReadOnlyCollection<string> EligibleCountyFips);
+    IReadOnlyCollection<string> EligibleCountyFips,
+    IReadOnlyCollection<string>? EligibleStableVenueIds = null,
+    string RateSourceKind = SupplementalGamingTaxRateSourceKinds.FixedStatute,
+    decimal? ReferenceAdmissionsTax = null,
+    decimal? ReferenceAdjustedGrossReceipts = null,
+    decimal? MaximumRate = null);
+public static class SupplementalGamingTaxRateSourceKinds
+{
+    public const string FixedStatute = "fixed-statute";
+    public const string StatutoryQuotient = "statutory-quotient";
+    public const string RegulatorConfirmed = "regulator-confirmed";
+}
 public sealed record GamingTaxDistributionPayload(
     string FacilityRegime,
     string Component,

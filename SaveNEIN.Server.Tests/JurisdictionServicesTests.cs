@@ -361,6 +361,163 @@ public sealed class JurisdictionServicesTests
     }
 
     [Fact]
+    public async Task GamingFiscalAllocationCalculator_SelectsVenueSpecificStatutoryQuotient()
+    {
+        var calculator = new GamingFiscalAllocationCalculator(
+            new FakeProfiles(
+                Rule(
+                    JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+                    new SupplementalGamingTaxPayload(
+                        "commercial-casino",
+                        0.0316m,
+                        ["18089"],
+                        ["USA-IN-IGC-ameristar-casino"],
+                        SupplementalGamingTaxRateSourceKinds.StatutoryQuotient,
+                        6_451_533m,
+                        204_146_106m,
+                        0.035m),
+                    JurisdictionRuleValidationStates.Validated),
+                Rule(
+                    JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+                    new SupplementalGamingTaxPayload(
+                        "commercial-casino",
+                        0.0259m,
+                        ["18089"],
+                        ["USA-IN-IGC-horseshoe-hammond"],
+                        SupplementalGamingTaxRateSourceKinds.StatutoryQuotient,
+                        10_333_035m,
+                        399_253_291m,
+                        0.035m),
+                    JurisdictionRuleValidationStates.Validated)),
+            new FakeFiscalLocation("18089", "East Chicago", "1821290"));
+
+        var result = await calculator.CalculateSupplementalTaxAsync(new SupplementalGamingTaxRequest(
+            "US-IN",
+            "commercial-casino",
+            new DateOnly(2026, 8, 13),
+            100_000_000m,
+            41.6521503,
+            -87.4356793,
+            "USA-IN-IGC-ameristar-casino"));
+
+        Assert.Equal(0.0316m, result.Rate);
+        Assert.Equal(3_160_000m, result.SupplementalGamingTax);
+    }
+
+    [Fact]
+    public async Task GamingFiscalAllocationCalculator_AppliesStatutoryQuotientCap()
+    {
+        var calculator = new GamingFiscalAllocationCalculator(
+            new FakeProfiles(Rule(
+                JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+                new SupplementalGamingTaxPayload(
+                    "commercial-casino",
+                    0.035m,
+                    ["18091"],
+                    ["USA-IN-IGC-blue-chip-casino"],
+                    SupplementalGamingTaxRateSourceKinds.StatutoryQuotient,
+                    6_759_780m,
+                    152_560_969m,
+                    0.035m),
+                JurisdictionRuleValidationStates.Validated)),
+            new FakeFiscalLocation("18091", "Michigan City", "1848798"));
+
+        var result = await calculator.CalculateSupplementalTaxAsync(new SupplementalGamingTaxRequest(
+            "US-IN",
+            "commercial-casino",
+            new DateOnly(2026, 8, 13),
+            9_747_252m,
+            41.718776974043,
+            -86.891430253456,
+            "USA-IN-IGC-blue-chip-casino"));
+
+        Assert.Equal(0.035m, result.Rate);
+        Assert.Equal(341_153.82m, result.SupplementalGamingTax);
+    }
+
+    [Fact]
+    public async Task GamingFiscalAllocationCalculator_RequiresVenueIdentityForVenueSpecificRate()
+    {
+        var calculator = new GamingFiscalAllocationCalculator(
+            new FakeProfiles(Rule(
+                JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+                new SupplementalGamingTaxPayload(
+                    "commercial-casino",
+                    0.0316m,
+                    ["18089"],
+                    ["USA-IN-IGC-ameristar-casino"],
+                    SupplementalGamingTaxRateSourceKinds.StatutoryQuotient,
+                    6_451_533m,
+                    204_146_106m,
+                    0.035m),
+                JurisdictionRuleValidationStates.Validated)),
+            new FakeFiscalLocation("18089", "East Chicago", "1821290"));
+
+        await Assert.ThrowsAsync<UnsupportedJurisdictionException>(() =>
+            calculator.CalculateSupplementalTaxAsync(new SupplementalGamingTaxRequest(
+                "US-IN", "commercial-casino", new DateOnly(2026, 8, 13), 1_000_000m, 41.65, -87.44)));
+    }
+
+    [Fact]
+    public async Task GamingFiscalAllocationCalculator_RejectsRateThatDoesNotMatchStatutoryQuotient()
+    {
+        var calculator = new GamingFiscalAllocationCalculator(
+            new FakeProfiles(Rule(
+                JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+                new SupplementalGamingTaxPayload(
+                    "commercial-casino",
+                    0.03m,
+                    ["18089"],
+                    ["USA-IN-IGC-ameristar-casino"],
+                    SupplementalGamingTaxRateSourceKinds.StatutoryQuotient,
+                    6_451_533m,
+                    204_146_106m,
+                    0.035m),
+                JurisdictionRuleValidationStates.Validated)),
+            new FakeFiscalLocation("18089", "East Chicago", "1821290"));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            calculator.CalculateSupplementalTaxAsync(new SupplementalGamingTaxRequest(
+                "US-IN",
+                "commercial-casino",
+                new DateOnly(2026, 8, 13),
+                1_000_000m,
+                41.65,
+                -87.44,
+                "USA-IN-IGC-ameristar-casino")));
+
+        Assert.Contains("does not equal its sourced statutory quotient", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GamingFiscalAllocationCalculator_ReturnsExplicitZeroForExpiredRacinoFee()
+    {
+        var calculator = new GamingFiscalAllocationCalculator(
+            new FakeProfiles(Rule(
+                JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+                new SupplementalGamingTaxPayload(
+                    "commercial-racino",
+                    0m,
+                    ["18095", "18145"],
+                    ["USA-IN-IGC-harrahs-hoosier-park", "USA-IN-IGC-horseshoe-indianapolis"],
+                    SupplementalGamingTaxRateSourceKinds.FixedStatute),
+                JurisdictionRuleValidationStates.Validated)),
+            new FakeFiscalLocation("18095", "Anderson", "1801468"));
+
+        var result = await calculator.CalculateSupplementalTaxAsync(new SupplementalGamingTaxRequest(
+            "US-IN",
+            "commercial-racino",
+            new DateOnly(2026, 8, 13),
+            20_000_000m,
+            40.0679,
+            -85.641,
+            "USA-IN-IGC-harrahs-hoosier-park"));
+
+        Assert.Equal(0m, result.Rate);
+        Assert.Equal(0m, result.SupplementalGamingTax);
+    }
+
+    [Fact]
     public async Task GamingFiscalAllocationCalculator_RejectsUnincorporatedSiteWhenStatuteRequiresCity()
     {
         var calculator = NortheastIndianaFiscalCalculator(new FakeFiscalLocation("18033", null, null));

@@ -1723,7 +1723,41 @@ public sealed class GravityModelExecutionService(
                     0,
                     withProjectRevenue,
                     PriorFiscalYearTaxableGamingRevenue: baselineRevenue), cancellationToken);
-                var marginalTaxLoss = before.GamingTax - after.GamingTax;
+                decimal beforeSupplementalTax = 0;
+                decimal afterSupplementalTax = 0;
+                try
+                {
+                    var supplementalBefore = await gamingFiscalAllocationCalculator.CalculateSupplementalTaxAsync(
+                        new SupplementalGamingTaxRequest(
+                            jurisdictionCode,
+                            competitor.FacilityRegime ?? request.FacilityRegime,
+                            request.EffectiveOn,
+                            baselineRevenue,
+                            competitor.Latitude,
+                            competitor.Longitude,
+                            competitor.StableVenueId),
+                        cancellationToken);
+                    var supplementalAfter = await gamingFiscalAllocationCalculator.CalculateSupplementalTaxAsync(
+                        new SupplementalGamingTaxRequest(
+                            jurisdictionCode,
+                            competitor.FacilityRegime ?? request.FacilityRegime,
+                            request.EffectiveOn,
+                            withProjectRevenue,
+                            competitor.Latitude,
+                            competitor.Longitude,
+                            competitor.StableVenueId),
+                        cancellationToken);
+                    beforeSupplementalTax = supplementalBefore.SupplementalGamingTax;
+                    afterSupplementalTax = supplementalAfter.SupplementalGamingTax;
+                }
+                catch (UnsupportedJurisdictionException exception)
+                {
+                    warnings.Add(
+                        exception.Message +
+                        $" Supplemental gaming-tax loss for '{facility.FacilityKey}' is not estimated; its validated base gaming-tax loss is retained.");
+                }
+                var marginalTaxLoss = before.GamingTax + beforeSupplementalTax -
+                                      after.GamingTax - afterSupplementalTax;
                 if (jurisdictionId == context.Jurisdiction.Id)
                 {
                     hostLoss += Convert.ToDouble(marginalTaxLoss);

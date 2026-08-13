@@ -998,6 +998,30 @@ if (validateIndianaFiscal)
         ordinaryCasino.GamingTax,
         41.0793,
         -85.1394));
+    var ameristarSupplemental = await allocationCalculator.CalculateSupplementalTaxAsync(
+        new SupplementalGamingTaxRequest(
+            "US-IN", "commercial-casino", effectiveOn, 12_731_000m,
+            41.6521503, -87.4356793, "USA-IN-IGC-ameristar-casino"));
+    var blueChipSupplemental = await allocationCalculator.CalculateSupplementalTaxAsync(
+        new SupplementalGamingTaxRequest(
+            "US-IN", "commercial-casino", effectiveOn, 9_747_252m,
+            41.718776974043, -86.891430253456, "USA-IN-IGC-blue-chip-casino"));
+    var hardRockSupplemental = await allocationCalculator.CalculateSupplementalTaxAsync(
+        new SupplementalGamingTaxRequest(
+            "US-IN", "commercial-casino", effectiveOn, 35_709_955m,
+            41.566315483341, -87.403521426675, "USA-IN-IGC-hard-rock-casino-northern-indiana"));
+    var terreHauteSupplemental = await allocationCalculator.CalculateSupplementalTaxAsync(
+        new SupplementalGamingTaxRequest(
+            "US-IN", "commercial-casino", effectiveOn, 12_092_657m,
+            39.433810860613, -87.347525598996, "USA-IN-IGC-terre-haute-casino"));
+    var frenchLickSupplemental = await allocationCalculator.CalculateSupplementalTaxAsync(
+        new SupplementalGamingTaxRequest(
+            "US-IN", "commercial-casino", effectiveOn, 20_000_000m,
+            38.550993124181, -86.619480752287, "USA-IN-IGC-french-lick-resort"));
+    var hoosierParkSupplemental = await allocationCalculator.CalculateSupplementalTaxAsync(
+        new SupplementalGamingTaxRequest(
+            "US-IN", "commercial-racino", effectiveOn, 20_000_000m,
+            40.0679, -85.641, "USA-IN-IGC-harrahs-hoosier-park"));
     var racino = await taxCalculator.CalculateAsync(new GamingTaxRequest(
         "US-IN",
         "commercial-racino",
@@ -1015,12 +1039,24 @@ if (validateIndianaFiscal)
     var fiscalRules = await db.JurisdictionRules
         .Where(rule => fiscalRuleTypes.Contains(rule.RuleType))
         .OrderBy(rule => rule.SourceUrl)
-        .Select(rule => new { rule.ValidationState, rule.SourceUrl, rule.RuleValueJson })
+        .Select(rule => new { rule.RuleType, rule.ValidationState, rule.SourceUrl, rule.RuleValueJson })
         .ToArrayAsync();
     var legacyRuleCount = fiscalRules.Count(rule =>
         rule.ValidationState != JurisdictionRuleValidationStates.Validated ||
         rule.SourceUrl == "https://www.in.gov/igc/files/FY2025-Annual.pdf" ||
         rule.RuleValueJson.Contains("shareOfGamingTax"));
+    var supplementalRules = fiscalRules
+        .Where(rule => rule.RuleType == JurisdictionRuleTypes.SupplementalGamingTaxSchedule)
+        .ToArray();
+    var supplementalPayloads = supplementalRules
+        .Select(rule => JsonSerializer.Deserialize<SupplementalGamingTaxPayload>(
+            rule.RuleValueJson,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            ?? throw new InvalidOperationException("A seeded supplemental gaming-tax rule contains invalid JSON."))
+        .ToArray();
+    var statutoryQuotientRuleCount = supplementalPayloads.Count(payload =>
+        payload.RateSourceKind == SupplementalGamingTaxRateSourceKinds.StatutoryQuotient);
+    var explicitZeroSupplementalRuleCount = supplementalPayloads.Count(payload => payload.Rate == 0m);
     if (lowPriorYearCasino.GamingTax != 12_125_000m ||
         ordinaryCasino.GamingTax != 15_250_000m ||
         racino.GamingTax != 40_000_000m ||
@@ -1032,9 +1068,21 @@ if (validateIndianaFiscal)
         northeastAllocation.HostStateShare != 15_250_000m ||
         northeastAllocation.Location.CountyFips != "18003" ||
         northeastAllocation.Location.MunicipalityName != "Fort Wayne" ||
+        ameristarSupplemental.Rate != 0.0316m ||
+        ameristarSupplemental.SupplementalGamingTax != 402_299.60m ||
+        blueChipSupplemental.Rate != 0.035m ||
+        blueChipSupplemental.SupplementalGamingTax != 341_153.82m ||
+        hardRockSupplemental.Rate != 0.0298m ||
+        hardRockSupplemental.SupplementalGamingTax != 1_064_156.66m ||
+        terreHauteSupplemental.Rate != 0.029m ||
+        terreHauteSupplemental.SupplementalGamingTax != 350_687.05m ||
+        frenchLickSupplemental.SupplementalGamingTax != 0m ||
+        hoosierParkSupplemental.SupplementalGamingTax != 0m ||
         fiscalComponentColumnCount != 6 ||
         casinoAge != 21 || racinoAge != 21 ||
-        fiscalRules.Length != 5 || legacyRuleCount != 0)
+        fiscalRules.Length != 17 || supplementalRules.Length != 13 ||
+        statutoryQuotientRuleCount != 8 || explicitZeroSupplementalRuleCount != 2 ||
+        legacyRuleCount != 0)
     {
         throw new InvalidOperationException("The seeded Indiana fiscal rules did not reproduce the official effective schedules.");
     }
@@ -1046,6 +1094,12 @@ if (validateIndianaFiscal)
         CasinoOrdinaryTax = ordinaryCasino.GamingTax,
         NortheastSupplementalTax = northeastAllocation.SupplementalGamingTax,
         NortheastGrossGamingTax = northeastAllocation.GrossGamingTax,
+        AmeristarSupplementalTax = ameristarSupplemental.SupplementalGamingTax,
+        BlueChipSupplementalTax = blueChipSupplemental.SupplementalGamingTax,
+        HardRockSupplementalTax = hardRockSupplemental.SupplementalGamingTax,
+        TerreHauteSupplementalTax = terreHauteSupplemental.SupplementalGamingTax,
+        FrenchLickSupplementalTax = frenchLickSupplemental.SupplementalGamingTax,
+        HoosierParkSupplementalTax = hoosierParkSupplemental.SupplementalGamingTax,
         northeastAllocation.HostMunicipalityShare,
         northeastAllocation.HostCountyShare,
         northeastAllocation.HostRegionalShare,
@@ -1056,6 +1110,9 @@ if (validateIndianaFiscal)
         CasinoMinimumAge = casinoAge,
         RacinoMinimumAge = racinoAge,
         LegacyRuleCount = legacyRuleCount,
+        SupplementalRuleCount = supplementalRules.Length,
+        StatutoryQuotientRuleCount = statutoryQuotientRuleCount,
+        ExplicitZeroSupplementalRuleCount = explicitZeroSupplementalRuleCount,
         Rules = fiscalRules.Select(rule => new { rule.ValidationState, rule.SourceUrl })
     }));
     return;

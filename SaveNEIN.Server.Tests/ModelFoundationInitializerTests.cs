@@ -100,6 +100,15 @@ public sealed class ModelFoundationInitializerTests
             EffectiveFrom = new DateOnly(2026, 1, 1),
             SourceUrl = "https://example.invalid/stale-flat-share"
         });
+        db.JurisdictionRules.Add(new JurisdictionRule
+        {
+            JurisdictionId = indiana.Id,
+            RuleType = JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+            RuleValueJson = "{\"facilityRegime\":\"commercial-casino\",\"rate\":0.035,\"eligibleCountyFips\":[\"18003\"]}",
+            ValidationState = JurisdictionRuleValidationStates.Validated,
+            EffectiveFrom = new DateOnly(2026, 1, 1),
+            SourceUrl = "https://example.invalid/unversioned-supplemental-rate"
+        });
         await db.SaveChangesAsync();
 
         await ModelFoundationInitializer.SeedAsync(db);
@@ -131,6 +140,7 @@ public sealed class ModelFoundationInitializerTests
         Assert.Equal(["commercial-casino", "commercial-racino"], taxRegimes.Select(item => item.Payload.FacilityRegime));
         Assert.All(taxRegimes, item => Assert.Equal(JurisdictionRuleValidationStates.Validated, item.ValidationState));
         Assert.DoesNotContain(rules, rule => rule.SourceUrl == "https://www.in.gov/igc/files/FY2025-Annual.pdf");
+        Assert.DoesNotContain(rules, rule => rule.SourceUrl == "https://example.invalid/unversioned-supplemental-rate");
         Assert.DoesNotContain(rules, rule => rule.RuleType == "local-revenue-share");
 
         var prevalenceRule = Assert.Single(rules, rule =>
@@ -144,13 +154,39 @@ public sealed class ModelFoundationInitializerTests
         Assert.Equal(0.090, prevalence.UpperConfidenceBound);
         Assert.Equal("9414096e164ce4a68ba700a46e659e662328403aaa82ec0209c0d03a25a47ee3", prevalence.SourceSha256);
 
-        var supplemental = Assert.Single(rules, rule =>
-            rule.RuleType == JurisdictionRuleTypes.SupplementalGamingTaxSchedule);
-        var supplementalPayload = JsonSerializer.Deserialize<SupplementalGamingTaxPayload>(
-            supplemental.RuleValueJson,
-            new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
-        Assert.Equal(0.035m, supplementalPayload.Rate);
-        Assert.Equal(["18003", "18033", "18151"], supplementalPayload.EligibleCountyFips);
+        var supplemental = rules
+            .Where(rule => rule.RuleType == JurisdictionRuleTypes.SupplementalGamingTaxSchedule)
+            .Select(rule => new
+            {
+                Rule = rule,
+                Payload = JsonSerializer.Deserialize<SupplementalGamingTaxPayload>(
+                    rule.RuleValueJson,
+                    new JsonSerializerOptions(JsonSerializerDefaults.Web))!
+            })
+            .ToArray();
+        Assert.Equal(13, supplemental.Length);
+        Assert.All(supplemental, item =>
+            Assert.Equal(JurisdictionRuleValidationStates.Validated, item.Rule.ValidationState));
+        Assert.Equal(8, supplemental.Count(item =>
+            item.Payload.RateSourceKind == SupplementalGamingTaxRateSourceKinds.StatutoryQuotient));
+        Assert.Equal(2, supplemental.Count(item => item.Payload.Rate == 0m));
+
+        var northeastSupplemental = Assert.Single(supplemental, item =>
+            item.Payload.EligibleCountyFips.SequenceEqual(["18003", "18033", "18151"]));
+        Assert.Equal(0.035m, northeastSupplemental.Payload.Rate);
+        Assert.Equal(SupplementalGamingTaxRateSourceKinds.FixedStatute, northeastSupplemental.Payload.RateSourceKind);
+
+        var ameristarSupplemental = Assert.Single(supplemental, item =>
+            item.Payload.EligibleStableVenueIds?.Contains("USA-IN-IGC-ameristar-casino") == true);
+        Assert.Equal(0.0316m, ameristarSupplemental.Payload.Rate);
+        Assert.Equal(6_451_533m, ameristarSupplemental.Payload.ReferenceAdmissionsTax);
+        Assert.Equal(204_146_106m, ameristarSupplemental.Payload.ReferenceAdjustedGrossReceipts);
+        Assert.Equal(0.035m, ameristarSupplemental.Payload.MaximumRate);
+
+        var hardRockSupplemental = Assert.Single(supplemental, item =>
+            item.Payload.EligibleStableVenueIds?.Contains("USA-IN-IGC-hard-rock-casino-northern-indiana") == true);
+        Assert.Equal(0.0298m, hardRockSupplemental.Payload.Rate);
+        Assert.Equal(SupplementalGamingTaxRateSourceKinds.RegulatorConfirmed, hardRockSupplemental.Payload.RateSourceKind);
 
         var distributions = rules
             .Where(rule => rule.RuleType == JurisdictionRuleTypes.GamingTaxDistribution)

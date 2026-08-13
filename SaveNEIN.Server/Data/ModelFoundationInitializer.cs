@@ -118,6 +118,18 @@ public static class ModelFoundationInitializer
             db.JurisdictionRules.RemoveRange(obsoleteFlatRevenueShareRules);
             await db.SaveChangesAsync(cancellationToken);
         }
+        var supplementalRulesForUpgrade = await db.JurisdictionRules
+            .Where(rule => rule.JurisdictionId == indiana.Id &&
+                           rule.RuleType == JurisdictionRuleTypes.SupplementalGamingTaxSchedule)
+            .ToArrayAsync(cancellationToken);
+        var obsoleteUnversionedSupplementalRules = supplementalRulesForUpgrade
+            .Where(rule => !rule.RuleValueJson.Contains("\"rateSourceKind\"", StringComparison.Ordinal))
+            .ToArray();
+        if (obsoleteUnversionedSupplementalRules.Length > 0)
+        {
+            db.JurisdictionRules.RemoveRange(obsoleteUnversionedSupplementalRules);
+            await db.SaveChangesAsync(cancellationToken);
+        }
 
         await AddRuleIfMissingAsync(
             db,
@@ -225,6 +237,107 @@ public static class ModelFoundationInitializer
             "https://iga.in.gov/laws/2026/ic/titles/4#4-35-8-1",
             "IC 4-35-8-1, verified in the official 2026 Indiana Code: 25% of the first $100M and 30% above $100M for fiscal years beginning after June 30, 2021.",
             cancellationToken);
+        const string indianaSupplementalCodeUrl = "https://iga.in.gov/laws/2026/ic/titles/4#4-33-12-1.5";
+        const string fy2017MonthlyArchiveUrl = "https://www.in.gov/igc/publications/archived-monthly-revenue-reports/";
+        var incumbentSupplementalRates = new[]
+        {
+            new { Name = "Ameristar Casino", StableVenueId = "USA-IN-IGC-ameristar-casino", CountyFips = "18089", Rate = 0.0316m, AdmissionsTax = 6_451_533m, TaxableAgr = 204_146_106m },
+            new { Name = "Bally's Evansville", StableVenueId = "USA-IN-IGC-ballys-evansville", CountyFips = "18163", Rate = 0.0287m, AdmissionsTax = 3_465_765m, TaxableAgr = 120_714_269m },
+            new { Name = "Belterra Casino", StableVenueId = "USA-IN-IGC-belterra-casino", CountyFips = "18155", Rate = 0.0299m, AdmissionsTax = 3_324_621m, TaxableAgr = 111_209_971m },
+            new { Name = "Blue Chip Casino", StableVenueId = "USA-IN-IGC-blue-chip-casino", CountyFips = "18091", Rate = 0.0350m, AdmissionsTax = 6_759_780m, TaxableAgr = 152_560_969m },
+            new { Name = "Caesars Southern Indiana", StableVenueId = "USA-IN-IGC-caesars-southern-indiana", CountyFips = "18061", Rate = 0.0228m, AdmissionsTax = 5_525_910m, TaxableAgr = 242_123_393m },
+            new { Name = "Hollywood Lawrenceburg", StableVenueId = "USA-IN-IGC-hollywood-lawrenceburg", CountyFips = "18029", Rate = 0.0263m, AdmissionsTax = 4_289_004m, TaxableAgr = 162_872_617m },
+            new { Name = "Horseshoe Hammond", StableVenueId = "USA-IN-IGC-horseshoe-hammond", CountyFips = "18089", Rate = 0.0259m, AdmissionsTax = 10_333_035m, TaxableAgr = 399_253_291m },
+            new { Name = "Rising Star Casino", StableVenueId = "USA-IN-IGC-rising-star-casino", CountyFips = "18115", Rate = 0.0350m, AdmissionsTax = 2_263_842m, TaxableAgr = 45_825_400m }
+        };
+        foreach (var seed in incumbentSupplementalRates)
+        {
+            await AddRuleIfMissingAsync(
+                db,
+                indiana.Id,
+                JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+                new SupplementalGamingTaxPayload(
+                    "commercial-casino",
+                    seed.Rate,
+                    [seed.CountyFips],
+                    [seed.StableVenueId],
+                    SupplementalGamingTaxRateSourceKinds.StatutoryQuotient,
+                    seed.AdmissionsTax,
+                    seed.TaxableAgr,
+                    0.035m),
+                new DateOnly(2019, 7, 1),
+                null,
+                JurisdictionRuleValidationStates.Validated,
+                indianaSupplementalCodeUrl,
+                $"IC 4-33-12-1.5(b)-(c) uses FY2017 admissions tax divided by FY2017 adjusted gross receipts and caps the post-June-2019 rate at 3.5%. " +
+                $"For {seed.Name}, the official July 2016-June 2017 monthly reports at {fy2017MonthlyArchiveUrl} reconcile ${seed.AdmissionsTax:N0} admissions tax and ${seed.TaxableAgr:N0} taxable AGR; " +
+                $"the four-decimal effective rate is {seed.Rate:P2}.",
+                cancellationToken);
+        }
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+            new SupplementalGamingTaxPayload(
+                "commercial-casino",
+                0.0298m,
+                ["18089"],
+                ["USA-IN-IGC-hard-rock-casino-northern-indiana"],
+                SupplementalGamingTaxRateSourceKinds.RegulatorConfirmed),
+            new DateOnly(2025, 7, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://www.in.gov/igc/files/reports/2026/2026-04-Revenue.pdf",
+            "IC 4-33-12-0.7(d) treats the post-June-2025 Gary operation as one riverboat. The IGC April 2026 report confirms the current 2.98% effective rate: $1,064,157 supplemental tax on $35,709,955 taxable AGR, rounded to reported whole dollars.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+            new SupplementalGamingTaxPayload(
+                "commercial-casino",
+                0.029m,
+                ["18167"],
+                ["USA-IN-IGC-terre-haute-casino"],
+                SupplementalGamingTaxRateSourceKinds.FixedStatute),
+            new DateOnly(2024, 4, 5),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            indianaSupplementalCodeUrl,
+            "IC 4-33-12-1.5(d) fixes the Vigo County inland casino supplemental wagering-tax rate at 2.9% of adjusted gross receipts.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+            new SupplementalGamingTaxPayload(
+                "commercial-casino",
+                0m,
+                ["18117"],
+                ["USA-IN-IGC-french-lick-resort"],
+                SupplementalGamingTaxRateSourceKinds.FixedStatute),
+            new DateOnly(2015, 7, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-33-12-0.5",
+            "IC 4-33-12-0.5 excludes a riverboat in a historic hotel district from the supplemental wagering-tax chapter; the effective modeled rate is explicitly zero.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.SupplementalGamingTaxSchedule,
+            new SupplementalGamingTaxPayload(
+                "commercial-racino",
+                0m,
+                ["18095", "18145"],
+                ["USA-IN-IGC-harrahs-hoosier-park", "USA-IN-IGC-horseshoe-indianapolis"],
+                SupplementalGamingTaxRateSourceKinds.FixedStatute),
+            new DateOnly(2012, 7, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-35-8.9-1",
+            "IC 4-35-8.9-1 limits the former 1% slot-machine supplemental fee to fiscal years ending before July 1, 2012; current racino supplemental liability is explicitly zero.",
+            cancellationToken);
         var northeastIndianaCountyFips = new[] { "18003", "18033", "18151" };
         await AddRuleIfMissingAsync(
             db,
@@ -233,12 +346,13 @@ public static class ModelFoundationInitializer
             new SupplementalGamingTaxPayload(
                 "commercial-casino",
                 0.035m,
-                northeastIndianaCountyFips),
+                northeastIndianaCountyFips,
+                RateSourceKind: SupplementalGamingTaxRateSourceKinds.FixedStatute),
             new DateOnly(2026, 3, 4),
             null,
             JurisdictionRuleValidationStates.Validated,
             "https://iga.in.gov/laws/2026/ic/titles/4#4-33-12-1.5",
-            "IC 4-33-12-1.5(a)(6), added by P.L.77-2026 effective March 4, 2026, imposes a 3.5% supplemental wagering tax on the new IC 4-33-6.8 casino in Allen, DeKalb, or Steuben County.",
+            "IC 4-33-12-1.5(e), added by P.L.77-2026 effective March 4, 2026, imposes a 3.5% supplemental wagering tax on the new IC 4-33-6.8 casino in Allen, DeKalb, or Steuben County.",
             cancellationToken);
         await AddRuleIfMissingAsync(
             db,
