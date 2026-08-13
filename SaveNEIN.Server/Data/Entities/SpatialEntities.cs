@@ -324,6 +324,9 @@ public class CasinoCompetitor
     [Column("food_beverage_venue_count")]
     public int? FoodBeverageVenueCount { get; set; }
 
+    [Column("reported_employment")]
+    public int? ReportedEmployment { get; set; }
+
     [Column("development_cost")]
     public decimal? DevelopmentCost { get; set; }
 

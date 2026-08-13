@@ -227,6 +227,28 @@ if (args is ["--probe-indiana-providers"])
             "US-IN",
             new DateOnly(2023, 1, 1),
             new DateOnly(2023, 12, 31)));
+    var annualComparableByFacility = annualGaming.Rows
+        .Where(row => row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
+        .GroupBy(row => row.StableVenueId, StringComparer.Ordinal)
+        .ToDictionary(group => group.Key, group => group.Sum(row => row.ReportedAmount), StringComparer.Ordinal);
+    var employmentProductivity = facilityDataset.Rows
+        .Where(row => row.ReportedEmployment > 0 && annualComparableByFacility.ContainsKey(row.StableVenueId))
+        .OrderBy(row => row.StableVenueId, StringComparer.Ordinal)
+        .Select(row => new
+        {
+            row.StableVenueId,
+            ReportedEmployment = row.ReportedEmployment!.Value,
+            ObservedGgr = annualComparableByFacility[row.StableVenueId],
+            JobsPerMillionGgr = row.ReportedEmployment.Value /
+                                Convert.ToDouble(annualComparableByFacility[row.StableVenueId] / 1_000_000m)
+        })
+        .ToArray();
+    if (employmentProductivity.Length != facilityDataset.Rows.Count)
+    {
+        throw new InvalidOperationException("Live IGC facility employment did not reconcile one-for-one to annual comparable revenue.");
+    }
+    var weightedJobsPerMillionGgr = employmentProductivity.Sum(row => row.ReportedEmployment) /
+                                    Convert.ToDouble(employmentProductivity.Sum(row => row.ObservedGgr) / 1_000_000m);
     Console.WriteLine(JsonSerializer.Serialize(new
     {
         Gaming = new
@@ -255,7 +277,18 @@ if (args is ["--probe-indiana-providers"])
             RowCount = facilityDataset.Rows.Count,
             RacinoCount = facilityDataset.Rows.Count(row => row.HasRacetrack == true),
             UnknownHotelCount = facilityDataset.Rows.Count(row => row.HasHotel is null),
+            EmploymentCount = facilityDataset.Rows.Count(row => row.ReportedEmployment > 0),
+            TotalReportedEmployment = facilityDataset.Rows.Sum(row => row.ReportedEmployment ?? 0),
             facilityDataset.ContentChecksum
+        },
+        EmploymentProductivity = new
+        {
+            Method = "reported-employment-per-observed-ggr-v1",
+            FacilityCount = employmentProductivity.Length,
+            WeightedJobsPerMillionGgr = weightedJobsPerMillionGgr,
+            MinimumJobsPerMillionGgr = employmentProductivity.Min(row => row.JobsPerMillionGgr),
+            MaximumJobsPerMillionGgr = employmentProductivity.Max(row => row.JobsPerMillionGgr),
+            Facilities = employmentProductivity
         },
         Traffic = new
         {
@@ -869,6 +902,7 @@ var validateMichiganProviderBundle = args is ["--validate-michigan-provider-bund
 var validateOhioProviderBundle = args is ["--validate-ohio-provider-bundle", _, _];
 var validateOhioProviderIngestion = args is ["--validate-ohio-provider-ingestion", _];
 var validateIndianaFiscal = args is ["--validate-indiana-fiscal", _];
+var validateIndianaEmployment = args is ["--validate-indiana-employment", _];
 var validateProviderIngestion = args is ["--validate-provider-ingestion", _] ||
                                  validateIncumbentCalibration ||
                                  validateMichiganProviderBundle ||
@@ -879,10 +913,10 @@ if ((!validateIncumbentCalibration && !validateMichiganProviderBundle && !valida
     (validateIncumbentCalibration && args.Length != 4))
 {
     throw new ArgumentException(
-        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --export-ohio-capacity-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --refresh-four-state-indiana-facilities <base-bundle-json> <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-indiana-fiscal <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
+        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --export-ohio-capacity-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --refresh-four-state-indiana-facilities <base-bundle-json> <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-indiana-fiscal <validation-db> | --validate-indiana-employment <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
 }
 
-var namedDatabaseValidation = validateProviderIngestion || validateIndianaFiscal;
+var namedDatabaseValidation = validateProviderIngestion || validateIndianaFiscal || validateIndianaEmployment;
 var validationDatabase = namedDatabaseValidation ? args[1] : args[0];
 var hasRequiredDatabasePrefix = namedDatabaseValidation
     ? validationDatabase.StartsWith(
@@ -890,6 +924,8 @@ var hasRequiredDatabasePrefix = namedDatabaseValidation
             ? "savenein_calibration_validation_"
             : validateIndianaFiscal
                 ? "savenein_fiscal_validation_"
+                : validateIndianaEmployment
+                    ? "savenein_employment_validation_"
                 : "savenein_provider_validation_",
         StringComparison.Ordinal)
     : validationDatabase.StartsWith("savenein_gravity_validation_", StringComparison.Ordinal) ||
@@ -1018,6 +1054,92 @@ if (validateIndianaFiscal)
         RacinoMinimumAge = racinoAge,
         LegacyRuleCount = legacyRuleCount,
         Rules = fiscalRules.Select(rule => new { rule.ValidationState, rule.SourceUrl })
+    }));
+    return;
+}
+
+if (validateIndianaEmployment)
+{
+    var providerSnapshots = new DataSnapshotService(db);
+    var providerRows = new ModelDataIngestionService(db);
+    var providerIngestion = new ProviderSnapshotIngestionService(providerSnapshots, providerRows);
+    using var providerHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+    var igcOptions = Options.Create(new IndianaGamingCommissionProviderOptions());
+    var facilitySnapshotId = await providerIngestion.IngestGamingFacilitiesAsync(
+        new IndianaGamingCommissionFacilityInventoryProvider(providerHttp, igcOptions),
+        new ProviderFetchRequest("US-IN", new DateOnly(2025, 12, 1), new DateOnly(2025, 12, 31)));
+    var performanceSnapshotId = await providerIngestion.IngestGamingPerformanceAsync(
+        new IndianaGamingCommissionMonthlyRevenueProvider(providerHttp, igcOptions),
+        new ProviderFetchRequest("US-IN", new DateOnly(2025, 1, 1), new DateOnly(2025, 12, 31)),
+        facilitySnapshotId);
+    var employmentCompetitors = await db.CasinoCompetitors.AsNoTracking()
+        .Where(competitor => competitor.DatasetSnapshotId == facilitySnapshotId)
+        .OrderBy(competitor => competitor.StableVenueId)
+        .ToArrayAsync();
+    var performance = await db.CasinoGamingRevenuePeriods.AsNoTracking()
+        .Where(period => period.DatasetSnapshotId == performanceSnapshotId)
+        .OrderBy(period => period.CasinoCompetitorId)
+        .ThenBy(period => period.PeriodStart)
+        .ToArrayAsync();
+    var resolution = new EmploymentProductivityBenchmarkService().Resolve(
+        new EmploymentProductivityBenchmarkInput(
+            performanceSnapshotId,
+            new DateOnly(2025, 1, 1),
+            new DateOnly(2025, 12, 31),
+            employmentCompetitors,
+            performance));
+    var benchmark = resolution.Benchmark
+        ?? throw new InvalidOperationException(string.Join(" ", resolution.Warnings));
+    var schemaColumnCount = await db.Database.SqlQueryRaw<int>("""
+        SELECT count(*)::int AS "Value"
+        FROM information_schema.columns
+        WHERE table_name = 'casino_competitors'
+          AND column_name = 'reported_employment'
+        """).SingleAsync();
+    var validatedConstraintCount = await db.Database.SqlQueryRaw<int>("""
+        SELECT count(*)::int AS "Value"
+        FROM pg_constraint
+        WHERE conname = 'ck_casino_competitors_reported_employment_positive'
+          AND convalidated
+        """).SingleAsync();
+    var snapshots = await db.DatasetSnapshots.AsNoTracking()
+        .Where(snapshot => snapshot.Id == facilitySnapshotId || snapshot.Id == performanceSnapshotId)
+        .OrderBy(snapshot => snapshot.DatasetKey)
+        .Select(snapshot => new
+        {
+            snapshot.Id,
+            snapshot.DatasetKey,
+            snapshot.Checksum,
+            snapshot.TransformVersion,
+            snapshot.RowCount,
+            snapshot.ValidationState,
+            snapshot.IsSealed
+        })
+        .ToArrayAsync();
+    if (employmentCompetitors.Length != 13 || employmentCompetitors.Any(competitor => competitor.ReportedEmployment is not > 0) ||
+        employmentCompetitors.Sum(competitor => competitor.ReportedEmployment) != 10_112 ||
+        performance.Length != 468 || benchmark.Facilities.Count != 13 ||
+        schemaColumnCount != 1 || validatedConstraintCount != 1 ||
+        snapshots.Length != 2 || snapshots.Any(snapshot => !snapshot.IsSealed))
+    {
+        throw new InvalidOperationException("The live Indiana employment benchmark did not persist or reconcile expected official observations.");
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        Database = validationDatabase,
+        facilitySnapshotId,
+        performanceSnapshotId,
+        FacilityCount = employmentCompetitors.Length,
+        TotalReportedEmployment = employmentCompetitors.Sum(competitor => competitor.ReportedEmployment),
+        PerformanceRows = performance.Length,
+        ComparableGgr = performance
+            .Where(period => period.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
+            .Sum(period => period.ReportedAmount),
+        benchmark,
+        resolution.Warnings,
+        SchemaColumnCount = schemaColumnCount,
+        ValidatedConstraintCount = validatedConstraintCount,
+        snapshots
     }));
     return;
 }
@@ -1632,6 +1754,7 @@ if (validateProviderIngestion)
             new LocalEconomicInventoryWeightService(),
             new DisplacementModelService(),
             new EmploymentImpactService(),
+            new EmploymentProductivityBenchmarkService(),
             new FiscalImpactService(),
             new SocialCostService(),
             new NetImpactService());
@@ -2113,6 +2236,7 @@ var execution = new GravityModelExecutionService(
     new LocalEconomicInventoryWeightService(),
     new DisplacementModelService(),
     new EmploymentImpactService(),
+    new EmploymentProductivityBenchmarkService(),
     new FiscalImpactService(),
     new SocialCostService(),
     new NetImpactService());

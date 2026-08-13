@@ -34,7 +34,8 @@ public static class ModelFoundationInitializer
         "020_coordinate_versioned_incumbent_travel_cache.sql",
         "021_component_gaming_fiscal_allocation.sql",
         "022_employment_assumption_provenance.sql",
-        "023_capacity_productivity_benchmark_provenance.sql"
+        "023_capacity_productivity_benchmark_provenance.sql",
+        "024_reported_casino_employment.sql"
     ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -455,10 +456,10 @@ public static class ModelFoundationInitializer
         yield return Definition("displacement.restaurant_hospitality_annual_sales_per_job", "displacement", "Restaurant/hospitality annual sales per job", "USD/job/year", 1_000_000, 1, 100_000_000, 1, null, 1_000, "expert", false, "Conservative placeholder requiring local economic-data calibration.");
         yield return Definition("displacement.retail_annual_sales_per_job", "displacement", "Retail annual sales per job", "USD/job/year", 1_000_000, 1, 100_000_000, 1, null, 1_000, "expert", false, "Conservative placeholder requiring local economic-data calibration.");
         yield return Definition("displacement.arts_entertainment_recreation_annual_sales_per_job", "displacement", "Arts/entertainment/recreation annual sales per job", "USD/job/year", 1_000_000, 1, 100_000_000, 1, null, 1_000, "expert", false, "Conservative placeholder requiring local economic-data calibration.");
-        yield return Definition("employment.direct_jobs_per_million_ggr", "employment", "Direct casino jobs per million GGR", "jobs/USD million", 0, 0, 1000, 0, null, 0.1, "advanced", false, "Zero-safe fallback pending comparable facility and wage data.");
+        yield return Definition("employment.direct_jobs_per_million_ggr", "employment", "Direct casino jobs per million GGR", "jobs/USD million", 0, 0, 1000, 0, null, 0.1, "advanced", false, "Zero selects an automatic regulator-observed employment/GGR benchmark when a complete linked sample exists; otherwise it remains a zero-safe fallback. A positive versioned value explicitly supersedes the observed benchmark.");
         yield return Definition("employment.construction_job_years_per_million_capital_cost", "employment", "Construction job-years per million capital cost", "job-years/USD million", 0, 0, 1000, 0, null, 0.1, "advanced", false, "Zero-safe fallback pending a construction input-output assumption set.");
         yield return Definition("employment.indirect_induced_jobs_per_direct_job", "employment", "Indirect/induced jobs per direct job", "jobs/job", 0, 0, 100, 0, null, 0.01, "advanced", false, "Zero-safe fallback pending regional input-output multipliers.");
-        yield return Definition("employment.incumbent_jobs_per_million_lost_ggr", "employment", "Incumbent jobs per million lost GGR", "jobs/USD million", 0, 0, 1000, 0, null, 0.1, "expert", false, "Zero-safe fallback pending comparable incumbent staffing evidence.");
+        yield return Definition("employment.incumbent_jobs_per_million_lost_ggr", "employment", "Incumbent jobs per million lost GGR", "jobs/USD million", 0, 0, 1000, 0, null, 0.1, "expert", false, "Zero selects the same complete regulator-observed employment/GGR benchmark used for direct jobs; otherwise it remains zero-safe. A positive versioned value explicitly supersedes the observed benchmark.");
         yield return Definition("employment.direct_average_annual_wage", "employment", "Direct casino average annual wage", "USD/job/year", 0, 0, 1_000_000, 0, null, 100, "advanced", false, "Zero-safe fallback pending geography-specific wage evidence.");
         yield return Definition("employment.indirect_average_annual_wage", "employment", "Indirect/induced average annual wage", "USD/job/year", 0, 0, 1_000_000, 0, null, 100, "expert", false, "Zero-safe fallback pending geography-specific wage evidence.");
         yield return Definition("employment.incumbent_average_annual_wage", "employment", "Incumbent casino average annual wage", "USD/job/year", 0, 0, 1_000_000, 0, null, 100, "expert", false, "Zero-safe fallback pending geography-specific wage evidence.");

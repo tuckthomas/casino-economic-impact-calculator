@@ -208,6 +208,16 @@ public sealed class ModelFoundationSchemaTests
         Assert.Contains("slot_win_per_unit_day_minimum", capacityBenchmarkSql, StringComparison.Ordinal);
         Assert.Contains("ck_model_run_capacity_benchmark_values", capacityBenchmarkSql, StringComparison.Ordinal);
 
+        var reportedEmploymentMigration = Assert.Single(
+            resourceNames,
+            name => name.EndsWith("024_reported_casino_employment.sql", StringComparison.Ordinal));
+        using var reportedEmploymentStream = typeof(ModelFoundationInitializer).Assembly.GetManifestResourceStream(reportedEmploymentMigration)!;
+        using var reportedEmploymentReader = new StreamReader(reportedEmploymentStream);
+        var reportedEmploymentSql = reportedEmploymentReader.ReadToEnd();
+        Assert.Contains("reported_employment integer", reportedEmploymentSql, StringComparison.Ordinal);
+        Assert.Contains("ck_casino_competitors_reported_employment_positive", reportedEmploymentSql, StringComparison.Ordinal);
+        Assert.Contains("reported_employment > 0", reportedEmploymentSql, StringComparison.Ordinal);
+
         var validationMigration = Assert.Single(
             resourceNames,
             name => name.EndsWith("012_validation_and_calibration.sql", StringComparison.Ordinal));

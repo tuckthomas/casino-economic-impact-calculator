@@ -97,6 +97,8 @@ public sealed class IndianaProviderAdaptersTests
 
         Assert.Equal(DatasetSnapshotKinds.Competitors, dataset.DatasetKey);
         Assert.Equal(13, dataset.Rows.Count);
+        Assert.Equal("igc-facilities-units-annual-attributes-employment-v4", dataset.TransformVersion);
+        Assert.NotEqual(dataset.Source.ContentHash, dataset.ContentChecksum);
         var ameristar = dataset.Rows.Single(row => row.StableVenueId == "USA-IN-IGC-ameristar-casino");
         Assert.Equal(980, ameristar.SlotOrVltPositions);
         Assert.Equal(30, ameristar.TableGameCount);
@@ -104,6 +106,10 @@ public sealed class IndianaProviderAdaptersTests
         Assert.Equal(288, ameristar.HotelRoomCount);
         Assert.Equal(59_460, ameristar.GamingFloorSquareFeet);
         Assert.Equal(6, ameristar.FoodBeverageVenueCount);
+        Assert.Equal(645, ameristar.ReportedEmployment);
+        Assert.Equal(10_112, dataset.Rows.Sum(row => row.ReportedEmployment));
+        Assert.Equal(1_651, dataset.Rows.Single(row => row.StableVenueId == "USA-IN-IGC-french-lick-resort").ReportedEmployment);
+        Assert.Equal(1_409, dataset.Rows.Single(row => row.StableVenueId == "USA-IN-IGC-hard-rock-casino-northern-indiana").ReportedEmployment);
         Assert.Contains("777 Ameristar Drive", ameristar.Notes);
         var hoosierPark = dataset.Rows.Single(row => row.StableVenueId == "USA-IN-IGC-harrahs-hoosier-park");
         Assert.True(hoosierPark.HasRacetrack);
@@ -290,7 +296,8 @@ public sealed class IndianaProviderAdaptersTests
                         $"{fixture.Title}\nIndiana Gaming Commission Annual Report 2025\n" +
                         $"Gaming Space: {fixture.GamingFloorSquareFeet:N0} Square Feet\n" +
                         $"Restaurants: {fixture.RestaurantCount}\n" +
-                        $"Hotel: {(fixture.HotelRoomCount is null ? "N/A" : $"{fixture.HotelRoomCount:N0} rooms")}");
+                        $"Hotel: {(fixture.HotelRoomCount is null ? "N/A" : $"{fixture.HotelRoomCount:N0} rooms")}\n" +
+                        $"Total Employment: {fixture.TotalEmployment:N0}");
                 });
             }
         }).GeneratePdf();
@@ -474,19 +481,19 @@ public sealed class IndianaProviderAdaptersTests
 
     private static readonly AnnualFacilityFixture[] AnnualFacilityFixtures =
     [
-        new("AMERISTAR CASINO", 59_460, 6, 288),
-        new("BALLY'S EVANSVILLE", 46_265, 3, 338),
-        new("BELTERRA CASINO", 70_232, 5, 608),
-        new("BLUE CHIP CASINO", 65_375, 3, 486),
-        new("CAESARS SOUTHERN INDIANA", 74_421, 5, 503),
-        new("FRENCH LICK RESORT CASINO", 49_719, 11, 756),
-        new("HARD ROCK NORTHERN INDIANA", 77_118, 5, null),
-        new("HARRAH'S HOOSIER PARK CASINO", 86_136, 3, null),
-        new("HOLLYWOOD CASINO", 167_000, 4, 295),
-        new("HORSESHOE CASINO HAMMOND", 108_000, 3, null),
-        new("HORSESHOE INDIANAPOLIS", 106_700, 4, null),
-        new("RISING STAR CASINO", 40_000, 2, 294),
-        new("TERRE HAUTE CASINO RESORT", 76_726, 9, 122)
+        new("AMERISTAR CASINO", 59_460, 6, 288, 645),
+        new("BALLY'S EVANSVILLE", 46_265, 3, 338, 555),
+        new("BELTERRA CASINO", 70_232, 5, 608, 568),
+        new("BLUE CHIP CASINO", 65_375, 3, 486, 556),
+        new("CAESARS SOUTHERN INDIANA", 74_421, 5, 503, 958),
+        new("FRENCH LICK RESORT CASINO", 49_719, 11, 756, 1_651),
+        new("HARD ROCK NORTHERN INDIANA", 77_118, 5, null, 1_409),
+        new("HARRAH'S HOOSIER PARK CASINO", 86_136, 3, null, 641),
+        new("HOLLYWOOD CASINO", 167_000, 4, 295, 655),
+        new("HORSESHOE CASINO HAMMOND", 108_000, 3, null, 812),
+        new("HORSESHOE INDIANAPOLIS", 106_700, 4, null, 838),
+        new("RISING STAR CASINO", 40_000, 2, 294, 286),
+        new("TERRE HAUTE CASINO RESORT", 76_726, 9, 122, 538)
     ];
 
     private sealed record FacilityFixture(
@@ -501,5 +508,6 @@ public sealed class IndianaProviderAdaptersTests
         string Title,
         int GamingFloorSquareFeet,
         int RestaurantCount,
-        int? HotelRoomCount);
+        int? HotelRoomCount,
+        int TotalEmployment);
 }

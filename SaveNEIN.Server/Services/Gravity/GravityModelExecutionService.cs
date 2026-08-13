@@ -133,6 +133,7 @@ public sealed class GravityModelExecutionService(
     ILocalEconomicInventoryWeightService localEconomicInventoryWeightService,
     IDisplacementModelService displacementModelService,
     IEmploymentImpactService employmentImpactService,
+    IEmploymentProductivityBenchmarkService employmentProductivityBenchmarkService,
     IFiscalImpactService fiscalImpactService,
     ISocialCostService socialCostService,
     INetImpactService netImpactService) : IGravityModelExecutionService
@@ -1355,14 +1356,56 @@ public sealed class GravityModelExecutionService(
             warnings.Add("Local discretionary displacement is zero because no economically eligible local-resident base was active after exclusions and parameter resolution.");
         }
 
+        var employmentBenchmarkCompetitors = await db.CasinoCompetitors
+            .AsNoTracking()
+            .Where(competitor => competitor.DatasetSnapshotId == request.CompetitorSnapshotId &&
+                                 competitor.ReportedEmployment > 0)
+            .OrderBy(competitor => competitor.StableVenueId)
+            .ToListAsync(cancellationToken);
+        var employmentBenchmarkCompetitorIds = employmentBenchmarkCompetitors
+            .Select(competitor => competitor.Id)
+            .ToArray();
+        var employmentBenchmarkPeriods = await db.CasinoGamingRevenuePeriods
+            .AsNoTracking()
+            .Where(period => employmentBenchmarkCompetitorIds.Contains(period.CasinoCompetitorId) &&
+                             period.DatasetSnapshotId == request.ObservedPerformanceSnapshotId &&
+                             period.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue &&
+                             period.PeriodStart >= request.ObservedPeriodStart &&
+                             period.PeriodEnd <= request.ObservedPeriodEnd)
+            .OrderBy(period => period.CasinoCompetitorId)
+            .ThenBy(period => period.PeriodStart)
+            .ToListAsync(cancellationToken);
+        var employmentBenchmarkResolution = employmentProductivityBenchmarkService.Resolve(
+            new EmploymentProductivityBenchmarkInput(
+                request.ObservedPerformanceSnapshotId,
+                request.ObservedPeriodStart,
+                request.ObservedPeriodEnd,
+                employmentBenchmarkCompetitors,
+                employmentBenchmarkPeriods));
+        warnings.AddRange(employmentBenchmarkResolution.Warnings);
+        var configuredDirectJobsPerMillion = RequireParameter(parameters, "employment.direct_jobs_per_million_ggr");
+        var configuredIncumbentJobsPerMillion = RequireParameter(parameters, "employment.incumbent_jobs_per_million_lost_ggr");
+        var directJobsPerMillion = configuredDirectJobsPerMillion > 0
+            ? configuredDirectJobsPerMillion
+            : employmentBenchmarkResolution.Benchmark?.WeightedJobsPerMillionGgr ?? 0;
+        var incumbentJobsPerMillion = configuredIncumbentJobsPerMillion > 0
+            ? configuredIncumbentJobsPerMillion
+            : employmentBenchmarkResolution.Benchmark?.WeightedJobsPerMillionGgr ?? 0;
+        if (employmentBenchmarkResolution.Benchmark is not null &&
+            (configuredDirectJobsPerMillion > 0 || configuredIncumbentJobsPerMillion > 0))
+        {
+            warnings.Add(
+                "One or more explicit versioned employment job-density parameters superseded the available regulator-observed weighted benchmark; both the applied values and benchmark remain disclosed.");
+        }
+
         var employment = employmentImpactService.Calculate(new EmploymentImpactInput(
             accounting.StabilizedGgr,
             Convert.ToDouble(context.DevelopmentProgram.CapitalCost ?? 0),
             accounting.HostJurisdictionCannibalization,
-            RequireParameter(parameters, "employment.direct_jobs_per_million_ggr"),
+            directJobsPerMillion,
             RequireParameter(parameters, "employment.construction_job_years_per_million_capital_cost"),
             RequireParameter(parameters, "employment.indirect_induced_jobs_per_direct_job"),
-            RequireParameter(parameters, "employment.incumbent_jobs_per_million_lost_ggr"),
+            incumbentJobsPerMillion,
             laborAssumptions.DirectAverageAnnualWage,
             laborAssumptions.IndirectAverageAnnualWage,
             laborAssumptions.IncumbentAverageAnnualWage,
@@ -1509,7 +1552,14 @@ public sealed class GravityModelExecutionService(
             {
                 laborAssumptions.AssumptionBasis,
                 inventoryResolution.WeightBasis,
-                localEconomicInventorySnapshotId = request.LocalEconomicInventorySnapshotId
+                localEconomicInventorySnapshotId = request.LocalEconomicInventorySnapshotId,
+                directJobsPerMillionGgr = directJobsPerMillion,
+                incumbentJobsPerMillionLostGgr = incumbentJobsPerMillion,
+                directJobsDensitySource = configuredDirectJobsPerMillion > 0 ? "versioned-parameter" :
+                    employmentBenchmarkResolution.Benchmark?.Method ?? "zero-safe-fallback",
+                incumbentJobsDensitySource = configuredIncumbentJobsPerMillion > 0 ? "versioned-parameter" :
+                    employmentBenchmarkResolution.Benchmark?.Method ?? "zero-safe-fallback",
+                employmentBenchmark = employmentBenchmarkResolution.Benchmark
             })
         });
         db.ModelRunFiscalImpacts.Add(new ModelRunFiscalImpact

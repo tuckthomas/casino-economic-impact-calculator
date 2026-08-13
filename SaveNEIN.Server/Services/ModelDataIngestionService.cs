@@ -154,7 +154,8 @@ public sealed record CasinoCompetitorImportRow(
     bool? HasInterchangeAccess,
     string? MarketOrientation,
     bool? IsBorderMarket,
-    string? Notes);
+    string? Notes,
+    int? ReportedEmployment = null);
 
 public sealed record CasinoCompetitorHistoryImportRow(
     string StableVenueId,
@@ -435,6 +436,7 @@ public sealed class ModelDataIngestionService(AppDbContext db) : IModelDataInges
                 HotelRoomCount = row.HotelRoomCount,
                 EventCapacity = row.EventCapacity,
                 FoodBeverageVenueCount = row.FoodBeverageVenueCount,
+                ReportedEmployment = row.ReportedEmployment,
                 DevelopmentCost = row.DevelopmentCost,
                 DevelopmentCostDollarYear = row.DevelopmentCostDollarYear,
                 AccessContext = TrimOrNull(row.AccessContext),
@@ -808,11 +810,17 @@ public sealed class ModelDataIngestionService(AppDbContext db) : IModelDataInges
         var counts = new int?[]
         {
             row.GamingPositions, row.SlotOrVltPositions, row.TableGameCount, row.PokerTableCount,
-            row.GamingFloorSquareFeet, row.HotelRoomCount, row.EventCapacity, row.FoodBeverageVenueCount
+            row.GamingFloorSquareFeet, row.HotelRoomCount, row.EventCapacity, row.FoodBeverageVenueCount,
+            row.ReportedEmployment
         };
         if (counts.Any(value => value is < 0) || row.DevelopmentCost is < 0 || row.LimitedAccessDistanceMiles is < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(row), "Venue capacities, cost, and access distance cannot be negative.");
+        }
+
+        if (row.ReportedEmployment == 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(row), "Reported employment must be positive when provided.");
         }
     }
 

@@ -73,6 +73,8 @@
                       Link="Data\Migrations\022_employment_assumption_provenance.sql" />
     <EmbeddedResource Include="..\docs\migrations\023_capacity_productivity_benchmark_provenance.sql"
                       Link="Data\Migrations\023_capacity_productivity_benchmark_provenance.sql" />
+    <EmbeddedResource Include="..\docs\migrations\024_reported_casino_employment.sql"
+                      Link="Data\Migrations\024_reported_casino_employment.sql" />
   </ItemGroup>
 
 </Project>

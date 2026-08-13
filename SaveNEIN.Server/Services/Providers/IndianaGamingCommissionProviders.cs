@@ -261,6 +261,7 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
     HttpClient http,
     IOptions<IndianaGamingCommissionProviderOptions> options) : IGamingFacilityInventoryProvider
 {
+    private const string TransformVersion = "igc-facilities-units-annual-attributes-employment-v4";
     private static readonly Regex TableRowPattern = new(
         @"<tr\b[^>]*>(?<body>.*?)</tr>",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant);
@@ -381,8 +382,10 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
                     Notes: $"IGC-published address: {location.Address}. Coordinates are a frozen geocode of that address. " +
                            $"The IGC FY{inventoryMonth.Year} Annual Report reports {attributes.GamingFloorSquareFeet:N0} gaming square feet, " +
                            $"{attributes.RestaurantCount} restaurants, and " +
-                           $"{(attributes.HotelRoomCount == 0 ? "no on-property hotel" : $"{attributes.HotelRoomCount:N0} hotel rooms")}. " +
-                           "Amenities not reported by these sources remain null.");
+                           $"{(attributes.HotelRoomCount == 0 ? "no on-property hotel" : $"{attributes.HotelRoomCount:N0} hotel rooms")}, " +
+                           $"and total employment of {attributes.TotalEmployment:N0}. " +
+                           "Amenities and employment definitions not reported by these sources remain null.",
+                    ReportedEmployment: attributes.TotalEmployment);
             })
             .ToArray();
         var canonicalLocations = string.Join(
@@ -393,7 +396,9 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
         hasher.AppendData(workbookBytes);
         hasher.AppendData(Encoding.UTF8.GetBytes(canonicalLocations));
         hasher.AppendData(annualReportBytes);
-        var checksum = Convert.ToHexString(hasher.GetHashAndReset()).ToLowerInvariant();
+        var rawSourceChecksum = Convert.ToHexString(hasher.GetHashAndReset()).ToLowerInvariant();
+        var snapshotChecksum = Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes($"{rawSourceChecksum}|{TransformVersion}"))).ToLowerInvariant();
 
         return new ProviderDataset<CasinoCompetitorImportRow>(
             new RegisterDataSourceRequest(
@@ -404,18 +409,18 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
                 "Indiana commercial casinos and racinos",
                 inventoryMonth.ToString("yyyy-MM", CultureInfo.InvariantCulture),
                 retrievedAt,
-                checksum,
+                rawSourceChecksum,
                 true,
                 "Indiana public-record terms apply.",
                 $"Facility locations come from the IGC locations page; table and EGD/slot counts are the {inventoryMonth:yyyy-MM} month-end inventory from {reportUri}. " +
-                $"Gaming-floor area, restaurant count, and explicit hotel-room count/absence come from the facility profiles in {annualReportUri}. " +
+                $"Gaming-floor area, restaurant count, explicit hotel-room count/absence, and total employment come from the facility profiles in {annualReportUri}. " +
                 "Coordinate transform catalog: igc-address-geocodes-2026-08-09-v1."),
             DatasetSnapshotKinds.Competitors,
             periodLabel,
             request.PeriodStart,
             request.PeriodEnd,
-            checksum,
-            "igc-facilities-units-and-annual-attributes-v3",
+            snapshotChecksum,
+            TransformVersion,
             rows,
             []);
     }
@@ -575,7 +580,8 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
 internal sealed record IndianaGamingFacilityAttributes(
     int GamingFloorSquareFeet,
     int RestaurantCount,
-    int HotelRoomCount);
+    int HotelRoomCount,
+    int TotalEmployment);
 
 internal static partial class IndianaGamingCommissionAnnualFacilityParser
 {
@@ -645,7 +651,8 @@ internal static partial class IndianaGamingCommissionAnnualFacilityParser
             var floorMatch = GamingFloorPattern().Match(text);
             var restaurantsMatch = RestaurantsPattern().Match(text);
             var hotelMatch = HotelPattern().Match(text);
-            if (!floorMatch.Success || !restaurantsMatch.Success || !hotelMatch.Success)
+            var employmentMatch = EmploymentPattern().Match(text);
+            if (!floorMatch.Success || !restaurantsMatch.Success || !hotelMatch.Success || !employmentMatch.Success)
             {
                 // Facility names also occur on statewide summary pages. Only a page carrying
                 // the complete regulator-published facility attribute tuple is a profile page.
@@ -658,7 +665,8 @@ internal static partial class IndianaGamingCommissionAnnualFacilityParser
                 ParseWholeNumber(restaurantsMatch.Groups["value"].Value, title.Key, "restaurant count"),
                 string.Equals(normalizedHotelValue, "N/A", StringComparison.Ordinal)
                     ? 0
-                    : ParseWholeNumber(normalizedHotelValue, title.Key, "hotel-room count"));
+                    : ParseWholeNumber(normalizedHotelValue, title.Key, "hotel-room count"),
+                ParseWholeNumber(employmentMatch.Groups["value"].Value, title.Key, "total employment"));
             if (!results.TryAdd(title.Value, attributes))
             {
                 throw new InvalidDataException($"The IGC annual report repeats facility profile '{title.Key}'.");
@@ -700,6 +708,9 @@ internal static partial class IndianaGamingCommissionAnnualFacilityParser
 
     [GeneratedRegex(@"HOTEL\s*:?\s*(?<value>N\s*/\s*A|[\d,]+)\s*(?:ROOMS?)?", RegexOptions.CultureInvariant)]
     private static partial Regex HotelPattern();
+
+    [GeneratedRegex(@"TOTAL\s*EMPLOYMENT\s*:?\s*(?<value>[\d,]+)", RegexOptions.CultureInvariant)]
+    private static partial Regex EmploymentPattern();
 
     [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
     private static partial Regex WhitespacePattern();

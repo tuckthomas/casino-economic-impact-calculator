@@ -147,6 +147,7 @@ builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ICannibalizationAcco
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ILocalEconomicInventoryWeightService, SaveNEIN.Server.Services.Gravity.LocalEconomicInventoryWeightService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IDisplacementModelService, SaveNEIN.Server.Services.Gravity.DisplacementModelService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IEmploymentImpactService, SaveNEIN.Server.Services.Gravity.EmploymentImpactService>();
+builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IEmploymentProductivityBenchmarkService, SaveNEIN.Server.Services.Gravity.EmploymentProductivityBenchmarkService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.IFiscalImpactService, SaveNEIN.Server.Services.Gravity.FiscalImpactService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.ISocialCostService, SaveNEIN.Server.Services.Gravity.SocialCostService>();
 builder.Services.AddScoped<SaveNEIN.Server.Services.Gravity.INetImpactService, SaveNEIN.Server.Services.Gravity.NetImpactService>();
