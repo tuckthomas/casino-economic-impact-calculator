@@ -870,6 +870,8 @@ public sealed class GravityModelExecutionService(
         Feature("gaming-positions", competitor.GamingPositions ?? competitor.SlotOrVltPositions, "facility.reference_gaming_positions", "facility.gaming_positions_coefficient", parameters),
         Feature("table-games", competitor.TableGameCount, "facility.reference_table_games", "facility.table_games_coefficient", parameters),
         Feature("hotel-rooms", competitor.HotelRoomCount, "facility.reference_hotel_rooms", "facility.hotel_rooms_coefficient", parameters),
+        Feature("gaming-floor-square-feet", competitor.GamingFloorSquareFeet, "facility.reference_gaming_floor_square_feet", "facility.gaming_floor_coefficient", parameters),
+        Feature("food-beverage-venues", competitor.FoodBeverageVenueCount, "facility.reference_food_beverage_venues", "facility.food_beverage_coefficient", parameters),
         Feature("entertainment-capacity", competitor.EventCapacity, "facility.reference_entertainment_capacity", "facility.entertainment_capacity_coefficient", parameters),
         Feature("capital-cost", competitor.DevelopmentCost is null ? null : Convert.ToDouble(competitor.DevelopmentCost), "facility.reference_capital_cost", "facility.capital_scale_coefficient", parameters),
         Feature("highway-access", competitor.HasInterchangeAccess is null ? null : competitor.HasInterchangeAccess.Value ? 1 : 0, "facility.reference_highway_access", "facility.highway_access_coefficient", parameters)
@@ -882,6 +884,8 @@ public sealed class GravityModelExecutionService(
         Feature("gaming-positions", program.SlotOrVltPositions + program.TableGameCount, "facility.reference_gaming_positions", "facility.gaming_positions_coefficient", parameters),
         Feature("table-games", program.TableGameCount, "facility.reference_table_games", "facility.table_games_coefficient", parameters),
         Feature("hotel-rooms", program.HotelRoomCount, "facility.reference_hotel_rooms", "facility.hotel_rooms_coefficient", parameters),
+        Feature("gaming-floor-square-feet", program.GamingFloorSquareFeet, "facility.reference_gaming_floor_square_feet", "facility.gaming_floor_coefficient", parameters),
+        Feature("food-beverage-venues", program.FoodBeverageVenueCount, "facility.reference_food_beverage_venues", "facility.food_beverage_coefficient", parameters),
         Feature("entertainment-capacity", program.EventCapacity, "facility.reference_entertainment_capacity", "facility.entertainment_capacity_coefficient", parameters),
         Feature("capital-cost", program.CapitalCost is null ? null : Convert.ToDouble(program.CapitalCost), "facility.reference_capital_cost", "facility.capital_scale_coefficient", parameters),
         Feature("highway-access", null, "facility.reference_highway_access", "facility.highway_access_coefficient", parameters)

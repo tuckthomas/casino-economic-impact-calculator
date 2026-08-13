@@ -6,6 +6,9 @@ using Microsoft.Extensions.Options;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using SaveNEIN.Server.Services;
 using SaveNEIN.Server.Services.Providers;
 
@@ -82,7 +85,7 @@ public sealed class IndianaProviderAdaptersTests
     [Fact]
     public async Task GamingCommissionFacilityProvider_JoinsOfficialLocationsToMonthlyUnitCounts()
     {
-        var handler = new IgcResponseHandler(BuildIgcWorkbook(), BuildIgcLocationsHtml());
+        var handler = new IgcResponseHandler(BuildIgcWorkbook(), BuildIgcLocationsHtml(), BuildIgcAnnualReportPdf());
         var provider = new IndianaGamingCommissionFacilityInventoryProvider(
             new HttpClient(handler),
             Options.Create(new IndianaGamingCommissionProviderOptions()));
@@ -97,18 +100,23 @@ public sealed class IndianaProviderAdaptersTests
         var ameristar = dataset.Rows.Single(row => row.StableVenueId == "USA-IN-IGC-ameristar-casino");
         Assert.Equal(980, ameristar.SlotOrVltPositions);
         Assert.Equal(30, ameristar.TableGameCount);
-        Assert.Null(ameristar.HasHotel);
+        Assert.True(ameristar.HasHotel);
+        Assert.Equal(288, ameristar.HotelRoomCount);
+        Assert.Equal(59_460, ameristar.GamingFloorSquareFeet);
+        Assert.Equal(6, ameristar.FoodBeverageVenueCount);
         Assert.Contains("777 Ameristar Drive", ameristar.Notes);
         var hoosierPark = dataset.Rows.Single(row => row.StableVenueId == "USA-IN-IGC-harrahs-hoosier-park");
         Assert.True(hoosierPark.HasRacetrack);
         Assert.Equal("racino", hoosierPark.VenueType);
-        Assert.Equal(2, handler.RequestUris.Count);
+        Assert.False(hoosierPark.HasHotel);
+        Assert.Equal(0, hoosierPark.HotelRoomCount);
+        Assert.Equal(3, handler.RequestUris.Count);
     }
 
     [Fact]
     public async Task GamingCommissionFacilityProvider_UsesDecemberInventoryForAnnualCompositeRequest()
     {
-        var handler = new IgcResponseHandler(BuildIgcWorkbook(), BuildIgcLocationsHtml());
+        var handler = new IgcResponseHandler(BuildIgcWorkbook(), BuildIgcLocationsHtml(), BuildIgcAnnualReportPdf());
         var provider = new IndianaGamingCommissionFacilityInventoryProvider(
             new HttpClient(handler),
             Options.Create(new IndianaGamingCommissionProviderOptions()));
@@ -123,7 +131,24 @@ public sealed class IndianaProviderAdaptersTests
         Assert.Contains("2025-12 month-end", dataset.Source.Notes, StringComparison.Ordinal);
         Assert.Contains(handler.RequestUris, uri =>
             uri.AbsolutePath.EndsWith("/2025/2025-12-Revenue.xlsx", StringComparison.Ordinal));
+        Assert.Contains(handler.RequestUris, uri =>
+            uri.AbsolutePath.EndsWith("/FY2025-Annual.pdf", StringComparison.Ordinal));
         Assert.Equal(13, dataset.Rows.Count);
+    }
+
+    [Fact]
+    public void GamingCommissionAnnualFacilityParser_RejectsIncompleteInventory()
+    {
+        var partial = new[]
+        {
+            "Indiana Gaming Commission Annual Report 2025 AMERISTAR CASINO " +
+            "Gaming Space: 59,460 Square Feet Restaurants: 6 Hotel: 288 Rooms"
+        };
+
+        var error = Assert.Throws<InvalidDataException>(() =>
+            IndianaGamingCommissionAnnualFacilityParser.ParsePageTexts(partial, 2025));
+
+        Assert.Contains("did not reconcile", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -249,6 +274,27 @@ public sealed class IndianaProviderAdaptersTests
             $"<td>{WebUtility.HtmlEncode(fixture.Address)}</td><td>555-0100</td>" +
             $"<td><a href=\"{fixture.Url}\">property</a></td></tr>")) +
         "</tbody></table></body></html>";
+
+    private static byte[] BuildIgcAnnualReportPdf()
+    {
+        QuestPDF.Settings.License = LicenseType.Community;
+        return Document.Create(document =>
+        {
+            foreach (var fixture in AnnualFacilityFixtures)
+            {
+                document.Page(page =>
+                {
+                    page.Size(PageSizes.Letter);
+                    page.Margin(24);
+                    page.Content().Text(
+                        $"{fixture.Title}\nIndiana Gaming Commission Annual Report 2025\n" +
+                        $"Gaming Space: {fixture.GamingFloorSquareFeet:N0} Square Feet\n" +
+                        $"Restaurants: {fixture.RestaurantCount}\n" +
+                        $"Hotel: {(fixture.HotelRoomCount is null ? "N/A" : $"{fixture.HotelRoomCount:N0} rooms")}");
+                });
+            }
+        }).GeneratePdf();
+    }
 
     private static byte[] BuildIndotArchive()
     {
@@ -391,7 +437,7 @@ public sealed class IndianaProviderAdaptersTests
         }
     }
 
-    private sealed class IgcResponseHandler(byte[] workbook, string locationsHtml) : HttpMessageHandler
+    private sealed class IgcResponseHandler(byte[] workbook, string locationsHtml, byte[] annualReportPdf) : HttpMessageHandler
     {
         public List<Uri> RequestUris { get; } = [];
 
@@ -402,7 +448,9 @@ public sealed class IndianaProviderAdaptersTests
             RequestUris.Add(request.RequestUri!);
             HttpContent content = request.RequestUri!.AbsolutePath.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
                 ? new ByteArrayContent(workbook)
-                : new StringContent(locationsHtml, Encoding.UTF8, "text/html");
+                : request.RequestUri.AbsolutePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
+                    ? new ByteArrayContent(annualReportPdf)
+                    : new StringContent(locationsHtml, Encoding.UTF8, "text/html");
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
         }
     }
@@ -424,6 +472,23 @@ public sealed class IndianaProviderAdaptersTests
         new("Terre Haute Casino", "Terre Haute Casino Resort", "4500 East Margaret Drive, Terre Haute, IN 47803", "https://example.test/terre-haute", 38, 1039)
     ];
 
+    private static readonly AnnualFacilityFixture[] AnnualFacilityFixtures =
+    [
+        new("AMERISTAR CASINO", 59_460, 6, 288),
+        new("BALLY'S EVANSVILLE", 46_265, 3, 338),
+        new("BELTERRA CASINO", 70_232, 5, 608),
+        new("BLUE CHIP CASINO", 65_375, 3, 486),
+        new("CAESARS SOUTHERN INDIANA", 74_421, 5, 503),
+        new("FRENCH LICK RESORT CASINO", 49_719, 11, 756),
+        new("HARD ROCK NORTHERN INDIANA", 77_118, 5, null),
+        new("HARRAH'S HOOSIER PARK CASINO", 86_136, 3, null),
+        new("HOLLYWOOD CASINO", 167_000, 4, 295),
+        new("HORSESHOE CASINO HAMMOND", 108_000, 3, null),
+        new("HORSESHOE INDIANAPOLIS", 106_700, 4, null),
+        new("RISING STAR CASINO", 40_000, 2, 294),
+        new("TERRE HAUTE CASINO RESORT", 76_726, 9, 122)
+    ];
+
     private sealed record FacilityFixture(
         string ReportName,
         string PageName,
@@ -431,4 +496,10 @@ public sealed class IndianaProviderAdaptersTests
         string Url,
         int TableGames,
         int Slots);
+
+    private sealed record AnnualFacilityFixture(
+        string Title,
+        int GamingFloorSquareFeet,
+        int RestaurantCount,
+        int? HotelRoomCount);
 }

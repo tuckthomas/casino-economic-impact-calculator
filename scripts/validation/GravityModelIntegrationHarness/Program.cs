@@ -4,6 +4,7 @@
 // Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
 
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -490,6 +491,100 @@ if (args is ["--export-four-state-provider-bundle", var fourStateBundleOutputPat
     return;
 }
 
+if (args is ["--refresh-four-state-indiana-facilities", var baseBundlePath, var refreshedBundleOutputPath])
+{
+    var fullBasePath = Path.GetFullPath(baseBundlePath);
+    var fullOutputPath = Path.GetFullPath(refreshedBundleOutputPath);
+    if (!File.Exists(fullBasePath) ||
+        !string.Equals(Path.GetExtension(fullBasePath), ".json", StringComparison.OrdinalIgnoreCase) ||
+        !string.Equals(Path.GetExtension(fullOutputPath), ".json", StringComparison.OrdinalIgnoreCase) ||
+        !Directory.Exists(Path.GetDirectoryName(fullOutputPath)))
+    {
+        throw new ArgumentException(
+            "Indiana facility refresh requires an existing base .json bundle and an output .json path in an existing directory.");
+    }
+    var baseBytes = await File.ReadAllBytesAsync(fullBasePath);
+    var baseChecksum = Convert.ToHexString(SHA256.HashData(baseBytes)).ToLowerInvariant();
+    const string expectedBaseChecksum = "fccb73b93a777f49af7ed82b5ccba376d68631e5443038873a1cb29dcf4c9d50";
+    if (!string.Equals(baseChecksum, expectedBaseChecksum, StringComparison.Ordinal))
+    {
+        throw new InvalidDataException(
+            $"Frozen four-state base bundle checksum '{baseChecksum}' does not match expected '{expectedBaseChecksum}'.");
+    }
+    var baseBundle = JsonSerializer.Deserialize<ProviderValidationBundle>(baseBytes)
+        ?? throw new InvalidDataException("The frozen four-state base bundle is invalid.");
+    using var providerHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(8) };
+    var request = new ProviderFetchRequest(
+        "US-IN",
+        new DateOnly(2025, 1, 1),
+        new DateOnly(2025, 12, 31));
+    var indianaFacilities = await new IndianaGamingCommissionFacilityInventoryProvider(
+            providerHttp,
+            Options.Create(new IndianaGamingCommissionProviderOptions()))
+        .FetchAsync(request);
+    var retainedRows = baseBundle.Facilities.Rows
+        .Where(row => !row.StableVenueId.StartsWith("USA-IN-IGC-", StringComparison.Ordinal))
+        .ToArray();
+    var refreshedRows = retainedRows.Concat(indianaFacilities.Rows)
+        .OrderBy(row => row.StableVenueId, StringComparer.Ordinal)
+        .ToArray();
+    var duplicate = refreshedRows.GroupBy(row => row.StableVenueId, StringComparer.Ordinal)
+        .FirstOrDefault(group => group.Count() > 1);
+    if (duplicate is not null || refreshedRows.Length != baseBundle.Facilities.Rows.Count)
+    {
+        throw new InvalidDataException(
+            duplicate is null
+                ? "Indiana facility refresh changed the four-state facility-row count."
+                : $"Indiana facility refresh repeats stable venue ID '{duplicate.Key}'.");
+    }
+    var componentManifest = string.Join('\n',
+        $"frozen-base|{baseChecksum}",
+        $"indiana-commercial-facilities|{indianaFacilities.ContentChecksum}");
+    var refreshedFacilityChecksum = Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(componentManifest)))
+        .ToLowerInvariant();
+    var refreshedFacilities = new ProviderDataset<CasinoCompetitorImportRow>(
+        new RegisterDataSourceRequest(
+            "Checksum-pinned four-state gaming inventory with refreshed Indiana regulator facility profiles",
+            "Multiple jurisdiction gaming regulators",
+            $"urn:savenein:frozen-four-state-indiana-refresh:{refreshedFacilityChecksum}",
+            "checksum-pinned-regulator-bundle-refresh",
+            "US-IL,US-IN,US-MI,US-OH",
+            "2025",
+            DateTime.UtcNow,
+            refreshedFacilityChecksum,
+            true,
+            "Each component regulator's public-record terms apply.",
+            $"Frozen base bundle SHA-256 {baseChecksum}; Indiana commercial facility dataset SHA-256 " +
+            $"{indianaFacilities.ContentChecksum}. Only rows with stable IDs prefixed USA-IN-IGC- were replaced; " +
+            "all other frozen facility and performance rows are byte-derived from the checksum-pinned base bundle."),
+        DatasetSnapshotKinds.Competitors,
+        "2025",
+        new DateOnly(2025, 1, 1),
+        new DateOnly(2025, 12, 31),
+        refreshedFacilityChecksum,
+        "frozen-four-state-indiana-facility-refresh-v1",
+        refreshedRows,
+        baseBundle.Facilities.Warnings.Concat(indianaFacilities.Warnings).Distinct(StringComparer.Ordinal).ToArray());
+    var refreshedBundle = new ProviderValidationBundle(refreshedFacilities, baseBundle.Performance);
+    await File.WriteAllTextAsync(
+        fullOutputPath,
+        JsonSerializer.Serialize(refreshedBundle, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        BundlePath = fullOutputPath,
+        BaseBundleChecksum = baseChecksum,
+        IndianaFacilityChecksum = indianaFacilities.ContentChecksum,
+        RefreshedFacilityChecksum = refreshedFacilities.ContentChecksum,
+        FacilityRows = refreshedFacilities.Rows.Count,
+        IndianaCommercialRows = indianaFacilities.Rows.Count,
+        UnknownIndianaHotelCount = indianaFacilities.Rows.Count(row => row.HotelRoomCount is null),
+        PerformanceRows = refreshedBundle.Performance.Rows.Count,
+        PerformanceChecksum = refreshedBundle.Performance.ContentChecksum
+    }));
+    return;
+}
+
 if (args is ["--export-ohio-provider-bundle", var ohioBundleOutputPath])
 {
     var fullOutputPath = Path.GetFullPath(ohioBundleOutputPath);
@@ -631,7 +726,7 @@ if ((!validateIncumbentCalibration && !validateMichiganProviderBundle && !valida
     (validateIncumbentCalibration && args.Length != 4))
 {
     throw new ArgumentException(
-        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --probe-ohio-providers | --export-michigan-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
+        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --refresh-four-state-indiana-facilities <base-bundle-json> <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
 }
 
 var validationDatabase = validateProviderIngestion ? args[1] : args[0];
@@ -846,7 +941,7 @@ if (validateProviderIngestion)
         {
             throw new FileNotFoundException("The checksum-pinned four-state calibration provider bundle was not found.", bundlePath);
         }
-        const string expectedBundleChecksum = "fccb73b93a777f49af7ed82b5ccba376d68631e5443038873a1cb29dcf4c9d50";
+        const string expectedBundleChecksum = "31d2fc3f3762ec02a97e18996ff680a276cc4d76b5016b3f388a5b287dd08396";
         await using (var bundleStream = File.OpenRead(bundlePath))
         {
             var actualBundleChecksum = Convert.ToHexString(
@@ -901,26 +996,108 @@ if (validateProviderIngestion)
         "US-IN,US-IL,US-MI,US-OH",
         new DateOnly(2025, 1, 1),
         new DateOnly(2025, 12, 31));
-    var facilitySnapshotId = await providerIngestion.IngestGamingFacilitiesAsync(
-        calibrationProviderBundle is null
-            ? new CompositeGamingFacilityInventoryProvider(
-                new IGamingFacilityInventoryProvider[] { igcFacilityProvider, indianaTribalFacilityProvider, igbFacilityProvider, mgcbFacilityProvider, occcFacilityProvider, ohioLotteryFacilityProvider })
-            : new FrozenGamingFacilityProvider(
-                calibrationProviderBundle.Facilities,
-                "checksum-pinned-four-state-calibration-facilities",
-                "US-IN,US-IL,US-MI,US-OH"),
-        igcFacilityPeriod);
-    var performanceSnapshotId = await providerIngestion.IngestGamingPerformanceAsync(
-        calibrationProviderBundle is null
-            ? new CompositeGamingRegulatorPerformanceProvider(
-                new IGamingRegulatorPerformanceProvider[] { igcRevenueProvider, igbRevenueProvider, mgcbRevenueProvider, occcRevenueProvider, ohioLotteryRevenueProvider })
-            : new FrozenGamingPerformanceProvider(
-                calibrationProviderBundle.Performance,
-                "checksum-pinned-four-state-calibration-performance",
-                "US-IN,US-IL,US-MI,US-OH"),
-        igcPerformancePeriod,
-        facilitySnapshotId);
-    var trafficSnapshotId = await providerIngestion.IngestTrafficAsync(
+    var existingFacilitySnapshotId = calibrationProviderBundle is null
+        ? null
+        : await db.DatasetSnapshots.AsNoTracking()
+            .Where(snapshot =>
+                snapshot.DatasetKey == DatasetSnapshotKinds.Competitors &&
+                snapshot.Checksum == calibrationProviderBundle.Facilities.ContentChecksum &&
+                snapshot.IsSealed)
+            .Select(snapshot => (Guid?)snapshot.Id)
+            .SingleOrDefaultAsync();
+    var facilitySnapshotId = existingFacilitySnapshotId ??
+        await providerIngestion.IngestGamingFacilitiesAsync(
+            calibrationProviderBundle is null
+                ? new CompositeGamingFacilityInventoryProvider(
+                    new IGamingFacilityInventoryProvider[] { igcFacilityProvider, indianaTribalFacilityProvider, igbFacilityProvider, mgcbFacilityProvider, occcFacilityProvider, ohioLotteryFacilityProvider })
+                : new FrozenGamingFacilityProvider(
+                    calibrationProviderBundle.Facilities,
+                    "checksum-pinned-four-state-calibration-facilities",
+                    "US-IN,US-IL,US-MI,US-OH"),
+            igcFacilityPeriod);
+    ProviderDataset<CasinoGamingRevenueImportRow>? linkedFrozenPerformance = null;
+    if (calibrationProviderBundle is not null)
+    {
+        var linkedPerformanceManifest =
+            $"performance={calibrationProviderBundle.Performance.ContentChecksum}\n" +
+            $"facility={calibrationProviderBundle.Facilities.ContentChecksum}";
+        var linkedPerformanceChecksum = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(linkedPerformanceManifest)))
+            .ToLowerInvariant();
+        linkedFrozenPerformance = calibrationProviderBundle.Performance with
+        {
+            ContentChecksum = linkedPerformanceChecksum,
+            TransformVersion = calibrationProviderBundle.Performance.TransformVersion +
+                               "+facility-link-v1",
+            Warnings = calibrationProviderBundle.Performance.Warnings
+                .Append(
+                    $"Performance rows retain raw provider checksum {calibrationProviderBundle.Performance.ContentChecksum}; " +
+                    $"snapshot transform checksum {linkedPerformanceChecksum} also binds refreshed facility checksum " +
+                    $"{calibrationProviderBundle.Facilities.ContentChecksum} because performance foreign keys resolve inside that immutable facility snapshot.")
+                .ToArray()
+        };
+    }
+    var existingPerformanceSnapshotId = linkedFrozenPerformance is null
+        ? null
+        : await db.DatasetSnapshots.AsNoTracking()
+            .Where(snapshot =>
+                snapshot.DatasetKey == DatasetSnapshotKinds.ObservedPerformance &&
+                snapshot.Checksum == linkedFrozenPerformance.ContentChecksum &&
+                snapshot.IsSealed)
+            .Select(snapshot => (Guid?)snapshot.Id)
+            .SingleOrDefaultAsync();
+    var performanceSnapshotId = existingPerformanceSnapshotId ??
+        await providerIngestion.IngestGamingPerformanceAsync(
+            calibrationProviderBundle is null
+                ? new CompositeGamingRegulatorPerformanceProvider(
+                    new IGamingRegulatorPerformanceProvider[] { igcRevenueProvider, igbRevenueProvider, mgcbRevenueProvider, occcRevenueProvider, ohioLotteryRevenueProvider })
+                : new FrozenGamingPerformanceProvider(
+                    linkedFrozenPerformance!,
+                    "checksum-pinned-four-state-calibration-performance",
+                    "US-IN,US-IL,US-MI,US-OH"),
+            igcPerformancePeriod,
+            facilitySnapshotId);
+    Guid trafficSnapshotId;
+    Guid originSnapshotId;
+    Guid incomeSnapshotId;
+    Guid ageSnapshotId;
+    Guid tourismSnapshotId;
+    int expectedOriginCount;
+    var reusableOriginSnapshot = validateIncumbentCalibration
+        ? await db.DatasetSnapshots.AsNoTracking()
+            .Where(snapshot => snapshot.DatasetKey == DatasetSnapshotKinds.OriginGeography && snapshot.IsSealed)
+            .OrderByDescending(snapshot => snapshot.IngestedAtUtc)
+            .Select(snapshot => (Guid?)snapshot.Id)
+            .FirstOrDefaultAsync()
+        : null;
+    if (reusableOriginSnapshot is not null)
+    {
+        originSnapshotId = reusableOriginSnapshot.Value;
+        trafficSnapshotId = await db.DatasetSnapshots.AsNoTracking()
+            .Where(snapshot => snapshot.DatasetKey == DatasetSnapshotKinds.Traffic && snapshot.IsSealed)
+            .OrderByDescending(snapshot => snapshot.IngestedAtUtc)
+            .Select(snapshot => snapshot.Id)
+            .FirstAsync();
+        incomeSnapshotId = await db.DatasetSnapshots.AsNoTracking()
+            .Where(snapshot => snapshot.DatasetKey == DatasetSnapshotKinds.Income && snapshot.IsSealed)
+            .OrderByDescending(snapshot => snapshot.IngestedAtUtc)
+            .Select(snapshot => snapshot.Id)
+            .FirstAsync();
+        ageSnapshotId = await db.DatasetSnapshots.AsNoTracking()
+            .Where(snapshot => snapshot.DatasetKey == DatasetSnapshotKinds.AgePopulation && snapshot.IsSealed)
+            .OrderByDescending(snapshot => snapshot.IngestedAtUtc)
+            .Select(snapshot => snapshot.Id)
+            .FirstAsync();
+        tourismSnapshotId = await db.DatasetSnapshots.AsNoTracking()
+            .Where(snapshot => snapshot.DatasetKey == DatasetSnapshotKinds.Tourism && snapshot.IsSealed)
+            .OrderByDescending(snapshot => snapshot.IngestedAtUtc)
+            .Select(snapshot => snapshot.Id)
+            .FirstAsync();
+        expectedOriginCount = await db.OriginZones.CountAsync(row => row.DatasetSnapshotId == originSnapshotId);
+    }
+    else
+    {
+        trafficSnapshotId = await providerIngestion.IngestTrafficAsync(
         new IndianaDepartmentOfTransportationAadtProvider(
             providerHttp,
             Options.Create(new IndianaDepartmentOfTransportationProviderOptions())),
@@ -932,19 +1109,19 @@ if (validateProviderIngestion)
             {
                 ["site-numbers"] = "970200"
             }));
-    var irsPeriod = new ProviderFetchRequest(
+        var irsPeriod = new ProviderFetchRequest(
         "US-STATES",
         new DateOnly(2022, 1, 1),
         new DateOnly(2022, 12, 31),
         new Dictionary<string, string> { ["state-codes"] = "IL,IN,KY,MI,OH" });
-    var irsDataset = await new IrsSoiExactCodeZctaIncomeProvider(
+        var irsDataset = await new IrsSoiExactCodeZctaIncomeProvider(
             providerHttp,
             Options.Create(new IrsSoiProviderOptions()))
         .FetchAsync(irsPeriod);
-    var zctaCodes = string.Join(',', irsDataset.Rows
+        var zctaCodes = string.Join(',', irsDataset.Rows
         .Select(row => row.StableOriginId["USA-ZCTA-".Length..])
         .Order(StringComparer.Ordinal));
-    var originSnapshotId = await providerIngestion.IngestOriginsAsync(
+        originSnapshotId = await providerIngestion.IngestOriginsAsync(
         new CensusZctaOriginProvider(
             providerHttp,
             Options.Create(new CensusZctaOriginProviderOptions())),
@@ -953,12 +1130,12 @@ if (validateProviderIngestion)
             new DateOnly(2020, 1, 1),
             new DateOnly(2020, 12, 31),
             new Dictionary<string, string> { ["zcta-codes"] = zctaCodes }));
-    var incomeSnapshotId = await providerIngestion.IngestIncomeAsync(
+        incomeSnapshotId = await providerIngestion.IngestIncomeAsync(
         new FrozenOriginIncomeProvider(irsDataset),
         irsPeriod,
         originSnapshotId);
-    var censusApiKey = Environment.GetEnvironmentVariable("CensusAcs__ApiKey");
-    var ageSnapshotId = await providerIngestion.IngestAgePopulationAsync(
+        var censusApiKey = Environment.GetEnvironmentVariable("CensusAcs__ApiKey");
+        ageSnapshotId = await providerIngestion.IngestAgePopulationAsync(
         new CensusAcsAgePopulationProvider(
             providerHttp,
             Options.Create(new CensusAcsProviderOptions { ApiKey = censusApiKey })),
@@ -968,7 +1145,7 @@ if (validateProviderIngestion)
             new DateOnly(2022, 12, 31),
             new Dictionary<string, string> { ["zcta-codes"] = zctaCodes }),
         originSnapshotId);
-    var tourismSnapshotId = await providerIngestion.IngestTourismAsync(
+        tourismSnapshotId = await providerIngestion.IngestTourismAsync(
         new IndianaDestinationDevelopmentPersonTripsProvider(
             providerHttp,
             Options.Create(new IndianaTourismProviderOptions())),
@@ -976,6 +1153,8 @@ if (validateProviderIngestion)
             "US-IN",
             new DateOnly(2023, 1, 1),
             new DateOnly(2023, 12, 31)));
+        expectedOriginCount = irsDataset.Rows.Count;
+    }
 
     var facilityCount = await db.CasinoCompetitors.CountAsync(row => row.DatasetSnapshotId == facilitySnapshotId);
     var unknownHotelCount = await db.CasinoCompetitors.CountAsync(
@@ -1006,9 +1185,9 @@ if (validateProviderIngestion)
         .Select(snapshot => new { snapshot.Id, snapshot.DatasetKey, snapshot.IsSealed, snapshot.ValidationState })
         .OrderBy(snapshot => snapshot.DatasetKey)
         .ToArrayAsync();
-    if (facilityCount != 69 || unknownHotelCount != 68 || performanceCount != 838 || trafficCount != 1 ||
-        originCount != irsDataset.Rows.Count || incomeCount != irsDataset.Rows.Count ||
-        ageBinCount != irsDataset.Rows.Count * 23 || tourismCount != 1 ||
+    if (facilityCount != 69 || unknownHotelCount != 55 || performanceCount != 838 || trafficCount != 1 ||
+        originCount != expectedOriginCount || incomeCount != expectedOriginCount ||
+        ageBinCount != expectedOriginCount * 23 || tourismCount != 1 ||
         snapshotStates.Length != 7 || snapshotStates.Any(snapshot => !snapshot.IsSealed))
     {
         throw new InvalidOperationException("Live multi-jurisdiction provider ingestion did not persist the expected sealed rows.");
@@ -1045,7 +1224,11 @@ if (validateProviderIngestion)
         }
 
         var validationIndiana = await db.Jurisdictions.SingleAsync(jurisdiction => jurisdiction.Code == "US-IN");
-        db.JurisdictionRules.AddRange(
+        if (!await db.JurisdictionRules.AnyAsync(rule =>
+                rule.JurisdictionId == validationIndiana.Id &&
+                rule.SourceUrl == "https://example.invalid/disposable-calibration-gaming-tax"))
+        {
+            db.JurisdictionRules.AddRange(
             new JurisdictionRule
             {
                 JurisdictionId = validationIndiana.Id,
@@ -1080,7 +1263,8 @@ if (validateProviderIngestion)
                 SourceUrl = "https://example.invalid/disposable-calibration-general-fiscal",
                 ProvenanceNotes = "Disposable database-only validation fixture; not an Indiana fiscal calibration."
             });
-        await db.SaveChangesAsync();
+            await db.SaveChangesAsync();
+        }
 
         var originIds = await db.OriginZones.AsNoTracking()
             .Where(origin => origin.DatasetSnapshotId == originSnapshotId)
@@ -1096,7 +1280,7 @@ if (validateProviderIngestion)
             StringComparer.OrdinalIgnoreCase);
         IncumbentBacktestTarget Target(string stableId, string partition, string group) => new(
             competitorByStableId[stableId].Id,
-            $"live-2025-{stableId["USA-IN-IGC-".Length..]}",
+            $"live-2025-attributes-v2-{stableId["USA-IN-IGC-".Length..]}",
             partition,
             group);
         var targets = new[]
@@ -1177,9 +1361,9 @@ if (validateProviderIngestion)
         var metricsService = new ValidationMetricsService();
         var candidates = new[]
         {
-            new { Key = "compact", ComparableScale = 2d, GamingPositions = 0.5d, Tables = 0.1d, RegionalIntensity = 0.9d },
-            new { Key = "destination", ComparableScale = 4d, GamingPositions = 1d, Tables = 0.4d, RegionalIntensity = 1.1d }
-        }.SelectMany(profile => new[] { 1.4d, 1.5d, 1.6d }.SelectMany(beta =>
+            new { Key = "balanced", ComparableScale = 3d, GamingPositions = 0.75d, Tables = 0.2d, Hotels = 0.35d, GamingFloor = 0.25d, FoodBeverage = 0.25d, RegionalIntensity = 1d },
+            new { Key = "amenity", ComparableScale = 2.5d, GamingPositions = 0.5d, Tables = 0.1d, Hotels = 0.6d, GamingFloor = 0.35d, FoodBeverage = 0.4d, RegionalIntensity = 1.1d }
+        }.SelectMany(profile => new[] { 1.3d, 1.4d, 1.5d }.SelectMany(beta =>
             new[] { 0.75d, 1d, 1.25d }.Select(alpha => new IncumbentCalibrationCandidate(
                 $"{profile.Key}-beta-{beta:0.0}-alpha-{alpha:0.00}",
                 new Dictionary<string, double>
@@ -1190,8 +1374,13 @@ if (validateProviderIngestion)
                     ["facility.comparable_scale_multiplier"] = profile.ComparableScale,
                     ["facility.gaming_positions_coefficient"] = profile.GamingPositions,
                     ["facility.table_games_coefficient"] = profile.Tables,
+                    ["facility.hotel_rooms_coefficient"] = profile.Hotels,
+                    ["facility.gaming_floor_coefficient"] = profile.GamingFloor,
+                    ["facility.food_beverage_coefficient"] = profile.FoodBeverage,
                     ["demand.regional_intensity_multiplier"] = profile.RegionalIntensity
                 })))).ToArray();
+        var finalizedBeforeCalibration = await db.ModelRuns.CountAsync(run =>
+            run.Status == ModelRunStatuses.Finalized);
         var calibration = await new IncumbentBacktestCalibrationService(
             db,
             new DevelopmentProgramService(db),
@@ -1203,8 +1392,8 @@ if (validateProviderIngestion)
                 new ComparableMarketModelService(),
                 new ModelParameterSetService(db)))
             .CalibrateAsync(new IncumbentBacktestCalibrationRequest(
-                "live-indiana-incumbent-backtest",
-                "2025-disposable-validation",
+                "live-indiana-incumbent-backtest-attributes-v2",
+                "2025-disposable-validation-v2",
                 ValidationObjectiveFunctions.Smape,
                 baseRequest,
                 targets,
@@ -1215,18 +1404,18 @@ if (validateProviderIngestion)
                     purpose = "Leakage-safe northern and central Indiana incumbent calibration against authoritative 2025 regulator observations.",
                     inclusion = "Training properties are Indianapolis, Michigan City, and Terre Haute markets. The independent holdout is the three-property Indiana side of the Chicago market.",
                     exclusion = "Southern and Ohio River properties are excluded because the sealed competitor field does not yet contain Kentucky facilities. Four Winds South Bend remains in the competitive field with structural attraction because public tribal GGR is unavailable.",
-                    parameterDesign = "Predeclared 18-cell grid crossing beta 1.4/1.5/1.6, alpha 0.75/1.00/1.25, and two bounded facility/demand profiles. Outside-option weight remains at the common public-benchmark surface of 1e-8.",
+                    parameterDesign = "Predeclared 18-cell grid crossing beta 1.3/1.4/1.5, alpha 0.75/1.00/1.25, and two bounded regulator-attribute profiles. The profiles vary proposed comparable scale plus positions, tables, hotel rooms, gaming-floor area, food/beverage venues, and regional demand intensity. Outside-option weight remains at the common public-benchmark surface of 1e-8.",
                     zctaAssignment = "Dominant 2020 Census county by land-area overlap."
                 }),
                 sourceParameterSet.Id,
-                "0.2.0-indiana-incumbent-calibration",
+                "0.3.0-indiana-incumbent-attributes-calibration",
                 OriginPrefilterMiles: 50));
         var evaluation = await db.ValidationEvaluations.AsNoTracking()
             .SingleAsync(item => item.Id == calibration.Evaluation.ValidationEvaluationId);
         var caseCount = await db.ValidationCases.CountAsync(item =>
-            item.CaseKey.StartsWith("live-2025-"));
+            item.CaseKey.StartsWith("live-2025-attributes-v2-"));
         var finalizedRunCount = await db.ModelRuns.CountAsync(run =>
-            run.Status == ModelRunStatuses.Finalized);
+            run.Status == ModelRunStatuses.Finalized) - finalizedBeforeCalibration;
         if (evaluation.Status != ValidationEvaluationStatuses.Finalized || !evaluation.IsImmutable ||
             calibration.Evaluation.PublishedParameterSetId is null || caseCount != targets.Length ||
             finalizedRunCount != targets.Length * candidates.Length)

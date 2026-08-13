@@ -6,6 +6,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.Extensions.Options;
+using UglyToad.PdfPig;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 
 namespace SaveNEIN.Server.Services.Providers;
 
@@ -17,6 +19,7 @@ public sealed class IndianaGamingCommissionProviderOptions
     public string PublicationUrl { get; set; } = "https://www.in.gov/igc/publications/monthly-revenue/";
     public string CasinoLocationsUrl { get; set; } =
         "https://www.in.gov/igc/about-us/casino-locations-and-information/";
+    public string AnnualReportBaseUrl { get; set; } = "https://www.in.gov/igc/files";
 }
 
 public sealed class IndianaGamingCommissionMonthlyRevenueProvider(
@@ -293,6 +296,8 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
         var reportUri = new Uri(
             $"{configured.MonthlyReportBaseUrl.TrimEnd('/')}/{inventoryMonth.Year}/{inventoryMonth:yyyy-MM}-Revenue.xlsx");
         var locationsUri = new Uri(configured.CasinoLocationsUrl);
+        var annualReportUri = new Uri(
+            $"{configured.AnnualReportBaseUrl.TrimEnd('/')}/FY{inventoryMonth.Year}-Annual.pdf");
         var retrievedAt = DateTime.UtcNow;
         using var reportResponse = await http.GetAsync(reportUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         reportResponse.EnsureSuccessStatusCode();
@@ -300,12 +305,22 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
         using var locationsResponse = await http.GetAsync(locationsUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         locationsResponse.EnsureSuccessStatusCode();
         var locationsHtml = await locationsResponse.Content.ReadAsStringAsync(cancellationToken);
+        using var annualReportResponse = await http.GetAsync(
+            annualReportUri,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+        annualReportResponse.EnsureSuccessStatusCode();
+        var annualReportBytes = await annualReportResponse.Content.ReadAsByteArrayAsync(cancellationToken);
 
         var locations = ParseLocations(locationsHtml);
         var unitCounts = ParseGamingUnits(OpenXmlWorksheetReader.ReadRows(workbookBytes, "1 Tax Summary"));
+        var facilityAttributes = IndianaGamingCommissionAnnualFacilityParser.Parse(
+            annualReportBytes,
+            inventoryMonth.Year);
         var expectedIds = IndianaGamingFacilityCatalog.Entries.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
         RequireExactInventory("IGC casino-locations page", expectedIds, locations.Keys);
         RequireExactInventory("IGC monthly gaming-unit table", expectedIds, unitCounts.Keys);
+        RequireExactInventory("IGC annual facility profiles", expectedIds, facilityAttributes.Keys);
 
         var rows = IndianaGamingFacilityCatalog.Entries
             .OrderBy(pair => pair.Key, StringComparer.Ordinal)
@@ -315,6 +330,7 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
                 var catalog = pair.Value;
                 var location = locations[stableId];
                 var units = unitCounts[stableId];
+                var attributes = facilityAttributes[stableId];
                 return new CasinoCompetitorImportRow(
                     StableVenueId: stableId,
                     Name: location.Name,
@@ -342,8 +358,8 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
                     HasPoker: null,
                     HasSportsbook: null,
                     HasRacetrack: catalog.IsRacino,
-                    HasHotel: null,
-                    HasRestaurants: null,
+                    HasHotel: attributes.HotelRoomCount > 0,
+                    HasRestaurants: attributes.RestaurantCount > 0,
                     HasEntertainment: null,
                     HasLoyaltyProgram: null,
                     HasResortAmenities: null,
@@ -351,10 +367,10 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
                     SlotOrVltPositions: units.SlotOrVltPositions,
                     TableGameCount: units.TableGameCount,
                     PokerTableCount: null,
-                    GamingFloorSquareFeet: null,
-                    HotelRoomCount: null,
+                    GamingFloorSquareFeet: attributes.GamingFloorSquareFeet,
+                    HotelRoomCount: attributes.HotelRoomCount,
                     EventCapacity: null,
-                    FoodBeverageVenueCount: null,
+                    FoodBeverageVenueCount: attributes.RestaurantCount,
                     DevelopmentCost: null,
                     DevelopmentCostDollarYear: null,
                     AccessContext: null,
@@ -362,7 +378,11 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
                     HasInterchangeAccess: null,
                     MarketOrientation: null,
                     IsBorderMarket: null,
-                    Notes: $"IGC-published address: {location.Address}. Coordinates are a frozen geocode of that address; amenities not reported by these sources remain null.");
+                    Notes: $"IGC-published address: {location.Address}. Coordinates are a frozen geocode of that address. " +
+                           $"The IGC FY{inventoryMonth.Year} Annual Report reports {attributes.GamingFloorSquareFeet:N0} gaming square feet, " +
+                           $"{attributes.RestaurantCount} restaurants, and " +
+                           $"{(attributes.HotelRoomCount == 0 ? "no on-property hotel" : $"{attributes.HotelRoomCount:N0} hotel rooms")}. " +
+                           "Amenities not reported by these sources remain null.");
             })
             .ToArray();
         var canonicalLocations = string.Join(
@@ -372,6 +392,7 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
         using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         hasher.AppendData(workbookBytes);
         hasher.AppendData(Encoding.UTF8.GetBytes(canonicalLocations));
+        hasher.AppendData(annualReportBytes);
         var checksum = Convert.ToHexString(hasher.GetHashAndReset()).ToLowerInvariant();
 
         return new ProviderDataset<CasinoCompetitorImportRow>(
@@ -379,20 +400,22 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
                 $"Indiana Gaming Commission facility inventory and gaming units {periodLabel}",
                 "Indiana Gaming Commission",
                 locationsUri.ToString(),
-                "state-regulator-html-and-xlsx",
+                "state-regulator-html-xlsx-and-pdf",
                 "Indiana commercial casinos and racinos",
                 inventoryMonth.ToString("yyyy-MM", CultureInfo.InvariantCulture),
                 retrievedAt,
                 checksum,
                 true,
                 "Indiana public-record terms apply.",
-                $"Facility locations come from the IGC locations page; table and EGD/slot counts are the {inventoryMonth:yyyy-MM} month-end inventory from {reportUri}. Coordinate transform catalog: igc-address-geocodes-2026-08-09-v1."),
+                $"Facility locations come from the IGC locations page; table and EGD/slot counts are the {inventoryMonth:yyyy-MM} month-end inventory from {reportUri}. " +
+                $"Gaming-floor area, restaurant count, and explicit hotel-room count/absence come from the facility profiles in {annualReportUri}. " +
+                "Coordinate transform catalog: igc-address-geocodes-2026-08-09-v1."),
             DatasetSnapshotKinds.Competitors,
             periodLabel,
             request.PeriodStart,
             request.PeriodEnd,
             checksum,
-            "igc-facilities-and-month-end-gaming-units-v2",
+            "igc-facilities-units-and-annual-attributes-v3",
             rows,
             []);
     }
@@ -547,6 +570,139 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
 
     private sealed record IgcFacilityLocation(string Name, string Address, string PropertyUrl);
     private sealed record IgcGamingUnits(int TableGameCount, int SlotOrVltPositions);
+}
+
+internal sealed record IndianaGamingFacilityAttributes(
+    int GamingFloorSquareFeet,
+    int RestaurantCount,
+    int HotelRoomCount);
+
+internal static partial class IndianaGamingCommissionAnnualFacilityParser
+{
+    private static readonly IReadOnlyDictionary<string, string> FacilityTitles =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["AMERISTAR CASINO"] = "USA-IN-IGC-ameristar-casino",
+            ["BALLY'S EVANSVILLE"] = "USA-IN-IGC-ballys-evansville",
+            ["BELTERRA CASINO"] = "USA-IN-IGC-belterra-casino",
+            ["BLUE CHIP CASINO"] = "USA-IN-IGC-blue-chip-casino",
+            ["CAESARS SOUTHERN INDIANA"] = "USA-IN-IGC-caesars-southern-indiana",
+            ["FRENCH LICK RESORT CASINO"] = "USA-IN-IGC-french-lick-resort",
+            ["HARD ROCK NORTHERN INDIANA"] = "USA-IN-IGC-hard-rock-casino-northern-indiana",
+            ["HARRAH'S HOOSIER PARK CASINO"] = "USA-IN-IGC-harrahs-hoosier-park",
+            ["HOLLYWOOD CASINO"] = "USA-IN-IGC-hollywood-lawrenceburg",
+            ["HORSESHOE CASINO HAMMOND"] = "USA-IN-IGC-horseshoe-hammond",
+            ["HORSESHOE INDIANAPOLIS"] = "USA-IN-IGC-horseshoe-indianapolis",
+            ["RISING STAR CASINO"] = "USA-IN-IGC-rising-star-casino",
+            ["TERRE HAUTE CASINO RESORT"] = "USA-IN-IGC-terre-haute-casino"
+        };
+
+    internal static IReadOnlyDictionary<string, IndianaGamingFacilityAttributes> Parse(
+        byte[] pdfBytes,
+        int expectedFiscalYear)
+    {
+        ArgumentNullException.ThrowIfNull(pdfBytes);
+        if (pdfBytes.Length == 0)
+        {
+            throw new InvalidDataException("The IGC annual report PDF is empty.");
+        }
+        IReadOnlyList<string> pageTexts;
+        try
+        {
+            using var document = PdfDocument.Open(pdfBytes);
+            pageTexts = document.GetPages().Select(page => ContentOrderTextExtractor.GetText(page)).ToArray();
+        }
+        catch (Exception exception) when (exception is not InvalidDataException)
+        {
+            throw new InvalidDataException("The IGC annual report PDF could not be parsed.", exception);
+        }
+        return ParsePageTexts(pageTexts, expectedFiscalYear);
+    }
+
+    internal static IReadOnlyDictionary<string, IndianaGamingFacilityAttributes> ParsePageTexts(
+        IReadOnlyCollection<string> pageTexts,
+        int expectedFiscalYear)
+    {
+        ArgumentNullException.ThrowIfNull(pageTexts);
+        if (expectedFiscalYear is < 2007 or > 3000)
+        {
+            throw new ArgumentOutOfRangeException(nameof(expectedFiscalYear));
+        }
+        var results = new Dictionary<string, IndianaGamingFacilityAttributes>(StringComparer.Ordinal);
+        foreach (var rawPageText in pageTexts)
+        {
+            var text = Normalize(rawPageText);
+            var title = FacilityTitles.FirstOrDefault(pair => text.Contains(pair.Key, StringComparison.Ordinal));
+            if (string.IsNullOrEmpty(title.Key))
+            {
+                continue;
+            }
+            if (!text.Contains($"ANNUAL REPORT {expectedFiscalYear}", StringComparison.Ordinal))
+            {
+                throw new InvalidDataException(
+                    $"The IGC facility profile for '{title.Key}' is not from expected annual report {expectedFiscalYear}.");
+            }
+            var floorMatch = GamingFloorPattern().Match(text);
+            var restaurantsMatch = RestaurantsPattern().Match(text);
+            var hotelMatch = HotelPattern().Match(text);
+            if (!floorMatch.Success || !restaurantsMatch.Success || !hotelMatch.Success)
+            {
+                // Facility names also occur on statewide summary pages. Only a page carrying
+                // the complete regulator-published facility attribute tuple is a profile page.
+                continue;
+            }
+            var hotelValue = hotelMatch.Groups["value"].Value;
+            var normalizedHotelValue = hotelValue.Replace(" ", string.Empty, StringComparison.Ordinal);
+            var attributes = new IndianaGamingFacilityAttributes(
+                ParseWholeNumber(floorMatch.Groups["value"].Value, title.Key, "gaming-floor square feet"),
+                ParseWholeNumber(restaurantsMatch.Groups["value"].Value, title.Key, "restaurant count"),
+                string.Equals(normalizedHotelValue, "N/A", StringComparison.Ordinal)
+                    ? 0
+                    : ParseWholeNumber(normalizedHotelValue, title.Key, "hotel-room count"));
+            if (!results.TryAdd(title.Value, attributes))
+            {
+                throw new InvalidDataException($"The IGC annual report repeats facility profile '{title.Key}'.");
+            }
+        }
+        var expected = FacilityTitles.Values.ToHashSet(StringComparer.Ordinal);
+        if (!expected.SetEquals(results.Keys))
+        {
+            var missing = expected.Except(results.Keys).Order(StringComparer.Ordinal);
+            var unexpected = results.Keys.Except(expected).Order(StringComparer.Ordinal);
+            throw new InvalidDataException(
+                $"The IGC annual report facility profiles did not reconcile. Missing: [{string.Join(", ", missing)}]; " +
+                $"unexpected: [{string.Join(", ", unexpected)}].");
+        }
+        return results;
+    }
+
+    private static int ParseWholeNumber(string raw, string facility, string field)
+    {
+        var normalized = raw.Replace(",", string.Empty, StringComparison.Ordinal);
+        if (!int.TryParse(normalized, NumberStyles.None, CultureInfo.InvariantCulture, out var value) || value < 0)
+        {
+            throw new InvalidDataException(
+                $"The IGC annual report {field} for '{facility}' is invalid: '{raw}'.");
+        }
+        return value;
+    }
+
+    private static string Normalize(string text) =>
+        WhitespacePattern().Replace((text ?? string.Empty).Replace('\u2019', '\''), " ")
+            .Trim()
+            .ToUpperInvariant();
+
+    [GeneratedRegex(@"GAMING\s*SPACE\s*:?\s*(?<value>[\d,]+)\s*SQUARE\s*FEET", RegexOptions.CultureInvariant)]
+    private static partial Regex GamingFloorPattern();
+
+    [GeneratedRegex(@"RESTAURANTS\s*:?\s*(?<value>\d+)", RegexOptions.CultureInvariant)]
+    private static partial Regex RestaurantsPattern();
+
+    [GeneratedRegex(@"HOTEL\s*:?\s*(?<value>N\s*/\s*A|[\d,]+)\s*(?:ROOMS?)?", RegexOptions.CultureInvariant)]
+    private static partial Regex HotelPattern();
+
+    [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex WhitespacePattern();
 }
 
 internal sealed record IndianaGamingFacilityCatalogEntry(

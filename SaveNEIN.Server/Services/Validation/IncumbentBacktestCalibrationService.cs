@@ -205,6 +205,9 @@ public sealed class IncumbentBacktestCalibrationService(
                 ["total-resident-demand"] = Convert.ToDouble(result.TotalResidentDemand),
                 ["gaming-positions"] = competitor.GamingPositions ?? competitor.SlotOrVltPositions ?? 0,
                 ["table-games"] = competitor.TableGameCount ?? 0,
+                ["hotel-rooms"] = competitor.HotelRoomCount ?? 0,
+                ["gaming-floor-square-feet"] = competitor.GamingFloorSquareFeet ?? 0,
+                ["food-beverage-venues"] = competitor.FoodBeverageVenueCount ?? 0,
                 ["modeled-incumbent-count"] = result.IncumbentCount
             };
             var validationCase = new ValidationCase
