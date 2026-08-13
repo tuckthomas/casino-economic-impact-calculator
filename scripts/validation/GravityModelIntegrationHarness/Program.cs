@@ -716,6 +716,7 @@ var validateIncumbentCalibration = args is ["--validate-incumbent-calibration", 
 var validateMichiganProviderBundle = args is ["--validate-michigan-provider-bundle", _, _];
 var validateOhioProviderBundle = args is ["--validate-ohio-provider-bundle", _, _];
 var validateOhioProviderIngestion = args is ["--validate-ohio-provider-ingestion", _];
+var validateIndianaFiscal = args is ["--validate-indiana-fiscal", _];
 var validateProviderIngestion = args is ["--validate-provider-ingestion", _] ||
                                  validateIncumbentCalibration ||
                                  validateMichiganProviderBundle ||
@@ -726,13 +727,18 @@ if ((!validateIncumbentCalibration && !validateMichiganProviderBundle && !valida
     (validateIncumbentCalibration && args.Length != 4))
 {
     throw new ArgumentException(
-        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --refresh-four-state-indiana-facilities <base-bundle-json> <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
+        "Usage: GravityModelIntegrationHarness <validation-db> <valhalla-base-url> | --probe-zcta-origins | --probe-irs-soi | --probe-indiana-providers | --probe-illinois-providers | --probe-michigan-facilities | --probe-michigan-performance | --export-michigan-provider-bundle <output-json> | --export-ohio-provider-bundle <output-json> | --export-four-state-provider-bundle <output-json> | --refresh-four-state-indiana-facilities <base-bundle-json> <output-json> | --ingest-four-state-provider-bundle <validation-db> <bundle-json> | --validate-michigan-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-bundle <validation-db> <bundle-json> | --validate-ohio-provider-ingestion <validation-db> | --validate-provider-ingestion <validation-db> | --validate-indiana-fiscal <validation-db> | --validate-incumbent-calibration <validation-db> <valhalla-base-url> <four-state-provider-bundle-json>");
 }
 
-var validationDatabase = validateProviderIngestion ? args[1] : args[0];
-var hasRequiredDatabasePrefix = validateProviderIngestion
+var namedDatabaseValidation = validateProviderIngestion || validateIndianaFiscal;
+var validationDatabase = namedDatabaseValidation ? args[1] : args[0];
+var hasRequiredDatabasePrefix = namedDatabaseValidation
     ? validationDatabase.StartsWith(
-        validateIncumbentCalibration ? "savenein_calibration_validation_" : "savenein_provider_validation_",
+        validateIncumbentCalibration
+            ? "savenein_calibration_validation_"
+            : validateIndianaFiscal
+                ? "savenein_fiscal_validation_"
+                : "savenein_provider_validation_",
         StringComparison.Ordinal)
     : validationDatabase.StartsWith("savenein_gravity_validation_", StringComparison.Ordinal) ||
       validationDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal);
@@ -755,6 +761,65 @@ var dbOptions = new DbContextOptionsBuilder<AppDbContext>()
 await using var db = new AppDbContext(dbOptions);
 await ModelFoundationInitializer.ApplySchemaAsync(db);
 await ModelFoundationInitializer.SeedAsync(db);
+
+if (validateIndianaFiscal)
+{
+    var profiles = new JurisdictionProfileService(db);
+    var taxCalculator = new GamingTaxCalculator(profiles);
+    var ageResolver = new GamingAgeResolver(profiles);
+    var effectiveOn = new DateOnly(2026, 8, 13);
+    var lowPriorYearCasino = await taxCalculator.CalculateAsync(new GamingTaxRequest(
+        "US-IN",
+        "commercial-casino",
+        effectiveOn,
+        0,
+        80_000_000m,
+        PriorFiscalYearTaxableGamingRevenue: 0));
+    var ordinaryCasino = await taxCalculator.CalculateAsync(new GamingTaxRequest(
+        "US-IN",
+        "commercial-casino",
+        effectiveOn,
+        0,
+        80_000_000m,
+        PriorFiscalYearTaxableGamingRevenue: 75_000_000m));
+    var racino = await taxCalculator.CalculateAsync(new GamingTaxRequest(
+        "US-IN",
+        "commercial-racino",
+        effectiveOn,
+        0,
+        150_000_000m));
+    var casinoAge = await ageResolver.ResolveMinimumAgeAsync("US-IN", "commercial-casino", effectiveOn);
+    var racinoAge = await ageResolver.ResolveMinimumAgeAsync("US-IN", "commercial-racino", effectiveOn);
+    var fiscalRules = await db.JurisdictionRules
+        .Where(rule => rule.RuleType == JurisdictionRuleTypes.GamingTaxSchedule)
+        .OrderBy(rule => rule.SourceUrl)
+        .Select(rule => new { rule.ValidationState, rule.SourceUrl, rule.RuleValueJson })
+        .ToArrayAsync();
+    var legacyRuleCount = fiscalRules.Count(rule =>
+        rule.ValidationState != JurisdictionRuleValidationStates.Validated ||
+        rule.SourceUrl == "https://www.in.gov/igc/files/FY2025-Annual.pdf");
+    if (lowPriorYearCasino.GamingTax != 12_125_000m ||
+        ordinaryCasino.GamingTax != 15_250_000m ||
+        racino.GamingTax != 40_000_000m ||
+        casinoAge != 21 || racinoAge != 21 ||
+        fiscalRules.Length != 2 || legacyRuleCount != 0)
+    {
+        throw new InvalidOperationException("The seeded Indiana fiscal rules did not reproduce the official effective schedules.");
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        Database = validationDatabase,
+        EffectiveOn = effectiveOn,
+        CasinoLowPriorYearTax = lowPriorYearCasino.GamingTax,
+        CasinoOrdinaryTax = ordinaryCasino.GamingTax,
+        RacinoTax = racino.GamingTax,
+        CasinoMinimumAge = casinoAge,
+        RacinoMinimumAge = racinoAge,
+        LegacyRuleCount = legacyRuleCount,
+        Rules = fiscalRules.Select(rule => new { rule.ValidationState, rule.SourceUrl })
+    }));
+    return;
+}
 
 if (validateMichiganProviderBundle)
 {

@@ -92,6 +92,21 @@ public static class ModelFoundationInitializer
             cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
+        // Remove the superseded development-only fiscal fixture. The application is still in
+        // development, so retaining an ineligible legacy schedule only makes effective-rule
+        // inspection ambiguous and can conceal seeding defects.
+        var obsoleteGamingTaxRules = await db.JurisdictionRules
+            .Where(rule => rule.JurisdictionId == indiana.Id &&
+                           rule.RuleType == JurisdictionRuleTypes.GamingTaxSchedule &&
+                           rule.ValidationState == JurisdictionRuleValidationStates.Provisional &&
+                           rule.SourceUrl == "https://www.in.gov/igc/files/FY2025-Annual.pdf")
+            .ToArrayAsync(cancellationToken);
+        if (obsoleteGamingTaxRules.Length > 0)
+        {
+            db.JurisdictionRules.RemoveRange(obsoleteGamingTaxRules);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
         await AddRuleIfMissingAsync(
             db,
             indiana.Id,
@@ -107,7 +122,7 @@ public static class ModelFoundationInitializer
             db,
             indiana.Id,
             JurisdictionRuleTypes.LegalGamingAge,
-            new GamingAgeRulePayload("racino", 21),
+            new GamingAgeRulePayload("commercial-racino", 21),
             new DateOnly(2013, 1, 2),
             null,
             JurisdictionRuleValidationStates.Validated,
@@ -150,7 +165,7 @@ public static class ModelFoundationInitializer
             indiana.Id,
             JurisdictionRuleTypes.GamingTaxSchedule,
             new GamingTaxSchedulePayload(
-                "commercial-casino-standard",
+                "commercial-casino",
                 "Indiana taxable AGR",
                 [
                     new GamingTaxBracketPayload(25_000_000m, 0.10m),
@@ -159,12 +174,44 @@ public static class ModelFoundationInitializer
                     new GamingTaxBracketPayload(150_000_000m, 0.30m),
                     new GamingTaxBracketPayload(600_000_000m, 0.35m),
                     new GamingTaxBracketPayload(null, 0.40m)
+                ],
+                [
+                    new PriorFiscalYearGamingTaxSchedulePayload(
+                        "prior-year-agr-below-75m",
+                        75_000_000m,
+                        [
+                            new GamingTaxBracketPayload(25_000_000m, 0.025m),
+                            new GamingTaxBracketPayload(50_000_000m, 0.10m),
+                            new GamingTaxBracketPayload(75_000_000m, 0.20m),
+                            new GamingTaxBracketPayload(150_000_000m, 0.30m),
+                            new GamingTaxBracketPayload(600_000_000m, 0.35m),
+                            new GamingTaxBracketPayload(null, 0.40m)
+                        ],
+                        CurrentFiscalYearAdditionalTaxThreshold: 75_000_000m,
+                        AdditionalTaxAmount: 2_500_000m)
                 ]),
-            new DateOnly(2024, 7, 1),
-            new DateOnly(2025, 6, 30),
-            JurisdictionRuleValidationStates.Provisional,
-            "https://www.in.gov/igc/files/FY2025-Annual.pdf",
-            "FY2025 IGC schedule retained as a validation fixture only. It is intentionally not eligible for production fiscal calculation until independently validated and superseded by an effective current rule.",
+            new DateOnly(2021, 7, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-33-13-1.5",
+            "IC 4-33-13-1.5(a)-(c), verified in the official 2026 Indiana Code: the ordinary and prior-year-under-$75M graduated schedules apply after June 30, 2021; subsection (c) adds $2.5M when a low-prior-year property exceeds $75M in the current fiscal year.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.GamingTaxSchedule,
+            new GamingTaxSchedulePayload(
+                "commercial-racino",
+                "Indiana adjusted gross receipts from gambling games at racetracks",
+                [
+                    new GamingTaxBracketPayload(100_000_000m, 0.25m),
+                    new GamingTaxBracketPayload(null, 0.30m)
+                ]),
+            new DateOnly(2021, 7, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-35-8-1",
+            "IC 4-35-8-1, verified in the official 2026 Indiana Code: 25% of the first $100M and 30% above $100M for fiscal years beginning after June 30, 2021.",
             cancellationToken);
 
         var definitions = ParameterDefinitionSeeds().ToArray();
@@ -192,6 +239,7 @@ public static class ModelFoundationInitializer
             }
         }
         await db.SaveChangesAsync(cancellationToken);
+
         var nationalBase = await GetOrCreateParameterSetAsync(
             db,
             "national-base",
@@ -470,9 +518,11 @@ public static class ModelFoundationInitializer
         string provenanceNotes,
         CancellationToken cancellationToken)
     {
+        var payloadJson = JsonSerializer.Serialize(payload, JsonOptions);
         var exists = await db.JurisdictionRules.AnyAsync(
             rule => rule.JurisdictionId == jurisdictionId &&
                     rule.RuleType == ruleType &&
+                    rule.RuleValueJson == payloadJson &&
                     rule.EffectiveFrom == effectiveFrom &&
                     rule.EffectiveTo == effectiveTo &&
                     rule.SourceUrl == sourceUrl,
@@ -486,7 +536,7 @@ public static class ModelFoundationInitializer
         {
             JurisdictionId = jurisdictionId,
             RuleType = ruleType,
-            RuleValueJson = JsonSerializer.Serialize(payload, JsonOptions),
+            RuleValueJson = payloadJson,
             ValidationState = validationState,
             EffectiveFrom = effectiveFrom,
             EffectiveTo = effectiveTo,

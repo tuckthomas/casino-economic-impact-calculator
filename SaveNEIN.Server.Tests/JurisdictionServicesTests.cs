@@ -127,6 +127,120 @@ public sealed class JurisdictionServicesTests
             1_000_000m)));
     }
 
+    [Fact]
+    public async Task GamingTaxCalculator_AppliesIndianaLowPriorYearScheduleAndCrossingSurchargeOnce()
+    {
+        var schedule = IndianaRiverboatSchedule();
+        var calculator = new GamingTaxCalculator(new FakeProfiles(Rule(
+            JurisdictionRuleTypes.GamingTaxSchedule,
+            schedule,
+            JurisdictionRuleValidationStates.Validated)));
+
+        var crossing = await calculator.CalculateAsync(new GamingTaxRequest(
+            "US-IN",
+            "commercial-casino",
+            new DateOnly(2026, 1, 1),
+            PriorPeriodTaxableGamingRevenue: 74_000_000m,
+            CurrentTaxableGamingRevenue: 2_000_000m,
+            PriorFiscalYearTaxableGamingRevenue: 50_000_000m));
+        var afterCrossing = await calculator.CalculateAsync(new GamingTaxRequest(
+            "US-IN",
+            "commercial-casino",
+            new DateOnly(2026, 1, 1),
+            PriorPeriodTaxableGamingRevenue: 76_000_000m,
+            CurrentTaxableGamingRevenue: 1_000_000m,
+            PriorFiscalYearTaxableGamingRevenue: 50_000_000m));
+
+        Assert.Equal(3_000_000m, crossing.GamingTax);
+        Assert.Equal(300_000m, afterCrossing.GamingTax);
+    }
+
+    [Fact]
+    public async Task GamingTaxCalculator_UsesOrdinaryIndianaScheduleWhenPriorYearIsNotLow()
+    {
+        var calculator = new GamingTaxCalculator(new FakeProfiles(Rule(
+            JurisdictionRuleTypes.GamingTaxSchedule,
+            IndianaRiverboatSchedule(),
+            JurisdictionRuleValidationStates.Validated)));
+
+        var result = await calculator.CalculateAsync(new GamingTaxRequest(
+            "US-IN",
+            "commercial-casino",
+            new DateOnly(2026, 1, 1),
+            0,
+            80_000_000m,
+            PriorFiscalYearTaxableGamingRevenue: 75_000_000m));
+
+        Assert.Equal(15_250_000m, result.GamingTax);
+    }
+
+    [Fact]
+    public async Task GamingTaxCalculator_RequiresPriorYearRevenueForConditionalSchedule()
+    {
+        var calculator = new GamingTaxCalculator(new FakeProfiles(Rule(
+            JurisdictionRuleTypes.GamingTaxSchedule,
+            IndianaRiverboatSchedule(),
+            JurisdictionRuleValidationStates.Validated)));
+
+        await Assert.ThrowsAsync<ArgumentException>(() => calculator.CalculateAsync(new GamingTaxRequest(
+            "US-IN",
+            "commercial-casino",
+            new DateOnly(2026, 1, 1),
+            0,
+            80_000_000m)));
+    }
+
+    [Fact]
+    public async Task GamingTaxCalculator_AppliesIndianaRacinoSchedule()
+    {
+        var calculator = new GamingTaxCalculator(new FakeProfiles(Rule(
+            JurisdictionRuleTypes.GamingTaxSchedule,
+            new GamingTaxSchedulePayload(
+                "commercial-racino",
+                "Indiana racino AGR",
+                [
+                    new GamingTaxBracketPayload(100_000_000m, 0.25m),
+                    new GamingTaxBracketPayload(null, 0.30m)
+                ]),
+            JurisdictionRuleValidationStates.Validated)));
+
+        var result = await calculator.CalculateAsync(new GamingTaxRequest(
+            "US-IN",
+            "commercial-racino",
+            new DateOnly(2026, 1, 1),
+            0,
+            150_000_000m));
+
+        Assert.Equal(40_000_000m, result.GamingTax);
+    }
+
+    private static GamingTaxSchedulePayload IndianaRiverboatSchedule() => new(
+        "commercial-casino",
+        "Indiana taxable AGR",
+        [
+            new GamingTaxBracketPayload(25_000_000m, 0.10m),
+            new GamingTaxBracketPayload(50_000_000m, 0.20m),
+            new GamingTaxBracketPayload(75_000_000m, 0.25m),
+            new GamingTaxBracketPayload(150_000_000m, 0.30m),
+            new GamingTaxBracketPayload(600_000_000m, 0.35m),
+            new GamingTaxBracketPayload(null, 0.40m)
+        ],
+        [
+            new PriorFiscalYearGamingTaxSchedulePayload(
+                "prior-year-agr-below-75m",
+                75_000_000m,
+                [
+                    new GamingTaxBracketPayload(25_000_000m, 0.025m),
+                    new GamingTaxBracketPayload(50_000_000m, 0.10m),
+                    new GamingTaxBracketPayload(75_000_000m, 0.20m),
+                    new GamingTaxBracketPayload(150_000_000m, 0.30m),
+                    new GamingTaxBracketPayload(600_000_000m, 0.35m),
+                    new GamingTaxBracketPayload(null, 0.40m)
+                ],
+                75_000_000m,
+                2_500_000m)
+        ]);
+
     private static JurisdictionRule Rule<T>(string type, T payload, string validationState) => new()
     {
         Id = 1,

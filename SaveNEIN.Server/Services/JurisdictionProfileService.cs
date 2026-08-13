@@ -150,7 +150,8 @@ public sealed record GamingTaxRequest(
     string FacilityRegime,
     DateOnly EffectiveOn,
     decimal PriorPeriodTaxableGamingRevenue,
-    decimal CurrentTaxableGamingRevenue);
+    decimal CurrentTaxableGamingRevenue,
+    decimal? PriorFiscalYearTaxableGamingRevenue = null);
 
 public sealed record GamingTaxResult(
     decimal TaxableGamingRevenue,
@@ -171,7 +172,9 @@ public sealed class GamingTaxCalculator(IJurisdictionProfileService profiles) : 
         GamingTaxRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (request.PriorPeriodTaxableGamingRevenue < 0 || request.CurrentTaxableGamingRevenue < 0)
+        if (request.PriorPeriodTaxableGamingRevenue < 0 ||
+            request.CurrentTaxableGamingRevenue < 0 ||
+            request.PriorFiscalYearTaxableGamingRevenue is < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(request), "Taxable gaming revenue cannot be negative.");
         }
@@ -210,10 +213,43 @@ public sealed class GamingTaxCalculator(IJurisdictionProfileService profiles) : 
         }
         var matchingRule = selectedRules[0];
 
+        var brackets = matchingRule.Payload.Brackets;
+        decimal additionalTax = 0;
+        if (matchingRule.Payload.PriorFiscalYearSchedules is { Count: > 0 } conditionalSchedules)
+        {
+            if (request.PriorFiscalYearTaxableGamingRevenue is not { } priorFiscalYearRevenue)
+            {
+                throw new ArgumentException(
+                    "Prior fiscal-year taxable gaming revenue is required by the effective conditional tax schedule.",
+                    nameof(request));
+            }
+            var schedules = conditionalSchedules.OrderBy(schedule => schedule.PriorFiscalYearUpperBoundExclusive).ToArray();
+            if (schedules.Any(schedule =>
+                    schedule.PriorFiscalYearUpperBoundExclusive <= 0 ||
+                    string.IsNullOrWhiteSpace(schedule.Key) ||
+                    schedule.AdditionalTaxAmount < 0 ||
+                    schedule.CurrentFiscalYearAdditionalTaxThreshold < 0) ||
+                schedules.Select(schedule => schedule.PriorFiscalYearUpperBoundExclusive).Distinct().Count() != schedules.Length)
+            {
+                throw new InvalidOperationException("Conditional gaming-tax schedules require unique positive prior-year bounds and nonnegative surcharge values.");
+            }
+            var conditional = schedules.FirstOrDefault(schedule =>
+                priorFiscalYearRevenue < schedule.PriorFiscalYearUpperBoundExclusive);
+            if (conditional is not null)
+            {
+                brackets = conditional.Brackets;
+                if (conditional.CurrentFiscalYearAdditionalTaxThreshold is { } threshold &&
+                    request.PriorPeriodTaxableGamingRevenue <= threshold &&
+                    request.PriorPeriodTaxableGamingRevenue + request.CurrentTaxableGamingRevenue > threshold)
+                {
+                    additionalTax = conditional.AdditionalTaxAmount;
+                }
+            }
+        }
         var tax = CalculateIncrementalBracketTax(
             request.PriorPeriodTaxableGamingRevenue,
             request.CurrentTaxableGamingRevenue,
-            matchingRule.Payload.Brackets);
+            brackets) + additionalTax;
         return new GamingTaxResult(
             request.CurrentTaxableGamingRevenue,
             tax,
@@ -422,8 +458,15 @@ public sealed record GamingAgeRulePayload(string FacilityRegime, int MinimumAge)
 public sealed record GamingTaxSchedulePayload(
     string FacilityRegime,
     string RevenueDefinition,
-    IReadOnlyCollection<GamingTaxBracketPayload> Brackets);
+    IReadOnlyCollection<GamingTaxBracketPayload> Brackets,
+    IReadOnlyCollection<PriorFiscalYearGamingTaxSchedulePayload>? PriorFiscalYearSchedules = null);
 public sealed record GamingTaxBracketPayload(decimal? UpperBound, decimal Rate);
+public sealed record PriorFiscalYearGamingTaxSchedulePayload(
+    string Key,
+    decimal PriorFiscalYearUpperBoundExclusive,
+    IReadOnlyCollection<GamingTaxBracketPayload> Brackets,
+    decimal? CurrentFiscalYearAdditionalTaxThreshold = null,
+    decimal AdditionalTaxAmount = 0);
 public sealed record LocalRevenueSharePayload(string FacilityRegime, decimal ShareOfGamingTax);
 public sealed record GeneralFiscalRulePayload(
     string FacilityRegime,

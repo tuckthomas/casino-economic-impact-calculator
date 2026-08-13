@@ -1305,7 +1305,8 @@ public sealed class GravityModelExecutionService(
             request.FacilityRegime,
             request.EffectiveOn,
             0,
-            ToMoney(accounting.StabilizedGgr)), cancellationToken);
+            ToMoney(accounting.StabilizedGgr),
+            PriorFiscalYearTaxableGamingRevenue: 0), cancellationToken);
         var localRevenueShare = await localRevenueShareCalculator.CalculateAsync(
             request.JurisdictionCode,
             request.FacilityRegime,
@@ -1524,19 +1525,30 @@ public sealed class GravityModelExecutionService(
             }
             try
             {
-                var result = await gamingTaxCalculator.CalculateAsync(new GamingTaxRequest(
+                var baselineRevenue = ToMoney(facility.BaselineAllocatedDemand);
+                var withProjectRevenue = ToMoney(facility.WithProjectAllocatedDemand);
+                var before = await gamingTaxCalculator.CalculateAsync(new GamingTaxRequest(
                     jurisdictionCode,
                     competitor.FacilityRegime ?? request.FacilityRegime,
                     request.EffectiveOn,
                     0,
-                    ToMoney(-facility.ChangeInAllocatedDemand)), cancellationToken);
+                    baselineRevenue,
+                    PriorFiscalYearTaxableGamingRevenue: baselineRevenue), cancellationToken);
+                var after = await gamingTaxCalculator.CalculateAsync(new GamingTaxRequest(
+                    jurisdictionCode,
+                    competitor.FacilityRegime ?? request.FacilityRegime,
+                    request.EffectiveOn,
+                    0,
+                    withProjectRevenue,
+                    PriorFiscalYearTaxableGamingRevenue: baselineRevenue), cancellationToken);
+                var marginalTaxLoss = before.GamingTax - after.GamingTax;
                 if (jurisdictionId == context.Jurisdiction.Id)
                 {
-                    hostLoss += Convert.ToDouble(result.GamingTax);
+                    hostLoss += Convert.ToDouble(marginalTaxLoss);
                 }
                 else
                 {
-                    otherLoss += Convert.ToDouble(result.GamingTax);
+                    otherLoss += Convert.ToDouble(marginalTaxLoss);
                 }
             }
             catch (UnsupportedJurisdictionException exception)
