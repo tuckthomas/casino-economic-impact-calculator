@@ -17,6 +17,7 @@ public static class JurisdictionRuleTypes
     public const string GamingRevenueDefinition = "gaming-revenue-definition";
     public const string GamingTaxSchedule = "gaming-tax-schedule";
     public const string SupplementalGamingTaxSchedule = "supplemental-gaming-tax-schedule";
+    public const string GamingRevenueChargeSchedule = "gaming-revenue-charge-schedule";
     public const string GamingTaxDistribution = "gaming-tax-distribution";
     public const string PromotionalCreditTreatment = "promotional-credit-treatment";
     public const string GeneralFiscalRates = "general-fiscal-rates";
@@ -342,9 +343,23 @@ public sealed record GamingFiscalAllocationResult(
     decimal HostCountyShare,
     decimal HostRegionalShare,
     decimal HostStateShare,
+    decimal OtherGamingRevenueCharges,
+    decimal MunicipalOtherGamingRevenueShare,
+    decimal CountyOtherGamingRevenueShare,
+    decimal RegionalOtherGamingRevenueShare,
+    decimal StateOtherGamingRevenueShare,
     CandidateFiscalLocation Location,
     IReadOnlyList<string> SourceUrls,
-    IReadOnlyList<GamingTaxRecipientAllocation> RecipientAllocations);
+    IReadOnlyList<GamingTaxRecipientAllocation> RecipientAllocations,
+    IReadOnlyList<GamingRevenueChargeAllocation> RevenueChargeAllocations);
+
+public sealed record GamingRevenueChargeAllocation(
+    string Component,
+    string Label,
+    decimal Rate,
+    decimal Amount,
+    decimal? AnnualMaximum,
+    string SourceUrl);
 
 public sealed record GamingTaxRecipientAllocation(
     string Component,
@@ -451,6 +466,44 @@ public sealed class GamingFiscalAllocationCalculator(
             supplemental.SupplementalGamingTax,
             supplementalDistribution.Payload,
             request.DistributionPeriodCount);
+        var revenueChargeRules = rules
+            .Where(rule => rule.RuleType == JurisdictionRuleTypes.GamingRevenueChargeSchedule &&
+                           rule.ValidationState == JurisdictionRuleValidationStates.Validated)
+            .Select(rule => (Rule: rule, Payload: Deserialize<GamingRevenueChargePayload>(rule)))
+            .Where(item => RegimeMatches(item.Payload.FacilityRegime, request.FacilityRegime) &&
+                           CountyMatches(item.Payload.EligibleCountyFips, location.CountyFips) &&
+                           VenueMatches(item.Payload.EligibleStableVenueIds, request.StableVenueId))
+            .ToArray();
+        var chargeAllocations = new List<GamingRevenueChargeAllocation>();
+        var chargeRecipientAllocations = new List<GamingTaxRecipientAllocation>();
+        var chargeDistributionSourceUrls = new List<string?>();
+        decimal municipalOtherRevenue = 0;
+        decimal countyOtherRevenue = 0;
+        decimal regionalOtherRevenue = 0;
+        decimal stateOtherRevenue = 0;
+        foreach (var componentGroup in revenueChargeRules.GroupBy(item => item.Payload.Component, StringComparer.Ordinal))
+        {
+            var selectedCharge = SelectSingleRule(
+                componentGroup.ToArray(),
+                request.JurisdictionCode,
+                request.FacilityRegime,
+                $"{componentGroup.Key} gaming-revenue charge");
+            var charge = CalculateRevenueCharge(request.CurrentTaxableGamingRevenue, selectedCharge);
+            var distribution = SelectDistribution(
+                distributionRules,
+                charge.Component,
+                request,
+                location);
+            var allocation = Allocate(charge.Amount, distribution.Payload, request.DistributionPeriodCount);
+            municipalOtherRevenue += allocation.Municipality;
+            countyOtherRevenue += allocation.County;
+            regionalOtherRevenue += allocation.Regional;
+            stateOtherRevenue += allocation.State;
+            chargeAllocations.Add(charge);
+            chargeRecipientAllocations.AddRange(allocation.Recipients);
+            chargeDistributionSourceUrls.Add(distribution.Rule.SourceUrl);
+        }
+        var otherGamingRevenueCharges = chargeAllocations.Sum(charge => charge.Amount);
         return new GamingFiscalAllocationResult(
             request.BaseGamingTax,
             supplemental.SupplementalGamingTax,
@@ -459,14 +512,28 @@ public sealed class GamingFiscalAllocationCalculator(
             baseShares.County + supplementalShares.County,
             baseShares.Regional + supplementalShares.Regional,
             baseShares.State + supplementalShares.State,
+            otherGamingRevenueCharges,
+            municipalOtherRevenue,
+            countyOtherRevenue,
+            regionalOtherRevenue,
+            stateOtherRevenue,
             location,
             new[]
             {
                 supplemental.SourceUrl,
                 baseDistribution.Rule.SourceUrl,
                 supplementalDistribution.Rule.SourceUrl
-            }.Where(url => !string.IsNullOrWhiteSpace(url)).Select(url => url!).Distinct(StringComparer.Ordinal).ToArray(),
-            baseShares.Recipients.Concat(supplementalShares.Recipients).ToArray());
+            }.Concat(revenueChargeRules.Select(item => item.Rule.SourceUrl))
+                .Concat(chargeDistributionSourceUrls)
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Select(url => url!)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray(),
+            baseShares.Recipients
+                .Concat(supplementalShares.Recipients)
+                .Concat(chargeRecipientAllocations)
+                .ToArray(),
+            chargeAllocations);
     }
 
     public async Task<SupplementalGamingTaxResult> CalculateSupplementalTaxAsync(
@@ -511,9 +578,9 @@ public sealed class GamingFiscalAllocationCalculator(
                 nameof(request),
                 "Gaming-tax distribution period count must be positive.");
         }
-        if (request.Component is not GamingTaxComponents.Base and not GamingTaxComponents.Supplemental)
+        if (string.IsNullOrWhiteSpace(request.Component))
         {
-            throw new ArgumentException($"Unsupported gaming-tax component '{request.Component}'.", nameof(request));
+            throw new ArgumentException("Gaming-revenue distribution component is required.", nameof(request));
         }
 
         var location = await locations.ResolveAsync(
@@ -587,6 +654,30 @@ public sealed class GamingFiscalAllocationCalculator(
             supplementalTax,
             location,
             supplemental.Rule.SourceUrl ?? string.Empty);
+    }
+
+    private static GamingRevenueChargeAllocation CalculateRevenueCharge(
+        decimal taxableGamingRevenue,
+        (JurisdictionRule Rule, GamingRevenueChargePayload Payload) selected)
+    {
+        var payload = selected.Payload;
+        if (string.IsNullOrWhiteSpace(payload.Component) || string.IsNullOrWhiteSpace(payload.Label) ||
+            payload.Rate is < 0 or > 1 || payload.AnnualMaximum is < 0)
+        {
+            throw new InvalidOperationException("Gaming-revenue charge rules require a component, label, valid rate, and nonnegative cap.");
+        }
+        var amount = Round(taxableGamingRevenue * payload.Rate);
+        if (payload.AnnualMaximum is { } annualMaximum)
+        {
+            amount = decimal.Min(amount, annualMaximum);
+        }
+        return new GamingRevenueChargeAllocation(
+            payload.Component,
+            payload.Label,
+            payload.Rate,
+            amount,
+            payload.AnnualMaximum,
+            selected.Rule.SourceUrl ?? string.Empty);
     }
 
     private static void ValidateSupplementalRateBasis(SupplementalGamingTaxPayload payload)
@@ -751,7 +842,8 @@ public sealed class GamingFiscalAllocationCalculator(
         decimal SumScope(string scopeKind) => allocations
             .Where(allocation => allocation.ScopeKind == scopeKind)
             .Sum(allocation => allocation.Amount);
-        var municipality = SumScope(GamingTaxRecipientScopeKinds.HostMunicipality);
+        var municipality = SumScope(GamingTaxRecipientScopeKinds.HostMunicipality) +
+                           SumScope(GamingTaxRecipientScopeKinds.Municipality);
         var county = SumScope(GamingTaxRecipientScopeKinds.HostCounty);
         var regional = SumScope(GamingTaxRecipientScopeKinds.HostRegion);
         var state = SumScope(GamingTaxRecipientScopeKinds.HostState);
@@ -935,6 +1027,14 @@ public sealed record SupplementalGamingTaxPayload(
     decimal? ReferenceAdmissionsTax = null,
     decimal? ReferenceAdjustedGrossReceipts = null,
     decimal? MaximumRate = null);
+public sealed record GamingRevenueChargePayload(
+    string Component,
+    string Label,
+    string FacilityRegime,
+    decimal Rate,
+    IReadOnlyCollection<string> EligibleCountyFips,
+    IReadOnlyCollection<string>? EligibleStableVenueIds = null,
+    decimal? AnnualMaximum = null);
 public static class SupplementalGamingTaxRateSourceKinds
 {
     public const string FixedStatute = "fixed-statute";
@@ -951,7 +1051,11 @@ public sealed record GamingTaxDistributionPayload(
     decimal MunicipalityShare,
     decimal RegionalShare,
     IReadOnlyCollection<string>? EligibleStableVenueIds = null,
-    IReadOnlyCollection<GamingTaxRecipientPayload>? Recipients = null);
+    IReadOnlyCollection<GamingTaxRecipientPayload>? Recipients = null,
+    string? PopulationSourceUrl = null,
+    string? PopulationSourceSha256 = null,
+    int? PopulationYear = null,
+    string? PopulationBasis = null);
 public sealed record GamingTaxRecipientPayload(
     string RecipientKey,
     string RecipientLabel,
@@ -964,6 +1068,7 @@ public sealed record GamingTaxRecipientPayload(
 public static class GamingTaxRecipientScopeKinds
 {
     public const string HostMunicipality = "host-municipality";
+    public const string Municipality = "municipality";
     public const string HostCounty = "host-county";
     public const string HostRegion = "host-region";
     public const string HostState = "host-state";
@@ -972,6 +1077,7 @@ public static class GamingTaxComponents
 {
     public const string Base = "base";
     public const string Supplemental = "supplemental";
+    public const string CountyWageringFee = "county-wagering-fee";
 }
 public sealed record GeneralFiscalRulePayload(
     string FacilityRegime,

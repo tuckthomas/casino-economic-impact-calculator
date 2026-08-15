@@ -1826,7 +1826,7 @@ if (validateProviderIngestion)
             StringComparer.OrdinalIgnoreCase);
         IncumbentBacktestTarget Target(string stableId, string partition, string group) => new(
             competitorByStableId[stableId].Id,
-            $"live-2025-attributes-v2-{stableId["USA-IN-IGC-".Length..]}",
+            $"live-2025-reference-shift-v3-{stableId["USA-IN-IGC-".Length..]}",
             partition,
             group);
         var targets = new[]
@@ -1904,30 +1904,45 @@ if (validateProviderIngestion)
             null,
             null,
             [],
-            CompetitorPrefilterMiles: 50,
+            CompetitorPrefilterMiles: 150,
             ImpactGeography: new ImpactGeographyDefinition(ImpactScopeKinds.HostState, "US-IN"),
             MissingRoutePolicy: MissingRoutePolicies.ExcludeFacility);
         var metricsService = new ValidationMetricsService();
         var candidates = new[]
         {
-            new { Key = "balanced", ComparableScale = 3d, GamingPositions = 0.75d, Tables = 0.2d, Hotels = 0.35d, GamingFloor = 0.25d, FoodBeverage = 0.25d, RegionalIntensity = 1d },
-            new { Key = "amenity", ComparableScale = 2.5d, GamingPositions = 0.5d, Tables = 0.1d, Hotels = 0.6d, GamingFloor = 0.35d, FoodBeverage = 0.4d, RegionalIntensity = 1.1d }
-        }.SelectMany(profile => new[] { 1.3d, 1.4d, 1.5d }.SelectMany(beta =>
-            new[] { 0.75d, 1d, 1.25d }.Select(alpha => new IncumbentCalibrationCandidate(
-                $"{profile.Key}-beta-{beta:0.0}-alpha-{alpha:0.00}",
+            new { Key = "balanced", GamingPositions = 0.75d, Tables = 0.2d, Hotels = 0.35d, GamingFloor = 0.25d, FoodBeverage = 0.25d },
+            new { Key = "scale-led", GamingPositions = 1d, Tables = 0.15d, Hotels = 0.15d, GamingFloor = 0.2d, FoodBeverage = 0.15d }
+        }.SelectMany(profile => new[] { 2.5d, 3.5d, 4.5d }.SelectMany(comparableScale =>
+            new[] { 1.3d, 1.5d }.SelectMany(beta =>
+            new[] { 0.75d, 1d }.SelectMany(alpha =>
+            new[] { 1d, 1.1d }.Select(regionalIntensity => new IncumbentCalibrationCandidate(
+                $"{profile.Key}-scale-{comparableScale:0.0}-beta-{beta:0.0}-alpha-{alpha:0.00}-intensity-{regionalIntensity:0.0}",
                 new Dictionary<string, double>
                 {
                     ["gravity.beta"] = beta,
                     ["gravity.alpha"] = alpha,
                     ["gravity.outside_option_weight"] = 0.00000001,
-                    ["facility.comparable_scale_multiplier"] = profile.ComparableScale,
+                    ["facility.proposed_scale_multiplier"] = 1,
+                    ["facility.comparable_scale_multiplier"] = comparableScale,
                     ["facility.gaming_positions_coefficient"] = profile.GamingPositions,
                     ["facility.table_games_coefficient"] = profile.Tables,
                     ["facility.hotel_rooms_coefficient"] = profile.Hotels,
                     ["facility.gaming_floor_coefficient"] = profile.GamingFloor,
                     ["facility.food_beverage_coefficient"] = profile.FoodBeverage,
-                    ["demand.regional_intensity_multiplier"] = profile.RegionalIntensity
-                })))).ToArray();
+                    ["facility.entertainment_capacity_coefficient"] = 0,
+                    ["facility.capital_scale_coefficient"] = 0,
+                    ["facility.highway_access_coefficient"] = 0,
+                    ["facility.gaming_positions_offset"] = 2_000,
+                    ["facility.table_games_offset"] = 50,
+                    ["facility.hotel_rooms_offset"] = 250,
+                    ["facility.gaming_floor_square_feet_offset"] = 75_000,
+                    ["facility.food_beverage_venues_offset"] = 4,
+                    ["facility.entertainment_capacity_offset"] = 1_000,
+                    ["facility.capital_cost_offset"] = 500_000_000,
+                    ["facility.highway_access_offset"] = 1,
+                    ["demand.gaming_income_share"] = 0.0058,
+                    ["demand.regional_intensity_multiplier"] = regionalIntensity
+                })))))).ToArray();
         var finalizedBeforeCalibration = await db.ModelRuns.CountAsync(run =>
             run.Status == ModelRunStatuses.Finalized);
         var calibration = await new IncumbentBacktestCalibrationService(
@@ -1941,8 +1956,8 @@ if (validateProviderIngestion)
                 new ComparableMarketModelService(),
                 new ModelParameterSetService(db)))
             .CalibrateAsync(new IncumbentBacktestCalibrationRequest(
-                "live-indiana-incumbent-backtest-attributes-v2",
-                "2025-disposable-validation-v2",
+                "live-indiana-incumbent-backtest-reference-shift-v3",
+                "2025-disposable-validation-v3",
                 ValidationObjectiveFunctions.Smape,
                 baseRequest,
                 targets,
@@ -1953,16 +1968,17 @@ if (validateProviderIngestion)
                     purpose = "Leakage-safe northern and central Indiana incumbent calibration against authoritative 2025 regulator observations.",
                     inclusion = "Training properties are Indianapolis, Michigan City, and Terre Haute markets. The independent holdout is the three-property Indiana side of the Chicago market.",
                     exclusion = "Southern and Ohio River properties are excluded because the sealed competitor field does not yet contain Kentucky facilities. Four Winds South Bend remains in the competitive field with structural attraction because public tribal GGR is unavailable.",
-                    parameterDesign = "Predeclared 18-cell grid crossing beta 1.3/1.4/1.5, alpha 0.75/1.00/1.25, and two bounded regulator-attribute profiles. The profiles vary proposed comparable scale plus positions, tables, hotel rooms, gaming-floor area, food/beverage venues, and regional demand intensity. Outside-option weight remains at the common public-benchmark surface of 1e-8.",
+                    parameterDesign = "Predeclared 48-cell grid crossing beta 1.3/1.5, alpha 0.75/1.00, comparable structural scale 2.5/3.5/4.5, regional intensity 1.0/1.1, and two bounded regulator-attribute profiles. Every active structural coefficient and its reference-sized zero-safe log offset is persisted in the candidate parameter set. Outside-option weight remains at the common public-benchmark surface of 1e-8.",
+                    studyRegion = "Origins use a 100-mile broad Haversine candidate filter and facilities use a 150-mile broad filter; every retained pair still uses exact Valhalla auto travel time, and no straight-line distance enters gravity friction.",
                     zctaAssignment = "Dominant 2020 Census county by land-area overlap."
                 }),
                 sourceParameterSet.Id,
-                "0.3.0-indiana-incumbent-attributes-calibration",
-                OriginPrefilterMiles: 50));
+                "0.4.0-indiana-incumbent-reference-shift-calibration",
+                OriginPrefilterMiles: 100));
         var evaluation = await db.ValidationEvaluations.AsNoTracking()
             .SingleAsync(item => item.Id == calibration.Evaluation.ValidationEvaluationId);
         var caseCount = await db.ValidationCases.CountAsync(item =>
-            item.CaseKey.StartsWith("live-2025-attributes-v2-"));
+            item.CaseKey.StartsWith("live-2025-reference-shift-v3-"));
         var finalizedRunCount = await db.ModelRuns.CountAsync(run =>
             run.Status == ModelRunStatuses.Finalized) - finalizedBeforeCalibration;
         if (evaluation.Status != ValidationEvaluationStatuses.Finalized || !evaluation.IsImmutable ||

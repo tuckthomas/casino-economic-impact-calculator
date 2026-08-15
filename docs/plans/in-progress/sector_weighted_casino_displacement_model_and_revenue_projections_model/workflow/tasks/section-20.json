@@ -2,21 +2,23 @@
   "id": "section-20",
   "title": "18. Baseline vs with-project market equilibrium",
   "requirements": [
-    "REQ-618-d417413c",
-    "REQ-619-68795fe8",
-    "REQ-620-91cf7e1c",
-    "REQ-621-ec55feb4",
-    "REQ-622-a225d06b",
-    "REQ-623-28d2328c",
-    "REQ-624-0f0039a4",
-    "REQ-625-038a80fa",
-    "REQ-626-5c7d29b8",
-    "REQ-627-dad9333b",
-    "REQ-628-7e6d611e",
-    "REQ-629-acea0ef5",
-    "REQ-630-0124ed21"
+    "REQ-618-b089cd40",
+    "REQ-619-606556d8",
+    "REQ-620-b5cf4857",
+    "REQ-621-0bd2f8c8",
+    "REQ-622-8fdf16bc",
+    "REQ-623-65e2b85e",
+    "REQ-624-9b8c0e01",
+    "REQ-625-266b753b",
+    "REQ-626-4eca8ba7",
+    "REQ-627-33cd3631",
+    "REQ-628-3e80fc00",
+    "REQ-629-1dc06a4b",
+    "REQ-630-6b7dec8e"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "completed",
+  "evidence": [
+    "All 13 requirements in this section are verified and passing."
+  ]
 }

@@ -126,6 +126,19 @@ public sealed class GravityModelServicesTests
     }
 
     [Fact]
+    public void StructuralAttraction_ReferenceSizedOffsetKeepsLegitimateZeroCountFiniteAndMaterial()
+    {
+        var service = new FacilityAttractivenessService();
+
+        var result = service.CalculateStructural(new StructuralAttractivenessInput(
+            "no-hotel-casino",
+            [new FacilityFeatureTerm("hotel-rooms", 0, 250, 0.35, Offset: 250)]));
+
+        Assert.Equal(Math.Pow(0.5, 0.35), result.NormalizedAttraction, 12);
+        Assert.InRange(result.NormalizedAttraction, 0.78, 0.79);
+    }
+
+    [Fact]
     public void ObservedGgrAttraction_RejectsCircularProposedFacilityMass()
     {
         var service = new FacilityAttractivenessService();

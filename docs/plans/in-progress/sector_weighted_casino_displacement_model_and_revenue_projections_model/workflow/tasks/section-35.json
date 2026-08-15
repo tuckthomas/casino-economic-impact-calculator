@@ -3,13 +3,15 @@
   "title": "33. Caching and interactive performance",
   "requirements": [
     "REQ-885-726dd596",
-    "REQ-886-23b6d293",
-    "REQ-887-2bc5d9d4",
-    "REQ-888-e2ae0469",
+    "REQ-886-11e7bc5c",
+    "REQ-887-7810fef6",
+    "REQ-889-9a2fd2c0",
     "REQ-889-728daf2f",
     "REQ-890-f4344d31"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "in-progress",
+  "evidence": [
+    "3/6 requirements verified (3 pending)."
+  ]
 }

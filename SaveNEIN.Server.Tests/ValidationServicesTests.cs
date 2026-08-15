@@ -8,6 +8,18 @@ namespace SaveNEIN.Server.Tests;
 public sealed class ValidationServicesTests
 {
     [Fact]
+    public void IncumbentBacktest_UsesHeldOutFacilityRegime()
+    {
+        var competitor = new CasinoCompetitor { FacilityRegime = "commercial-racino" };
+
+        var regime = IncumbentBacktestCalibrationService.ResolveTargetFacilityRegime(
+            competitor,
+            "commercial-casino");
+
+        Assert.Equal("commercial-racino", regime);
+    }
+
+    [Fact]
     public void Metrics_CalculateAbsolutePercentageRankAndBiasMeasures()
     {
         var result = new ValidationMetricsService().Calculate(

@@ -2,15 +2,17 @@
   "id": "section-33",
   "title": "31. Scenario and sensitivity engine",
   "requirements": [
-    "REQ-867-1756511a",
-    "REQ-868-a61596b0",
-    "REQ-869-5ee234b1",
-    "REQ-870-7f5ced81",
-    "REQ-871-852d2cbe",
-    "REQ-872-0c224bed",
-    "REQ-873-fad3f092"
+    "REQ-867-7ba6d28b",
+    "REQ-868-2c616878",
+    "REQ-869-8cfb11f1",
+    "REQ-870-8b09c324",
+    "REQ-871-69f4e9e9",
+    "REQ-872-edc4feae",
+    "REQ-873-d0434b21"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "completed",
+  "evidence": [
+    "All 7 requirements in this section are verified and passing."
+  ]
 }

@@ -77,6 +77,8 @@
                       Link="Data\Migrations\024_reported_casino_employment.sql" />
     <EmbeddedResource Include="..\docs\migrations\025_validation_geographic_residual_patterns.sql"
                       Link="Data\Migrations\025_validation_geographic_residual_patterns.sql" />
+    <EmbeddedResource Include="..\docs\migrations\026_other_gaming_revenue_charges.sql"
+                      Link="Data\Migrations\026_other_gaming_revenue_charges.sql" />
   </ItemGroup>
 
 </Project>

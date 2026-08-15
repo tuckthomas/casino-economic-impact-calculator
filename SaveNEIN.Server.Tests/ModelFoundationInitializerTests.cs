@@ -188,21 +188,35 @@ public sealed class ModelFoundationInitializerTests
         Assert.Equal(0.0298m, hardRockSupplemental.Payload.Rate);
         Assert.Equal(SupplementalGamingTaxRateSourceKinds.RegulatorConfirmed, hardRockSupplemental.Payload.RateSourceKind);
 
+        var countyWageringFee = Assert.Single(rules, rule =>
+            rule.RuleType == JurisdictionRuleTypes.GamingRevenueChargeSchedule);
+        var countyWageringFeePayload = JsonSerializer.Deserialize<GamingRevenueChargePayload>(
+            countyWageringFee.RuleValueJson,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        Assert.Equal(GamingTaxComponents.CountyWageringFee, countyWageringFeePayload.Component);
+        Assert.Equal(0.03m, countyWageringFeePayload.Rate);
+        Assert.Equal(8_000_000m, countyWageringFeePayload.AnnualMaximum);
+
         var distributions = rules
             .Where(rule => rule.RuleType == JurisdictionRuleTypes.GamingTaxDistribution)
             .Select(rule => JsonSerializer.Deserialize<GamingTaxDistributionPayload>(
                 rule.RuleValueJson,
                 new JsonSerializerOptions(JsonSerializerDefaults.Web))!)
             .ToArray();
-        Assert.Equal(5, distributions.Length);
+        Assert.Equal(8, distributions.Length);
         Assert.All(distributions, payload =>
         {
             Assert.NotEmpty(payload.Recipients!);
             Assert.Single(payload.Recipients!, recipient => recipient.ReceivesResidual);
         });
         var northeastBaseDistribution = Assert.Single(distributions, payload =>
-            payload.Component == GamingTaxComponents.Base);
+            payload.Component == GamingTaxComponents.Base &&
+            payload.FacilityRegime == "commercial-casino");
         Assert.Equal(1m, northeastBaseDistribution.StateShare);
+        var racinoBaseDistribution = Assert.Single(distributions, payload =>
+            payload.Component == GamingTaxComponents.Base &&
+            payload.FacilityRegime == "commercial-racino");
+        Assert.Equal("indiana-state-general-fund", Assert.Single(racinoBaseDistribution.Recipients!).RecipientKey);
 
         var northeastSupplementalDistribution = Assert.Single(distributions, payload =>
             payload.Component == GamingTaxComponents.Supplemental &&
@@ -219,6 +233,25 @@ public sealed class ModelFoundationInitializerTests
         Assert.Equal(0.40m, vigoDistribution.MunicipalityShare);
         Assert.Contains(vigoDistribution.Recipients!, recipient =>
             recipient.RecipientKey == "vigo-county-school-corporation" && recipient.Share == 0.15m);
+        var countyFeeDistributions = distributions
+            .Where(payload => payload.Component == GamingTaxComponents.CountyWageringFee)
+            .ToArray();
+        Assert.Equal(2, countyFeeDistributions.Length);
+        Assert.All(countyFeeDistributions, payload =>
+        {
+            Assert.Equal(2020, payload.PopulationYear);
+            Assert.Equal("dea5792efc347572bfbb2742e8cf88aa121831a70ae7db9086704e3485396b90", payload.PopulationSourceSha256);
+        });
+        var madisonCountyFee = Assert.Single(countyFeeDistributions, payload =>
+            payload.EligibleCountyFips.SequenceEqual(["18095"]));
+        Assert.Equal(16, madisonCountyFee.Recipients!.Count);
+        Assert.Contains(madisonCountyFee.Recipients!, recipient =>
+            recipient.RecipientKey == "anderson" && recipient.Share == 54_788m / 130_129m);
+        var shelbyCountyFee = Assert.Single(countyFeeDistributions, payload =>
+            payload.EligibleCountyFips.SequenceEqual(["18145"]));
+        Assert.Equal(4, shelbyCountyFee.Recipients!.Count);
+        Assert.Contains(shelbyCountyFee.Recipients!, recipient =>
+            recipient.RecipientKey == "shelbyville" && recipient.Share == 20_067m / 45_055m);
         Assert.Equal(2, distributions.Count(payload =>
             payload.Recipients!.Any(recipient => recipient.RecipientKey.StartsWith("not-applicable-", StringComparison.Ordinal))));
     }

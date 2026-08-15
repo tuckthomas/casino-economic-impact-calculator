@@ -3,23 +3,25 @@
   "title": "26. Social and downstream economic costs",
   "requirements": [
     "REQ-729-fb98a500",
-    "REQ-730-71fd2ce1",
-    "REQ-731-7e0baa08",
-    "REQ-732-30802d8d",
-    "REQ-733-fa79b5ce",
-    "REQ-734-571f0e6b",
+    "REQ-731-72285c76",
+    "REQ-732-260ab9b2",
+    "REQ-733-e7f4a417",
+    "REQ-734-440a8838",
+    "REQ-735-d862b7fe",
     "REQ-735-c121f4ac",
-    "REQ-736-f4dc534a",
+    "REQ-737-4c1a1fe3",
     "REQ-737-e4928a75",
     "REQ-738-19a12caf",
     "REQ-739-8b79fd5d",
     "REQ-740-f488468b",
     "REQ-741-48ad48b0",
     "REQ-742-4d183bbc",
-    "REQ-743-ce7758fe",
-    "REQ-744-1522597c"
+    "REQ-743-f074394b",
+    "REQ-744-4bcb9a80"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "in-progress",
+  "evidence": [
+    "9/16 requirements verified (7 pending)."
+  ]
 }

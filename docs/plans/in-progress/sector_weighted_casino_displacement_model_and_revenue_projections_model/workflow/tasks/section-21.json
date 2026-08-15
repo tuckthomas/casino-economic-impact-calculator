@@ -2,18 +2,20 @@
   "id": "section-21",
   "title": "19. Repatriation, cannibalization, and geographic accounting",
   "requirements": [
-    "REQ-631-12fae673",
-    "REQ-632-a969ac22",
-    "REQ-633-e972b642",
-    "REQ-634-5c972c94",
-    "REQ-635-9e27fcdc",
-    "REQ-636-2dd1e00d",
-    "REQ-637-866376c1",
-    "REQ-638-83014dda",
-    "REQ-639-aa502b3c",
-    "REQ-640-a4af5d88"
+    "REQ-631-5536140d",
+    "REQ-632-2b2964e5",
+    "REQ-633-0de3f1a4",
+    "REQ-634-1bc75833",
+    "REQ-635-9b000368",
+    "REQ-636-e7b07a7f",
+    "REQ-637-b0123b67",
+    "REQ-638-f4b8be3f",
+    "REQ-639-e4479977",
+    "REQ-640-4a2f39a4"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "completed",
+  "evidence": [
+    "All 10 requirements in this section are verified and passing."
+  ]
 }

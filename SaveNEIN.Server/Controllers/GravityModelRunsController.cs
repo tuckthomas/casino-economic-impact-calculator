@@ -417,6 +417,7 @@ public sealed class GravityModelRunsController(
                 facility?.StabilizedTotalGgr,
                 jobs?.NetPermanentJobs,
                 publicRevenue?.GrossGamingTax,
+                publicRevenue?.OtherGamingRevenueCharges,
                 GrossSocialCost = socialCost,
                 netImpact?.LocalDiscretionaryDisplacement,
                 netImpact?.NetHostLocalImpact,

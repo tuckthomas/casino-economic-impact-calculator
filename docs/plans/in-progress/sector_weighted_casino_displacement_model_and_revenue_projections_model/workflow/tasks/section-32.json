@@ -2,18 +2,20 @@
   "id": "section-32",
   "title": "30. UI result architecture",
   "requirements": [
-    "REQ-857-42ca291b",
-    "REQ-858-457b2f0e",
-    "REQ-859-fe3a360e",
-    "REQ-860-97b22579",
-    "REQ-861-12ec911b",
-    "REQ-862-7b7983a5",
-    "REQ-863-6d9a14e0",
-    "REQ-864-05eba4f8",
-    "REQ-865-bbe1ba84",
-    "REQ-866-c4dd3e9f"
+    "REQ-857-cb396138",
+    "REQ-858-0199f228",
+    "REQ-859-80212465",
+    "REQ-860-03a1528d",
+    "REQ-861-58423719",
+    "REQ-862-2d2e571c",
+    "REQ-863-4e74f8e1",
+    "REQ-864-44d54024",
+    "REQ-865-00131eb3",
+    "REQ-866-1a40043e"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "completed",
+  "evidence": [
+    "All 10 requirements in this section are verified and passing."
+  ]
 }

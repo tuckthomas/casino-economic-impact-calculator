@@ -2,14 +2,16 @@
   "id": "section-27",
   "title": "25. Fiscal impact engine",
   "requirements": [
-    "REQ-723-3a2630f3",
-    "REQ-724-a75610d7",
-    "REQ-725-f1c07bf2",
-    "REQ-726-76e19874",
-    "REQ-727-1f1d0d77",
-    "REQ-728-2aeda796"
+    "REQ-723-03252a30",
+    "REQ-724-fba6b520",
+    "REQ-725-18297c42",
+    "REQ-726-a43a4ebc",
+    "REQ-727-8dbba516",
+    "REQ-728-f147a12f"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "completed",
+  "evidence": [
+    "All 6 requirements in this section are verified and passing."
+  ]
 }

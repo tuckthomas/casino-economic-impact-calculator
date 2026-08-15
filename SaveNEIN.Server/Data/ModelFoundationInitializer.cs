@@ -36,7 +36,8 @@ public static class ModelFoundationInitializer
         "022_employment_assumption_provenance.sql",
         "023_capacity_productivity_benchmark_provenance.sql",
         "024_reported_casino_employment.sql",
-        "025_validation_geographic_residual_patterns.sql"
+        "025_validation_geographic_residual_patterns.sql",
+        "026_other_gaming_revenue_charges.sql"
     ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -248,6 +249,23 @@ public static class ModelFoundationInitializer
             JurisdictionRuleValidationStates.Validated,
             "https://iga.in.gov/laws/2026/ic/titles/4#4-35-8-1",
             "IC 4-35-8-1, verified in the official 2026 Indiana Code: 25% of the first $100M and 30% above $100M for fiscal years beginning after June 30, 2021.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.GamingRevenueChargeSchedule,
+            new GamingRevenueChargePayload(
+                GamingTaxComponents.CountyWageringFee,
+                "County gambling game wagering fee",
+                "commercial-racino",
+                0.03m,
+                ["18095", "18145"],
+                AnnualMaximum: 8_000_000m),
+            new DateOnly(2015, 7, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-35-8.5-1",
+            "IC 4-35-8.5-1 imposes a monthly county gambling game wagering fee equal to 3% of racino adjusted gross receipts, capped at $8M per licensee/racetrack per state fiscal year.",
             cancellationToken);
         const string indianaSupplementalCodeUrl = "https://iga.in.gov/laws/2026/ic/titles/4#4-33-12-1.5";
         const string fy2017MonthlyArchiveUrl = "https://www.in.gov/igc/publications/archived-monthly-revenue-reports/";
@@ -537,6 +555,118 @@ public static class ModelFoundationInitializer
         await AddRuleIfMissingAsync(
             db,
             indiana.Id,
+            JurisdictionRuleTypes.GamingTaxDistribution,
+            new GamingTaxDistributionPayload(
+                "commercial-racino",
+                GamingTaxComponents.Base,
+                ["18095", "18145"],
+                MunicipalityRequired: false,
+                StateShare: 1m,
+                CountyShare: 0m,
+                MunicipalityShare: 0m,
+                RegionalShare: 0m,
+                Recipients:
+                [
+                    new GamingTaxRecipientPayload(
+                        "indiana-state-general-fund",
+                        "Indiana state general fund",
+                        GamingTaxRecipientScopeKinds.HostState,
+                        0m,
+                        ReceivesResidual: true)
+                ]),
+            new DateOnly(2008, 7, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-35-8-3",
+            "IC 4-35-8-3 requires racino wagering taxes to be deposited in the state general fund.",
+            cancellationToken);
+        const string indiana2020PopulationUrl = "https://www.in.gov/indot/doing-business-with-indot/files/2020-City_Town_-County-Populations.pdf";
+        const string indiana2020PopulationSha256 = "dea5792efc347572bfbb2742e8cf88aa121831a70ae7db9086704e3485396b90";
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.GamingTaxDistribution,
+            new GamingTaxDistributionPayload(
+                "commercial-racino",
+                GamingTaxComponents.CountyWageringFee,
+                ["18095"],
+                MunicipalityRequired: false,
+                StateShare: 0m,
+                CountyShare: 44_182m / 130_129m,
+                MunicipalityShare: 85_947m / 130_129m,
+                RegionalShare: 0m,
+                Recipients:
+                [
+                    PopulationRecipient("alexandria", "City of Alexandria", 5_149, 130_129),
+                    PopulationRecipient("anderson", "City of Anderson", 54_788, 130_129),
+                    PopulationRecipient("chesterfield", "Town of Chesterfield", 2_490, 130_129),
+                    PopulationRecipient("country-club-heights", "Town of Country Club Heights", 98, 130_129),
+                    PopulationRecipient("edgewood", "Town of Edgewood", 2_053, 130_129),
+                    PopulationRecipient("elwood", "City of Elwood", 8_410, 130_129),
+                    PopulationRecipient("frankton", "Town of Frankton", 1_775, 130_129),
+                    PopulationRecipient("ingalls", "Town of Ingalls", 2_223, 130_129),
+                    PopulationRecipient("lapel", "Town of Lapel", 2_325, 130_129),
+                    PopulationRecipient("markleville", "Town of Markleville", 484, 130_129),
+                    PopulationRecipient("orestes", "Town of Orestes", 329, 130_129),
+                    PopulationRecipient("pendleton", "Town of Pendleton", 4_717, 130_129),
+                    PopulationRecipient("river-forest", "Town of River Forest", 26, 130_129),
+                    PopulationRecipient("summitville", "Town of Summitville", 989, 130_129),
+                    PopulationRecipient("woodlawn-heights", "Town of Woodlawn Heights", 91, 130_129),
+                    new GamingTaxRecipientPayload(
+                        "madison-county",
+                        "Madison County",
+                        GamingTaxRecipientScopeKinds.HostCounty,
+                        44_182m / 130_129m,
+                        ReceivesResidual: true)
+                ],
+                PopulationSourceUrl: indiana2020PopulationUrl,
+                PopulationSourceSha256: indiana2020PopulationSha256,
+                PopulationYear: 2020,
+                PopulationBasis: "Most recent effective federal decennial census under IC 1-1-3.5-3; each city/town receives its population divided by Madison County population, with the county retaining the remainder under IC 4-35-8.5-3."),
+            new DateOnly(2022, 4, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-35-8.5-3",
+            "IC 4-35-8.5-2 and -3 distribute each racino fee to its county, then to every city/town by population ratio, with the county retaining the remainder. Counts are the official 2020 decennial values effective April 1, 2022 under IC 1-1-3.5-3.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
+            JurisdictionRuleTypes.GamingTaxDistribution,
+            new GamingTaxDistributionPayload(
+                "commercial-racino",
+                GamingTaxComponents.CountyWageringFee,
+                ["18145"],
+                MunicipalityRequired: false,
+                StateShare: 0m,
+                CountyShare: 23_241m / 45_055m,
+                MunicipalityShare: 21_814m / 45_055m,
+                RegionalShare: 0m,
+                Recipients:
+                [
+                    PopulationRecipient("fairland", "Town of Fairland", 542, 45_055),
+                    PopulationRecipient("morristown", "Town of Morristown", 1_205, 45_055),
+                    PopulationRecipient("shelbyville", "City of Shelbyville", 20_067, 45_055),
+                    new GamingTaxRecipientPayload(
+                        "shelby-county",
+                        "Shelby County",
+                        GamingTaxRecipientScopeKinds.HostCounty,
+                        23_241m / 45_055m,
+                        ReceivesResidual: true)
+                ],
+                PopulationSourceUrl: indiana2020PopulationUrl,
+                PopulationSourceSha256: indiana2020PopulationSha256,
+                PopulationYear: 2020,
+                PopulationBasis: "Most recent effective federal decennial census under IC 1-1-3.5-3; each city/town receives its population divided by Shelby County population, with the county retaining the remainder under IC 4-35-8.5-3."),
+            new DateOnly(2022, 4, 1),
+            null,
+            JurisdictionRuleValidationStates.Validated,
+            "https://iga.in.gov/laws/2026/ic/titles/4#4-35-8.5-3",
+            "IC 4-35-8.5-2 and -3 distribute each racino fee to its county, then to every city/town by population ratio, with the county retaining the remainder. Counts are the official 2020 decennial values effective April 1, 2022 under IC 1-1-3.5-3.",
+            cancellationToken);
+        await AddRuleIfMissingAsync(
+            db,
+            indiana.Id,
             JurisdictionRuleTypes.ProblemGamblingPrevalence,
             new ProblemGamblingPrevalenceRulePayload(
                 Prevalence: 0.041,
@@ -694,6 +824,14 @@ public static class ModelFoundationInitializer
         yield return Definition("facility.reference_entertainment_capacity", "facility-attraction", "Reference entertainment capacity", "people", 1000, 0, 1000000, 0, 10000, 100, "expert", false, "Interpretability reference facility; calibrate with the selected property sample.");
         yield return Definition("facility.reference_capital_cost", "facility-attraction", "Reference development capital", "USD", 500000000, 1, 100000000000, 100000000, 2000000000, 10000000, "expert", false, "Interpretability reference in constant dollars; dollar-year normalization remains required.");
         yield return Definition("facility.reference_highway_access", "facility-attraction", "Reference direct highway access", "indicator", 1, 0, 1, 0, 1, 1, "expert", false, "Binary interpretability reference for direct limited-access interchange availability.");
+        yield return Definition("facility.gaming_positions_offset", "facility-attraction", "Gaming positions log offset", "positions", 2000, 1, 100000, 100, 10000, 50, "expert", false, "Versioned zero-safe log transform offset; the initial reference-sized offset avoids treating a zero count as near-zero facility mass.");
+        yield return Definition("facility.table_games_offset", "facility-attraction", "Table games log offset", "tables", 50, 1, 10000, 5, 500, 5, "expert", false, "Versioned zero-safe log transform offset for table-game breadth.");
+        yield return Definition("facility.hotel_rooms_offset", "facility-attraction", "Hotel rooms log offset", "rooms", 250, 1, 100000, 25, 2500, 25, "expert", false, "Versioned zero-safe log transform offset so a legitimate no-hotel property is not collapsed toward zero competitive mass.");
+        yield return Definition("facility.gaming_floor_square_feet_offset", "facility-attraction", "Gaming-floor log offset", "square feet", 75_000, 1, 10_000_000, 5_000, 500_000, 5_000, "expert", false, "Versioned zero-safe log transform offset for gaming-floor area.");
+        yield return Definition("facility.food_beverage_venues_offset", "facility-attraction", "Food and beverage log offset", "venues", 4, 1, 1_000, 1, 50, 1, "expert", false, "Versioned zero-safe log transform offset for venue count.");
+        yield return Definition("facility.entertainment_capacity_offset", "facility-attraction", "Entertainment capacity log offset", "people", 1000, 1, 1_000_000, 100, 25_000, 100, "expert", false, "Versioned zero-safe log transform offset for entertainment capacity.");
+        yield return Definition("facility.capital_cost_offset", "facility-attraction", "Development capital log offset", "USD", 500_000_000, 1, 100_000_000_000, 10_000_000, 5_000_000_000, 10_000_000, "expert", false, "Versioned zero-safe log transform offset for constant-dollar development capital.");
+        yield return Definition("facility.highway_access_offset", "facility-attraction", "Highway access log offset", "indicator", 1, 0.01, 10, 0.1, 2, 0.1, "expert", false, "Versioned zero-safe log transform offset for the binary direct-access indicator.");
         yield return Definition("facility.proposed_scale_multiplier", "facility-attraction", "Proposed-property scale", "multiplier", 1.0, 0, 10, 0.25, 4, 0.05, "advanced", false, "Neutral proposed-property scale prior.");
         yield return Definition("facility.comparable_scale_multiplier", "facility-attraction", "Comparable-property scale", "multiplier", 1.0, 0, 10, 0.25, 4, 0.05, "expert", false, "Neutral comparable-property scaling prior.");
         yield return Definition("market_expansion.accessibility_elasticity", "market-expansion", "Accessibility-induced demand elasticity", "elasticity", 0, 0, 10, 0, 1, 0.01, "expert", false, "Zero-safe fallback pending causal calibration.");
@@ -886,6 +1024,17 @@ public static class ModelFoundationInitializer
             ProvenanceNotes = provenanceNotes
         });
     }
+
+    private static GamingTaxRecipientPayload PopulationRecipient(
+        string recipientKey,
+        string recipientLabel,
+        int population,
+        int countyPopulation) =>
+        new(
+            recipientKey,
+            recipientLabel,
+            GamingTaxRecipientScopeKinds.Municipality,
+            (decimal)population / countyPopulation);
 
     private static async Task<ModelParameterSet> GetOrCreateParameterSetAsync(
         AppDbContext db,

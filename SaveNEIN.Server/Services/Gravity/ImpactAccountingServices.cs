@@ -283,6 +283,11 @@ public sealed record FiscalImpactInput(
     double HostCountyGamingTaxShare,
     double HostRegionalGamingTaxShare,
     double HostStateGamingTaxShare,
+    double OtherGamingRevenueCharges,
+    double MunicipalOtherGamingRevenueShare,
+    double CountyOtherGamingRevenueShare,
+    double RegionalOtherGamingRevenueShare,
+    double StateOtherGamingRevenueShare,
     double NonGamingSalesTax,
     double PayrollIncomeTax,
     double BusinessIncomeTax,
@@ -300,6 +305,11 @@ public sealed record FiscalImpactResult(
     double HostCountyGamingTaxShare,
     double HostRegionalGamingTaxShare,
     double HostStateGamingTaxShare,
+    double OtherGamingRevenueCharges,
+    double MunicipalOtherGamingRevenueShare,
+    double CountyOtherGamingRevenueShare,
+    double RegionalOtherGamingRevenueShare,
+    double StateOtherGamingRevenueShare,
     double HostLocalGrossPublicRevenue,
     double HostStateGrossPublicRevenue,
     double DisplacedLocalFiscalLoss,
@@ -326,6 +336,11 @@ public sealed class FiscalImpactService : IFiscalImpactService
             input.HostCountyGamingTaxShare,
             input.HostRegionalGamingTaxShare,
             input.HostStateGamingTaxShare,
+            input.OtherGamingRevenueCharges,
+            input.MunicipalOtherGamingRevenueShare,
+            input.CountyOtherGamingRevenueShare,
+            input.RegionalOtherGamingRevenueShare,
+            input.StateOtherGamingRevenueShare,
             input.NonGamingSalesTax,
             input.PayrollIncomeTax,
             input.BusinessIncomeTax,
@@ -346,10 +361,21 @@ public sealed class FiscalImpactService : IFiscalImpactService
         {
             throw new InvalidOperationException("Gaming-tax component allocations must reconcile to total base plus supplemental gaming tax.");
         }
+        var allocatedOtherGamingRevenue = input.MunicipalOtherGamingRevenueShare +
+                                          input.CountyOtherGamingRevenueShare +
+                                          input.RegionalOtherGamingRevenueShare +
+                                          input.StateOtherGamingRevenueShare;
+        if (Math.Abs(allocatedOtherGamingRevenue - input.OtherGamingRevenueCharges) > 0.011)
+        {
+            throw new InvalidOperationException("Other gaming-revenue charge allocations must reconcile to the total charge amount.");
+        }
 
         var displacedLoss = input.DisplacedSalesTaxLoss + input.DisplacedBusinessIncomeTaxLoss;
-        var localGross = input.HostMunicipalityGamingTaxShare + input.HostCountyGamingTaxShare + input.PropertyTax;
-        var stateGross = input.HostStateGamingTaxShare + input.HostRegionalGamingTaxShare + input.NonGamingSalesTax +
+        var localGross = input.HostMunicipalityGamingTaxShare + input.HostCountyGamingTaxShare +
+                         input.MunicipalOtherGamingRevenueShare + input.CountyOtherGamingRevenueShare +
+                         input.PropertyTax;
+        var stateGross = input.HostStateGamingTaxShare + input.HostRegionalGamingTaxShare +
+                         input.RegionalOtherGamingRevenueShare + input.StateOtherGamingRevenueShare + input.NonGamingSalesTax +
                          input.PayrollIncomeTax + input.BusinessIncomeTax;
         return new FiscalImpactResult(
             input.BaseGamingTax,
@@ -359,6 +385,11 @@ public sealed class FiscalImpactService : IFiscalImpactService
             input.HostCountyGamingTaxShare,
             input.HostRegionalGamingTaxShare,
             input.HostStateGamingTaxShare,
+            input.OtherGamingRevenueCharges,
+            input.MunicipalOtherGamingRevenueShare,
+            input.CountyOtherGamingRevenueShare,
+            input.RegionalOtherGamingRevenueShare,
+            input.StateOtherGamingRevenueShare,
             localGross,
             stateGross,
             displacedLoss,

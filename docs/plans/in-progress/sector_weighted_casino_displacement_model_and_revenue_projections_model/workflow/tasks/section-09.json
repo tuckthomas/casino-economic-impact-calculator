@@ -3,18 +3,18 @@
   "title": "7. Resident demand models",
   "requirements": [
     "REQ-342-80ab44d5",
-    "REQ-343-30c46b04",
-    "REQ-344-e532172c",
-    "REQ-345-2e88a23b",
-    "REQ-346-9a7ab43a",
-    "REQ-347-0f6f7dc1",
-    "REQ-348-e6ded27b",
-    "REQ-343-30c46b04-349",
-    "REQ-350-86a86806",
-    "REQ-351-7a87efef",
-    "REQ-352-b9c7d925",
-    "REQ-353-4289ca79",
-    "REQ-354-cc704a3a",
+    "REQ-343-18a43089",
+    "REQ-344-4abc204f",
+    "REQ-345-0f7e88d5",
+    "REQ-346-1415a96a",
+    "REQ-347-3796f957",
+    "REQ-348-188bd736",
+    "REQ-343-18a43089-350",
+    "REQ-350-46f60df2",
+    "REQ-351-30587ea4",
+    "REQ-352-4b901070",
+    "REQ-353-0013005f",
+    "REQ-354-fb175c15",
     "REQ-355-68008e66",
     "REQ-356-d4ff3aa5",
     "REQ-357-99ca032a",
@@ -22,6 +22,8 @@
     "REQ-359-47c3fb81"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "in-progress",
+  "evidence": [
+    "13/18 requirements verified (5 pending)."
+  ]
 }

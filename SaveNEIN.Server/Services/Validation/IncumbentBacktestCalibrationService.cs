@@ -160,6 +160,7 @@ public sealed class IncumbentBacktestCalibrationService(
                     DevelopmentProgramId = programs[competitor.Id].Id,
                     CandidateLatitude = competitor.Latitude,
                     CandidateLongitude = competitor.Longitude,
+                    FacilityRegime = ResolveTargetFacilityRegime(competitor, request.BaseRunRequest.FacilityRegime),
                     StableOriginIds = originIdsByTarget[competitor.Id],
                     UserOverrides = mergedOverrides,
                     CompetitorIds = request.BaseRunRequest.CompetitorIds
@@ -414,6 +415,11 @@ public sealed class IncumbentBacktestCalibrationService(
         return merged.OrderBy(item => item.Key, StringComparer.Ordinal)
             .Select(item => new ParameterOverride(item.Key, item.Value)).ToArray();
     }
+
+    internal static string ResolveTargetFacilityRegime(CasinoCompetitor competitor, string fallbackRegime) =>
+        string.IsNullOrWhiteSpace(competitor.FacilityRegime)
+            ? fallbackRegime
+            : competitor.FacilityRegime;
 
     private static void RequireContinuousCoverage(
         CasinoCompetitor competitor,

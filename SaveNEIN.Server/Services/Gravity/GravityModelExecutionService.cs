@@ -879,28 +879,28 @@ public sealed class GravityModelExecutionService(
         CasinoCompetitor competitor,
         IReadOnlyDictionary<string, double> parameters) =>
     [
-        Feature("gaming-positions", competitor.GamingPositions ?? competitor.SlotOrVltPositions, "facility.reference_gaming_positions", "facility.gaming_positions_coefficient", parameters),
-        Feature("table-games", competitor.TableGameCount, "facility.reference_table_games", "facility.table_games_coefficient", parameters),
-        Feature("hotel-rooms", competitor.HotelRoomCount, "facility.reference_hotel_rooms", "facility.hotel_rooms_coefficient", parameters),
-        Feature("gaming-floor-square-feet", competitor.GamingFloorSquareFeet, "facility.reference_gaming_floor_square_feet", "facility.gaming_floor_coefficient", parameters),
-        Feature("food-beverage-venues", competitor.FoodBeverageVenueCount, "facility.reference_food_beverage_venues", "facility.food_beverage_coefficient", parameters),
-        Feature("entertainment-capacity", competitor.EventCapacity, "facility.reference_entertainment_capacity", "facility.entertainment_capacity_coefficient", parameters),
-        Feature("capital-cost", competitor.DevelopmentCost is null ? null : Convert.ToDouble(competitor.DevelopmentCost), "facility.reference_capital_cost", "facility.capital_scale_coefficient", parameters),
-        Feature("highway-access", competitor.HasInterchangeAccess is null ? null : competitor.HasInterchangeAccess.Value ? 1 : 0, "facility.reference_highway_access", "facility.highway_access_coefficient", parameters)
+        Feature("gaming-positions", competitor.GamingPositions ?? competitor.SlotOrVltPositions, "facility.reference_gaming_positions", "facility.gaming_positions_coefficient", "facility.gaming_positions_offset", parameters),
+        Feature("table-games", competitor.TableGameCount, "facility.reference_table_games", "facility.table_games_coefficient", "facility.table_games_offset", parameters),
+        Feature("hotel-rooms", competitor.HotelRoomCount, "facility.reference_hotel_rooms", "facility.hotel_rooms_coefficient", "facility.hotel_rooms_offset", parameters),
+        Feature("gaming-floor-square-feet", competitor.GamingFloorSquareFeet, "facility.reference_gaming_floor_square_feet", "facility.gaming_floor_coefficient", "facility.gaming_floor_square_feet_offset", parameters),
+        Feature("food-beverage-venues", competitor.FoodBeverageVenueCount, "facility.reference_food_beverage_venues", "facility.food_beverage_coefficient", "facility.food_beverage_venues_offset", parameters),
+        Feature("entertainment-capacity", competitor.EventCapacity, "facility.reference_entertainment_capacity", "facility.entertainment_capacity_coefficient", "facility.entertainment_capacity_offset", parameters),
+        Feature("capital-cost", competitor.DevelopmentCost is null ? null : Convert.ToDouble(competitor.DevelopmentCost), "facility.reference_capital_cost", "facility.capital_scale_coefficient", "facility.capital_cost_offset", parameters),
+        Feature("highway-access", competitor.HasInterchangeAccess is null ? null : competitor.HasInterchangeAccess.Value ? 1 : 0, "facility.reference_highway_access", "facility.highway_access_coefficient", "facility.highway_access_offset", parameters)
     ];
 
     private static IReadOnlyCollection<FacilityFeatureTerm> FacilityFeatures(
         DevelopmentProgram program,
         IReadOnlyDictionary<string, double> parameters) =>
     [
-        Feature("gaming-positions", program.SlotOrVltPositions + program.TableGameCount, "facility.reference_gaming_positions", "facility.gaming_positions_coefficient", parameters),
-        Feature("table-games", program.TableGameCount, "facility.reference_table_games", "facility.table_games_coefficient", parameters),
-        Feature("hotel-rooms", program.HotelRoomCount, "facility.reference_hotel_rooms", "facility.hotel_rooms_coefficient", parameters),
-        Feature("gaming-floor-square-feet", program.GamingFloorSquareFeet, "facility.reference_gaming_floor_square_feet", "facility.gaming_floor_coefficient", parameters),
-        Feature("food-beverage-venues", program.FoodBeverageVenueCount, "facility.reference_food_beverage_venues", "facility.food_beverage_coefficient", parameters),
-        Feature("entertainment-capacity", program.EventCapacity, "facility.reference_entertainment_capacity", "facility.entertainment_capacity_coefficient", parameters),
-        Feature("capital-cost", program.CapitalCost is null ? null : Convert.ToDouble(program.CapitalCost), "facility.reference_capital_cost", "facility.capital_scale_coefficient", parameters),
-        Feature("highway-access", null, "facility.reference_highway_access", "facility.highway_access_coefficient", parameters)
+        Feature("gaming-positions", program.SlotOrVltPositions + program.TableGameCount, "facility.reference_gaming_positions", "facility.gaming_positions_coefficient", "facility.gaming_positions_offset", parameters),
+        Feature("table-games", program.TableGameCount, "facility.reference_table_games", "facility.table_games_coefficient", "facility.table_games_offset", parameters),
+        Feature("hotel-rooms", program.HotelRoomCount, "facility.reference_hotel_rooms", "facility.hotel_rooms_coefficient", "facility.hotel_rooms_offset", parameters),
+        Feature("gaming-floor-square-feet", program.GamingFloorSquareFeet, "facility.reference_gaming_floor_square_feet", "facility.gaming_floor_coefficient", "facility.gaming_floor_square_feet_offset", parameters),
+        Feature("food-beverage-venues", program.FoodBeverageVenueCount, "facility.reference_food_beverage_venues", "facility.food_beverage_coefficient", "facility.food_beverage_venues_offset", parameters),
+        Feature("entertainment-capacity", program.EventCapacity, "facility.reference_entertainment_capacity", "facility.entertainment_capacity_coefficient", "facility.entertainment_capacity_offset", parameters),
+        Feature("capital-cost", program.CapitalCost is null ? null : Convert.ToDouble(program.CapitalCost), "facility.reference_capital_cost", "facility.capital_scale_coefficient", "facility.capital_cost_offset", parameters),
+        Feature("highway-access", null, "facility.reference_highway_access", "facility.highway_access_coefficient", "facility.highway_access_offset", parameters)
     ];
 
     private static FacilityFeatureTerm Feature(
@@ -908,8 +908,14 @@ public sealed class GravityModelExecutionService(
         double? value,
         string referenceKey,
         string coefficientKey,
+        string offsetKey,
         IReadOnlyDictionary<string, double> parameters) =>
-        new(key, value, RequireParameter(parameters, referenceKey), RequireParameter(parameters, coefficientKey));
+        new(
+            key,
+            value,
+            RequireParameter(parameters, referenceKey),
+            RequireParameter(parameters, coefficientKey),
+            RequireParameter(parameters, offsetKey));
 
     private static GravityAlternativeInput Alternative(
         string facilityKey,
@@ -1457,6 +1463,11 @@ public sealed class GravityModelExecutionService(
             Convert.ToDouble(gamingFiscalAllocation.HostCountyShare),
             Convert.ToDouble(gamingFiscalAllocation.HostRegionalShare),
             Convert.ToDouble(gamingFiscalAllocation.HostStateShare),
+            Convert.ToDouble(gamingFiscalAllocation.OtherGamingRevenueCharges),
+            Convert.ToDouble(gamingFiscalAllocation.MunicipalOtherGamingRevenueShare),
+            Convert.ToDouble(gamingFiscalAllocation.CountyOtherGamingRevenueShare),
+            Convert.ToDouble(gamingFiscalAllocation.RegionalOtherGamingRevenueShare),
+            Convert.ToDouble(gamingFiscalAllocation.StateOtherGamingRevenueShare),
             nonGamingTaxableRevenue * salesTaxRate,
             directAndIndirectLaborIncome * Convert.ToDouble(generalFiscalRule?.PayrollIncomeTaxRate ?? 0),
             nonGamingTaxableRevenue * RequireParameter(parameters, "fiscal.non_gaming_business_margin") * businessIncomeTaxRate,
@@ -1596,6 +1607,11 @@ public sealed class GravityModelExecutionService(
             HostCountyGamingTaxShare = ToMoney(fiscal.HostCountyGamingTaxShare),
             HostRegionalGamingTaxShare = ToMoney(fiscal.HostRegionalGamingTaxShare),
             HostStateGamingTaxShare = ToMoney(fiscal.HostStateGamingTaxShare),
+            OtherGamingRevenueCharges = ToMoney(fiscal.OtherGamingRevenueCharges),
+            MunicipalOtherGamingRevenueShare = ToMoney(fiscal.MunicipalOtherGamingRevenueShare),
+            CountyOtherGamingRevenueShare = ToMoney(fiscal.CountyOtherGamingRevenueShare),
+            RegionalOtherGamingRevenueShare = ToMoney(fiscal.RegionalOtherGamingRevenueShare),
+            StateOtherGamingRevenueShare = ToMoney(fiscal.StateOtherGamingRevenueShare),
             HostLocalGrossPublicRevenue = ToMoney(fiscal.HostLocalGrossPublicRevenue),
             HostStateGrossPublicRevenue = ToMoney(fiscal.HostStateGrossPublicRevenue),
             DisplacedLocalFiscalLoss = ToMoney(fiscal.DisplacedLocalFiscalLoss),
@@ -1610,6 +1626,7 @@ public sealed class GravityModelExecutionService(
                 gamingTax.SourceUrl,
                 gamingFiscalAllocation.SourceUrls,
                 gamingFiscalAllocation.RecipientAllocations,
+                gamingFiscalAllocation.RevenueChargeAllocations,
                 gamingFiscalAllocation.Location.StateFips,
                 gamingFiscalAllocation.Location.CountyFips,
                 gamingFiscalAllocation.Location.CountyName,

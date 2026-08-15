@@ -203,6 +203,7 @@ public sealed class ReportRendererTests
                 60_000, 50_000, 60_000, "{\"assumptionBasis\":\"provider-snapshot\"}"),
             Fiscal: new ReportFiscal(
                 100_000, 25_000, 125_000, 12_500, 12_500, 0, 100_000,
+                0, 0, 0, 0, 0,
                 50_000, 125_000, 12_000, 5_000, 2_000, 33_000, 108_000, -2_000, "{}"),
             SocialCosts: [new ReportSocialCost("treatment-health", 100_000, 10, 10_000, 100_000, 75_000, 125_000, true, "Test")],
             NetImpact: new ReportNetImpact(

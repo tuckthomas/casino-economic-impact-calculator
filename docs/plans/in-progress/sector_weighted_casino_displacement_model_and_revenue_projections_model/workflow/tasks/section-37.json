@@ -2,16 +2,18 @@
   "id": "section-37",
   "title": "35. Initial Indiana benchmark test suite",
   "requirements": [
-    "REQ-920-3801897a",
-    "REQ-921-2f6f5ffe",
-    "REQ-922-6de24823",
-    "REQ-923-7e3c360c",
-    "REQ-924-92fd11e0",
-    "REQ-925-c961cc21",
-    "REQ-926-546455a6",
-    "REQ-927-9f855e9b"
+    "REQ-921-7adf1c31",
+    "REQ-922-7783f809",
+    "REQ-923-b4e0f653",
+    "REQ-924-f62a75ff",
+    "REQ-925-0d078738",
+    "REQ-926-fa179605",
+    "REQ-926-ab39df46",
+    "REQ-927-a02c1020"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "completed",
+  "evidence": [
+    "All 8 requirements in this section are verified and passing."
+  ]
 }

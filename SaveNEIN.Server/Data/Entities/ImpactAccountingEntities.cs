@@ -91,6 +91,11 @@ public sealed class ModelRunFiscalImpact
     public decimal HostCountyGamingTaxShare { get; set; }
     public decimal HostRegionalGamingTaxShare { get; set; }
     public decimal HostStateGamingTaxShare { get; set; }
+    public decimal OtherGamingRevenueCharges { get; set; }
+    public decimal MunicipalOtherGamingRevenueShare { get; set; }
+    public decimal CountyOtherGamingRevenueShare { get; set; }
+    public decimal RegionalOtherGamingRevenueShare { get; set; }
+    public decimal StateOtherGamingRevenueShare { get; set; }
     public decimal HostLocalGrossPublicRevenue { get; set; }
     public decimal HostStateGrossPublicRevenue { get; set; }
     public decimal DisplacedLocalFiscalLoss { get; set; }

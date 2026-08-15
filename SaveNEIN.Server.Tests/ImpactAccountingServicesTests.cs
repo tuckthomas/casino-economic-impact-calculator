@@ -71,15 +71,16 @@ public sealed class ImpactAccountingServicesTests
     public void FiscalImpact_DistinguishesGrossReceiptsFromLossesAndNetEffects()
     {
         var result = new FiscalImpactService().Calculate(new FiscalImpactInput(
-            25, 5, 2, 3, 1, 24, 2, 3, 1, 4, 1, 0.5, 2, 3));
+            25, 5, 2, 3, 1, 24, 10, 4, 6, 0, 0, 2, 3, 1, 4, 1, 0.5, 2, 3));
 
         Assert.Equal(25, result.BaseGamingTax, 8);
         Assert.Equal(5, result.SupplementalGamingTax, 8);
         Assert.Equal(30, result.GrossGamingTax, 8);
-        Assert.Equal(9, result.HostLocalGrossPublicRevenue, 8);
+        Assert.Equal(10, result.OtherGamingRevenueCharges, 8);
+        Assert.Equal(19, result.HostLocalGrossPublicRevenue, 8);
         Assert.Equal(31, result.HostStateGrossPublicRevenue, 8);
         Assert.Equal(1.5, result.DisplacedLocalFiscalLoss, 8);
-        Assert.Equal(7.5, result.NetHostLocalFiscalImpact, 8);
+        Assert.Equal(17.5, result.NetHostLocalFiscalImpact, 8);
         Assert.Equal(29, result.NetHostStateFiscalImpact, 8);
         Assert.Equal(-3, result.OtherJurisdictionFiscalImpact, 8);
     }
@@ -124,6 +125,6 @@ public sealed class ImpactAccountingServicesTests
             new DisplacementInput(1, 0, 0, 1.1, 0.5,
                 [new DisplacementSectorInput("sector", 1, 1, 1, 1, 0, 0, 1)])));
         Assert.Throws<InvalidOperationException>(() => new FiscalImpactService().Calculate(
-            new FiscalImpactInput(1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)));
+            new FiscalImpactInput(1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)));
     }
 }

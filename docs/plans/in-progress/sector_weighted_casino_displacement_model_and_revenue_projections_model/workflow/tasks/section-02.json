@@ -2,7 +2,7 @@
   "id": "section-02",
   "title": "0. Read this first: non-negotiable agent instructions",
   "requirements": [
-    "REQ-002-91efd4df",
+    "REQ-002-62ea9b05",
     "REQ-003-1db6e956",
     "REQ-004-9b4149b8",
     "REQ-005-d26c6b19",
@@ -12,18 +12,18 @@
     "REQ-009-2bd61bf6",
     "REQ-010-ba3287bd",
     "REQ-011-a5097530",
-    "REQ-012-38f87d0b",
-    "REQ-013-8b39d565",
-    "REQ-014-09398e2e",
-    "REQ-015-73715515",
+    "REQ-013-1234cbd9",
+    "REQ-014-38fdf054",
+    "REQ-015-e2166c08",
+    "REQ-016-83ba44bd",
     "REQ-016-d4cf6852",
     "REQ-017-87e4018b",
     "REQ-018-0cd5ebcf",
     "REQ-019-5ac1309a",
     "REQ-020-878a8c6c",
-    "REQ-021-5c23832a",
-    "REQ-022-cb4e36d1",
-    "REQ-023-250a4e7c",
+    "REQ-022-623a89ff",
+    "REQ-023-49098a72",
+    "REQ-024-b6ccc755",
     "REQ-024-febda91a",
     "REQ-025-04fd356d",
     "REQ-026-7dfa4595",
@@ -46,6 +46,8 @@
     "REQ-043-34a0b80d"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "in-progress",
+  "evidence": [
+    "8/42 requirements verified (34 pending)."
+  ]
 }

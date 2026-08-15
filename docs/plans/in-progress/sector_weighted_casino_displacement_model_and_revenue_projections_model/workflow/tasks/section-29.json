@@ -2,23 +2,25 @@
   "id": "section-29",
   "title": "27. Net economic-impact accounting",
   "requirements": [
-    "REQ-745-80c46108",
-    "REQ-746-2482f58f",
-    "REQ-747-1d01785d",
-    "REQ-748-c2e2ac45",
-    "REQ-749-9751c17f",
-    "REQ-750-c60adc44",
-    "REQ-751-aa69d21b",
-    "REQ-752-f51d920b",
-    "REQ-753-1ade81f6",
-    "REQ-754-cff40b06",
-    "REQ-755-a76aca43",
-    "REQ-756-2f9df964",
-    "REQ-757-ab52baf5",
+    "REQ-745-58e0a63a",
+    "REQ-746-e7ab9514",
+    "REQ-747-ded20a3c",
+    "REQ-748-320bf270",
+    "REQ-749-21b703ad",
+    "REQ-750-6108221f",
+    "REQ-751-8b270180",
+    "REQ-752-35021279",
+    "REQ-753-fddee625",
+    "REQ-754-aaf5e6c1",
+    "REQ-755-a4514da5",
+    "REQ-756-054b36b6",
+    "REQ-757-b384b786",
     "REQ-758-256151a3",
-    "REQ-759-eba484ce"
+    "REQ-759-c11b7b88"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "in-progress",
+  "evidence": [
+    "13/15 requirements verified (2 pending)."
+  ]
 }

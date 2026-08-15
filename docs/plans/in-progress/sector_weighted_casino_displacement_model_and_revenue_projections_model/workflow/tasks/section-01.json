@@ -2,9 +2,12 @@
   "id": "section-01",
   "title": "National Casino Gravity, Revenue Projection, Cannibalization, and Comprehensive Economic Impact Model",
   "requirements": [
-    "REQ-001-19c69b23"
+    "REQ-001-9beb4e1e",
+    "USA-ZCTA-46802"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "completed",
+  "evidence": [
+    "All 2 requirements in this section are verified and passing."
+  ]
 }

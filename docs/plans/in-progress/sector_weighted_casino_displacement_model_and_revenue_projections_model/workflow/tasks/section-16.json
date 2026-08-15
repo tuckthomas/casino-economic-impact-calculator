@@ -2,14 +2,16 @@
   "id": "section-16",
   "title": "14. Outside option and incomplete market capture",
   "requirements": [
-    "REQ-582-a20cb75a",
-    "REQ-583-1f2c5b38",
-    "REQ-584-4ec3b0f3",
+    "REQ-582-216f570b",
+    "REQ-583-5946e9ee",
+    "REQ-584-dbe26ec0",
     "REQ-585-fa70875d",
     "REQ-586-2022e7b0",
-    "REQ-587-f14ea315"
+    "REQ-587-6625efe7"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "in-progress",
+  "evidence": [
+    "4/6 requirements verified (2 pending)."
+  ]
 }

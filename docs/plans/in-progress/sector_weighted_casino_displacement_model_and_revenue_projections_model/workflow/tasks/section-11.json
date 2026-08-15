@@ -2,21 +2,23 @@
   "id": "section-11",
   "title": "9. Network travel-time matrix",
   "requirements": [
-    "REQ-392-eac001e8",
-    "REQ-393-ce9d61a5",
-    "REQ-394-8aba2a95",
-    "REQ-395-a8b594ea",
-    "REQ-396-a36fc043",
-    "REQ-397-4554e303",
-    "REQ-398-08cc6f0f",
-    "REQ-399-3f9313fa",
-    "REQ-400-fae44844",
-    "REQ-401-ca8cac3f",
-    "REQ-402-65ab5963",
+    "REQ-392-2b8ac151",
+    "REQ-393-cdd58329",
+    "REQ-394-65013568",
+    "REQ-395-675a541d",
+    "REQ-396-1f516dd7",
+    "REQ-397-2dbda27d",
+    "REQ-398-04cfbcff",
+    "REQ-399-ff9ffa9a",
+    "REQ-400-fad38a80",
+    "REQ-402-27a1244a",
+    "REQ-403-c3ca2622",
     "REQ-403-0744eade",
     "REQ-404-7c6bdffe"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "in-progress",
+  "evidence": [
+    "11/13 requirements verified (2 pending)."
+  ]
 }

@@ -2,16 +2,18 @@
   "id": "section-18",
   "title": "16. Tourism and destination demand",
   "requirements": [
-    "REQ-598-1cbc8ee6",
-    "REQ-599-48178d97",
-    "REQ-600-5bb41943",
-    "REQ-601-78cfd92f",
-    "REQ-602-5a14060c",
-    "REQ-603-833752be",
-    "REQ-604-8ab45194",
-    "REQ-605-0d7078ad"
+    "REQ-598-66fe298a",
+    "REQ-599-41df2347",
+    "REQ-601-5853b42a",
+    "REQ-601-76d94de9",
+    "REQ-602-4cbe3a63",
+    "REQ-603-f7dfa9e0",
+    "REQ-604-f74d7ec2",
+    "REQ-605-6114ba2e"
   ],
   "dependencies": [],
-  "state": "pending",
-  "evidence": []
+  "state": "completed",
+  "evidence": [
+    "All 8 requirements in this section are verified and passing."
+  ]
 }
