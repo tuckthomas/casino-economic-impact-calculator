@@ -748,3 +748,14 @@ window.SlotMachine = (function ()
         insertCoin: insertCoin
     };
 })();
+
+if (typeof window.slotMachineSafeInit !== 'function')
+{
+    window.slotMachineSafeInit = function (mobileMaxWidth, mobileRevealDelayMs)
+    {
+        if (window.SlotMachine && typeof window.SlotMachine.init === 'function')
+        {
+            window.SlotMachine.init(mobileMaxWidth, mobileRevealDelayMs);
+        }
+    };
+}
