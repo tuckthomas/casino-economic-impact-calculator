@@ -1695,6 +1695,24 @@ window.EconomicCalculator = (function ()
         renderSensitivityChart(model);
     }
 
+    let calcRaf = null;
+    let pendingCalcEvent = null;
+
+    function scheduleCalculate(e)
+    {
+        if (isSyncing) return;
+        pendingCalcEvent = e || pendingCalcEvent;
+        if (calcRaf) return;
+
+        calcRaf = requestAnimationFrame(() =>
+        {
+            calcRaf = null;
+            const evt = pendingCalcEvent;
+            pendingCalcEvent = null;
+            calculate(evt);
+        });
+    }
+
     function calculate(e)
     {
         if (isSyncing) return;
@@ -3310,7 +3328,7 @@ window.EconomicCalculator = (function ()
 
         inputs.forEach(input =>
         {
-            if (input) input.addEventListener('input', calculate);
+            if (input) input.addEventListener('input', scheduleCalculate);
         });
 
         const scenarioSelect = document.getElementById('tax-allocation-scenario-select');
@@ -3405,7 +3423,7 @@ window.EconomicCalculator = (function ()
         // Global listener for custom events from SliderInput
         window.addEventListener('slider-input-sync', (e) =>
         {
-            calculate(e);
+            scheduleCalculate(e);
         });
     }
 

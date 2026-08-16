@@ -315,8 +315,11 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Always try to init. The JS logic handles idempotency via dataset checks.
-        // This ensures that if Blazor replaces the DOM element, we re-attach listeners.
+        if (!firstRender)
+        {
+            return;
+        }
+
         try
         {
             await JSRuntime.InvokeVoidAsync("window.SliderInputLogic.init", rangeInputRef, textInputRef, containerRef, presetSelectRef, new
