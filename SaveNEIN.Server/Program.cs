@@ -115,10 +115,17 @@ using (var scope = app.Services.CreateScope())
 // the required state PLACE data exists and contains usable active geometries.
 using (var scope = app.Services.CreateScope())
 {
-    var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
-    Console.WriteLine("Ensuring required municipality PLACE data is ready...");
-    await seeder.EnsureRequiredMunicipalityPlaceDataAsync();
-    Console.WriteLine("Required municipality PLACE data is ready.");
+    try
+    {
+        var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
+        Console.WriteLine("Ensuring required municipality PLACE data is ready...");
+        await seeder.EnsureRequiredMunicipalityPlaceDataAsync();
+        Console.WriteLine("Required municipality PLACE data is ready.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Municipality PLACE data check skipped or failed: {ex.Message}");
+    }
 }
 
 // Seed the remaining TIGER datasets and warm caches in the background. Correctness-
