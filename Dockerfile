@@ -13,6 +13,7 @@ COPY ["global.json", "./"]
 COPY ["SaveNEIN.Server/SaveNEIN.Server.csproj", "SaveNEIN.Server/"]
 COPY ["SaveNEIN.Client/SaveNEIN.Client.csproj", "SaveNEIN.Client/"]
 COPY ["SaveNEIN.Shared/SaveNEIN.Shared.csproj", "SaveNEIN.Shared/"]
+COPY ["SaveNEIN.Server.Tests/SaveNEIN.Server.Tests.csproj", "SaveNEIN.Server.Tests/"]
 
 # Restore dependencies
 RUN dotnet restore
