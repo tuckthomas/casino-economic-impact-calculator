@@ -73,7 +73,8 @@
                 }
                 <input @ref="textInputRef" type="text" id="val-@Id" inputmode="numeric" readonly
                        class="sfw-slider-value-input sfw-value-readonly rounded-lg px-2 py-0.5 text-lg font-bold font-mono w-full text-right focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
-                       value="@FormattedCurrentValue">
+                       value="@FormattedCurrentValue"
+                       @onchange="HandleTextInputChanged">
                 @if (InputType == "Percent")
                 {
                     <span class="text-lg font-bold font-mono text-white">%</span>
@@ -241,6 +242,23 @@
         selectedPresetValue = args?.Value?.ToString() ?? CustomPresetValue;
         ApplyPresetToLocalValue(selectedPresetValue);
         desktopPresetMenuOpen = false;
+    }
+
+    private void HandleTextInputChanged(ChangeEventArgs args)
+    {
+        var rawText = args?.Value?.ToString() ?? string.Empty;
+        var cleaned = rawText
+            .Replace("$", "")
+            .Replace("MM", "", StringComparison.OrdinalIgnoreCase)
+            .Replace("%", "")
+            .Replace(",", "")
+            .Trim();
+
+        if (double.TryParse(cleaned, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+        {
+            currentValue = Math.Clamp(parsed, MinValue, MaxValue);
+            selectedPresetValue = ResolvePresetSelection(currentValue);
+        }
     }
 
     private Task ToggleDesktopPresetMenu()

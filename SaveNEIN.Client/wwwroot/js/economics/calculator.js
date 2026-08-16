@@ -1859,7 +1859,7 @@ window.EconomicCalculator = (function ()
             }).join('');
         }
 
-        // Snap Logic & Visual Update
+        // Visual State & Preset Indicator Update
         const inputs = [
             els.inRate, els.inAGR, els.inRevenue, els.inCostCrime, els.inCostBusiness,
             els.inCostBankruptcy, els.inCostIllness, els.inCostServices, els.inCostAbused
@@ -1871,21 +1871,18 @@ window.EconomicCalculator = (function ()
 
             // Support multiple defaults for Rate slider
             const defs = input.id === 'input-rate' ? [2.3, 3.0, 5.5] : [parseFloat(input.dataset.default)];
-            let val = parseFloat(input.value);
-            const min = parseFloat(input.min);
-            const max = parseFloat(input.max);
-            const range = max - min;
-            const threshold = range * 0.015;
+            const val = parseFloat(input.value);
+            if (!Number.isFinite(val)) return;
 
-            let snapped = false;
-            let snapVal = null;
+            let isDefault = false;
+            let matchedDef = null;
 
             for (const d of defs)
             {
-                if (Math.abs(val - d) < threshold)
+                if (Number.isFinite(d) && Math.abs(val - d) < 0.005)
                 {
-                    snapped = true;
-                    snapVal = d;
+                    isDefault = true;
+                    matchedDef = d;
                     break;
                 }
             }
@@ -1899,14 +1896,8 @@ window.EconomicCalculator = (function ()
             if (input.id === 'input-revenue') activeColor = 'text-emerald-500';
             else if (input.id === 'input-agr') activeColor = 'text-emerald-400';
 
-            if (snapped) 
+            if (isDefault)
             {
-                if (Math.abs(val - snapVal) > 0.001)
-                {
-                    input.value = snapVal;
-                    val = snapVal;
-                }
-
                 if (valDisplay && activeColor)
                 {
                     valDisplay.classList.remove('text-white');
@@ -1925,13 +1916,13 @@ window.EconomicCalculator = (function ()
             if (input.id === 'input-rate')
             {
                 const radios = document.querySelectorAll('input[name="gambling-rate-preset"]');
-                radios.forEach(r => r.checked = (snapped && parseFloat(r.value) === snapVal));
+                radios.forEach(r => r.checked = (isDefault && Math.abs(parseFloat(r.value) - (matchedDef ?? val)) < 0.005));
             } else
             {
                 const sibling = input.nextElementSibling;
                 if (sibling && sibling.type === 'radio')
                 {
-                    sibling.checked = snapped;
+                    sibling.checked = isDefault;
                 }
             }
         });
