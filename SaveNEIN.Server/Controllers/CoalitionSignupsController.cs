@@ -84,7 +84,7 @@ public class CoalitionSignupsController : ControllerBase
 
                 await _context.SaveChangesAsync();
                 
-                _logger.LogInformation("Updated coalition signup for {Email}", normalizedEmail);
+                _logger.LogInformation("Updated coalition signup record ID {SignupId}", existingSignup.Id);
 
                 return Ok(new CoalitionSignupResponse 
                 { 
@@ -123,7 +123,7 @@ public class CoalitionSignupsController : ControllerBase
                 _context.CoalitionSignups.Add(newSignup);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Created new coalition signup for {Email}", normalizedEmail);
+                _logger.LogInformation("Created new coalition signup record ID {SignupId}", newSignup.Id);
 
                 return Created("", new CoalitionSignupResponse 
                 { 
