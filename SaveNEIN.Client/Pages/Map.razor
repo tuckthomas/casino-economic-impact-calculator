@@ -148,12 +148,12 @@
             <div id="impact-map" class="w-full h-full z-0 transition-all duration-500"></div>
         </div>
 
-        <!-- Sliders and Stats -->
+        <!-- Model Preset Inputs and Stats -->
             <div class="mt-10">
                  <PresetInput Id="rate" Label="Baseline Problem Gambling Prevalence Rate" Value="2.3"
                              MinValue="0" MaxValue="10" Step="0.1"
                              InputType="Percent" DecimalPlaces="1"
-                             MajorTickInterval="2" MinorTickInterval="0.5"
+                             MajorTickInterval="2"
                              Tooltip="Pre-existing percentage of adults meeting clinical or sub-clinical diagnostic criteria for problem gambling prior to casino introduction."
                              Description="Default 2.3% is the official baseline clinical diagnosis rate for adult Hoosiers established by the Indiana Family and Social Services Administration (FSSA) / Division of Mental Health and Addiction (DMHA) statewide survey, capturing pre-construction problem gambling before new facility exposure."
                              Markers='@(new List<SliderMarker> {
@@ -166,7 +166,7 @@
                  <PresetInput Id="baseline-increase" Label="Expected Baseline Increase (Catchment Area)" Value="0.5"
                              MinValue="0" MaxValue="3" Step="0.1"
                              InputType="Percent" DecimalPlaces="1"
-                             MajorTickInterval="0.5" MinorTickInterval="0.25"
+                             MajorTickInterval="0.5"
                              Tooltip="Empirical background prevalence increase across the 50-mile patron footprint, capturing regional market-wide lift beyond localized proximity tiers."
                              Description="Default 0.5% reflects the conservative lower-quartile prevalence increase (+0.4% to +0.9%) documented in empirical longitudinal studies (NORC/NGISC, Volberg SEIGMA) when introducing a commercial casino into a previously unserved 50-mile regional market where 95% of patrons reside."
                              Markers='@(new List<SliderMarker> {
@@ -179,7 +179,7 @@
                  <PresetInput Id="adult-projection-year" Label="Adult Population Projection Year" Value="2020"
                              MinValue="2020" MaxValue="2040" Step="1"
                              InputType="Number" DecimalPlaces="0"
-                             MajorTickInterval="5" MinorTickInterval="1"
+                             MajorTickInterval="5"
                              Tooltip="Benchmark census year for block-level adult population counts. 2020 represents the official Decennial Census baseline."
                              Description="Default 2020 applies the audited U.S. Decennial Census block-level headcount directly. Selecting a future target year (such as 2030) compounds population growth forward using the annual rate below."
                              Markers='@(new List<SliderMarker> {
@@ -191,7 +191,7 @@
                  <PresetInput Id="adult-projection-growth" Label="Annual Adult Population Growth Rate" Value="0"
                              MinValue="-2" MaxValue="2" Step="0.1"
                              InputType="Percent" DecimalPlaces="1"
-                             MajorTickInterval="1" MinorTickInterval="0.25"
+                             MajorTickInterval="1"
                              Tooltip="Compound annual growth rate applied uniformly to census block adult populations between 2020 and the selected projection year."
                              Description="Default 0.0% maintains the verified 2020 Decennial Census headcount baseline, avoiding speculative demographic inflation. Positive rates model county-level net migration and expansion."
                              Markers='@(new List<SliderMarker> {
@@ -200,7 +200,7 @@
                                  new() { Label="+1.0%", Value=1.0, TooltipDescription="Higher annual adult population growth (+1.0%/yr)." }
                              })' />
             </div>
-            <!-- END SLIDER SECTION -->
+            <!-- END MODEL PRESET INPUT SECTION -->
 
             <!-- Impact Stats Grid -->
             <!-- ... (Keeping existing Stats Grid HTML as it relies on IDs populated by JS) ... -->

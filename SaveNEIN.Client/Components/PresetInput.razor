@@ -86,10 +86,7 @@
             </div>
         </div>
     </div>
-    <div aria-hidden="true" style="display: none;" @ref="containerRef">
-        <input @ref="rangeInputRef" type="range" id="input-@Id" min="@MinValue" max="@MaxValue" step="@Step" value="@currentValue" data-default="@Value"
-               style="display: none;">
-    </div>
+    <input @ref="rangeInputRef" type="hidden" id="input-@Id" min="@MinValue" max="@MaxValue" step="@Step" value="@currentValue" data-default="@Value">
 </div>
 
 @code {
@@ -111,17 +108,14 @@
     [Parameter] public double MaxValue { get; set; } = 100;       // Default: 100
     [Parameter] public List<SliderMarker> Markers { get; set; } = new();
 
-    // Tick Options
+    // Preset Options
     [Parameter] public double MajorTickInterval { get; set; } = 20; // Default for 0-100 range
-    [Parameter] public double MinorTickInterval { get; set; } = 5;  // Default for 0-100 range
 
     // Preset/Input Logic Props
     [Parameter] public double Step { get; set; } = 1;
     [Parameter] public double Value { get; set; }
-    [Parameter] public string MarkerColor { get; set; } = "red"; // Default color
 
     private const string CustomPresetValue = "__custom__";
-    private ElementReference containerRef;
     private ElementReference rangeInputRef;
     private ElementReference textInputRef;
     private ElementReference presetSelectRef;
@@ -322,16 +316,14 @@
 
         try
         {
-            await JSRuntime.InvokeVoidAsync("window.SliderInputLogic.init", rangeInputRef, textInputRef, containerRef, presetSelectRef, new
+            await JSRuntime.InvokeVoidAsync("window.SliderInputLogic.init", rangeInputRef, textInputRef, null, presetSelectRef, new
             {
                 min = MinValue,
                 max = MaxValue,
                 majorTickInterval = MajorTickInterval,
-                minorTickInterval = MinorTickInterval,
                 inputType = InputType,
                 decimalPlaces = DecimalPlaces,
                 markers = Markers,
-                markerColor = MarkerColor,
                 step = Step,
                 defaultValue = Value,
                 customOptionValue = CustomPresetValue,

@@ -32,15 +32,15 @@ window.SliderInputLogic = (function ()
                 presetSelect = container.querySelector("select[id^='preset-']");
             }
 
-            if (!rangeInput || !textInput || !container)
+            if (!rangeInput || !textInput)
             {
-                console.error("SliderInput: Missing core elements", { rangeInput, textInput, container });
+                console.error("SliderInput: Missing core elements", { rangeInput, textInput });
                 return;
             }
 
             if (!presetSelect)
             {
-                console.error("SliderInput: Missing elements", { rangeInput, textInput, container, presetSelect });
+                console.error("SliderInput: Missing elements", { rangeInput, textInput, presetSelect });
                 return;
             }
 

@@ -3642,25 +3642,13 @@ window.applyAgrPreset = function(agrValue, label = null, presetKey = null)
     if (!Number.isFinite(parsedAgr) || parsedAgr < 0) return;
 
     const normalizedAgr = parsedAgr.toFixed(2);
-    const agrSlider = document.getElementById('slider-agr');
     const agrInput = document.getElementById('input-agr');
-
-    if (agrSlider)
-    {
-        agrSlider.value = normalizedAgr;
-    }
 
     if (agrInput)
     {
         agrInput.value = normalizedAgr;
         agrInput.dispatchEvent(new Event('input', { bubbles: true }));
         agrInput.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    if (agrSlider)
-    {
-        agrSlider.dispatchEvent(new Event('input', { bubbles: true }));
-        agrSlider.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     setActiveAgrPresetButton(presetKey);
