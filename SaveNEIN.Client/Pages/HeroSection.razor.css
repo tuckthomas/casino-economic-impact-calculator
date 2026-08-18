@@ -879,7 +879,7 @@
         padding-left: clamp(0.75rem, 4vw, 1.25rem);
         padding-right: clamp(0.75rem, 4vw, 1.25rem);
         padding-top: 3.5rem;
-        padding-bottom: 3.5rem;
+        padding-bottom: clamp(5.5rem, 13vh, 7rem);
         z-index: 20;
     }
 
@@ -976,7 +976,7 @@
         justify-content: center;
         position: absolute;
         left: 50%;
-        bottom: calc(0.9rem + env(safe-area-inset-bottom));
+        bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
         transform: translateX(-50%) translateY(10px);
         pointer-events: auto;
         z-index: 50;
