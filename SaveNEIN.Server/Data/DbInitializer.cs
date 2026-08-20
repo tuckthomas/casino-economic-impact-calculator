@@ -16,6 +16,7 @@ public static class DbInitializer
         // idempotent gravity-model foundation before querying or seeding its tables.
         await ModelFoundationInitializer.ApplySchemaAsync(db);
         await ModelFoundationInitializer.SeedAsync(db);
+        await DemandModelParameterInitializer.SeedAsync(db);
 
         // 1b. Initialize Address Points infrastructure (views, functions)
         await InitializeAddressPointsInfrastructure(db);
