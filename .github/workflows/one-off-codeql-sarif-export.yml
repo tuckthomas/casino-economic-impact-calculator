@@ -1,0 +1,47 @@
+name: One-off CodeQL SARIF export
+
+on:
+  push:
+    branches:
+      - agent/codeql-alert-audit
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Export ${{ matrix.language }} SARIF
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - actions
+          - csharp
+          - javascript-typescript
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Analyze without uploading
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
+          output: sarif-results
+          upload: never
+
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-${{ matrix.language }}-sarif
+          path: sarif-results
+          if-no-files-found: error
+          retention-days: 1
