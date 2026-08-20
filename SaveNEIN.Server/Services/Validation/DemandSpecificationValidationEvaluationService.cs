@@ -67,8 +67,9 @@ public interface IDemandSpecificationValidationEvaluationService
 
 /// <summary>
 /// Scores paired authoritative gravity runs that differ in resident-demand
-/// specification. Observed revenue is read only from persisted validation cases;
-/// neither observed revenue nor evaluation results are passed into model execution.
+/// specification. Observed revenue is read only from persisted validation cases.
+/// Each pair must also reproduce the case's persisted reference-run context so an
+/// observed target cannot be reused against a different site or market.
 /// </summary>
 public sealed class DemandSpecificationValidationEvaluationService(
     AppDbContext db,
@@ -116,7 +117,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
         if (cases.Count(item => item.DatasetPartition == ValidationPartitions.Training) < 2)
         {
             throw new InvalidOperationException(
-                "Demand-specification evaluation requires at least two training cases that were calibrated before holdout comparison.");
+                "Demand-specification evaluation requires at least two training cases.");
         }
         if (!cases.Any(item => item.DatasetPartition == ValidationPartitions.Holdout))
         {
@@ -124,32 +125,35 @@ public sealed class DemandSpecificationValidationEvaluationService(
                 "Demand-specification evaluation requires at least one independent holdout case.");
         }
 
-        var runIds = pairs
+        var pairRunIds = pairs
             .SelectMany(pair => new[] { pair.AgiShareModelRunId, pair.EligibleAdultPerCapitaModelRunId })
             .Distinct()
             .ToArray();
+        var referenceRunIds = cases.Select(validationCase => validationCase.ModelRunId).Distinct().ToArray();
+        var contextRunIds = pairRunIds.Concat(referenceRunIds).Distinct().ToArray();
         var runs = await db.ModelRuns.AsNoTracking()
-            .Where(run => runIds.Contains(run.Id))
+            .Where(run => contextRunIds.Contains(run.Id))
             .ToDictionaryAsync(run => run.Id, cancellationToken);
-        if (runs.Count != runIds.Length || runs.Values.Any(run => run.Status != ModelRunStatuses.Finalized))
+        if (runs.Count != contextRunIds.Length ||
+            contextRunIds.Any(runId => runs[runId].Status != ModelRunStatuses.Finalized))
         {
-            throw new InvalidOperationException("Every paired demand-specification run must exist and be finalized.");
+            throw new InvalidOperationException(
+                "Every paired and reference validation run must exist and be finalized.");
         }
 
         var proposedResults = await db.ModelRunFacilityResults.AsNoTracking()
-            .Where(result => runIds.Contains(result.ModelRunId) && result.IsProposedFacility)
+            .Where(result => pairRunIds.Contains(result.ModelRunId) && result.IsProposedFacility)
             .ToArrayAsync(cancellationToken);
-        var proposedByRun = proposedResults
-            .GroupBy(result => result.ModelRunId)
+        var proposedByRun = proposedResults.GroupBy(result => result.ModelRunId)
             .ToDictionary(group => group.Key, group => group.ToArray());
-        if (runIds.Any(runId => !proposedByRun.TryGetValue(runId, out var rows) || rows.Length != 1))
+        if (pairRunIds.Any(runId => !proposedByRun.TryGetValue(runId, out var rows) || rows.Length != 1))
         {
             throw new InvalidOperationException(
                 "Every paired demand-specification run must contain exactly one proposed-facility result.");
         }
 
         var originRows = await db.ModelRunOriginResults.AsNoTracking()
-            .Where(result => runIds.Contains(result.ModelRunId))
+            .Where(result => contextRunIds.Contains(result.ModelRunId))
             .Join(
                 db.OriginZones.AsNoTracking(),
                 result => result.OriginZoneId,
@@ -162,11 +166,16 @@ public sealed class DemandSpecificationValidationEvaluationService(
                     result.DemandSpecification,
                     result.ResidentDemand))
             .ToArrayAsync(cancellationToken);
-        var originRowsByRun = originRows.GroupBy(row => row.ModelRunId)
-            .ToDictionary(group => group.Key, group => group.OrderBy(row => row.OriginKey, StringComparer.Ordinal).ToArray());
+        var originsByRun = originRows.GroupBy(row => row.ModelRunId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(row => row.OriginKey, StringComparer.Ordinal).ToArray());
+        RequireRunCoverage(contextRunIds, originsByRun.Keys, "origin results");
 
         var scenarioRoutes = await db.OriginFacilityTravel.AsNoTracking()
-            .Where(route => runIds.Contains(route.ModelRunId!.Value) && route.FacilityKind == FacilityKinds.Scenario)
+            .Where(route => route.ModelRunId.HasValue &&
+                            pairRunIds.Contains(route.ModelRunId.Value) &&
+                            route.FacilityKind == FacilityKinds.Scenario)
             .ToArrayAsync(cancellationToken);
         var routeByRunAndOrigin = scenarioRoutes
             .GroupBy(route => (RunId: route.ModelRunId!.Value, route.OriginZoneId))
@@ -175,7 +184,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
         var parameterDefinitions = await db.ModelParameterDefinitions.AsNoTracking()
             .ToDictionaryAsync(definition => definition.Id, definition => definition.Key, cancellationToken);
         var parameterRows = await db.ModelRunParameterValues.AsNoTracking()
-            .Where(value => runIds.Contains(value.ModelRunId))
+            .Where(value => pairRunIds.Contains(value.ModelRunId))
             .ToArrayAsync(cancellationToken);
         var parametersByRun = parameterRows.GroupBy(value => value.ModelRunId)
             .ToDictionary(
@@ -186,7 +195,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
                     StringComparer.Ordinal));
 
         var snapshotRows = await db.ModelRunDatasetSnapshotReferences.AsNoTracking()
-            .Where(reference => runIds.Contains(reference.ModelRunId))
+            .Where(reference => contextRunIds.Contains(reference.ModelRunId))
             .ToArrayAsync(cancellationToken);
         var snapshotsByRun = snapshotRows.GroupBy(reference => reference.ModelRunId)
             .ToDictionary(
@@ -195,9 +204,10 @@ public sealed class DemandSpecificationValidationEvaluationService(
                     reference => $"{reference.Role}:{reference.ReferenceKey}",
                     reference => reference.DatasetSnapshotId,
                     StringComparer.Ordinal));
+        RequireRunCoverage(contextRunIds, snapshotsByRun.Keys, "dataset snapshot references");
 
         var incumbentRows = await db.ModelRunFacilityResults.AsNoTracking()
-            .Where(result => runIds.Contains(result.ModelRunId) && !result.IsProposedFacility)
+            .Where(result => contextRunIds.Contains(result.ModelRunId) && !result.IsProposedFacility)
             .ToArrayAsync(cancellationToken);
         var incumbentIdsByRun = incumbentRows.GroupBy(result => result.ModelRunId)
             .ToDictionary(
@@ -206,6 +216,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
                     .Select(result => result.CasinoCompetitorId!.Value)
                     .Order()
                     .ToArray());
+        RequireRunCoverage(contextRunIds, incumbentIdsByRun.Keys, "incumbent facility results");
 
         var caseById = cases.ToDictionary(item => item.Id);
         var casePredictions = new List<PairedCasePrediction>(pairs.Length);
@@ -213,38 +224,47 @@ public sealed class DemandSpecificationValidationEvaluationService(
         foreach (var pair in pairs)
         {
             var validationCase = caseById[pair.ValidationCaseId];
+            var referenceRun = runs[validationCase.ModelRunId];
             var agiRun = runs[pair.AgiShareModelRunId];
             var perCapitaRun = runs[pair.EligibleAdultPerCapitaModelRunId];
             RequireSpecification(agiRun, GravityDemandSpecifications.AgiShare);
             RequireSpecification(perCapitaRun, GravityDemandSpecifications.EligibleAdultPerCapita);
             ValidatePairCompatibility(
                 validationCase,
+                referenceRun,
                 agiRun,
                 perCapitaRun,
                 snapshotsByRun,
                 incumbentIdsByRun,
                 parametersByRun,
-                originRowsByRun);
+                originsByRun);
 
-            var agiOrigins = originRowsByRun[pair.AgiShareModelRunId]
+            var agiOrigins = originsByRun[pair.AgiShareModelRunId]
                 .ToDictionary(row => row.OriginKey, StringComparer.Ordinal);
-            var perCapitaOrigins = originRowsByRun[pair.EligibleAdultPerCapitaModelRunId]
+            var perCapitaOrigins = originsByRun[pair.EligibleAdultPerCapitaModelRunId]
                 .ToDictionary(row => row.OriginKey, StringComparer.Ordinal);
             foreach (var originKey in agiOrigins.Keys.Order(StringComparer.Ordinal))
             {
                 var agi = agiOrigins[originKey];
                 var perCapita = perCapitaOrigins[originKey];
-                var route = routeByRunAndOrigin.TryGetValue(
-                    (pair.AgiShareModelRunId, agi.OriginZoneId),
-                    out var persistedRoute)
-                    ? persistedRoute
-                    : null;
+                var agiRoute = RequireScenarioRoute(
+                    routeByRunAndOrigin,
+                    pair.AgiShareModelRunId,
+                    agi.OriginZoneId,
+                    validationCase.CaseKey);
+                var perCapitaRoute = RequireScenarioRoute(
+                    routeByRunAndOrigin,
+                    pair.EligibleAdultPerCapitaModelRunId,
+                    perCapita.OriginZoneId,
+                    validationCase.CaseKey);
+                RequireEquivalentRoute(validationCase.CaseKey, originKey, agiRoute, perCapitaRoute);
+
                 var signed = perCapita.ResidentDemand - agi.ResidentDemand;
                 originDifferences.Add(new PersistedDemandOriginDifference(
                     validationCase.CaseKey,
                     originKey,
                     agi.StateOrTerritory,
-                    DistanceBand(route?.TravelTimeMinutes, route?.RouteFound ?? false),
+                    DistanceBand(agiRoute.TravelTimeMinutes, agiRoute.RouteFound),
                     agi.ResidentDemand,
                     perCapita.ResidentDemand,
                     signed,
@@ -361,42 +381,45 @@ public sealed class DemandSpecificationValidationEvaluationService(
             InclusionRulesJson = JsonSerializer.Serialize(new
             {
                 evaluationKind = "demand-specification-reconciliation",
-                rule = "Each case compares two finalized authoritative gravity runs with the same site, snapshots, incumbent set, shared parameters, and computational origins. Observed revenue is read only from the persisted validation case and never supplied to model execution.",
+                rule = "Each case compares two finalized authoritative gravity runs against that validation case's persisted reference run. Site, program, snapshots, incumbent field, computational origins, shared parameters, execution fingerprint, and candidate routes must reconcile before observed revenue is scored.",
                 pairs = casePredictions.Select(item => new
                 {
                     item.ValidationCaseId,
                     item.CaseKey,
                     item.DatasetPartition,
+                    referenceModelRunId = caseById[item.ValidationCaseId].ModelRunId,
                     item.AgiShareModelRunId,
                     item.EligibleAdultPerCapitaModelRunId,
                     item.Observed,
                     item.AgiSharePrediction,
                     item.EligibleAdultPerCapitaPrediction
                 }),
-                aggregateDemand = new
-                {
-                    agiShare = originDifferences.Sum(item => item.AgiShareDemand),
-                    eligibleAdultPerCapita = originDifferences.Sum(item => item.EligibleAdultPerCapitaDemand),
-                    byState = originDifferences
-                        .GroupBy(item => item.StateOrTerritory, StringComparer.Ordinal)
-                        .OrderBy(group => group.Key, StringComparer.Ordinal)
-                        .Select(group => new
-                        {
-                            stateOrTerritory = group.Key,
-                            agiShare = group.Sum(item => item.AgiShareDemand),
-                            eligibleAdultPerCapita = group.Sum(item => item.EligibleAdultPerCapitaDemand)
-                        }),
-                    byDistanceBand = originDifferences
-                        .GroupBy(item => item.DistanceBand, StringComparer.Ordinal)
-                        .OrderBy(group => group.Key, StringComparer.Ordinal)
-                        .Select(group => new
-                        {
-                            distanceBand = group.Key,
-                            agiShare = group.Sum(item => item.AgiShareDemand),
-                            eligibleAdultPerCapita = group.Sum(item => item.EligibleAdultPerCapitaDemand)
-                        }),
-                    largestOriginDifferences = largestDifferences
-                }
+                demandReconciliationByCase = originDifferences
+                    .GroupBy(item => item.CaseKey, StringComparer.Ordinal)
+                    .OrderBy(group => group.Key, StringComparer.Ordinal)
+                    .Select(group => new
+                    {
+                        caseKey = group.Key,
+                        agiShareTotal = group.Sum(item => item.AgiShareDemand),
+                        eligibleAdultPerCapitaTotal = group.Sum(item => item.EligibleAdultPerCapitaDemand),
+                        byState = group.GroupBy(item => item.StateOrTerritory, StringComparer.Ordinal)
+                            .OrderBy(state => state.Key, StringComparer.Ordinal)
+                            .Select(state => new
+                            {
+                                stateOrTerritory = state.Key,
+                                agiShare = state.Sum(item => item.AgiShareDemand),
+                                eligibleAdultPerCapita = state.Sum(item => item.EligibleAdultPerCapitaDemand)
+                            }),
+                        byDistanceBand = group.GroupBy(item => item.DistanceBand, StringComparer.Ordinal)
+                            .OrderBy(band => band.Key, StringComparer.Ordinal)
+                            .Select(band => new
+                            {
+                                distanceBand = band.Key,
+                                agiShare = band.Sum(item => item.AgiShareDemand),
+                                eligibleAdultPerCapita = band.Sum(item => item.EligibleAdultPerCapitaDemand)
+                            })
+                    }),
+                largestOriginDifferences = largestDifferences
             }, JsonOptions),
             SelectedParametersJson = JsonSerializer.Serialize(new
             {
@@ -455,6 +478,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
 
     private static void ValidatePairCompatibility(
         ValidationCase validationCase,
+        ModelRun referenceRun,
         ModelRun agiRun,
         ModelRun perCapitaRun,
         IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, Guid>> snapshotsByRun,
@@ -462,56 +486,156 @@ public sealed class DemandSpecificationValidationEvaluationService(
         IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, double>> parametersByRun,
         IReadOnlyDictionary<Guid, PersistedOriginRow[]> originsByRun)
     {
-        if (agiRun.ModelVersion != perCapitaRun.ModelVersion ||
-            agiRun.JurisdictionId != perCapitaRun.JurisdictionId ||
-            agiRun.DevelopmentProgramId != perCapitaRun.DevelopmentProgramId ||
-            agiRun.CandidateLatitude != perCapitaRun.CandidateLatitude ||
-            agiRun.CandidateLongitude != perCapitaRun.CandidateLongitude)
-        {
-            throw new InvalidOperationException(
-                $"Validation case '{validationCase.CaseKey}' pairs runs with different model/site/program context.");
-        }
-        if (!DictionaryEqual(snapshotsByRun[agiRun.Id], snapshotsByRun[perCapitaRun.Id]))
-        {
-            throw new InvalidOperationException(
-                $"Validation case '{validationCase.CaseKey}' pairs runs with different immutable dataset snapshots.");
-        }
-        if (!incumbentIdsByRun.GetValueOrDefault(agiRun.Id, []).SequenceEqual(
-                incumbentIdsByRun.GetValueOrDefault(perCapitaRun.Id, [])))
-        {
-            throw new InvalidOperationException(
-                $"Validation case '{validationCase.CaseKey}' pairs runs with different incumbent competitive fields.");
-        }
+        RequireSameRunContext(validationCase.CaseKey, referenceRun, agiRun, "AGI-share");
+        RequireSameRunContext(validationCase.CaseKey, referenceRun, perCapitaRun, "eligible-adult-per-capita");
+        RequireSameRunContext(validationCase.CaseKey, agiRun, perCapitaRun, "paired specifications");
 
-        var agiOrigins = originsByRun[agiRun.Id];
-        var perCapitaOrigins = originsByRun[perCapitaRun.Id];
-        if (!agiOrigins.Select(row => row.OriginKey).SequenceEqual(perCapitaOrigins.Select(row => row.OriginKey), StringComparer.Ordinal))
-        {
-            throw new InvalidOperationException(
-                $"Validation case '{validationCase.CaseKey}' pairs runs with different computational origins.");
-        }
+        RequireSameDictionary(
+            validationCase.CaseKey,
+            snapshotsByRun[referenceRun.Id],
+            snapshotsByRun[agiRun.Id],
+            "reference vs AGI-share dataset snapshots");
+        RequireSameDictionary(
+            validationCase.CaseKey,
+            snapshotsByRun[referenceRun.Id],
+            snapshotsByRun[perCapitaRun.Id],
+            "reference vs eligible-adult dataset snapshots");
 
-        var agiShared = parametersByRun.GetValueOrDefault(agiRun.Id, new Dictionary<string, double>())
-            .Where(item => !DemandSpecificParameterKeys.Contains(item.Key))
-            .OrderBy(item => item.Key, StringComparer.Ordinal)
-            .ToArray();
-        var perCapitaShared = parametersByRun.GetValueOrDefault(perCapitaRun.Id, new Dictionary<string, double>())
-            .Where(item => !DemandSpecificParameterKeys.Contains(item.Key))
-            .OrderBy(item => item.Key, StringComparer.Ordinal)
-            .ToArray();
+        RequireSameSequence(
+            validationCase.CaseKey,
+            incumbentIdsByRun[referenceRun.Id],
+            incumbentIdsByRun[agiRun.Id],
+            "reference vs AGI-share incumbent field");
+        RequireSameSequence(
+            validationCase.CaseKey,
+            incumbentIdsByRun[referenceRun.Id],
+            incumbentIdsByRun[perCapitaRun.Id],
+            "reference vs eligible-adult incumbent field");
+
+        var referenceOrigins = originsByRun[referenceRun.Id].Select(row => row.OriginKey).ToArray();
+        var agiOrigins = originsByRun[agiRun.Id].Select(row => row.OriginKey).ToArray();
+        var perCapitaOrigins = originsByRun[perCapitaRun.Id].Select(row => row.OriginKey).ToArray();
+        RequireSameSequence(validationCase.CaseKey, referenceOrigins, agiOrigins, "reference vs AGI-share origins");
+        RequireSameSequence(validationCase.CaseKey, referenceOrigins, perCapitaOrigins, "reference vs eligible-adult origins");
+
+        var agiShared = SharedParameters(parametersByRun.GetValueOrDefault(
+            agiRun.Id,
+            new Dictionary<string, double>()));
+        var perCapitaShared = SharedParameters(parametersByRun.GetValueOrDefault(
+            perCapitaRun.Id,
+            new Dictionary<string, double>()));
         if (agiShared.Length != perCapitaShared.Length ||
-            agiShared.Where((item, index) => item.Key != perCapitaShared[index].Key || item.Value != perCapitaShared[index].Value).Any())
+            agiShared.Where((item, index) =>
+                item.Key != perCapitaShared[index].Key || item.Value != perCapitaShared[index].Value).Any())
         {
             throw new InvalidOperationException(
                 $"Validation case '{validationCase.CaseKey}' pairs runs with different non-demand model parameters.");
         }
 
+        var referenceFingerprint = ReadExecutionFingerprint(referenceRun.ResolvedInputJson);
         var agiFingerprint = ReadExecutionFingerprint(agiRun.ResolvedInputJson);
         var perCapitaFingerprint = ReadExecutionFingerprint(perCapitaRun.ResolvedInputJson);
-        if (agiFingerprint != perCapitaFingerprint)
+        if (referenceFingerprint != agiFingerprint || referenceFingerprint != perCapitaFingerprint)
         {
             throw new InvalidOperationException(
-                $"Validation case '{validationCase.CaseKey}' pairs runs whose execution inputs differ beyond resident-demand specification.");
+                $"Validation case '{validationCase.CaseKey}' has an execution fingerprint that does not match both demand-specification runs.");
+        }
+    }
+
+    private static KeyValuePair<string, double>[] SharedParameters(IReadOnlyDictionary<string, double> parameters) =>
+        parameters.Where(item => !DemandSpecificParameterKeys.Contains(item.Key))
+            .OrderBy(item => item.Key, StringComparer.Ordinal)
+            .ToArray();
+
+    private static void RequireSameRunContext(
+        string caseKey,
+        ModelRun expected,
+        ModelRun actual,
+        string label)
+    {
+        if (expected.ModelVersion != actual.ModelVersion ||
+            expected.JurisdictionId != actual.JurisdictionId ||
+            expected.DevelopmentProgramId != actual.DevelopmentProgramId ||
+            expected.CandidateLatitude != actual.CandidateLatitude ||
+            expected.CandidateLongitude != actual.CandidateLongitude)
+        {
+            throw new InvalidOperationException(
+                $"Validation case '{caseKey}' {label} run does not match the required model/site/program context.");
+        }
+    }
+
+    private static void RequireSameDictionary<TKey, TValue>(
+        string caseKey,
+        IReadOnlyDictionary<TKey, TValue> expected,
+        IReadOnlyDictionary<TKey, TValue> actual,
+        string label)
+        where TKey : notnull
+        where TValue : IEquatable<TValue>
+    {
+        if (expected.Count != actual.Count ||
+            expected.Any(item => !actual.TryGetValue(item.Key, out var value) || !item.Value.Equals(value)))
+        {
+            throw new InvalidOperationException(
+                $"Validation case '{caseKey}' does not reconcile {label}.");
+        }
+    }
+
+    private static void RequireSameSequence<T>(
+        string caseKey,
+        IReadOnlyCollection<T> expected,
+        IReadOnlyCollection<T> actual,
+        string label)
+    {
+        if (!expected.SequenceEqual(actual))
+        {
+            throw new InvalidOperationException(
+                $"Validation case '{caseKey}' does not reconcile {label}.");
+        }
+    }
+
+    private static OriginFacilityTravel RequireScenarioRoute(
+        IReadOnlyDictionary<(Guid RunId, long OriginZoneId), OriginFacilityTravel> routes,
+        Guid runId,
+        long originZoneId,
+        string caseKey) =>
+        routes.TryGetValue((runId, originZoneId), out var route)
+            ? route
+            : throw new InvalidOperationException(
+                $"Validation case '{caseKey}' is missing a persisted candidate route for run '{runId}' and origin '{originZoneId}'.");
+
+    private static void RequireEquivalentRoute(
+        string caseKey,
+        string originKey,
+        OriginFacilityTravel agiRoute,
+        OriginFacilityTravel perCapitaRoute)
+    {
+        var timeEqual = NullableDoubleEqual(agiRoute.TravelTimeMinutes, perCapitaRoute.TravelTimeMinutes);
+        var distanceEqual = NullableDoubleEqual(agiRoute.RoutedDistanceMeters, perCapitaRoute.RoutedDistanceMeters);
+        if (agiRoute.RouteFound != perCapitaRoute.RouteFound ||
+            agiRoute.RoutingGraphHash != perCapitaRoute.RoutingGraphHash ||
+            agiRoute.CostingProfile != perCapitaRoute.CostingProfile ||
+            !timeEqual || !distanceEqual)
+        {
+            throw new InvalidOperationException(
+                $"Validation case '{caseKey}' has different candidate-route evidence across demand specifications for origin '{originKey}'.");
+        }
+    }
+
+    private static bool NullableDoubleEqual(double? left, double? right) =>
+        left.HasValue == right.HasValue &&
+        (!left.HasValue || Math.Abs(left.Value - right!.Value) <= 1e-9);
+
+    private static void RequireRunCoverage<T>(
+        IReadOnlyCollection<Guid> runIds,
+        IEnumerable<Guid> coveredRunIds,
+        string label)
+    {
+        var covered = coveredRunIds.ToHashSet();
+        var missing = runIds.Where(runId => !covered.Contains(runId)).ToArray();
+        if (missing.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Demand-specification validation is missing persisted {label} for run(s): {string.Join(", ", missing)}.");
         }
     }
 
@@ -549,20 +673,14 @@ public sealed class DemandSpecificationValidationEvaluationService(
 
     private static void RequireSpecification(ModelRun run, string expected)
     {
-        var actual = ReadString(JsonDocument.Parse(run.ResolvedInputJson).RootElement, "DemandSpecification");
+        using var document = JsonDocument.Parse(run.ResolvedInputJson);
+        var actual = ReadString(document.RootElement, "DemandSpecification");
         if (!string.Equals(actual, expected, StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
                 $"Run '{run.Id}' uses demand specification '{actual}', expected '{expected}'.");
         }
     }
-
-    private static bool DictionaryEqual<TKey, TValue>(
-        IReadOnlyDictionary<TKey, TValue> left,
-        IReadOnlyDictionary<TKey, TValue> right)
-        where TKey : notnull
-        where TValue : IEquatable<TValue> =>
-        left.Count == right.Count && left.All(item => right.TryGetValue(item.Key, out var value) && item.Value.Equals(value));
 
     private static string DistanceBand(double? minutes, bool routeFound)
     {
@@ -632,7 +750,9 @@ public sealed class DemandSpecificationValidationEvaluationService(
         }
         if (request.Pairs.Select(pair => pair.ValidationCaseId).Distinct().Count() != request.Pairs.Count)
         {
-            throw new ArgumentException("A validation case may appear only once in a demand-specification evaluation.", nameof(request));
+            throw new ArgumentException(
+                "A validation case may appear only once in a demand-specification evaluation.",
+                nameof(request));
         }
         if (request.Pairs.Any(pair => pair.AgiShareModelRunId == pair.EligibleAdultPerCapitaModelRunId))
         {
