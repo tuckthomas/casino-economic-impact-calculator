@@ -16,6 +16,7 @@ public static class GravityDemandSpecifications
 {
     public const string AgiShare = "agi-share";
     public const string EligibleAdultPerCapita = "eligible-adult-per-capita";
+    public const string ValidatedEnsemble = "validated-ensemble";
 }
 
 public static class FacilityAttractionSpecifications
@@ -512,6 +513,14 @@ public sealed class GravityModelExecutionService(
 
         var resolved = await parameterService.ResolveAsync(parameterRequest, cancellationToken);
         var parameters = resolved.ToDictionary(item => item.Definition.Key, item => item.FinalValue, StringComparer.Ordinal);
+        if (request.DemandSpecification == GravityDemandSpecifications.ValidatedEnsemble)
+        {
+            await DemandEnsembleGovernance.ValidatePublishedParameterResolutionAsync(
+                db,
+                resolved,
+                selectedSetLayers,
+                cancellationToken);
+        }
         var origins = await BuildOriginDemandAsync(request, context, parameters, cancellationToken);
         var attractionResolution = await BuildAttractionsAsync(
             request,
@@ -738,31 +747,34 @@ public sealed class GravityModelExecutionService(
                     RequireParameter(parameters, "demographics.population_annual_growth_rate"))).ProjectedPopulation;
             });
 
+        OriginDemandResult CalculateAgi(OriginZone origin)
+        {
+            var income = incomeByOrigin[origin.Id];
+            var realIncomeMass = income.InflationAdjustedAdjustedGrossIncome ?? income.AdjustedGrossIncome
+                ?? throw new InvalidOperationException(
+                    $"Origin '{origin.StableOriginId}' has no AGI value for AGI-share demand.");
+            return originDemandService.CalculateAgiShare(new AgiShareDemandInput(
+                origin.StableOriginId,
+                Convert.ToDouble(realIncomeMass),
+                RequireParameter(parameters, "demand.gaming_income_share"),
+                RequireParameter(parameters, "demand.regional_intensity_multiplier")));
+        }
+
         if (request.DemandSpecification == GravityDemandSpecifications.AgiShare)
         {
             return context.Origins.Select(origin =>
-            {
-                var income = incomeByOrigin[origin.Id];
-                var realIncomeMass = income.InflationAdjustedAdjustedGrossIncome ?? income.AdjustedGrossIncome
-                    ?? throw new InvalidOperationException(
-                        $"Origin '{origin.StableOriginId}' has no AGI value for AGI-share demand.");
-                var demand = originDemandService.CalculateAgiShare(new AgiShareDemandInput(
-                    origin.StableOriginId,
-                    Convert.ToDouble(realIncomeMass),
-                    RequireParameter(parameters, "demand.gaming_income_share"),
-                    RequireParameter(parameters, "demand.regional_intensity_multiplier")));
-                return new OriginDemandContext(origin, demand, eligiblePopulationByOrigin[origin.Id]);
-            }).ToArray();
+                new OriginDemandContext(origin, CalculateAgi(origin), eligiblePopulationByOrigin[origin.Id])).ToArray();
         }
 
         var incomeMetricByOrigin = context.Origins.ToDictionary(
             origin => origin.Id,
             origin => ResolveIncomeMetric(incomeByOrigin[origin.Id], origin.StableOriginId));
         var referenceIncome = Median(incomeMetricByOrigin.Values);
-        return context.Origins.Select(origin =>
+
+        OriginDemandResult CalculatePerCapita(OriginZone origin)
         {
             var eligiblePopulation = eligiblePopulationByOrigin[origin.Id];
-            var demand = originDemandService.CalculatePerCapita(new PerCapitaDemandInput(
+            return originDemandService.CalculatePerCapita(new PerCapitaDemandInput(
                 origin.StableOriginId,
                 eligiblePopulation,
                 RequireParameter(parameters, "demand.base_ggr_per_eligible_adult") *
@@ -772,7 +784,34 @@ public sealed class GravityModelExecutionService(
                 RequireParameter(parameters, "demand.income_elasticity"),
                 RequireParameter(parameters, "demand.income_adjustment_minimum"),
                 RequireParameter(parameters, "demand.income_adjustment_maximum")));
-            return new OriginDemandContext(origin, demand, eligiblePopulation);
+        }
+
+        if (request.DemandSpecification == GravityDemandSpecifications.EligibleAdultPerCapita)
+        {
+            return context.Origins.Select(origin =>
+                new OriginDemandContext(origin, CalculatePerCapita(origin), eligiblePopulationByOrigin[origin.Id])).ToArray();
+        }
+
+        var weights = DemandEnsembleGovernance.ResolveWeights(parameters);
+        return context.Origins.Select(origin =>
+        {
+            var agi = CalculateAgi(origin);
+            var perCapita = CalculatePerCapita(origin);
+            var blendedDemand = DemandEnsembleGovernance.Combine(
+                agi.Demand,
+                perCapita.Demand,
+                weights.AgiShareWeight,
+                weights.EligibleAdultPerCapitaWeight);
+            // PersistResults records the authoritative request specification. The
+            // internal enum has only the two primitive formula labels, so use the
+            // AGI label here solely as a carrier for the blended scalar result.
+            var blended = new OriginDemandResult(
+                origin.StableOriginId,
+                DemandSpecification.AgiShare,
+                blendedDemand,
+                1d,
+                false);
+            return new OriginDemandContext(origin, blended, eligiblePopulationByOrigin[origin.Id]);
         }).ToArray();
     }
 
@@ -2277,7 +2316,10 @@ public sealed class GravityModelExecutionService(
         {
             throw new ArgumentException("Observed performance period end cannot precede its start.", nameof(request));
         }
-        if (request.DemandSpecification is not (GravityDemandSpecifications.AgiShare or GravityDemandSpecifications.EligibleAdultPerCapita))
+        if (request.DemandSpecification is not (
+                GravityDemandSpecifications.AgiShare or
+                GravityDemandSpecifications.EligibleAdultPerCapita or
+                GravityDemandSpecifications.ValidatedEnsemble))
         {
             throw new ArgumentException($"Unsupported demand specification '{request.DemandSpecification}'.", nameof(request));
         }
