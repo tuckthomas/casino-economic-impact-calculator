@@ -17,15 +17,15 @@ namespace SaveNEIN.Server.Data
         private readonly AppDbContext _db;
         private static readonly string[] BlockGroupStateFips = new[]
         {
-            "18", "39", "26", // Launch region first: Indiana, Ohio, Michigan.
+            "18", "17", "21", "26", "39", "55", // Launch and bordering casino catchment region first.
             "01", "02", "04", "05", "06", "08", "09", "10", "11", "12",
-            "13", "15", "16", "17", "19", "20", "21", "22", "23",
+            "13", "15", "16", "19", "20", "22", "23",
             "24", "25", "27", "28", "29", "30", "31", "32", "33",
             "34", "35", "36", "37", "38", "40", "41", "42", "44",
-            "45", "46", "47", "48", "49", "50", "51", "53", "54", "55",
+            "45", "46", "47", "48", "49", "50", "51", "53", "54",
             "56", "60", "66", "69", "72", "78"
         };
-        private static readonly string[] PopulationStateFips = { "18", "39", "26" };
+        private static readonly string[] PopulationStateFips = { "18", "17", "21", "26", "39", "55" };
 
         public TigerSeeder(
             TigerIngestionService ingestionService,
@@ -69,9 +69,17 @@ namespace SaveNEIN.Server.Data
                 ?? throw new InvalidOperationException("DefaultConnection is required for fiscal PLACE readiness.");
             await using var connection = new NpgsqlConnection(connectionString);
             await connection.OpenAsync();
+
+            var placeSchemaChanged = await TigerPlaceSchema.EnsureMunicipalityLookupContractAsync(connection);
+            if (placeSchemaChanged)
+            {
+                _logger.LogWarning(
+                    "TigerSeeder: Existing TIGER PLACE schema was missing municipality lookup fields. Required states will be reingested before startup.");
+            }
+
             foreach (var stateFips in requiredStateFips)
             {
-                if (!await HasUsablePlaceDataForStateAsync(connection, stateFips))
+                if (placeSchemaChanged || !await HasUsablePlaceDataForStateAsync(connection, stateFips))
                 {
                     await _ingestionService.IngestPlacesForState(stateFips);
                 }
@@ -80,6 +88,9 @@ namespace SaveNEIN.Server.Data
                     throw new InvalidOperationException(
                         $"TIGER PLACE data required by validated fiscal rules for state {stateFips} is unavailable.");
                 }
+
+                await VerifyMunicipalityLookupContractAsync(connection, stateFips);
+
                 _logger.LogInformation(
                     "TigerSeeder: Fiscal PLACE readiness verified for state {StateFips}.",
                     stateFips);
@@ -246,6 +257,37 @@ namespace SaveNEIN.Server.Data
             ";
             cmd.Parameters.AddWithValue("fips", stateFips);
             return (bool?)await cmd.ExecuteScalarAsync() == true;
+        }
+
+        private async Task VerifyMunicipalityLookupContractAsync(NpgsqlConnection conn, string stateFips)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                WITH sample AS (
+                    SELECT ST_PointOnSurface(geom) AS pt
+                    FROM tiger_places
+                    WHERE state_fp = @fips
+                      AND funcstat = 'A'
+                    ORDER BY geoid
+                    LIMIT 1
+                )
+                SELECT place.geoid
+                FROM sample
+                JOIN tiger_places AS place
+                  ON place.state_fp = @fips
+                 AND place.funcstat = 'A'
+                 AND ST_Covers(place.geom, sample.pt)
+                ORDER BY COALESCE(place.aland, 0) ASC, place.geoid
+                LIMIT 1;
+            ";
+            cmd.Parameters.AddWithValue("fips", stateFips);
+
+            var result = await cmd.ExecuteScalarAsync();
+            if (result == null || result == DBNull.Value)
+            {
+                throw new InvalidOperationException(
+                    $"TIGER PLACE data for required state {stateFips} cannot execute the municipality containment lookup contract.");
+            }
         }
 
         private async Task<bool> HasData(NpgsqlConnection conn, string tableName)

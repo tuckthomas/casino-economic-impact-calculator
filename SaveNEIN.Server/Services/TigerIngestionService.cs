@@ -40,16 +40,71 @@ namespace SaveNEIN.Server.Services
             await ProcessTigerFile(url, fileName, "census_block_groups", fips);
         }
 
-        public async Task<int> BackfillPopulationForStateAsync(string stateFips, CancellationToken cancellationToken = default)
+        public static (string Folder, string Abbreviation) GetPl94171StateFiles(string stateFips)
         {
-            stateFips = stateFips.PadLeft(2, '0');
-            var stateFiles = stateFips switch
+            var normalized = (stateFips ?? string.Empty).Trim().PadLeft(2, '0');
+            return normalized switch
             {
+                "01" => (Folder: "Alabama", Abbreviation: "al"),
+                "02" => (Folder: "Alaska", Abbreviation: "ak"),
+                "04" => (Folder: "Arizona", Abbreviation: "az"),
+                "05" => (Folder: "Arkansas", Abbreviation: "ar"),
+                "06" => (Folder: "California", Abbreviation: "ca"),
+                "08" => (Folder: "Colorado", Abbreviation: "co"),
+                "09" => (Folder: "Connecticut", Abbreviation: "ct"),
+                "10" => (Folder: "Delaware", Abbreviation: "de"),
+                "11" => (Folder: "District_of_Columbia", Abbreviation: "dc"),
+                "12" => (Folder: "Florida", Abbreviation: "fl"),
+                "13" => (Folder: "Georgia", Abbreviation: "ga"),
+                "15" => (Folder: "Hawaii", Abbreviation: "hi"),
+                "16" => (Folder: "Idaho", Abbreviation: "id"),
+                "17" => (Folder: "Illinois", Abbreviation: "il"),
                 "18" => (Folder: "Indiana", Abbreviation: "in"),
+                "19" => (Folder: "Iowa", Abbreviation: "ia"),
+                "20" => (Folder: "Kansas", Abbreviation: "ks"),
+                "21" => (Folder: "Kentucky", Abbreviation: "ky"),
+                "22" => (Folder: "Louisiana", Abbreviation: "la"),
+                "23" => (Folder: "Maine", Abbreviation: "me"),
+                "24" => (Folder: "Maryland", Abbreviation: "md"),
+                "25" => (Folder: "Massachusetts", Abbreviation: "ma"),
                 "26" => (Folder: "Michigan", Abbreviation: "mi"),
+                "27" => (Folder: "Minnesota", Abbreviation: "mn"),
+                "28" => (Folder: "Mississippi", Abbreviation: "ms"),
+                "29" => (Folder: "Missouri", Abbreviation: "mo"),
+                "30" => (Folder: "Montana", Abbreviation: "mt"),
+                "31" => (Folder: "Nebraska", Abbreviation: "ne"),
+                "32" => (Folder: "Nevada", Abbreviation: "nv"),
+                "33" => (Folder: "New_Hampshire", Abbreviation: "nh"),
+                "34" => (Folder: "New_Jersey", Abbreviation: "nj"),
+                "35" => (Folder: "New_Mexico", Abbreviation: "nm"),
+                "36" => (Folder: "New_York", Abbreviation: "ny"),
+                "37" => (Folder: "North_Carolina", Abbreviation: "nc"),
+                "38" => (Folder: "North_Dakota", Abbreviation: "nd"),
                 "39" => (Folder: "Ohio", Abbreviation: "oh"),
+                "40" => (Folder: "Oklahoma", Abbreviation: "ok"),
+                "41" => (Folder: "Oregon", Abbreviation: "or"),
+                "42" => (Folder: "Pennsylvania", Abbreviation: "pa"),
+                "44" => (Folder: "Rhode_Island", Abbreviation: "ri"),
+                "45" => (Folder: "South_Carolina", Abbreviation: "sc"),
+                "46" => (Folder: "South_Dakota", Abbreviation: "sd"),
+                "47" => (Folder: "Tennessee", Abbreviation: "tn"),
+                "48" => (Folder: "Texas", Abbreviation: "tx"),
+                "49" => (Folder: "Utah", Abbreviation: "ut"),
+                "50" => (Folder: "Vermont", Abbreviation: "vt"),
+                "51" => (Folder: "Virginia", Abbreviation: "va"),
+                "53" => (Folder: "Washington", Abbreviation: "wa"),
+                "54" => (Folder: "West_Virginia", Abbreviation: "wv"),
+                "55" => (Folder: "Wisconsin", Abbreviation: "wi"),
+                "56" => (Folder: "Wyoming", Abbreviation: "wy"),
+                "72" => (Folder: "Puerto_Rico", Abbreviation: "pr"),
                 _ => throw new NotSupportedException($"No PL 94-171 download mapping is configured for state {stateFips}.")
             };
+        }
+
+        public async Task<int> BackfillPopulationForStateAsync(string stateFips, CancellationToken cancellationToken = default)
+        {
+            stateFips = (stateFips ?? string.Empty).Trim().PadLeft(2, '0');
+            var stateFiles = GetPl94171StateFiles(stateFips);
             var url = $"https://www2.census.gov/programs-surveys/decennial/2020/data/01-Redistricting_File--PL_94-171/{stateFiles.Folder}/{stateFiles.Abbreviation}2020.pl.zip";
 
             _logger.LogInformation("Downloading official Census PL 94-171 population file for state {StateFips}...", stateFips);

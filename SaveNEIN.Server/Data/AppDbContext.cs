@@ -62,6 +62,7 @@ public class AppDbContext : DbContext
     public DbSet<SaveNEIN.Server.Data.Entities.ModelRunReportArtifact> ModelRunReportArtifacts => Set<SaveNEIN.Server.Data.Entities.ModelRunReportArtifact>();
     public DbSet<SaveNEIN.Server.Data.Entities.SensitivityAnalysis> SensitivityAnalyses => Set<SaveNEIN.Server.Data.Entities.SensitivityAnalysis>();
     public DbSet<SaveNEIN.Server.Data.Entities.SensitivityAnalysisPoint> SensitivityAnalysisPoints => Set<SaveNEIN.Server.Data.Entities.SensitivityAnalysisPoint>();
+    public DbSet<SaveNEIN.Server.Data.Entities.CoalitionSignup> CoalitionSignups => Set<SaveNEIN.Server.Data.Entities.CoalitionSignup>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -847,6 +848,10 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(artifact => artifact.ModelRunId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.CoalitionSignup>()
+            .HasIndex(signup => signup.NormalizedEmail)
+            .IsUnique();
 
         ConfigureModelFoundationColumnNames(modelBuilder);
     }

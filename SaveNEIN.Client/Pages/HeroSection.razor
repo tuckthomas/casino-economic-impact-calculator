@@ -1,41 +1,29 @@
 @inject IJSRuntime JSRuntime
 
-<section id="hero-section" class="relative w-full overflow-hidden min-h-[100svh] mobile-sequence-pending">
-    <div class="hero-mobile-scroll-hint">
-        <a href="#proponents-critique" class="hero-mobile-scroll-link" aria-label="Scroll to Casino Proponents Critique section">
-            <span class="hero-mobile-scroll-text">Scroll to<br/>Learn More</span>
-            <span class="hero-mobile-scroll-circle">
-                <svg class="hero-mobile-scroll-chevron-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </span>
-        </a>
-    </div>
-
+<section id="hero-section" class="relative w-full overflow-hidden min-h-[100svh]">
     <div class="hero-layout mx-auto flex min-h-[100svh] w-full max-w-[96rem] flex-col items-center px-4 sm:px-6 lg:flex-row lg:px-8 xl:px-10">
-        <!-- Text Content -->
         <div class="hero-copy flex-1 relative z-20 flex flex-col justify-center py-12 text-white lg:py-16 lg:pr-8 xl:pr-12">
             <div class="hero-mobile-intro">
                 <h1 class="hero-headline text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl mb-6">
                     <span class="hero-line">
-                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 0.45s forwards;">DON'T LET THEM</span>
+                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 0.6s ease 0.22s forwards;">DON'T LET THEM</span>
                     </span>
                     <span class="hero-line">
-                        <span class="hero-animate hero-line--accent text-accent underline decoration-4 decoration-accent/50 underline-offset-4" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 1.05s forwards;">GAMBLE AWAY</span>
+                        <span class="hero-animate hero-line--accent text-accent underline decoration-4 decoration-accent/50 underline-offset-4" style="display: inline-block; opacity: 0; animation: fadeInUp 0.6s ease 0.36s forwards;">GAMBLE AWAY</span>
                     </span>
                     <span class="hero-line">
-                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 1.65s forwards;">OUR REGION'S</span>
+                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 0.6s ease 0.50s forwards;">OUR REGION'S</span>
                     </span>
                     <span class="hero-line">
-                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 2.25s forwards;">FUTURE.</span>
+                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 0.6s ease 0.64s forwards;">FUTURE.</span>
                     </span>
                 </h1>
                 <h2 class="hero-kicker text-2xl font-bold text-accent mb-6 uppercase tracking-wider">
                     <span class="hero-kicker-part">
-                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 3s forwards;">Northeast Indiana</span>
+                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 0.6s ease 0.78s forwards;">Northeast Indiana</span>
                     </span>
                     <span class="hero-kicker-part">
-                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.45s ease 3.6s forwards;">Deserves Better.</span>
+                        <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 0.6s ease 0.92s forwards;">Deserves Better.</span>
                     </span>
                 </h2>
 
@@ -49,13 +37,20 @@
                 </div>
             </div>
             <p class="hero-tagline text-lg text-slate-200 font-medium leading-relaxed mb-10 max-w-xl">
-                <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 1.5s ease 4.2s both;">
+                <span class="hero-animate" style="display: inline-block; opacity: 0; animation: fadeInUp 0.6s ease 1.05s both;">
                 The proposed casino expansion creates a net fiscal loss for our region, introducing risks of addiction and
                 increased crime. Save Northeast Indiana has formed a coalition of the willing that bridges political and
                 demographic divides. We invite you to join us in defending our community's financial health and
                 safety.
                 </span>
             </p>
+
+            <div class="hero-animate mb-10 lg:mb-12 flex flex-col sm:flex-row gap-4 sm:items-center" style="display: inline-block; opacity: 0; animation: fadeInUp 0.6s ease 1.15s both;">
+                <a href="/get-involved" class="inline-flex items-center justify-center gap-2 bg-accent hover:bg-red-700 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-accent/25 w-full sm:w-auto text-lg group">
+                    Get Involved
+                    <span class="material-symbols-outlined transition-transform group-hover:translate-x-1" aria-hidden="true">arrow_forward</span>
+                </a>
+            </div>
 
             <a href="#proponents-critique" class="hero-desktop-learn-more hidden lg:flex" aria-label="Learn more and continue to the next section">
                 <span class="hero-desktop-learn-more-text">Learn More</span>
@@ -65,107 +60,70 @@
                     </svg>
                 </span>
             </a>
+
+            <div class="hero-mobile-scroll-hint">
+                <a href="#proponents-critique" class="hero-mobile-scroll-link" aria-label="Scroll to Casino Proponents Critique section">
+                    <span class="hero-mobile-scroll-text">Scroll to<br/>Learn More</span>
+                    <span class="hero-mobile-scroll-circle">
+                        <svg class="hero-mobile-scroll-chevron-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                </a>
+            </div>
         </div>
 
-        <!-- Image Side -->
         <div class="hero-visual-stage relative w-full lg:w-[55%]">
-            <!-- Slot Machine (Moved Here) -->
             <div class="hero-slot-shell relative mx-auto z-0 mt-6">
-                <!-- LEVER -->
-                <!-- LEVER BASE (Layered Behind) -->
-                <div class="lever-container" style="z-index: 0;">
-                    <div class="lever-base"></div>
-                </div>
-
-                <div class="slot-machine-wrapper">
-                    <!-- Siren Light -->
-                    <div class="siren-wrapper" id="siren">
-                        <div class="siren-base"></div>
-                        <div class="siren-bulb"></div>
+                <div class="modern-slot-machine" data-slot-machine>
+                    <div class="modern-slot-siren" id="siren" aria-hidden="true">
+                        <div class="modern-slot-siren-bulb"></div>
+                        <div class="modern-slot-siren-base"></div>
                     </div>
 
-                    <!-- Marquee Logo -->
-                    <div class="marquee-logo">
-                        <img src="assets/SAVENEIN.svg" alt="Save Northeast Indiana" />
+                    <div class="modern-slot-upper-display">
+                        <div class="modern-slot-screen-glow" aria-hidden="true"></div>
+                        <img class="modern-slot-logo" src="assets/SaveNEIN_SVG_Dark_Mode_Small.svg" alt="Save Northeast Indiana" />
+                        <output class="modern-slot-status sr-only" id="slot-status" aria-live="polite">READY</output>
                     </div>
 
-                    <!-- Individual Light Bulbs (Generated by JS) -->
-                    <ul class="casino-lights" id="casino-lights"></ul>
-
-                    <!-- Window with Payline Markers -->
-                    <div class="relative max-w-[650px] mx-auto">
-                        <!-- Left Marker -->
-                        <div class="payline-marker marker-left">
-                            <div class="marker-base"></div>
-                            <div class="marker-tip"></div>
-                        </div>
-
-                        <!-- Right Marker -->
-                        <div class="payline-marker marker-right">
-                            <div class="marker-base"></div>
-                            <div class="marker-tip"></div>
-                        </div>
-
-                        <div class="slot-window">
-                            <div class="reel-container">
-                                <div class="reel-strip" id="reel-1">
+                    <div class="modern-slot-reel-housing">
+                        <span class="modern-slot-payline-arrow modern-slot-payline-arrow-left" aria-hidden="true"></span>
+                        <div class="modern-slot-grid" role="group" aria-label="Community outcome slot machine reels">
+                            @for (var column = 0; column < 3; column++)
+                            {
+                                <div class="modern-slot-column" data-slot-column="@column">
+                                    <div class="modern-slot-reel-strip" data-slot-strip="@column">
+                                        @for (var row = 0; row < 3; row++)
+                                        {
+                                            <div class="modern-slot-cell" data-slot-row="@row">
+                                                <span class="material-symbols-outlined modern-slot-cell-icon" aria-hidden="true">star</span>
+                                                <span class="modern-slot-cell-label">WORLD-CLASS DESTINATION</span>
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
-                                <div class="reel-overlay"></div>
-                            </div>
-
-                            <div class="reel-container">
-                                <div class="reel-strip" id="reel-2"></div>
-                                <div class="reel-overlay"></div>
-                            </div>
-
-                            <div class="reel-container">
-                                <div class="reel-strip" id="reel-3"></div>
-                                <div class="reel-overlay"></div>
-                            </div>
+                            }
                         </div>
+                        <span class="modern-slot-payline-arrow modern-slot-payline-arrow-right" aria-hidden="true"></span>
                     </div>
 
-                    <!-- Reel Control Buttons -->
-                    <div class="reel-controls">
-                        <button class="reel-btn" @onclick="() => SpinReel(0)">PUSH</button>
-                        <button class="reel-btn" @onclick="() => SpinReel(1)">PUSH</button>
-                        <button class="reel-btn" @onclick="() => SpinReel(2)">PUSH</button>
-                    </div>
+                    <div class="modern-slot-control-deck">
+                        <AppButton id="slot-coin-insert" type="button" Class="modern-slot-coin-insert" aria-label="Insert coin to add one credit">
+                            <span class="modern-slot-coin-slot" aria-hidden="true"></span>
+                            <span class="modern-slot-coin-copy">
+                                <strong>25¢</strong>
+                                <span>INSERT COIN</span>
+                            </span>
+                        </AppButton>
 
-                    <!-- Coin Tray (centered) -->
-                    <div class="coin-tray">
-                        <div class="coin-tray-inner">
-                            <div class="coin-tray-floor"></div>
-                        </div>
-                    </div>
+                        <AppButton id="slot-spin-button" type="button" Class="modern-slot-spin-button" aria-label="Spin slot machine reels">
+                            SPIN
+                        </AppButton>
 
-                    <!-- Right Side Panel: Credit Counter + Coin Insert -->
-                    <div class="coin-panel">
-                        <!-- Credit Counter -->
-                        <div class="credit-counter">
-                            <span class="credit-label">CREDITS</span>
-                            <span class="credit-value" id="credit-display">02</span>
-                        </div>
-
-                        <!-- Coin Insert Slot -->
-                        <div class="coin-insert" onclick="window.SlotMachine.insertCoin()">
-                            <div class="coin-insert-inner">
-                                <span class="coin-price">25¢</span>
-                                <span class="coin-text">INSERT<br/>COIN TO</span>
-                                <span class="coin-play">PLAY</span>
-                            </div>
-                            <div class="coin-slot">
-                                <div class="coin-slot-opening"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-                <!-- LEVER ARM (Layered In Front) -->
-                <div class="lever-container" style="z-index: 20; pointer-events: none;">
-                    <div class="lever-arm" id="slot-lever" style="pointer-events: auto;" role="button" tabindex="0" aria-label="Spin by clicking or pulling the lever">
-                        <div class="lever-knob">
-                            <span class="knob-text">CLICK<br>OR<br>PULL</span>
+                        <div class="modern-slot-credit-bay" aria-label="Machine credits">
+                            <span class="modern-slot-credit-label">CREDITS</span>
+                            <output class="modern-slot-credit-value" id="credit-display">02</output>
                         </div>
                     </div>
                 </div>
@@ -181,10 +139,5 @@
         {
             await JSRuntime.InvokeVoidAsync("slotMachineSafeInit", 1023, 0);
         }
-    }
-
-    private async Task SpinReel(int index)
-    {
-        await JSRuntime.InvokeVoidAsync("window.spinReel", index);
     }
 }
