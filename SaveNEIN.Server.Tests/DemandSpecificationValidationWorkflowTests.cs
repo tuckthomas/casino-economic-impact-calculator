@@ -132,7 +132,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
     public async Task Evaluation_PersistsHoldoutSelectedBaseAndOriginReconciliationEvidence()
     {
         await using var db = CreateDb();
-        var fixture = await SeedPairedEvaluationFixtureAsync(db);
+        var pairs = await SeedPairedEvaluationFixtureAsync(db);
         var service = new DemandSpecificationValidationEvaluationService(
             db,
             new ValidationMetricsService(),
@@ -142,7 +142,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
             "paired-demand",
             "1",
             ValidationObjectiveFunctions.Mape,
-            fixture.Pairs,
+            pairs,
             LargestOriginDifferenceCount: 10));
 
         Assert.Equal(DemandSpecification.EligibleAdultPerCapita, result.SelectedBaseSpecification);
@@ -158,7 +158,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
         Assert.Contains("eligible-adult-per-capita", stored.SelectedParametersJson);
     }
 
-    private static async Task<(IReadOnlyCollection<DemandSpecificationValidationCasePair> Pairs, Guid UnrelatedRunId)>
+    private static async Task<IReadOnlyCollection<DemandSpecificationValidationCasePair>>
         SeedPairedEvaluationFixtureAsync(AppDbContext db)
     {
         var pairs = new List<DemandSpecificationValidationCasePair>();
@@ -240,16 +240,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
                 perCapitaRun.Id));
         }
 
-        var unrelated = Run(
-            GravityDemandSpecifications.AgiShare,
-            Guid.NewGuid(),
-            39,
-            -77,
-            "USA-ZCTA-20001",
-            999);
-        db.ModelRuns.Add(unrelated);
-        await db.SaveChangesAsync();
-        return (pairs, unrelated.Id);
+        return pairs;
     }
 
     private static void AddRunEvidence(
@@ -347,8 +338,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
             CandidateLongitude = candidateLongitude,
             ResolvedInputJson = inputJson,
             DataSnapshotReferencesJson = "{}",
-            FinalizedAtUtc = DateTime.UtcNow,
-            IsImmutableForTestOnly = false
+            FinalizedAtUtc = DateTime.UtcNow
         };
     }
 
