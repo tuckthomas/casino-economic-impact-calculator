@@ -44,7 +44,9 @@ public sealed class DemandSpecificationReconciliationServiceTests
         Assert.Equal(100, result.EligibleAdultPerCapita.DistanceBandTotals["0-30"], 8);
         Assert.Equal(150, result.EligibleAdultPerCapita.DistanceBandTotals["30-60"], 8);
 
-        var largest = Assert.Single(result.LargestOriginDifferences.Where(item => item.AbsoluteDifference > 0));
+        var largest = Assert.Single(
+            result.LargestOriginDifferences,
+            item => item.AbsoluteDifference > 0);
         Assert.Equal("origin-b", largest.OriginKey);
         Assert.Equal(-50, largest.SignedDifference, 8);
         Assert.Equal(50, largest.AbsoluteDifference, 8);

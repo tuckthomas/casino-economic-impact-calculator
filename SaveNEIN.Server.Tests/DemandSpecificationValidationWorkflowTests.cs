@@ -56,7 +56,10 @@ public sealed class DemandSpecificationValidationWorkflowTests
             Assert.False(definition.IsUserOverridable);
             Assert.Equal(0, definition.ComputationalMinimum);
             Assert.Equal(1, definition.ComputationalMaximum);
-            Assert.Contains("validation-published", definition.ProvenanceNotes!, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(
+                "published by a finalized demand-specification validation evaluation",
+                definition.ProvenanceNotes!,
+                StringComparison.OrdinalIgnoreCase);
         });
     }
 
@@ -102,7 +105,8 @@ public sealed class DemandSpecificationValidationWorkflowTests
             SelectedParametersJson = JsonSerializer.Serialize(new
             {
                 evaluationKind = "demand-specification-reconciliation",
-                ensembleAccepted = true,
+                ensembleAcceptedOnSelection = true,
+                holdoutWasUsedForSelection = false,
                 publishedEnsembleParameterSetId = parameterSetId
             }),
             TrainingMetricsJson = "{}",
@@ -146,7 +150,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
             LargestOriginDifferenceCount: 10));
 
         Assert.Equal(DemandSpecification.EligibleAdultPerCapita, result.SelectedBaseSpecification);
-        Assert.Equal(5, result.SelectedBaseObjectiveValue, 8);
+        Assert.Equal(5, result.SelectedBaseSelectionObjectiveValue, 8);
         Assert.NotEmpty(result.LargestOriginDifferences);
         Assert.Contains(result.LargestOriginDifferences, item => item.DistanceBand == "30-60");
 
@@ -166,11 +170,11 @@ public sealed class DemandSpecificationValidationWorkflowTests
         var partitions = new[]
         {
             ValidationPartitions.Training,
-            ValidationPartitions.Training,
+            DemandValidationPartitions.Selection,
             ValidationPartitions.Holdout
         };
         var agiPredictions = new decimal[] { 80, 80, 60 };
-        var perCapitaPredictions = new decimal[] { 90, 90, 95 };
+        var perCapitaPredictions = new decimal[] { 90, 95, 90 };
         var programId = Guid.NewGuid();
 
         for (var index = 0; index < partitions.Length; index++)
@@ -214,11 +218,21 @@ public sealed class DemandSpecificationValidationWorkflowTests
             {
                 CaseKey = $"case-{index + 1}",
                 Name = $"Case {index + 1}",
-                MarketCode = index == 2 ? "holdout-market" : "training-market",
+                MarketCode = partitions[index] switch
+                {
+                    DemandValidationPartitions.Selection => "selection-market",
+                    ValidationPartitions.Holdout => "holdout-market",
+                    _ => "training-market"
+                },
                 JurisdictionCode = "US-IN",
                 CaseKind = ValidationCaseKinds.IncumbentBacktest,
                 DatasetPartition = partitions[index],
-                HoldoutGroup = partitions[index] == ValidationPartitions.Holdout ? "independent-holdout" : "training",
+                HoldoutGroup = partitions[index] switch
+                {
+                    DemandValidationPartitions.Selection => "model-selection",
+                    ValidationPartitions.Holdout => "independent-holdout",
+                    _ => "training"
+                },
                 TargetCasinoCompetitorId = incumbentId,
                 ModelRunId = agiRun.Id,
                 ObservedRevenue = 100,
@@ -432,6 +446,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
                 1,
                 "graph",
                 request.CostingProfile,
+                0,
                 0,
                 0,
                 0,
