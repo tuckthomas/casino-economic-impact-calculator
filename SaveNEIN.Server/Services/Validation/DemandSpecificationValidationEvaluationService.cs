@@ -625,7 +625,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
         left.HasValue == right.HasValue &&
         (!left.HasValue || Math.Abs(left.Value - right!.Value) <= 1e-9);
 
-    private static void RequireRunCoverage<T>(
+    private static void RequireRunCoverage(
         IReadOnlyCollection<Guid> runIds,
         IEnumerable<Guid> coveredRunIds,
         string label)
