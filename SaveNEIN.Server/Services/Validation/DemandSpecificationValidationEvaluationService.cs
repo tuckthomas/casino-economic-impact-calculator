@@ -49,12 +49,13 @@ public sealed record DemandSpecificationValidationEvaluationResult(
     Guid ValidationEvaluationId,
     DemandSpecification SelectedBaseSpecification,
     string ObjectiveFunction,
-    double SelectedBaseObjectiveValue,
+    double SelectedBaseSelectionObjectiveValue,
     DemandSpecificationMetricBundle TrainingMetrics,
+    DemandSpecificationMetricBundle SelectionMetrics,
     DemandSpecificationMetricBundle HoldoutMetrics,
     DemandSpecificationMetricBundle BenchmarkMetrics,
     long? PublishedEnsembleParameterSetId,
-    bool EnsembleAccepted,
+    bool EnsembleAcceptedOnSelection,
     string? EnsembleDecision,
     IReadOnlyList<PersistedDemandOriginDifference> LargestOriginDifferences);
 
@@ -67,9 +68,10 @@ public interface IDemandSpecificationValidationEvaluationService
 
 /// <summary>
 /// Scores paired authoritative gravity runs that differ in resident-demand
-/// specification. Observed revenue is read only from persisted validation cases.
-/// Each pair must also reproduce the case's persisted reference-run context so an
-/// observed target cannot be reused against a different site or market.
+/// specification. Model/specification selection occurs only on the explicit
+/// selection partition; the independent holdout is never used to choose the base
+/// specification or ensemble weights. Observed revenue is read only from persisted
+/// validation cases and never enters model execution.
 /// </summary>
 public sealed class DemandSpecificationValidationEvaluationService(
     AppDbContext db,
@@ -114,15 +116,34 @@ public sealed class DemandSpecificationValidationEvaluationService(
         {
             throw new KeyNotFoundException("One or more demand-specification validation cases were not found.");
         }
-        if (cases.Count(item => item.DatasetPartition == ValidationPartitions.Training) < 2)
+        if (!cases.Any(item => item.DatasetPartition == ValidationPartitions.Training))
         {
             throw new InvalidOperationException(
-                "Demand-specification evaluation requires at least two training cases.");
+                "Demand-specification evaluation requires at least one training/calibration case.");
+        }
+        if (!cases.Any(item => item.DatasetPartition == DemandValidationPartitions.Selection))
+        {
+            throw new InvalidOperationException(
+                "Demand-specification evaluation requires an explicit selection partition separate from the final holdout.");
         }
         if (!cases.Any(item => item.DatasetPartition == ValidationPartitions.Holdout))
         {
             throw new InvalidOperationException(
-                "Demand-specification evaluation requires at least one independent holdout case.");
+                "Demand-specification evaluation requires at least one untouched independent holdout case.");
+        }
+        var unsupportedPartitions = cases
+            .Where(item => item.DatasetPartition is not (
+                ValidationPartitions.Training or
+                DemandValidationPartitions.Selection or
+                ValidationPartitions.Holdout or
+                ValidationPartitions.Benchmark))
+            .Select(item => item.DatasetPartition)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        if (unsupportedPartitions.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Demand-specification evaluation contains unsupported partition(s): {string.Join(", ", unsupportedPartitions)}.");
         }
 
         var pairRunIds = pairs
@@ -163,7 +184,6 @@ public sealed class DemandSpecificationValidationEvaluationService(
                     result.OriginZoneId,
                     origin.StableOriginId,
                     origin.StateOrTerritoryCode ?? string.Empty,
-                    result.DemandSpecification,
                     result.ResidentDemand))
             .ToArrayAsync(cancellationToken);
         var originsByRun = originRows.GroupBy(row => row.ModelRunId)
@@ -174,7 +194,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
 
         var scenarioRoutes = await db.OriginFacilityTravel.AsNoTracking()
             .Where(route => route.ModelRunId.HasValue &&
-                            pairRunIds.Contains(route.ModelRunId.Value) &&
+                            contextRunIds.Contains(route.ModelRunId.Value) &&
                             route.FacilityKind == FacilityKinds.Scenario)
             .ToArrayAsync(cancellationToken);
         var routeByRunAndOrigin = scenarioRoutes
@@ -184,7 +204,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
         var parameterDefinitions = await db.ModelParameterDefinitions.AsNoTracking()
             .ToDictionaryAsync(definition => definition.Id, definition => definition.Key, cancellationToken);
         var parameterRows = await db.ModelRunParameterValues.AsNoTracking()
-            .Where(value => pairRunIds.Contains(value.ModelRunId))
+            .Where(value => contextRunIds.Contains(value.ModelRunId))
             .ToArrayAsync(cancellationToken);
         var parametersByRun = parameterRows.GroupBy(value => value.ModelRunId)
             .ToDictionary(
@@ -219,7 +239,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
         RequireRunCoverage(contextRunIds, incumbentIdsByRun.Keys, "incumbent facility results");
 
         var caseById = cases.ToDictionary(item => item.Id);
-        var casePredictions = new List<PairedCasePrediction>(pairs.Length);
+        var predictions = new List<PairedCasePrediction>(pairs.Length);
         var originDifferences = new List<PersistedDemandOriginDifference>();
         foreach (var pair in pairs)
         {
@@ -247,6 +267,11 @@ public sealed class DemandSpecificationValidationEvaluationService(
             {
                 var agi = agiOrigins[originKey];
                 var perCapita = perCapitaOrigins[originKey];
+                var referenceRoute = RequireScenarioRoute(
+                    routeByRunAndOrigin,
+                    referenceRun.Id,
+                    agi.OriginZoneId,
+                    validationCase.CaseKey);
                 var agiRoute = RequireScenarioRoute(
                     routeByRunAndOrigin,
                     pair.AgiShareModelRunId,
@@ -257,7 +282,8 @@ public sealed class DemandSpecificationValidationEvaluationService(
                     pair.EligibleAdultPerCapitaModelRunId,
                     perCapita.OriginZoneId,
                     validationCase.CaseKey);
-                RequireEquivalentRoute(validationCase.CaseKey, originKey, agiRoute, perCapitaRoute);
+                RequireEquivalentRoute(validationCase.CaseKey, originKey, referenceRoute, agiRoute);
+                RequireEquivalentRoute(validationCase.CaseKey, originKey, referenceRoute, perCapitaRoute);
 
                 var signed = perCapita.ResidentDemand - agi.ResidentDemand;
                 originDifferences.Add(new PersistedDemandOriginDifference(
@@ -271,7 +297,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
                     Math.Abs(signed)));
             }
 
-            casePredictions.Add(new PairedCasePrediction(
+            predictions.Add(new PairedCasePrediction(
                 validationCase.Id,
                 validationCase.CaseKey,
                 validationCase.DatasetPartition,
@@ -282,67 +308,79 @@ public sealed class DemandSpecificationValidationEvaluationService(
                 pair.EligibleAdultPerCapitaModelRunId));
         }
 
-        var agiObservations = casePredictions.Select(item => new ValidationObservation(
+        var agiObservations = predictions.Select(item => new ValidationObservation(
             item.CaseKey, item.Observed, item.AgiSharePrediction)).ToArray();
-        var perCapitaObservations = casePredictions.Select(item => new ValidationObservation(
+        var perCapitaObservations = predictions.Select(item => new ValidationObservation(
             item.CaseKey, item.Observed, item.EligibleAdultPerCapitaPrediction)).ToArray();
 
-        var agiTraining = MetricsForPartition(cases, agiObservations, ValidationPartitions.Training);
-        var agiHoldout = MetricsForPartition(cases, agiObservations, ValidationPartitions.Holdout)!;
-        var agiBenchmark = MetricsForPartition(cases, agiObservations, ValidationPartitions.Benchmark);
-        var perCapitaTraining = MetricsForPartition(cases, perCapitaObservations, ValidationPartitions.Training);
-        var perCapitaHoldout = MetricsForPartition(cases, perCapitaObservations, ValidationPartitions.Holdout)!;
-        var perCapitaBenchmark = MetricsForPartition(cases, perCapitaObservations, ValidationPartitions.Benchmark);
+        var training = new DemandSpecificationMetricBundle(
+            MetricsForPartition(cases, agiObservations, ValidationPartitions.Training),
+            MetricsForPartition(cases, perCapitaObservations, ValidationPartitions.Training),
+            null);
+        var agiSelection = MetricsForPartition(cases, agiObservations, DemandValidationPartitions.Selection)!;
+        var perCapitaSelection = MetricsForPartition(cases, perCapitaObservations, DemandValidationPartitions.Selection)!;
+        var selection = new DemandSpecificationMetricBundle(agiSelection, perCapitaSelection, null);
+        var holdout = new DemandSpecificationMetricBundle(
+            MetricsForPartition(cases, agiObservations, ValidationPartitions.Holdout),
+            MetricsForPartition(cases, perCapitaObservations, ValidationPartitions.Holdout),
+            null);
+        var benchmark = new DemandSpecificationMetricBundle(
+            MetricsForPartition(cases, agiObservations, ValidationPartitions.Benchmark),
+            MetricsForPartition(cases, perCapitaObservations, ValidationPartitions.Benchmark),
+            null);
 
-        var agiObjective = ObjectiveValue(agiHoldout, objective);
-        var perCapitaObjective = ObjectiveValue(perCapitaHoldout, objective);
-        var selectedBase = agiObjective <= perCapitaObjective
+        var agiSelectionObjective = ObjectiveValue(agiSelection, objective);
+        var perCapitaSelectionObjective = ObjectiveValue(perCapitaSelection, objective);
+        var selectedBase = agiSelectionObjective <= perCapitaSelectionObjective
             ? DemandSpecification.AgiShare
             : DemandSpecification.EligibleAdultPerCapita;
-        var selectedBaseObjective = Math.Min(agiObjective, perCapitaObjective);
+        var selectedBaseSelectionObjective = Math.Min(agiSelectionObjective, perCapitaSelectionObjective);
 
         ValidationMetrics? ensembleTraining = null;
+        ValidationMetrics? ensembleSelection = null;
         ValidationMetrics? ensembleHoldout = null;
         ValidationMetrics? ensembleBenchmark = null;
         long? publishedParameterSetId = null;
-        var ensembleAccepted = false;
+        var ensembleAcceptedOnSelection = false;
         string? ensembleDecision = null;
         if (request.EnsembleCandidate is { } candidate)
         {
             ValidateEnsembleCandidate(candidate);
-            var ensembleObservations = casePredictions.Select(item => new ValidationObservation(
+            var ensembleObservations = predictions.Select(item => new ValidationObservation(
                 item.CaseKey,
                 item.Observed,
                 item.AgiSharePrediction * candidate.AgiShareWeight +
                 item.EligibleAdultPerCapitaPrediction * candidate.EligibleAdultPerCapitaWeight)).ToArray();
             ensembleTraining = MetricsForPartition(cases, ensembleObservations, ValidationPartitions.Training);
-            ensembleHoldout = MetricsForPartition(cases, ensembleObservations, ValidationPartitions.Holdout)!;
+            ensembleSelection = MetricsForPartition(cases, ensembleObservations, DemandValidationPartitions.Selection)!;
+            ensembleHoldout = MetricsForPartition(cases, ensembleObservations, ValidationPartitions.Holdout);
             ensembleBenchmark = MetricsForPartition(cases, ensembleObservations, ValidationPartitions.Benchmark);
-            var ensembleObjective = ObjectiveValue(ensembleHoldout, objective);
-            ensembleAccepted = ensembleObjective <= selectedBaseObjective + 1e-12;
-            ensembleDecision = ensembleAccepted
-                ? $"Accepted: holdout {objective} {ensembleObjective:G6} was no worse than selected-base {selectedBaseObjective:G6}."
-                : $"Rejected: holdout {objective} {ensembleObjective:G6} exceeded selected-base {selectedBaseObjective:G6}.";
+            var ensembleSelectionObjective = ObjectiveValue(ensembleSelection, objective);
+            ensembleAcceptedOnSelection = ensembleSelectionObjective <= selectedBaseSelectionObjective + 1e-12;
+            ensembleDecision = ensembleAcceptedOnSelection
+                ? $"Accepted on selection partition: {objective} {ensembleSelectionObjective:G6} was no worse than primitive-base {selectedBaseSelectionObjective:G6}. Independent holdout was not consulted for selection."
+                : $"Rejected on selection partition: {objective} {ensembleSelectionObjective:G6} exceeded primitive-base {selectedBaseSelectionObjective:G6}. Independent holdout was not consulted for selection.";
 
-            if (ensembleAccepted)
+            if (ensembleAcceptedOnSelection)
             {
                 var clone = await parameterSetService.CreateVersionAsync(
                     candidate.SourceParameterSetId,
                     candidate.PublishedParameterSetVersion,
                     $"[validated-demand-ensemble] Demand-specification evaluation {evaluationKey} version {version}; " +
-                    $"objective={objective}; holdout={ensembleObjective:G17}; selected-base={selectedBase}:{selectedBaseObjective:G17}.",
+                    $"selection-objective={objective}; selection={ensembleSelectionObjective:G17}; " +
+                    $"primitive-base={selectedBase}:{selectedBaseSelectionObjective:G17}; final holdout retained independently.",
                     cancellationToken);
                 await parameterSetService.SetValueAsync(
                     clone.Id,
                     DemandModelParameterInitializer.AgiShareWeightKey,
                     candidate.AgiShareWeight,
-                    $"Published by demand-specification evaluation {evaluationKey} {version}.",
+                    $"Selected on demand validation partition by evaluation {evaluationKey} {version}; holdout not used for selection.",
                     cancellationToken);
                 await parameterSetService.SetValueAsync(
                     clone.Id,
                     DemandModelParameterInitializer.EligibleAdultPerCapitaWeightKey,
                     candidate.EligibleAdultPerCapitaWeight,
-                    $"Published by demand-specification evaluation {evaluationKey} {version}.",
+                    $"Selected on demand validation partition by evaluation {evaluationKey} {version}; holdout not used for selection.",
                     cancellationToken);
                 clone = await db.ModelParameterSets.SingleAsync(set => set.Id == clone.Id, cancellationToken);
                 clone.IsImmutable = true;
@@ -351,18 +389,10 @@ public sealed class DemandSpecificationValidationEvaluationService(
             }
         }
 
-        var trainingBundle = new DemandSpecificationMetricBundle(
-            agiTraining,
-            perCapitaTraining,
-            ensembleTraining);
-        var holdoutBundle = new DemandSpecificationMetricBundle(
-            agiHoldout,
-            perCapitaHoldout,
-            ensembleHoldout);
-        var benchmarkBundle = new DemandSpecificationMetricBundle(
-            agiBenchmark,
-            perCapitaBenchmark,
-            ensembleBenchmark);
+        training = training with { Ensemble = ensembleTraining };
+        selection = selection with { Ensemble = ensembleSelection };
+        holdout = holdout with { Ensemble = ensembleHoldout };
+        benchmark = benchmark with { Ensemble = ensembleBenchmark };
         var largestDifferences = originDifferences
             .OrderByDescending(item => item.AbsoluteDifference)
             .ThenBy(item => item.CaseKey, StringComparer.Ordinal)
@@ -381,8 +411,15 @@ public sealed class DemandSpecificationValidationEvaluationService(
             InclusionRulesJson = JsonSerializer.Serialize(new
             {
                 evaluationKind = "demand-specification-reconciliation",
-                rule = "Each case compares two finalized authoritative gravity runs against that validation case's persisted reference run. Site, program, snapshots, incumbent field, computational origins, shared parameters, execution fingerprint, and candidate routes must reconcile before observed revenue is scored.",
-                pairs = casePredictions.Select(item => new
+                partitionGovernance = new
+                {
+                    training = "May be used for underlying gravity/demand calibration.",
+                    selection = "Used to select resident-demand specification and optional ensemble. Must be separate from final holdout.",
+                    holdout = "Final independent check. Never used to choose specification or ensemble weights.",
+                    benchmark = "Optional external benchmark partition."
+                },
+                rule = "Each case compares two finalized authoritative gravity runs against the case's persisted reference run. Site, program, snapshots, incumbent field, computational origins, shared parameters, execution fingerprint, and candidate routes must reconcile before observed revenue is scored.",
+                pairs = predictions.Select(item => new
                 {
                     item.ValidationCaseId,
                     item.CaseKey,
@@ -427,16 +464,18 @@ public sealed class DemandSpecificationValidationEvaluationService(
                 selectedBaseSpecification = selectedBase == DemandSpecification.AgiShare
                     ? GravityDemandSpecifications.AgiShare
                     : GravityDemandSpecifications.EligibleAdultPerCapita,
-                objectiveFunction = objective,
-                selectedBaseObjectiveValue = selectedBaseObjective,
+                selectionObjectiveFunction = objective,
+                selectedBaseSelectionObjectiveValue = selectedBaseSelectionObjective,
+                selectionMetrics = selection,
                 ensembleCandidate = request.EnsembleCandidate,
-                ensembleAccepted,
+                ensembleAcceptedOnSelection,
                 ensembleDecision,
-                publishedEnsembleParameterSetId = publishedParameterSetId
+                publishedEnsembleParameterSetId = publishedParameterSetId,
+                holdoutWasUsedForSelection = false
             }, JsonOptions),
-            TrainingMetricsJson = JsonSerializer.Serialize(trainingBundle, JsonOptions),
-            HoldoutMetricsJson = JsonSerializer.Serialize(holdoutBundle, JsonOptions),
-            BenchmarkMetricsJson = JsonSerializer.Serialize(benchmarkBundle, JsonOptions),
+            TrainingMetricsJson = JsonSerializer.Serialize(training, JsonOptions),
+            HoldoutMetricsJson = JsonSerializer.Serialize(holdout, JsonOptions),
+            BenchmarkMetricsJson = JsonSerializer.Serialize(benchmark, JsonOptions),
             ComparableModelJson = "{}",
             ComparableTrainingMetricsJson = "{}",
             ComparableHoldoutMetricsJson = "{}",
@@ -454,12 +493,13 @@ public sealed class DemandSpecificationValidationEvaluationService(
             evaluation.Id,
             selectedBase,
             objective,
-            selectedBaseObjective,
-            trainingBundle,
-            holdoutBundle,
-            benchmarkBundle,
+            selectedBaseSelectionObjective,
+            training,
+            selection,
+            holdout,
+            benchmark,
             publishedParameterSetId,
-            ensembleAccepted,
+            ensembleAcceptedOnSelection,
             ensembleDecision,
             largestDifferences);
     }
@@ -490,26 +530,13 @@ public sealed class DemandSpecificationValidationEvaluationService(
         RequireSameRunContext(validationCase.CaseKey, referenceRun, perCapitaRun, "eligible-adult-per-capita");
         RequireSameRunContext(validationCase.CaseKey, agiRun, perCapitaRun, "paired specifications");
 
-        RequireSameDictionary(
-            validationCase.CaseKey,
-            snapshotsByRun[referenceRun.Id],
-            snapshotsByRun[agiRun.Id],
+        RequireSameDictionary(validationCase.CaseKey, snapshotsByRun[referenceRun.Id], snapshotsByRun[agiRun.Id],
             "reference vs AGI-share dataset snapshots");
-        RequireSameDictionary(
-            validationCase.CaseKey,
-            snapshotsByRun[referenceRun.Id],
-            snapshotsByRun[perCapitaRun.Id],
+        RequireSameDictionary(validationCase.CaseKey, snapshotsByRun[referenceRun.Id], snapshotsByRun[perCapitaRun.Id],
             "reference vs eligible-adult dataset snapshots");
-
-        RequireSameSequence(
-            validationCase.CaseKey,
-            incumbentIdsByRun[referenceRun.Id],
-            incumbentIdsByRun[agiRun.Id],
+        RequireSameSequence(validationCase.CaseKey, incumbentIdsByRun[referenceRun.Id], incumbentIdsByRun[agiRun.Id],
             "reference vs AGI-share incumbent field");
-        RequireSameSequence(
-            validationCase.CaseKey,
-            incumbentIdsByRun[referenceRun.Id],
-            incumbentIdsByRun[perCapitaRun.Id],
+        RequireSameSequence(validationCase.CaseKey, incumbentIdsByRun[referenceRun.Id], incumbentIdsByRun[perCapitaRun.Id],
             "reference vs eligible-adult incumbent field");
 
         var referenceOrigins = originsByRun[referenceRun.Id].Select(row => row.OriginKey).ToArray();
@@ -518,19 +545,17 @@ public sealed class DemandSpecificationValidationEvaluationService(
         RequireSameSequence(validationCase.CaseKey, referenceOrigins, agiOrigins, "reference vs AGI-share origins");
         RequireSameSequence(validationCase.CaseKey, referenceOrigins, perCapitaOrigins, "reference vs eligible-adult origins");
 
+        var referenceShared = SharedParameters(parametersByRun.GetValueOrDefault(
+            referenceRun.Id,
+            new Dictionary<string, double>()));
         var agiShared = SharedParameters(parametersByRun.GetValueOrDefault(
             agiRun.Id,
             new Dictionary<string, double>()));
         var perCapitaShared = SharedParameters(parametersByRun.GetValueOrDefault(
             perCapitaRun.Id,
             new Dictionary<string, double>()));
-        if (agiShared.Length != perCapitaShared.Length ||
-            agiShared.Where((item, index) =>
-                item.Key != perCapitaShared[index].Key || item.Value != perCapitaShared[index].Value).Any())
-        {
-            throw new InvalidOperationException(
-                $"Validation case '{validationCase.CaseKey}' pairs runs with different non-demand model parameters.");
-        }
+        RequireSameParameterSequence(validationCase.CaseKey, referenceShared, agiShared, "reference vs AGI-share parameters");
+        RequireSameParameterSequence(validationCase.CaseKey, referenceShared, perCapitaShared, "reference vs eligible-adult parameters");
 
         var referenceFingerprint = ReadExecutionFingerprint(referenceRun.ResolvedInputJson);
         var agiFingerprint = ReadExecutionFingerprint(agiRun.ResolvedInputJson);
@@ -547,11 +572,20 @@ public sealed class DemandSpecificationValidationEvaluationService(
             .OrderBy(item => item.Key, StringComparer.Ordinal)
             .ToArray();
 
-    private static void RequireSameRunContext(
+    private static void RequireSameParameterSequence(
         string caseKey,
-        ModelRun expected,
-        ModelRun actual,
+        IReadOnlyList<KeyValuePair<string, double>> expected,
+        IReadOnlyList<KeyValuePair<string, double>> actual,
         string label)
+    {
+        if (expected.Count != actual.Count || expected.Where((item, index) =>
+                item.Key != actual[index].Key || item.Value != actual[index].Value).Any())
+        {
+            throw new InvalidOperationException($"Validation case '{caseKey}' does not reconcile {label}.");
+        }
+    }
+
+    private static void RequireSameRunContext(string caseKey, ModelRun expected, ModelRun actual, string label)
     {
         if (expected.ModelVersion != actual.ModelVersion ||
             expected.JurisdictionId != actual.JurisdictionId ||
@@ -575,8 +609,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
         if (expected.Count != actual.Count ||
             expected.Any(item => !actual.TryGetValue(item.Key, out var value) || !item.Value.Equals(value)))
         {
-            throw new InvalidOperationException(
-                $"Validation case '{caseKey}' does not reconcile {label}.");
+            throw new InvalidOperationException($"Validation case '{caseKey}' does not reconcile {label}.");
         }
     }
 
@@ -588,8 +621,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
     {
         if (!expected.SequenceEqual(actual))
         {
-            throw new InvalidOperationException(
-                $"Validation case '{caseKey}' does not reconcile {label}.");
+            throw new InvalidOperationException($"Validation case '{caseKey}' does not reconcile {label}.");
         }
     }
 
@@ -606,15 +638,14 @@ public sealed class DemandSpecificationValidationEvaluationService(
     private static void RequireEquivalentRoute(
         string caseKey,
         string originKey,
-        OriginFacilityTravel agiRoute,
-        OriginFacilityTravel perCapitaRoute)
+        OriginFacilityTravel expected,
+        OriginFacilityTravel actual)
     {
-        var timeEqual = NullableDoubleEqual(agiRoute.TravelTimeMinutes, perCapitaRoute.TravelTimeMinutes);
-        var distanceEqual = NullableDoubleEqual(agiRoute.RoutedDistanceMeters, perCapitaRoute.RoutedDistanceMeters);
-        if (agiRoute.RouteFound != perCapitaRoute.RouteFound ||
-            agiRoute.RoutingGraphHash != perCapitaRoute.RoutingGraphHash ||
-            agiRoute.CostingProfile != perCapitaRoute.CostingProfile ||
-            !timeEqual || !distanceEqual)
+        if (expected.RouteFound != actual.RouteFound ||
+            expected.RoutingGraphHash != actual.RoutingGraphHash ||
+            expected.CostingProfile != actual.CostingProfile ||
+            !NullableDoubleEqual(expected.TravelTimeMinutes, actual.TravelTimeMinutes) ||
+            !NullableDoubleEqual(expected.RoutedDistanceMeters, actual.RoutedDistanceMeters))
         {
             throw new InvalidOperationException(
                 $"Validation case '{caseKey}' has different candidate-route evidence across demand specifications for origin '{originKey}'.");
@@ -622,8 +653,7 @@ public sealed class DemandSpecificationValidationEvaluationService(
     }
 
     private static bool NullableDoubleEqual(double? left, double? right) =>
-        left.HasValue == right.HasValue &&
-        (!left.HasValue || Math.Abs(left.Value - right!.Value) <= 1e-9);
+        left.HasValue == right.HasValue && (!left.HasValue || Math.Abs(left.Value - right!.Value) <= 1e-9);
 
     private static void RequireRunCoverage(
         IReadOnlyCollection<Guid> runIds,
@@ -781,7 +811,6 @@ public sealed class DemandSpecificationValidationEvaluationService(
         long OriginZoneId,
         string OriginKey,
         string StateOrTerritory,
-        string DemandSpecification,
         decimal ResidentDemand);
 
     private sealed record ExecutionFingerprint(
