@@ -24,6 +24,7 @@
   "dependencies": [],
   "state": "in-progress",
   "evidence": [
-    "13/18 requirements verified (5 pending)."
+    "16/18 requirements verified (2 pending).",
+    "2026-08-19 demand-specification reconciliation tranche: total/state/distance-band/origin-difference comparison, validated versioned convex ensembles, and the no-additive-demand-pools rule are implemented. Empirical paired validation output and production base-specification designation remain pending."
   ]
 }
