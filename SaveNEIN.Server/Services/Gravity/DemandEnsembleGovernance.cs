@@ -34,9 +34,7 @@ public static class DemandEnsembleGovernance
         double eligibleAdultPerCapitaWeight)
     {
         OriginDemandService.RequireNonNegativeFinite(agiShareDemand, nameof(agiShareDemand));
-        OriginDemandService.RequireNonNegativeFinite(
-            eligibleAdultPerCapitaDemand,
-            nameof(eligibleAdultPerCapitaDemand));
+        OriginDemandService.RequireNonNegativeFinite(eligibleAdultPerCapitaDemand, nameof(eligibleAdultPerCapitaDemand));
         ValidateWeights(agiShareWeight, eligibleAdultPerCapitaWeight);
         var demand = agiShareDemand * agiShareWeight +
                      eligibleAdultPerCapitaDemand * eligibleAdultPerCapitaWeight;
@@ -101,13 +99,15 @@ public static class DemandEnsembleGovernance
         var root = selectionDocument.RootElement;
         if (!TryReadString(root, "evaluationKind", out var kind) ||
             !string.Equals(kind, "demand-specification-reconciliation", StringComparison.Ordinal) ||
-            !TryReadBoolean(root, "ensembleAccepted", out var ensembleAccepted) ||
-            !ensembleAccepted ||
+            !TryReadBoolean(root, "ensembleAcceptedOnSelection", out var acceptedOnSelection) ||
+            !acceptedOnSelection ||
+            !TryReadBoolean(root, "holdoutWasUsedForSelection", out var holdoutUsed) ||
+            holdoutUsed ||
             !TryReadInt64(root, "publishedEnsembleParameterSetId", out var publishedSetId) ||
             publishedSetId != sourceSetId)
         {
             throw new InvalidOperationException(
-                $"Validation evaluation '{evaluation.Id}' did not accept and publish parameter set '{sourceSetId}' as a demand ensemble.");
+                $"Validation evaluation '{evaluation.Id}' did not select and publish parameter set '{sourceSetId}' under leakage-safe demand-ensemble governance.");
         }
     }
 
@@ -142,11 +142,8 @@ public static class DemandEnsembleGovernance
     {
         foreach (var property in root.EnumerateObject())
         {
-            if (!string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-            if (property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase) &&
+                property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False)
             {
                 value = property.Value.GetBoolean();
                 return true;
