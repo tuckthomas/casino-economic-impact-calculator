@@ -3,9 +3,9 @@
   "branch": "feature/sector-weighted-casino-displacement-model-and-revenue-projections-model",
   "lifecycle": "in-progress",
   "createdAt": "2026-08-09T04:12:41.675Z",
-  "updatedAt": "2026-08-14T07:12:47.570Z",
-  "completedRequirements": 814,
-  "pendingRequirements": 207,
+  "updatedAt": "2026-08-20T02:51:00.000Z",
+  "completedRequirements": 817,
+  "pendingRequirements": 204,
   "completedSections": 19,
   "inProgressSections": 21,
   "pendingSections": 1
