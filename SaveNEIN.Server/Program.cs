@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.HttpOverrides;
 using SaveNEIN.Server.Data;
+using SaveNEIN.Server.Configuration;
 using SaveNEIN.Shared;
 using QuestPDF.Infrastructure;
 
@@ -16,6 +17,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddRazorPages();
 builder.Services.AddOpenApi();
+builder.Services.Configure<TaxAllocationOptions>(builder.Configuration.GetSection("TaxAllocation"));
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -169,10 +171,12 @@ builder.Services.AddScoped<SaveNEIN.Server.Services.Reports.ICsvReportRenderer, 
 builder.Services.AddScoped<SaveNEIN.Server.Services.Reports.IReportArtifactService, SaveNEIN.Server.Services.Reports.ReportArtifactService>();
 
 var app = builder.Build();
+var databaseInitializationEnabled = app.Configuration.GetValue("DatabaseInitialization:Enabled", true);
 
 app.UseForwardedHeaders();
 
-if (args.Contains("--seed-isochrones") || args.Contains("--run-allen-isochrones"))
+if (databaseInitializationEnabled &&
+    (args.Contains("--seed-isochrones") || args.Contains("--run-allen-isochrones")))
 {
     using var scope = app.Services.CreateScope();
     var seeder = scope.ServiceProvider.GetRequiredService<SaveNEIN.Server.Services.IsochroneSeedingService>();
@@ -187,63 +191,69 @@ if (args.Contains("--seed-isochrones") || args.Contains("--run-allen-isochrones"
     return;
 }
 
-// Auto-migrate database
-using (var scope = app.Services.CreateScope())
+if (databaseInitializationEnabled)
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    // Wait for DB to be ready
-    try 
+    // Auto-migrate database
+    using (var scope = app.Services.CreateScope())
     {
-        if (db.Database.GetPendingMigrations().Any())
-        {
-            Console.WriteLine("Applying pending migrations...");
-            db.Database.Migrate();
-            Console.WriteLine("Migrations applied successfully.");
-        }
-
-        // Initialize and seed database
-        await SaveNEIN.Server.Data.DbInitializer.Seed(db);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Migration or Seeding failed: {ex.Message}");
-    }
-}
-
-// Validated fiscal rules can require incorporated-place containment. Derive the
-// necessary PLACE states from those rules and make them a startup dependency.
-using (var scope = app.Services.CreateScope())
-{
-    var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
-    await seeder.EnsureRequiredFiscalPlaceDataAsync();
-}
-
-// Seed TIGER datasets and warm visualization caches in the background. Fiscal model runs
-// resolve and require their own exact candidate county/place evidence at execution time.
-if (app.Configuration.GetValue("TigerSeeding:Enabled", true))
-{
-    _ = Task.Run(async () =>
-    {
-        using var scope = app.Services.CreateScope();
-        var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         try
         {
-            Console.WriteLine("Starting TIGER Data Seeding Check...");
-            await seeder.EnsureSeededAsync();
-            Console.WriteLine("TIGER Data Seeding Check Complete.");
+            if (db.Database.GetPendingMigrations().Any())
+            {
+                Console.WriteLine("Applying pending migrations...");
+                db.Database.Migrate();
+                Console.WriteLine("Migrations applied successfully.");
+            }
 
-            await WarmStateCacheAsync(scope.ServiceProvider);
-            await WarmMvtTilesAsync(scope.ServiceProvider);
+            // Initialize and seed database
+            await SaveNEIN.Server.Data.DbInitializer.Seed(db);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Tiger Seeding Failed: {ex}");
+            Console.WriteLine($"Migration or Seeding failed: {ex.Message}");
         }
-    });
+    }
+
+    // Validated fiscal rules can require incorporated-place containment. Derive the
+    // necessary PLACE states from those rules and make them a startup dependency.
+    using (var scope = app.Services.CreateScope())
+    {
+        var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
+        await seeder.EnsureRequiredFiscalPlaceDataAsync();
+    }
+
+    // Seed TIGER datasets and warm visualization caches in the background. Fiscal model runs
+    // resolve and require their own exact candidate county/place evidence at execution time.
+    if (app.Configuration.GetValue("TigerSeeding:Enabled", true))
+    {
+        _ = Task.Run(async () =>
+        {
+            using var scope = app.Services.CreateScope();
+            var seeder = scope.ServiceProvider.GetRequiredService<TigerSeeder>();
+            try
+            {
+                Console.WriteLine("Starting TIGER Data Seeding Check...");
+                await seeder.EnsureSeededAsync();
+                Console.WriteLine("TIGER Data Seeding Check Complete.");
+
+                await WarmStateCacheAsync(scope.ServiceProvider);
+                await WarmMvtTilesAsync(scope.ServiceProvider);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Tiger Seeding Failed: {ex}");
+            }
+        });
+    }
+    else
+    {
+        Console.WriteLine("Background TIGER seeding is disabled for this runtime.");
+    }
 }
 else
 {
-    Console.WriteLine("Background TIGER seeding is disabled for this runtime.");
+    Console.WriteLine("Database initialization is disabled for this runtime.");
 }
 
 // Configure the HTTP request pipeline.

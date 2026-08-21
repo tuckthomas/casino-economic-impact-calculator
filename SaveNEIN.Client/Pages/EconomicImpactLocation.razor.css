@@ -1,0 +1,5 @@
+/* Map Options is a top-level drawer and should eclipse ordinary map controls while open. */
+::deep #map-options-panel {
+    z-index: 110 !important;
+}
+

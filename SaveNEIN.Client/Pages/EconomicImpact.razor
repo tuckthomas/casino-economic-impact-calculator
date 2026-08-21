@@ -1,22 +1,28 @@
+@page "/economic-impact/model"
 @inject HttpClient Http
 @using System.Globalization
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components.Rendering
 
-<section class="model-workbench" id="economic-analysis" aria-labelledby="model-workbench-title">
+@if (!Embedded)
+{
+    <PageTitle>Economic Impact Model | Save Northeast Indiana</PageTitle>
+}
+
+<section class="model-workbench" id="canonical-economic-model" aria-labelledby="model-workbench-title">
     <div class="model-workbench-shell">
         <header class="model-workbench-heading">
-            <span class="model-eyebrow">Canonical economic model</span>
-            <h2 id="model-workbench-title">Stored-run casino impact workbench</h2>
+            <span class="model-eyebrow">Economic impact estimate</span>
+            <h2 id="model-workbench-title">Estimate the impact of a proposed casino</h2>
             <p>
-                Configure a versioned scenario, run the server-side gravity model, and compare immutable results.
-                Revenue is calculated from origin demand and Valhalla drive times—there is no browser-side AGR multiplier.
+                Enter the details of a proposed facility to estimate its potential revenue and local economic impact.
+                You can save estimates and compare different proposals or locations.
             </p>
         </header>
 
         @if (_loading)
         {
-            <div class="model-status" role="status">Loading model catalog and sealed data snapshots…</div>
+            <div class="model-status" role="status">Loading the information needed for your estimate…</div>
         }
         else if (_configuration is null)
         {
@@ -41,7 +47,7 @@
                     <div class="model-panel-heading">
                         <div>
                             <span class="model-step">1</span>
-                            <h3>Scenario definition</h3>
+                            <h3>Describe the proposal</h3>
                         </div>
                         <span class="model-version">@_configuration.ModelVersion</span>
                     </div>
@@ -93,17 +99,16 @@
                         <label class="model-field">
                             <span>Fiscal rule effective date</span>
                             <input type="date" @bind="_form.EffectiveOn" />
-                            <small>Controls effective-dated tax and distribution rules; observed data keep their own vintages.</small>
+                            <small>Use the date when the proposed facility's tax rules should apply.</small>
                         </label>
                     </div>
 
                     @if (_showProgramEditor)
                     {
                         <fieldset class="model-program-editor">
-                            <legend>New development program version</legend>
+                            <legend>Describe a new facility</legend>
                             <p>
-                                Define physical scale once. The backend stores this version and makes it immutable when a
-                                model run uses it.
+                                Enter the planned size and amenities for the proposed facility.
                             </p>
                             <div class="model-form-grid">
                                 <label class="model-field model-field-wide">
@@ -175,7 +180,7 @@
                         <div class="model-subsection-heading">
                             <div>
                                 <span class="model-step">2</span>
-                                <h3>Immutable data inputs</h3>
+                                <h3>Choose the data for your estimate</h3>
                             </div>
                             <span class="model-count">@_origins.Count origins</span>
                         </div>
@@ -366,10 +371,10 @@
                         }
 
                         <details class="model-scenario-json">
-                            <summary>Export or import a versioned scenario definition</summary>
+                            <summary>Save or load these proposal details</summary>
                             <p>
-                                This JSON contains model inputs and parameter overrides, not calculated outputs. Importing it
-                                restores the form; running it creates a new immutable backend model run.
+                                Save these details to reuse them later or share them with another reviewer. This includes
+                                the proposal information, but not the calculated results.
                             </p>
                             <textarea @bind="_scenarioJson" @bind:event="oninput" rows="12" spellcheck="false" aria-label="Versioned scenario definition JSON"></textarea>
                             <div class="model-scenario-json-actions">
@@ -385,7 +390,7 @@
 
                     <div class="model-run-actions">
                         <button class="model-primary-button" type="button" disabled="@(!CanRun || _running)" @onclick="RunScenarioAsync">
-                            @(_running ? "Running Valhalla + impact pipeline…" : "Run and store scenario")
+                            @(_running ? "Calculating estimate…" : "Calculate and save estimate")
                         </button>
                         <span>@RunReadiness</span>
                     </div>
@@ -395,7 +400,7 @@
                     <div class="model-panel-heading model-results-heading">
                         <div>
                             <span class="model-step">4</span>
-                            <h3>Stored-run results</h3>
+                            <h3>Estimate results</h3>
                         </div>
                         @if (_latestRun is not null)
                         {
@@ -407,8 +412,8 @@
                     {
                         <div class="model-empty-state">
                             <span class="material-symbols-outlined" aria-hidden="true">database</span>
-                            <h3>No scenario run in this session</h3>
-                            <p>Complete the required data selections and run the authoritative backend model.</p>
+                            <h3>Your results will appear here</h3>
+                            <p>Complete the required selections, then calculate an estimate.</p>
                         </div>
                     }
                     else
@@ -447,7 +452,7 @@
                                 <div class="model-result-table-heading">
                                     <div>
                                         <h4 id="model-origin-results-title">Patron-origin results</h4>
-                                        <p>Computed at the run's actual @_latestRun.ComputationalOriginType.ToUpperInvariant() resolution; full detail remains available from the immutable run.</p>
+                                        <p>Shows where the estimated visitors and spending are expected to come from.</p>
                                     </div>
                                     <span>@_runOriginTotal origin(s)</span>
                                 </div>
@@ -544,8 +549,8 @@
 
                         <section class="model-report-actions" aria-label="Full analytical report">
                             <div>
-                                <h4>Full stored-run report</h4>
-                                <p>Generate PDF, accessible HTML, JSON, and CSV from this finalized run without recalculating the model.</p>
+                                <h4>Download the full report</h4>
+                                <p>Download this estimate as a PDF, web page, spreadsheet, or data file.</p>
                             </div>
                             <button type="button" class="model-primary-button" disabled="@_generatingReport" @onclick="GenerateReportAsync">
                                 @(_generatingReport ? "Rendering server report…" : "Generate full report")
@@ -565,12 +570,12 @@
                             <div class="model-subsection-heading">
                                 <div>
                                     <span class="model-step">5</span>
-                                    <h3 id="model-sensitivity-title">Server-run sensitivity</h3>
+                                    <h3 id="model-sensitivity-title">See how the estimate could change</h3>
                                 </div>
                                 <span class="model-count">@SelectedSensitivityRunCount full runs</span>
                             </div>
                             <p class="model-muted">
-                                Each low and high point reruns Valhalla, gravity allocation, and the complete impact pipeline. No final-output multiplier is used.
+                                Test different assumptions to see which factors have the biggest effect on the estimate.
                             </p>
 
                             <label class="model-field model-sensitivity-metric">
@@ -654,7 +659,7 @@
                         <div class="model-subsection-heading">
                             <div>
                                 <span class="model-step">6</span>
-                                <h3>Immutable scenario comparison</h3>
+                                <h3>Compare saved estimates</h3>
                             </div>
                             <button type="button" class="model-secondary-button" disabled="@(_comparisonSelection.Count < 2 || _comparing)" @onclick="CompareAsync">
                                 @(_comparing ? "Loading…" : "Compare selected")
@@ -717,6 +722,12 @@
 </section>
 
 @code {
+    [Parameter]
+    public bool Embedded { get; set; }
+
+    [Parameter]
+    public string? ScenarioToken { get; set; }
+
     private static readonly string[] StandardParameterKeys =
     [
         "demand.regional_intensity_multiplier",
@@ -802,6 +813,7 @@
                 throw new InvalidOperationException("The model catalog response was empty.");
             }
             ApplyCatalogDefaults();
+            await ApplyClientScenarioAsync();
             await LoadOriginsAsync();
             await LoadTourismAsync();
             await LoadTrafficAsync();
@@ -817,6 +829,66 @@
             _loading = false;
         }
     }
+
+    private async Task ApplyClientScenarioAsync()
+    {
+        if (_configuration is null || string.IsNullOrWhiteSpace(ScenarioToken))
+        {
+            return;
+        }
+
+        try
+        {
+            using var response = await Http.GetAsync(
+                $"api/economic-scenarios/{Uri.EscapeDataString(ScenarioToken)}");
+            if (!response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var scenario = await response.Content.ReadFromJsonAsync<ClientScenarioSnapshot>();
+            if (scenario is null)
+            {
+                return;
+            }
+
+            _form.CandidateLatitude = scenario.MarkerLatitude;
+            _form.CandidateLongitude = scenario.MarkerLongitude;
+            _form.ScenarioName = string.IsNullOrWhiteSpace(scenario.CountyFips)
+                ? "Economic impact scenario"
+                : $"Economic impact scenario — county {scenario.CountyFips}";
+
+            var stateCode = StateCodeFromFips(scenario.StateFips);
+            var jurisdiction = _configuration.Jurisdictions.FirstOrDefault(item =>
+                StateCode(item.Code).Equals(stateCode, StringComparison.OrdinalIgnoreCase));
+            if (jurisdiction is not null)
+            {
+                _form.JurisdictionCode = jurisdiction.Code;
+                _form.OriginStateCode = stateCode;
+                ApplyJurisdictionParameterSet();
+            }
+        }
+        catch (Exception exception)
+        {
+            _error = $"The saved Part 1 location could not be loaded: {exception.Message}";
+        }
+    }
+
+    private static string StateCodeFromFips(string? stateFips) => stateFips switch
+    {
+        "01" => "AL", "02" => "AK", "04" => "AZ", "05" => "AR", "06" => "CA",
+        "08" => "CO", "09" => "CT", "10" => "DE", "11" => "DC", "12" => "FL",
+        "13" => "GA", "15" => "HI", "16" => "ID", "17" => "IL", "18" => "IN",
+        "19" => "IA", "20" => "KS", "21" => "KY", "22" => "LA", "23" => "ME",
+        "24" => "MD", "25" => "MA", "26" => "MI", "27" => "MN", "28" => "MS",
+        "29" => "MO", "30" => "MT", "31" => "NE", "32" => "NV", "33" => "NH",
+        "34" => "NJ", "35" => "NM", "36" => "NY", "37" => "NC", "38" => "ND",
+        "39" => "OH", "40" => "OK", "41" => "OR", "42" => "PA", "44" => "RI",
+        "45" => "SC", "46" => "SD", "47" => "TN", "48" => "TX", "49" => "UT",
+        "50" => "VT", "51" => "VA", "53" => "WA", "54" => "WV", "55" => "WI",
+        "56" => "WY", "60" => "AS", "66" => "GU", "69" => "MP", "72" => "PR",
+        "78" => "VI", _ => string.Empty
+    };
 
     private void ApplyCatalogDefaults()
     {
@@ -1825,7 +1897,7 @@
     private int SelectedSensitivityRunCount => 1 + 2 * _sensitivityRanges.Count(range => range.Selected);
 
     private string RunReadiness => CanRun
-        ? "Ready to create an immutable run."
+        ? "Ready to calculate your estimate."
         : "Select required snapshots, a program, valid coordinates, and at least one origin.";
 
     private static string Money(decimal? value) => value.HasValue ? value.Value.ToString("C0", CultureInfo.CurrentCulture) : "—";
@@ -1879,6 +1951,14 @@
         public string AttractionSpecification { get; set; } = "observed-ggr";
         public string FrictionForm { get; set; } = "inverse-power";
         public string ObservedMetricKey { get; set; } = "casino-win";
+    }
+
+    private sealed class ClientScenarioSnapshot
+    {
+        public string? StateFips { get; set; }
+        public string? CountyFips { get; set; }
+        public double? MarkerLatitude { get; set; }
+        public double? MarkerLongitude { get; set; }
     }
 
     private sealed class DevelopmentProgramForm

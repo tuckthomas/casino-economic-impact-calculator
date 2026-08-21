@@ -1,0 +1,297 @@
+@inject NavigationManager NavigationManager
+
+@* Public-facing explanation of why local casino spending is not automatically net economic growth. *@
+<section class="bg-slate-900 py-24 relative overflow-hidden" id="economic-analysis" aria-labelledby="economic-analysis-part-2">
+    <div class="mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
+        <!-- PART II: THE MYTH OF NET GROWTH (Moved Here) -->
+                <div class="economic-analysis-content-shell">
+                    <!-- Header -->
+                    <div class="section-heading-block economic-analysis-section-heading mb-12 text-center max-w-4xl mx-auto" id="economic-analysis-part-2">
+                        <span class="text-blue-500 font-bold tracking-wider uppercase text-base">Substitution Effect</span>
+                        <h2 class="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl leading-tight">
+                            THE MYTH OF <br><span class="text-blue-500">NET GROWTH</span>
+                        </h2>
+                        <div class="section-heading-description mt-4 text-xl italic text-slate-400 leading-relaxed">
+                            <p>
+                                The primary economic argument for the proposed Northeast Indiana casino is that it will generate "new" money.
+                                This assumes it functions as a tourist destination. However, in markets lacking high-density
+                                attractions, casinos operate as <strong>"convenience gambling"</strong> venues, leading to the
+                                <strong>Substitution Effect</strong>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-8 md:grid-cols-3 mb-8">
+                        <article class="dark-section-card">
+                            <span class="material-symbols-outlined text-blue-500 text-3xl" aria-hidden="true">location_on</span>
+                            <h3 class="mt-4 text-xl font-bold text-white">Where the money comes from</h3>
+                            <p class="mt-3 leading-relaxed text-slate-400">
+                                Revenue depends on who visits, how far they travel, and whether their spending comes from outside the region.
+                            </p>
+                        </article>
+                        <article class="dark-section-card">
+                            <span class="material-symbols-outlined text-blue-500 text-3xl" aria-hidden="true">compare_arrows</span>
+                            <h3 class="mt-4 text-xl font-bold text-white">What spending gets replaced</h3>
+                            <p class="mt-3 leading-relaxed text-slate-400">
+                                New casino spending is not automatically new economic activity. Some of it may replace spending at existing local businesses.
+                            </p>
+                        </article>
+                        <article class="dark-section-card">
+                            <span class="material-symbols-outlined text-blue-500 text-3xl" aria-hidden="true">bar_chart</span>
+                            <h3 class="mt-4 text-xl font-bold text-white">How the effects are shared</h3>
+                            <p class="mt-3 leading-relaxed text-slate-400">
+                                A proposal can create winners and losers. Looking at tax revenue, jobs, costs, and neighboring communities gives a fuller picture.
+                            </p>
+                        </article>
+                    </div>
+
+                    <div class="mb-12 flex justify-center">
+                        <AppButton type="button"
+                                   OnButtonClick="OpenEconomicImpactModel"
+                                   Icon="arrow_forward"
+                                   Class="bg-blue-600 hover:bg-blue-500 text-white shadow-lg px-6 py-3 text-base flex-row-reverse">
+                            Explore the Economic Impact Model
+                        </AppButton>
+                    </div>
+        
+                    <div class="flex flex-col gap-12">
+                    <div
+                        class="dark-section-card w-full backdrop-blur-sm relative overflow-hidden">
+                        <div class="text-left relative z-10">
+                            <h4 class="text-white font-bold mb-4 flex items-center gap-2 text-xl">
+                                <span class="material-symbols-outlined text-blue-500 text-3xl">analytics</span>
+                                Evidence: Spectrum Study (2025)
+                            </h4>
+                            <p class="mb-4 text-slate-400">
+                                A critical analysis of the Spectrum Study (2025) provides the most definitive evidence against
+                                the "Economic Engine" narrative. The study's own data admits that for a Northeast Indiana
+                                location, <strong>nearly 95% of the revenue is expected to come from the "core market-catchment
+                                    area" (residents within 90 minutes)</strong>. This statistic mathematically disproves the
+                                "tourism" argument. If 95% of the money originates from local pockets, there is no "New Money"
+                                being introduced; it is purely a <strong>wealth transfer</strong> from local families to a
+                                corporate entity, with the region retaining only a small "convenience fee" in the form of tax
+                                revenue.
+                            </p>
+        
+                            <h4 class="text-white font-bold mt-6 mb-4 flex items-center gap-2 text-xl">
+                                <span class="material-symbols-outlined text-blue-500 text-3xl">block</span>
+                                Market Saturation & Competitive Landscape
+                            </h4>
+                            <p class="mb-4 text-slate-400">
+                                To function as a genuine destination, a venue must offer a unique value proposition that
+                                transcends local alternatives. However, the Northeast Indiana market is already saturated by
+                                established competitors:
+                            </p>
+                            <ul class="list-disc pl-5 space-y-2 mb-6 text-slate-400">
+                                <li><strong>South Bend:</strong> Four Winds</li>
+                                <li><strong>Toledo:</strong> Hollywood Casino</li>
+                                <li><strong>Battle Creek:</strong> FireKeepers</li>
+                                <li><strong>Indianapolis:</strong> Horseshoe (Shelbyville)</li>
+                            </ul>
+                            <p class="font-bold text-white border-l-4 border-blue-500 pl-4 py-1">
+                                Conclusion: Given the proximity of these established gaming centers, a standard regional casino
+                                lacks the requisite differentiation to attract significant external tourism, as potential
+                                visitors are already served by closer facilities.
+                            </p>
+                        </div>
+                    </div>
+        
+                    <!-- Interactive Substitution Visualizer -->
+                    <div
+                        class="dark-section-card w-full backdrop-blur-sm relative overflow-hidden">
+                        <!-- Background accent -->
+                        <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl p-6">
+                        </div>
+        
+                        <div class="text-center mb-10 relative z-10">
+        
+                            <h3 class="text-2xl font-bold text-white flex items-center justify-center gap-3">
+                                <span class="material-symbols-outlined text-blue-500 text-3xl">account_balance_wallet</span>
+                                Household Discretionary Budget: $500/mo
+                            </h3>
+                            <p class="text-slate-400 text-base mt-3 w-full max-w-none sm:max-w-2xl sm:mx-auto">
+                                See how the local economy suffers when spending shifts. The total household budget for
+                                entertainment is fixed.
+                                When a casino enters, it doesn't create new money; it eats into existing categories.
+                            </p>
+                        </div>
+        
+                        <div class="grid md:grid-cols-2 gap-12 items-center relative z-10">
+                            <!-- Before -->
+                            <div class="flex flex-col items-center">
+                                <h4 class="text-white font-bold mb-6 flex items-center gap-2">
+                                    <span class="bg-slate-700 text-slate-200 text-sm px-2 py-1 rounded">Current State</span>
+                                    Before Casino
+                                </h4>
+                                <div class="w-64 h-64 relative">
+                                    <canvas id="chartBefore"></canvas>
+                                </div>
+                                <div class="mt-6 text-center">
+                                    <p class="text-base font-medium text-emerald-400">100% Local Circulation</p>
+                                    <p class="text-sm text-slate-500 mt-1">Money recirculates 5-7 times in the local economy.
+                                    </p>
+                                </div>
+                            </div>
+        
+                            <!-- After -->
+                            <div class="flex flex-col items-center relative">
+                                <h4 class="text-white font-bold mb-6 flex items-center gap-2">
+                                    <span
+                                        class="bg-red-900/30 text-red-400 text-sm px-2 py-1 rounded border border-red-900/50">Future
+                                        State</span>
+                                    After Casino
+                                </h4>
+        
+                                <div class="w-64 h-64 relative">
+                                    <canvas id="chartAfter"></canvas>
+                                </div>
+                                <div class="mt-6 text-center">
+                                    <p class="text-base font-medium text-red-400">25-30% Wealth Extraction</p>
+                                    <p class="text-sm text-slate-500 mt-1">Casino profits are exported to external investors.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+        
+                        <!-- Legend -->
+                        <div
+                            class="mt-10 flex flex-wrap justify-center gap-6 text-sm font-medium text-slate-400 border-t border-slate-700/50 pt-6">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-[#3b82f6]"></div> Retail (Clothes, Hobbies)
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-[#8b5cf6]"></div> Dining & Restaurants
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-[#10b981]"></div> Local Entertainment
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-[#f97316]"></div> Savings
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-[#ef4444]"></div> Casino Loss
+                            </div>
+                        </div>
+                    </div>
+        
+                    <!-- Chart.js and Logic -->
+                    <div class="grid lg:grid-cols-2 gap-8 items-start">
+                        <!-- Left Column: The Data -->
+                        <div>
+                            <!-- Substitution Effect Card -->
+                            <div class="dark-section-card w-full backdrop-blur-sm h-full">
+                                <h3 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-blue-500">sync_problem</span>
+                                    Mechanics of the Substitution Effect
+                                </h3>
+                                <p class="text-slate-400 mb-6 leading-relaxed">
+                                    For a casino to generate net growth, it must function as an "export" industry—bringing
+                                    in
+                                    outside dollars. If it merely recirculates local capital, the net impact is neutral or
+                                    negative.
+                                    <br><br>
+                                    Research by the <strong>Federal Reserve Bank of St. Louis</strong> notes that in
+                                    mid-sized urban
+                                    areas, casinos often correlate with a <em>stagnation or decrease</em> in local retail
+                                    sales. The
+                                    casino acts as a gravitational well, absorbing liquidity that formerly supported small
+                                    businesses.
+                                </p>
+        
+                                <!-- Data Callout -->
+                                <div class="bg-blue-900/20 border-l-4 border-blue-500 p-6 rounded-r-xl mb-8">
+                                    <h4 class="text-lg font-bold text-blue-500 mb-2">"243" Coefficient</h4>
+                                    <p class="text-slate-300 text-base">
+                                        For every <strong>$1,000 increase</strong> in casino revenue, businesses within a
+                                        10-30 mile
+                                        radius experience a <strong>loss of approximately $243</strong> in sales.
+                                    </p>
+                                </div>
+        
+                                <!-- Displacement Table -->
+                                <div class="overflow-x-auto rounded-xl border border-slate-700">
+                                    <table class="w-full text-left text-base text-slate-400">
+                                        <thead class="bg-slate-900 text-slate-300 uppercase font-bold text-sm">
+                                            <tr>
+                                                <th class="px-6 py-4">Metric</th>
+                                                <th class="px-6 py-4">Value</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-700 bg-slate-800">
+                                            <tr>
+                                                <td class="px-6 py-4 font-medium text-white">Projected Casino AGR</td>
+                                                <td class="px-6 py-4 text-emerald-400 font-bold">$204.3M</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="px-6 py-4 font-medium text-white">Displacement Coefficient</td>
+                                                <td class="px-6 py-4 text-orange-400 font-bold">24.3%</td>
+                                            </tr>
+                                            <tr class="bg-red-900/10">
+                                                <td class="px-6 py-4 font-bold text-white">Projected Local Loss</td>
+                                                <td class="px-6 py-4 text-red-500 font-black">($49.6M)</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+        
+                        <!-- Right Column: The Context -->
+                        <div class="space-y-6">
+                            <!-- Factory vs Restaurant -->
+                            <div class="grid sm:grid-cols-2 gap-4">
+                                <div class="dark-section-card border-l-4 border-blue-500 w-full shadow-sm">
+                                    <div class="text-blue-500 font-bold uppercase tracking-widest text-sm mb-2">Fallacy
+                                    </div>
+                                    <h3 class="text-lg font-bold text-white mb-2">"Economic Development"</h3>
+                                    <p class="text-slate-400 text-sm leading-relaxed">
+                                        Proponents claim the casino expands the economic pie, ignoring the reality of
+                                        convenience gaming.
+                                    </p>
+                                </div>
+                                <div class="dark-section-card border-l-4 border-blue-500 w-full shadow-sm">
+                                    <div class="text-blue-500 font-bold uppercase tracking-widest text-sm mb-2">The
+                                        Reality</div>
+                                    <h3 class="text-lg font-bold text-white mb-2">Factory vs. Restaurant</h3>
+                                    <p class="text-slate-400 text-sm leading-relaxed">
+                                        A local casino merely competes for the <strong>existing pool</strong> of
+                                        entertainment dollars like a restaurant.
+                                    </p>
+                                </div>
+                            </div>
+        
+                            <!-- Recession Risk -->
+                            <div class="dark-section-card border-l-4 border-blue-500 w-full shadow-sm">
+                                <h3 class="text-xl font-bold text-white mb-2">Recessionary Vulnerability</h3>
+                                <p class="text-slate-400 text-base mb-4 leading-relaxed">
+                                    During the 2007-2012 Recession, retail sales in casino-hosting economies <strong>grew 3x
+                                        slower</strong> (2.4%) than in non-casino economies (8.6%).
+                                </p>
+                                <p class="text-white italic font-medium text-base">
+                                    "Introducing a casino introduces a structural weakness apparent during recession."
+                                </p>
+                            </div>
+        
+                            <!-- Economic Monoculture -->
+                            <div class="dark-section-card border-l-4 border-blue-500 w-full shadow-sm">
+                                <h3 class="text-xl font-bold text-white mb-2">Economic Monoculture</h3>
+        
+                                <p class="text-slate-400 text-base leading-relaxed">
+                                    The casino acts as an invasive species, displacing diverse local businesses and creating
+                                    a <strong>single point of failure</strong>.
+                                </p>
+                            </div>
+                        </div>
+                        </div>
+        
+                        </div>
+                    </div>
+    </div>
+</section>
+
+@code {
+    private void OpenEconomicImpactModel()
+    {
+        NavigationManager.NavigateTo("/economic-impact/location");
+    }
+}

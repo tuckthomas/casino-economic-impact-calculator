@@ -24,9 +24,7 @@
                         <a class="home-sticky-link text-sm font-semibold text-white/90 hover:text-white transition-colors whitespace-nowrap"
                            href="#proponents-critique"><span class="home-sticky-link-label">Casino Proponents Critique</span></a>
                         <a class="home-sticky-link text-sm font-semibold text-white/90 hover:text-white transition-colors whitespace-nowrap"
-                           href="#economic-analysis"><span class="home-sticky-link-label">Revenue &amp; Impact Model</span></a>
-                        <a class="home-sticky-link text-sm font-semibold text-white/90 hover:text-white transition-colors whitespace-nowrap"
-                           href="#economic-analysis-part-2"><span class="home-sticky-link-label">Scenario Comparison</span></a>
+                           href="/economic-impact/location"><span class="home-sticky-link-label">Economic Impact Model</span></a>
                         <a class="home-sticky-link text-sm font-semibold text-white/90 hover:text-white transition-colors whitespace-nowrap"
                            href="#tribal-analysis"><span class="home-sticky-link-label">Tribal Fact Check</span></a>
                         <a class="home-sticky-link text-sm font-semibold text-white/90 hover:text-white transition-colors whitespace-nowrap"
@@ -63,7 +61,7 @@
     <div class="home-sticky-header-spacer" id="home-sticky-header-spacer" aria-hidden="true"></div>
 
     <ProponentsCritique />
-    <EconomicImpact />
+    <EconomicMyth />
     <TribalAnalysis />
     <CrimeSafety />
     <Footer />
@@ -76,6 +74,7 @@
         if (firstRender)
         {
             await JSRuntime.InvokeVoidAsync("window.HomeHeader.init");
+            try { await JSRuntime.InvokeVoidAsync("window.initSubstitutionCharts"); } catch (Exception e) { Console.WriteLine($"Substitution chart init: {e.Message}"); }
         }
     }
 }

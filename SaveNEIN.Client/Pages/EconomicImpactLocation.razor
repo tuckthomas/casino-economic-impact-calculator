@@ -1,0 +1,421 @@
+@page "/economic-impact/location"
+<PageTitle>Economic Impact Location | Save Northeast Indiana</PageTitle>
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@using SaveNEIN.Shared
+@using System.Text.Json
+
+<style>
+    /* MapLibre GL JS Navigation Controls */
+    .maplibregl-ctrl-group {
+        border-radius: 0.5rem !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        overflow: hidden;
+        background-color: rgba(2, 6, 23, 0.4) !important;
+        backdrop-filter: blur(4px) !important;
+    }
+    .maplibregl-ctrl-group button {
+        background-color: transparent !important;
+        color: white !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        transition: all 0.15s ease !important;
+    }
+    .maplibregl-ctrl-group button:hover {
+        background-color: rgba(15, 23, 42, 0.6) !important;
+    }
+    .maplibregl-ctrl-group button:active {
+        background-color: rgba(15, 23, 42, 0.8) !important;
+        transform: scale(0.95);
+    }
+    .maplibregl-ctrl-group button span {
+        filter: invert(1);
+    }
+    .maplibregl-ctrl-group button:last-child {
+        border-bottom: none !important;
+    }
+    /* Fullscreen and Layer button styles */
+    #fs-toggle-btn, #map-layers-button {
+        transition: all 0.15s ease !important;
+    }
+    #fs-toggle-btn:hover, #map-layers-button:hover {
+        background-color: rgba(59, 130, 246, 0.4) !important;
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important;
+        border-color: rgba(59, 130, 246, 0.5) !important;
+    }
+    #fs-toggle-btn:active, #map-layers-button:active {
+        background-color: rgba(59, 130, 246, 0.6) !important;
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+        transform: scale(0.92);
+    }
+    #impact-visualizer button,
+    #impact-visualizer .cursor-pointer,
+    #impact-visualizer [onclick] {
+        user-select: none !important;
+        -webkit-user-select: none !important;
+    }
+</style>
+
+<section class="relative overflow-hidden bg-[#0f172a]" id="economic-analysis" aria-labelledby="economic-analysis-title">
+    <div class="economic-analysis-body mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
+        <div class="section-heading-block mb-12 text-center max-w-4xl mx-auto" id="economic-analysis-header">
+            <span class="text-orange-600 font-bold tracking-wider uppercase text-sm">Economic Analysis</span>
+            <h1 id="economic-analysis-title" class="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">
+                ECONOMIC <span class="text-orange-600">IMPACT</span> MODEL
+            </h1>
+            <p class="section-heading-description mt-4 text-xl italic text-slate-400 font-medium w-full max-w-none md:max-w-2xl md:mx-auto">
+                Choose a location and define the impact zones used for the detailed economic analysis.
+            </p>
+        </div>
+        <div id="impact-visualizer" class="mb-12">
+    @if (!string.IsNullOrWhiteSpace(_saveError))
+    {
+        <div class="mb-6 rounded-lg border border-red-800 bg-red-900/30 p-4 text-red-200" role="alert">@_saveError</div>
+    }
+    <EditForm id="economic-impact-location-form" Model="@_locationForm" OnValidSubmit="HandleLocationFormSubmit">
+    <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 shadow-sm">
+        <h3 class="text-xl font-bold text-slate-300 dark:text-white mb-2">
+            <span class="material-symbols-outlined text-blue-500">map</span>
+            Casino Impact Zone Visualizer
+        </h3>
+        <p class="text-slate-400 leading-relaxed mb-8">
+            This interactive tool visualizes the geographic reach of gambling-related risks. You can drag the
+            casino marker to any Indiana location on the map to see how the
+            proximity-based risk zones shift. Moving the pin automatically recalculates the population
+            distribution across the three impact tiers (High, Elevated, and Baseline Risk) shown in the
+            cards below, which in turn updates the Net Impact Analysis.
+        </p>
+        <p class="text-slate-400 dark:text-slate-400 leading-relaxed border-t border-slate-700 pt-4 mb-8">
+            Interact directly with the map to select the desired state and county, then move the marker to test alternative locations.
+        </p>
+
+        <!-- Map Container: full-width bleed on mobile (negates card p-8 only), contained on sm+ -->
+        <div class="-mx-8 sm:mx-0 relative w-[calc(100%+4rem)] sm:w-full h-[500px] sm:h-[600px] mb-6 rounded-2xl overflow-hidden group border border-slate-700 shadow-2xl">
+            <!-- Contextual Back Buttons (hidden until state/county is selected) -->
+            <!-- Back to National: shown once a state is selected (step >= 2) -->
+            <button id="map-back-national-btn" type="button"
+                onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(1)"
+                class="hidden absolute top-3 left-[52px] z-[90] bg-slate-950/40 hover:bg-slate-900/60 border border-white/5 rounded-lg pl-2 pr-3 h-[30px] shadow-lg backdrop-blur-sm flex items-center gap-1.5 text-sm text-white transition-colors pointer-events-auto">
+                <span class="material-symbols-outlined text-[16px] text-white">arrow_back</span>
+                <span class="font-medium text-sm">National</span>
+            </button>
+            <!-- Back to State: shown once a county is selected (step 3) -->
+            <button id="map-back-state-btn" type="button"
+                onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.navigateToStep(2)"
+                class="hidden absolute top-3 left-[52px] z-[90] bg-slate-950/40 hover:bg-slate-900/60 border border-white/5 rounded-lg pl-2 pr-3 h-[30px] shadow-lg backdrop-blur-sm flex items-center gap-1.5 text-sm text-white transition-colors pointer-events-auto">
+                <span class="material-symbols-outlined text-[16px] text-white">arrow_back</span>
+                <span id="map-back-state-label" class="font-medium text-sm">State</span>
+            </button>
+
+            <!-- Interactive In-Map Step Guidance Overlay -->
+            <div id="map-step-guidance" class="hidden absolute bottom-5 left-1/2 -translate-x-1/2 z-[85] w-[94%] sm:w-auto max-w-lg transition-all duration-500 transform opacity-0 translate-y-2 pointer-events-none">
+                <div class="bg-slate-950/40 backdrop-blur-sm border border-white/5 rounded-2xl p-4 shadow-2xl flex items-start gap-3.5 text-left relative overflow-hidden pointer-events-auto">
+                    <!-- Accent Glow Line -->
+                    <div id="guidance-accent-line" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 transition-all duration-500"></div>
+
+                    <!-- Step Icon -->
+                    <div id="guidance-icon-container" class="mt-0.5 shrink-0 w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400 shadow-inner">
+                        <span id="guidance-icon" class="material-symbols-outlined text-[22px]">touch_app</span>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-1 min-w-0 pr-6">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span id="guidance-badge" class="px-2.5 py-0.5 rounded-full text-sm font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30">Step 1 of 3</span>
+                            <span id="guidance-title" class="font-bold text-white text-sm">Select a State</span>
+                        </div>
+                        <p id="guidance-text" class="text-sm text-slate-300 leading-snug">
+                            Click any state on the map (such as Indiana) to zoom in and load its county boundaries.
+                        </p>
+                    </div>
+
+                    <!-- Close / Dismiss Button -->
+                    <button id="guidance-dismiss-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.dismissGuidance()" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors pointer-events-auto" aria-label="Dismiss guide">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+        <AppTooltip TargetId="guidance-dismiss-btn" Text="Dismiss hint" />
+                </div>
+            </div>
+
+            <!-- Compact Re-open Guide Pill -->
+            <button id="guidance-reopen-btn" type="button" onclick="window.MapLibreImpactMap && window.MapLibreImpactMap.showGuidance()" class="hidden absolute bottom-[10px] left-[10px] z-[85] bg-slate-950/40 hover:bg-slate-900/60 border border-white/5 rounded-lg h-[30px] px-3 shadow-lg backdrop-blur-sm flex items-center gap-2 text-sm text-white transition-colors pointer-events-auto">
+                <span class="material-symbols-outlined text-white text-[18px]">help</span>
+                <span class="font-medium">Map Guide</span>
+            </button>
+
+            <div id="impact-map" class="w-full h-full z-0 transition-all duration-500"></div>
+        </div>
+
+        <!-- Model Preset Inputs and Stats -->
+            <div class="mt-10">
+                 <PresetInput Id="rate" Label="Baseline Problem Gambling Prevalence Rate" Value="2.3"
+                             MinValue="0" MaxValue="10" Step="0.1"
+                             InputType="Percent" DecimalPlaces="1"
+                             MajorTickInterval="2"
+                             Tooltip="Pre-existing percentage of adults meeting clinical or sub-clinical diagnostic criteria for problem gambling prior to casino introduction."
+                             Description="Default 2.3% is the official baseline clinical diagnosis rate for adult Hoosiers established by the Indiana Family and Social Services Administration (FSSA) / Division of Mental Health and Addiction (DMHA) statewide survey, capturing pre-construction problem gambling before new facility exposure."
+                             Markers='@(new List<SliderMarker> {
+                                 new() { Label="Dx (2.3%)", Value=2.3, TooltipDescription="Default: Official Indiana FSSA/DMHA baseline rate for adult Hoosiers meeting clinical criteria for Gambling Disorder (2023)." },
+                                 new() { Label="Problem (3.0%)", Value=3.0, TooltipDescription="Statewide survey rate of Hoosiers reporting self-identified problems with gambling." },
+                                 new() { Label="At-Risk (5.5%)", Value=5.5, TooltipDescription="Broader combined at-risk and problem gambling prevalence (National Council on Problem Gambling benchmark)." }
+                             })' />
+            </div>
+            <div class="mt-6">
+                 <PresetInput Id="baseline-increase" Label="Expected Baseline Increase (Catchment Area)" Value="0.5"
+                             MinValue="0" MaxValue="3" Step="0.1"
+                             InputType="Percent" DecimalPlaces="1"
+                             MajorTickInterval="0.5"
+                             Tooltip="Empirical background prevalence increase across the regional drive-time footprint, capturing market-wide lift beyond localized proximity tiers."
+                             Description="Default 0.5% reflects the conservative lower-quartile prevalence increase (+0.4% to +0.9%) documented in empirical longitudinal studies (NORC/NGISC, Volberg SEIGMA) when introducing a commercial casino into a previously unserved regional market."
+                             Markers='@(new List<SliderMarker> {
+                                 new() { Label="None (0%)", Value=0, TooltipDescription="Zero regional background increase; models proximity premiums exclusively within the localized drive-time tiers." },
+                                 new() { Label="Low (0.5%)", Value=0.5, TooltipDescription="Default: Conservative empirical baseline lift (+0.5%) across the full regional drive-time catchment." },
+                                 new() { Label="High (1.0%)", Value=1.0, TooltipDescription="Higher baseline lift (+1.0%) modeling aggressive market saturation and digital gaming crossover." }
+                             })' />
+            </div>
+            <div class="mt-6">
+                 <PresetInput Id="adult-projection-year" Label="Adult Population Projection Year" Value="2020"
+                             MinValue="2020" MaxValue="2040" Step="1"
+                             InputType="Number" DecimalPlaces="0"
+                             MajorTickInterval="5"
+                             Tooltip="Benchmark census year for block-level adult population counts. 2020 represents the official Decennial Census baseline."
+                             Description="Default 2020 applies the audited U.S. Decennial Census block-level headcount directly. Selecting a future target year (such as 2030) compounds population growth forward using the annual rate below."
+                             Markers='@(new List<SliderMarker> {
+                                 new() { Label="2020 Base", Value=2020, TooltipDescription="Default: Audited 2020 U.S. Decennial Census block-level population baseline (no forward compounding)." },
+                                 new() { Label="2030", Value=2030, TooltipDescription="Project block-level adult demographics forward to 2030 using the annual growth rate below." }
+                             })' />
+            </div>
+            <div class="mt-6">
+                 <PresetInput Id="adult-projection-growth" Label="Annual Adult Population Growth Rate" Value="0"
+                             MinValue="-2" MaxValue="2" Step="0.1"
+                             InputType="Percent" DecimalPlaces="1"
+                             MajorTickInterval="1"
+                             Tooltip="Compound annual growth rate applied uniformly to census block adult populations between 2020 and the selected projection year."
+                             Description="Default 0.0% maintains the verified 2020 Decennial Census headcount baseline, avoiding speculative demographic inflation. Positive rates model county-level net migration and expansion."
+                             Markers='@(new List<SliderMarker> {
+                                 new() { Label="Flat (0.0%)", Value=0, TooltipDescription="Default: Unadjusted 2020 Decennial Census baseline with 0.0% assumed annual expansion." },
+                                 new() { Label="+0.5%", Value=0.5, TooltipDescription="Moderate annual adult population growth (+0.5%/yr)." },
+                                 new() { Label="+1.0%", Value=1.0, TooltipDescription="Higher annual adult population growth (+1.0%/yr)." }
+                             })' />
+            </div>
+            <!-- END MODEL PRESET INPUT SECTION -->
+
+            <!-- Impact Stats Grid -->
+            <!-- ... (Keeping existing Stats Grid HTML as it relies on IDs populated by JS) ... -->
+            <!-- I am keeping the stats grid from lines ~370-550 of original file. -->
+            <!-- Since I am writing the WHOLE file, I must include it. -->
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-4">
+                <div class="p-4 bg-blue-900/20 rounded-xl border border-blue-800 relative overflow-hidden group flex flex-col">
+                    <div class="absolute top-0 right-0 bg-blue-500/40 backdrop-blur-sm text-white text-sm px-2 py-0.5 rounded-bl-lg font-bold">2.0x Risk</div>
+                    <div class="flex-1">
+                        <div class="text-sm font-bold text-blue-500 uppercase tracking-wider mb-2">0-15 Minutes (High Risk)</div>
+                        <div class="text-lg font-black text-white mb-1" id="val-t1">-</div>
+                        <div class="text-sm text-white mb-2">Adult Population (18+) - State Total</div>
+                        <div class="text-sm text-white leading-tight mb-2">
+                            <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="val-t1-county">-</span></div>
+                            <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="val-t1-other">-</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-black/20 rounded-lg p-2 border border-blue-900/30">
+                        <div class="flex justify-between items-center text-sm mb-1"><span class="text-white">Rate (Post):</span><span class="font-mono font-bold text-white" id="rate-t1">-</span></div>
+                        <div class="flex justify-between items-center border-t border-blue-800 pt-1"><span class="text-white font-bold uppercase text-sm">Total Estimated</span><span class="font-mono font-black text-white text-sm" id="victims-t1">-</span></div>
+                        <div class="mt-1 text-sm text-white leading-tight mb-2">
+                            <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="victims-t1-county">-</span></div>
+                            <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="victims-t1-other">-</span></div>
+                        </div>
+                        <div class="flex justify-between items-center border-t border-blue-800 pt-1"><span class="text-white font-bold uppercase text-sm">Net New (Attr.)</span><span class="font-mono font-black text-white text-sm" id="net-new-t1">-</span></div>
+                        <div class="mt-1 text-sm text-white leading-tight">
+                            <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="net-new-t1-county">-</span></div>
+                            <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="net-new-t1-other">-</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 bg-red-900/20 rounded-xl border border-red-800 relative overflow-hidden group flex flex-col">
+                    <div class="absolute top-0 right-0 bg-red-500/40 backdrop-blur-sm text-white text-sm px-2 py-0.5 rounded-bl-lg font-bold">1.5x Risk</div>
+                    <div class="flex-1">
+                        <div class="text-sm font-bold text-red-500 uppercase tracking-wider mb-2">15-30 Minutes (Elevated)</div>
+                        <div class="text-lg font-black text-white mb-1" id="val-t2">-</div>
+                        <div class="text-sm text-white mb-2">Adult Population (18+) - State Total</div>
+                        <div class="text-sm text-white leading-tight mb-2">
+                            <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="val-t2-county">-</span></div>
+                            <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="val-t2-other">-</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-black/20 rounded-lg p-2 border border-red-900/30">
+                        <div class="flex justify-between items-center text-sm mb-1"><span class="text-white">Rate (Post):</span><span class="font-mono font-bold text-white" id="rate-t2">-</span></div>
+                        <div class="flex justify-between items-center border-t border-red-800 pt-1"><span class="text-white font-bold uppercase text-sm">Total Estimated</span><span class="font-mono font-black text-white text-sm" id="victims-t2">-</span></div>
+                        <div class="mt-1 text-sm text-white leading-tight mb-2">
+                            <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="victims-t2-county">-</span></div>
+                            <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="victims-t2-other">-</span></div>
+                        </div>
+                        <div class="flex justify-between items-center border-t border-red-800 pt-1"><span class="text-white font-bold uppercase text-sm">Net New (Attr.)</span><span class="font-mono font-black text-white text-sm" id="net-new-t2">-</span></div>
+                        <div class="mt-1 text-sm text-white leading-tight">
+                            <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="net-new-t2-county">-</span></div>
+                            <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="net-new-t2-other">-</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 bg-orange-900/20 rounded-xl border border-orange-800 relative overflow-hidden group flex flex-col">
+                    <div class="absolute top-0 right-0 bg-orange-500/40 backdrop-blur-sm text-white text-sm px-2 py-0.5 rounded-bl-lg font-bold">1.0x Risk</div>
+                    <div class="flex-1">
+                        <div class="text-sm font-bold text-orange-500 uppercase tracking-wider mb-2">30-60 Minutes (Baseline)</div>
+                        <div class="text-lg font-black text-white mb-1" id="val-t3">-</div>
+                        <div class="text-sm text-white mb-2" id="label-t3">Adult Population (18+) - State Total</div>
+                        <div class="text-sm text-white leading-tight mb-2">
+                            <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="val-t3-county">-</span></div>
+                            <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="val-t3-other">-</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-black/20 rounded-lg p-2 border border-orange-800">
+                        <div class="flex justify-between items-center text-sm mb-1"><span class="text-white">Rate (Post):</span><span class="font-mono font-bold text-white" id="rate-t3">-</span></div>
+                        <div class="flex justify-between items-center border-t border-orange-600 pt-1"><span class="text-white font-bold uppercase text-sm">Total Estimated</span><span class="font-mono font-black text-white text-sm" id="victims-t3">-</span></div>
+                        <div class="mt-1 text-sm text-white leading-tight mb-2">
+                            <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="victims-t3-county">-</span></div>
+                            <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="victims-t3-other">-</span></div>
+                        </div>
+                        <div class="flex justify-between items-center border-t border-orange-600 pt-1"><span class="text-white font-bold uppercase text-sm">Net New (Attr.)</span><span class="font-mono font-black text-white text-sm" id="net-new-t3">-</span></div>
+                        <div class="mt-1 text-sm text-white leading-tight">
+                            <div class="flex justify-between gap-2"><span>County</span><span class="font-mono text-white" id="net-new-t3-county">-</span></div>
+                            <div class="flex justify-between gap-2"><span>Other Counties</span><span class="font-mono text-white" id="net-new-t3-other">-</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Impact Summary -->
+            <div class="bg-slate-900/50 text-white rounded-xl p-4 shadow-lg border border-slate-600 flex flex-col gap-0 hidden">
+                <!-- 1. County Population -->
+                <div class="flex flex-col sm:flex-row items-center justify-between py-1">
+                    <div class="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div class="p-2 bg-blue-500/20 rounded-full text-blue-400"><span class="material-symbols-outlined">location_city</span></div>
+                        <div class="text-left"><div class="text-sm text-slate-400 uppercase font-bold tracking-widest">Total County Population*</div><div class="text-sm text-slate-500">(All Ages)</div></div>
+                    </div>
+                    <div class="text-xl font-mono text-slate-200 text-right" id="disp-pop-impact-zones">-</div>
+                </div>
+                <!-- 1b. County Adult Population -->
+                <div class="flex flex-col sm:flex-row items-center justify-between py-1 border-t border-slate-800/50 mt-1 pt-2">
+                    <div class="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div class="p-2 bg-indigo-500/20 rounded-full text-indigo-400"><span class="material-symbols-outlined">person</span></div>
+                        <div class="text-left"><div class="text-sm text-slate-400 uppercase font-bold tracking-widest">Adult Population</div><div class="text-sm text-slate-500">(18+ Only)</div></div>
+                    </div>
+                    <div class="text-xl font-mono text-indigo-300 text-right" id="disp-pop-adults">-</div>
+                </div>
+                <div class="h-px bg-slate-700 my-3"></div>
+                <!-- 2. Total Prevalence Rate -->
+                <div class="flex flex-col sm:flex-row items-center justify-between py-1">
+                    <div class="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div class="p-2 bg-orange-500/20 rounded-full text-orange-400"><span class="material-symbols-outlined">trending_up</span></div>
+                        <div class="text-left"><div class="text-sm text-slate-400 uppercase font-bold tracking-widest">Total Prevalence Rate</div><div class="text-sm text-slate-500">Adult Population (18+)</div></div>
+                    </div>
+                    <div class="text-xl font-mono text-orange-400 text-right" id="disp-rate-adult">-</div>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-between py-1 border-t border-slate-800/50 mt-1 pt-2">
+                    <div class="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div class="p-2 bg-orange-500/10 rounded-full text-orange-400/70"><span class="material-symbols-outlined text-[20px]">trending_flat</span></div>
+                        <div class="text-left"><div class="text-sm text-slate-500 uppercase font-bold tracking-widest">Total Prevalence Rate</div><div class="text-sm text-slate-600">Total Population (All Ages)</div></div>
+                    </div>
+                    <div class="text-xl font-mono text-orange-400/70 text-right" id="disp-rate-total">-</div>
+                </div>
+                <div class="h-px bg-slate-700 my-3"></div>
+                <!-- 3. Total Problem Gamblers -->
+                <div class="flex flex-col sm:flex-row items-center justify-between">
+                    <div class="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div class="p-2 bg-red-500/20 rounded-full text-red-400"><span class="material-symbols-outlined">groups</span></div>
+                        <div class="text-left"><div class="text-sm text-slate-400 uppercase font-bold tracking-widest">Net New Problem Gamblers (Attributable)*</div><div class="text-sm text-slate-500">Within the 60-minute drive-time footprint (county residents)</div></div>
+                    </div>
+                    <div class="text-right"><div class="text-2xl font-black font-mono text-white leading-none mb-1" id="total-gamblers">-</div></div>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-between py-1 border-t border-slate-800/50 mt-1 pt-2">
+                    <div class="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div class="p-2 bg-red-500/10 rounded-full text-red-400/80"><span class="material-symbols-outlined text-[20px]">person_add</span></div>
+                        <div class="text-left"><div class="text-sm text-slate-400 uppercase font-bold tracking-widest">Regional Net New Problem Gamblers (Attr.)*</div><div class="text-sm text-slate-500">Within the 60-minute drive-time footprint (outside county)</div></div>
+                    </div>
+                    <div class="text-xl font-mono text-red-300/90 text-right" id="disp-victims-regional-other">-</div>
+                </div>
+                <div class="h-px bg-slate-700 my-3"></div>
+                <!-- Regional Summary -->
+                <div class="flex flex-col sm:flex-row items-center justify-between py-1">
+                    <div class="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div class="p-2 bg-slate-500/20 rounded-full text-slate-300"><span class="material-symbols-outlined">public</span></div>
+                        <div class="text-left"><div class="text-sm text-slate-400 uppercase font-bold tracking-widest">Regional Adults (Within 60 Minutes)</div><div class="text-sm text-slate-500">Same-state spillover</div></div>
+                    </div>
+                    <div class="text-xl font-mono text-slate-200 text-right" id="disp-pop-regional-50">-</div>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-between py-1 border-t border-slate-800/50 mt-1 pt-2">
+                    <div class="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div class="p-2 bg-red-500/10 rounded-full text-red-300"><span class="material-symbols-outlined">group_add</span></div>
+                        <div class="text-left"><div class="text-sm text-slate-400 uppercase font-bold tracking-widest">Regional Net New Problem Gamblers (Attr.)*</div><div class="text-sm text-slate-500">Within the 60-minute drive-time footprint (same state)</div></div>
+                    </div>
+                    <div class="text-xl font-mono text-red-200 text-right" id="disp-victims-regional-50">-</div>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-between py-1 border-t border-slate-800/50 mt-1 pt-2">
+                    <div class="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div class="p-2 bg-blue-500/10 rounded-full text-blue-300"><span class="material-symbols-outlined">map</span></div>
+                        <div class="text-left"><div class="text-sm text-slate-400 uppercase font-bold tracking-widest">Impacted Counties*</div><div class="text-sm text-slate-500">Within the 60-minute drive-time footprint (same state)</div></div>
+                    </div>
+                    <div class="text-right"><div class="text-xl font-mono text-blue-200 leading-none" id="disp-regional-counties">-</div><div class="text-sm font-mono text-slate-500 mt-1" id="disp-regional-counties-20">-</div></div>
+                </div>
+            </div>
+            <p class="mt-3 text-sm text-slate-400 italic leading-relaxed hidden">* County population totals reflect the full assessed county. Impact zones use 15-, 30-, and 60-minute drive-time contours for the subject county and same-state spillover; out-of-state impacts are excluded.</p>
+        <div class="mt-8 flex justify-end">
+            <AppButton type="button"
+                       OnButtonClick="@(_ => SaveAndContinueAsync())"
+                       Icon="arrow_forward"
+                       Disabled="@_saving"
+                       Class="bg-orange-600 hover:bg-orange-500 text-white shadow-lg px-6 py-3 text-base flex-row-reverse">
+                @(_saving ? "Saving…" : "Continue")
+            </AppButton>
+        </div>
+        </div>
+    </EditForm>
+        </div>
+        </div>
+</section>
+
+@code {
+    private readonly LocationFormModel _locationForm = new();
+
+    private Task HandleLocationFormSubmit() => Task.CompletedTask;
+
+    private bool _saving;
+    private string? _saveError;
+
+    private sealed class LocationFormModel
+    {
+    }
+
+    private async Task SaveAndContinueAsync()
+    {
+        _saving = true;
+        _saveError = null;
+        try
+        {
+            var snapshot = await JSRuntime.InvokeAsync<JsonElement>("window.MapLibreImpactMap.getScenarioSnapshot");
+            using var response = await Http.PostAsJsonAsync("api/economic-scenarios", snapshot);
+            response.EnsureSuccessStatusCode();
+            var saved = await response.Content.ReadFromJsonAsync<SavedScenarioResponse>()
+                        ?? throw new InvalidOperationException("The server did not return a scenario token.");
+            NavigationManager.NavigateTo($"/economic-impact/variables?scenario={saved.Token}");
+        }
+        catch (Exception exception)
+        {
+            _saveError = exception.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private sealed record SavedScenarioResponse(string Token, int ExpiresInSeconds);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("window.MapLibreImpactMap.init", "impact-map");
+        }
+    }
+}

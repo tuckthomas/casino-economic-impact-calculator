@@ -204,6 +204,34 @@
     <script src="js/components/slider-input-logic.js" asp-append-version="true"></script>
     <script src="js/components/home-header.js" asp-append-version="true"></script>
 
+    <script src="js/lib/maplibre-gl.js" asp-append-version="true"></script>
+    <script src="js/lib/pmtiles.js" asp-append-version="true"></script>
+    <script src="js/lib/turf.min.js" asp-append-version="true"></script>
+    <script src="js/lib/chart.js" asp-append-version="true"></script>
+    <script src="js/lib/terra-draw.umd.js" asp-append-version="true"></script>
+    <link rel="stylesheet" href="css/maplibre-gl.css" asp-append-version="true" />
+    <script src="js/components/maplibre-map.js" asp-append-version="true"></script>
+    <script src="js/components/charts.js" asp-append-version="true"></script>
+    <script src="js/economics/calculator.js" asp-append-version="true"></script>
+    <script src="js/economics/substitution.js" asp-append-version="true"></script>
+
+    <script>
+        window.ensureMapLibreImpactMap = function () {
+            if (window.MapLibreImpactMap) return Promise.resolve(true);
+            if (window.__mapLibreImpactMapLoad) return window.__mapLibreImpactMapLoad;
+
+            window.__mapLibreImpactMapLoad = new Promise(function (resolve) {
+                var script = document.createElement('script');
+                script.src = '/js/components/maplibre-map.js';
+                script.onload = function () { resolve(!!window.MapLibreImpactMap); };
+                script.onerror = function () { resolve(false); };
+                document.head.appendChild(script);
+            });
+
+            return window.__mapLibreImpactMapLoad;
+        };
+    </script>
+
     @* Start Blazor only after every JS interop module is available. Version every boot resource
        with the compiled client MVID so a deployment cannot reuse an older boot manifest. *@
     <script src="_framework/blazor.webassembly.js" asp-append-version="true" autostart="false"></script>

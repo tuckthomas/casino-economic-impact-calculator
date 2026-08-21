@@ -133,6 +133,7 @@
     <!-- Fonts (Local) -->
     <link href="lib/public-sans/index.css" rel="stylesheet" />
     <link href="lib/material-symbols-outlined/index.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/maplibre-gl.css" />
 
     <!-- Custom Styles -->
     <link href="css/app.css?v=20260808-hero-fix-2" rel="stylesheet" />
@@ -154,12 +155,19 @@
     </div>
 
     <!-- Report-viewer libraries are loaded after first paint. -->
+    <script src="js/lib/maplibre-gl.js"></script>
+    <script src="js/lib/pmtiles.js"></script>
+    <script src="js/lib/turf.min.js"></script>
+    <script src="js/lib/chart.js"></script>
+    <script src="js/lib/terra-draw.umd.js"></script>
     <script src="js/lib/pdf.min.js"></script>
     <script src="js/lib/page-flip.browser.js"></script>
 
     <!-- Custom Modules -->
     <script src="js/components/slot-machine.js"></script>
     <script src="js/components/adaptive-toast.js"></script>
+    <script src="js/components/maplibre-map.js"></script>
+    <script src="js/pdf-helper.js"></script>
     <script src="js/components/legislators.js"></script>
     <script src="js/components/image-modal.js"></script>
     <script src="js/components/flipbook.js"></script>
@@ -168,6 +176,28 @@
     <script src="js/components/tooltip-portal.js"></script>
     <script src="js/components/slider-input-logic.js"></script>
     <script src="js/components/home-header.js"></script>
+    <script src="js/components/charts.js"></script>
+    <script src="js/economics/calculator.js"></script>
+    <script src="js/economics/substitution.js"></script>
+
+    <script>
+        // Route navigation can occur after the initial document shell has loaded.
+        // Keep the map module available before Blazor invokes it through JS interop.
+        window.ensureMapLibreImpactMap = function () {
+            if (window.MapLibreImpactMap) return Promise.resolve(true);
+            if (window.__mapLibreImpactMapLoad) return window.__mapLibreImpactMapLoad;
+
+            window.__mapLibreImpactMapLoad = new Promise(function (resolve) {
+                var script = document.createElement('script');
+                script.src = '/js/components/maplibre-map.js?v=20260821-location-map';
+                script.onload = function () { resolve(!!window.MapLibreImpactMap); };
+                script.onerror = function () { resolve(false); };
+                document.head.appendChild(script);
+            });
+
+            return window.__mapLibreImpactMapLoad;
+        };
+    </script>
 
     <!-- Start Blazor only after every JS interop module is available. -->
     <script src="_framework/blazor.webassembly.js"></script>

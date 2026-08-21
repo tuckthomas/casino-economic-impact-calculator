@@ -5,6 +5,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Services;
+using SaveNEIN.Server.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace SaveNEIN.Server.Controllers
 {
@@ -15,13 +17,22 @@ namespace SaveNEIN.Server.Controllers
         private readonly AppDbContext _db;
         private readonly TigerSeeder _seeder;
         private readonly IMemoryCache _cache;
+        private readonly TaxAllocationOptions _taxAllocationOptions;
 
-        public CensusController(AppDbContext db, TigerSeeder seeder, IMemoryCache cache)
+        public CensusController(AppDbContext db, TigerSeeder seeder, IMemoryCache cache, IOptions<TaxAllocationOptions> taxAllocationOptions)
         {
             _db = db;
             _seeder = seeder;
             _cache = cache;
+            _taxAllocationOptions = taxAllocationOptions.Value;
         }
+
+        [HttpGet("tax-allocation-scenarios")]
+        public IActionResult GetTaxAllocationScenarios() => Ok(new
+        {
+            defaultScenarioId = _taxAllocationOptions.DefaultScenarioId,
+            scenarios = _taxAllocationOptions.Scenarios
+        });
 
         [HttpGet("status")]
         public async Task<IActionResult> GetStatus()
