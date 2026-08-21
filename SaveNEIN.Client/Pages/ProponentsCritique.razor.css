@@ -31,13 +31,14 @@
 
 @media (max-width: 767px) {
     .fact-check-timeline {
-        padding-top: 0.5rem;
+        box-sizing: border-box;
+        padding: 0.5rem 0.75rem 0;
     }
 
     .fact-check-timeline::before {
         top: 2rem;
         bottom: 2rem;
-        left: 2.125rem;
+        left: 2.875rem;
         transform: none;
         width: 0.15rem;
     }
