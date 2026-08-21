@@ -1,5 +1,5 @@
 .fact-check-gauge {
-    --gauge-size: 5.5rem;
+    --gauge-size: 7.25rem;
     --needle-angle: -90deg;
     --verdict-color: #94a3b8;
     --verdict-glow: rgba(148, 163, 184, 0.35);
@@ -55,8 +55,8 @@
     position: absolute;
     left: 15%;
     right: 15%;
-    bottom: 9%;
-    height: 27%;
+    bottom: 8%;
+    height: 31%;
     border-radius: 0 0 9999px 9999px;
     background: linear-gradient(180deg, #12213a 0%, #081225 100%);
     border-top: 1px solid rgba(148, 163, 184, 0.55);
@@ -108,29 +108,54 @@
     box-shadow: 0 0.16rem 0.38rem rgba(2, 6, 23, 0.48);
 }
 
-.fact-check-gauge__lamp {
+.fact-check-gauge__label {
     position: absolute;
     z-index: 7;
     left: 50%;
-    bottom: 5%;
-    width: 16%;
-    aspect-ratio: 1;
+    top: 61%;
+    bottom: auto;
+    display: flex;
+    height: 31%;
+    width: 80%;
     transform: translateX(-50%);
-    border-radius: 9999px;
-    background: radial-gradient(circle at 40% 35%, #ffffff 0 8%, var(--verdict-color) 34% 72%, #0f172a 78% 100%);
-    border: 0.08rem solid #e2e8f0;
-    box-shadow: 0 0 0.55rem var(--verdict-glow);
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 0.62rem;
+    font-weight: 1000;
+    line-height: 1;
+    letter-spacing: 0.025em;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(2, 6, 23, 0.9);
+    white-space: nowrap;
+}
+
+.fact-check-gauge__label.is-negative {
+    color: #ffffff;
+    -webkit-text-stroke: 0;
+    text-shadow:
+        0 0 2px rgba(220, 38, 38, 0.95),
+        0 0 6px rgba(220, 38, 38, 0.72),
+        0 0 11px rgba(220, 38, 38, 0.42);
+}
+
+.fact-check-gauge--large .fact-check-gauge__label {
+    font-size: 0.8rem;
 }
 
 @media (max-width: 767px) {
     .fact-check-gauge--timeline {
-        --gauge-size: 3.35rem;
+        --gauge-size: 5.25rem;
         padding: 0.2rem;
         box-shadow:
             0 0 0 0.12rem #0f172a,
             0 0 0 0.2rem rgba(220, 38, 38, 0.72),
             0 0.35rem 0.9rem rgba(2, 6, 23, 0.28),
             0 0 0.7rem var(--verdict-glow);
+    }
+
+    .fact-check-gauge--timeline .fact-check-gauge__label {
+        font-size: 0.46rem;
     }
 }
 

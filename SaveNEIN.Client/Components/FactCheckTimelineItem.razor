@@ -8,7 +8,6 @@
     <article class="fact-check-entry__card" aria-labelledby="fact-check-title-@Claim.Id">
         <div class="fact-check-entry__eyebrow-row">
             <span class="fact-check-entry__category">@Claim.Category</span>
-            <span class="fact-check-entry__captured">Captured @Claim.ClaimCapturedDate</span>
         </div>
 
         <p class="fact-check-entry__claimant">@(Claim.IsDirectQuote ? $"{Claim.Claimant} claim" : $"{Claim.Claimant} framing")</p>
@@ -24,14 +23,6 @@
             }
         </h4>
 
-        <div class="fact-check-entry__verdict-row">
-            <span class="fact-check-entry__verdict @VerdictClass">@VerdictLabel</span>
-            @foreach (var tag in Claim.IssueTags)
-            {
-                <span class="fact-check-entry__tag">@tag</span>
-            }
-        </div>
-
         <div class="fact-check-entry__evidence-summary">
             <p class="fact-check-entry__evidence-label">The evidence</p>
             <p>@Claim.ShortFinding</p>
@@ -40,7 +31,10 @@
         <details class="fact-check-entry__details">
             <summary>View evidence &amp; sources</summary>
             <div class="fact-check-entry__details-body">
-                <p>@Claim.DetailedExplanation</p>
+                @foreach (var paragraph in DetailParagraphs)
+                {
+                    <p>@paragraph</p>
+                }
 
                 @if (Claim.KeyFacts.Count > 0)
                 {
@@ -87,14 +81,6 @@
                     </div>
                 }
 
-                @if (!string.IsNullOrWhiteSpace(Claim.CorrectedClaim))
-                {
-                    <div class="fact-check-entry__corrected">
-                        <p class="fact-check-entry__detail-heading">More accurate wording</p>
-                        <p>@Claim.CorrectedClaim</p>
-                    </div>
-                }
-
                 <div class="fact-check-entry__sources">
                     <p class="fact-check-entry__detail-heading">Sources</p>
                     <ul>
@@ -133,21 +119,8 @@
     [Parameter]
     public bool IsRight { get; set; }
 
-    private string VerdictLabel => Claim.Verdict switch
-    {
-        FactCheckVerdict.True => "TRUE",
-        FactCheckVerdict.MostlyTrue => "MOSTLY TRUE",
-        FactCheckVerdict.MostlyFalse => "MOSTLY FALSE",
-        FactCheckVerdict.False => "FALSE",
-        _ => "UNRATED"
-    };
+    private IEnumerable<string> DetailParagraphs => Claim.DetailedExplanation.Split(
+        new[] { "\r\n\r\n", "\n\n" },
+        StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-    private string VerdictClass => Claim.Verdict switch
-    {
-        FactCheckVerdict.True => "is-true",
-        FactCheckVerdict.MostlyTrue => "is-mostly-true",
-        FactCheckVerdict.MostlyFalse => "is-mostly-false",
-        FactCheckVerdict.False => "is-false",
-        _ => string.Empty
-    };
 }

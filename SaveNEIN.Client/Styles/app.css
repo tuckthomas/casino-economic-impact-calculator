@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+.section-eyebrow {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
 .footer-gradient {
     background-color: #0b1121;
     background-image: 
@@ -22,7 +30,7 @@ body {
 
 @media (max-width: 640px) {
     #proponents-critique > .mx-auto,
-    #tribal-analysis > .mx-auto,
+    #polling-results > .mx-auto,
     #crime-safety > .mx-auto,
     #economic-analysis > .economic-analysis-body,
     #economic-analysis > .mx-auto,
@@ -36,7 +44,7 @@ body {
     }
 
     #proponents-critique div[class*="rounded-"][class*="shadow"],
-    #tribal-analysis div[class*="rounded-"][class*="shadow"],
+    #polling-results div[class*="rounded-"][class*="shadow"],
     #crime-safety div[class*="rounded-"][class*="shadow"],
     #economic-analysis div[class*="rounded-"][class*="shadow"],
     #voice-your-opinion div[class*="rounded-"][class*="shadow"],
@@ -73,7 +81,7 @@ body {
     /* Force identical horizontal bounds for section descriptions on mobile */
     #proponents-critique .section-heading-block > p,
     #economic-analysis .section-heading-block > p,
-    #tribal-analysis .section-heading-block > p,
+    #polling-results .section-heading-block > p,
     #crime-safety .section-heading-block > p,
     #economic-analysis .section-heading-block > div {
         box-sizing: border-box;

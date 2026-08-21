@@ -29,7 +29,6 @@ public sealed record FactCheckClaim(
     IReadOnlyList<string> IssueTags,
     string ShortFinding,
     string DetailedExplanation,
-    string CorrectedClaim,
     IReadOnlyList<string> KeyFacts,
     IReadOnlyList<FactCheckSource> Sources,
     IReadOnlyList<FactCheckEvidenceTable> EvidenceTables,

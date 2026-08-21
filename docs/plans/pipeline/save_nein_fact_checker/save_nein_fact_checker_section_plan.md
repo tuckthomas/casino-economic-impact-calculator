@@ -201,7 +201,6 @@ Status: Pipeline
   - [ ] legal/statutory requirements;
   - [ ] campaign promise/policy preference;
   - [ ] analyst interpretation.
-- [ ] Add a compact `Corrected Version` or `More Accurate Wording` field in the detailed evidence view when a claim is partly rooted in a real source but overstated.
 
 ## Structured Data / Component Architecture
 
@@ -218,7 +217,6 @@ Status: Pipeline
   - [ ] `IssueTags`;
   - [ ] `ShortFinding` / timeline evidence summary;
   - [ ] `DetailedExplanation`;
-  - [ ] `CorrectedClaim`;
   - [ ] `KeyFacts`;
   - [ ] `Sources`;
   - [ ] `EvidenceTables` or structured evidence blocks;

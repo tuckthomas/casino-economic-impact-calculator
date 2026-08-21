@@ -830,6 +830,12 @@
     }
 }
 
+@media (min-width: 1024px) and (max-height: 950px) {
+    .hero-slot-shell {
+        transform: scale(0.88);
+    }
+}
+
 @keyframes heroMobileLogoFadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }

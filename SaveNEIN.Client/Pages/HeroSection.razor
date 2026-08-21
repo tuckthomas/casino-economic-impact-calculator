@@ -96,9 +96,12 @@
                                     <div class="modern-slot-reel-strip" data-slot-strip="@column">
                                         @for (var row = 0; row < 3; row++)
                                         {
-                                            <div class="modern-slot-cell" data-slot-row="@row">
-                                                <span class="material-symbols-outlined modern-slot-cell-icon" aria-hidden="true">star</span>
-                                                <span class="modern-slot-cell-label">WORLD-CLASS DESTINATION</span>
+                                            var initialSlot = InitialSlotColumns[column][row];
+                                            <div class="modern-slot-cell @(row == 1 ? string.Empty : "is-near-miss")"
+                                                 data-slot-row="@row"
+                                                 data-slot-type="@(row == 1 ? "bait" : "near-miss")">
+                                                <span class="material-symbols-outlined modern-slot-cell-icon" aria-hidden="true">@initialSlot.Icon</span>
+                                                <span class="modern-slot-cell-label">@initialSlot.Label</span>
                                             </div>
                                         }
                                     </div>
@@ -133,6 +136,30 @@
 </section>
 
 @code {
+    private static readonly SlotTile[][] InitialSlotColumns =
+    {
+        new[]
+        {
+            new SlotTile("PREMIER DESTINATION", "diamond"),
+            new SlotTile("WORLD-CLASS DESTINATION", "public"),
+            new SlotTile("RETAIN TALENT", "groups")
+        },
+        new[]
+        {
+            new SlotTile("COMMUNITY WELL-BEING", "favorite"),
+            new SlotTile("ECONOMIC ENGINE", "trending_up"),
+            new SlotTile("GOOD PAYING JOBS", "work")
+        },
+        new[]
+        {
+            new SlotTile("NEIGHBORHOOD IMPROVEMENTS", "home_work"),
+            new SlotTile("HUMANITARIAN FUND", "volunteer_activism"),
+            new SlotTile("RESPONSIBLE GAMING", "verified_user")
+        }
+    };
+
+    private sealed record SlotTile(string Label, string Icon);
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)

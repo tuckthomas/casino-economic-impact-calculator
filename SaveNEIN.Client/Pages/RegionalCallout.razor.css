@@ -1,24 +1,21 @@
-.tribal-impact-banner {
+.regional-callout {
     min-height: 100svh;
 }
 
-.tribal-impact-banner-image {
+.regional-callout-image {
     width: 100%;
     height: 100svh;
     object-fit: cover;
     object-position: center;
+    filter: brightness(0.6) contrast(1.2);
 }
 
-/* Keep deliberate breathing room above and below the oversized headline.
-   This is explicit rather than relying on utility padding because the very
-   tight headline line-height makes the visible glyphs extend beyond the
-   text box and can make the lower clearance appear collapsed. */
-.tribal-impact-banner > div {
+.regional-callout > div {
     padding-top: 6rem;
     padding-bottom: 6rem;
 }
 
-.tribal-impact-title {
+.regional-callout-title {
     margin: 0;
     padding-bottom: 0.08em;
     font-size: clamp(2.6rem, 7vw, 6.25rem);
@@ -26,21 +23,21 @@
     letter-spacing: -0.02em;
 }
 
-.tribal-impact-word {
+.regional-callout-word {
     display: block;
 }
 
 @media (max-width: 639px) {
-    .tribal-impact-banner > div {
+    .regional-callout > div {
         padding-top: 4rem;
         padding-bottom: 4rem;
     }
 
-    .tribal-impact-banner-image {
+    .regional-callout-image {
         object-position: 74% center;
     }
 
-    .tribal-impact-title {
+    .regional-callout-title {
         max-width: 100%;
         font-size: clamp(2.75rem, 13.5vw, 5.25rem);
         line-height: 0.84;
@@ -49,11 +46,11 @@
 }
 
 @media (min-width: 640px) {
-    .tribal-impact-banner {
+    .regional-callout {
         min-height: 0;
     }
 
-    .tribal-impact-banner-image {
+    .regional-callout-image {
         height: 100%;
     }
 }

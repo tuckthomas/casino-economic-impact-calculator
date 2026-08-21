@@ -25,10 +25,6 @@
     opacity: 0.9;
 }
 
-.fact-check-methodology summary::marker {
-    color: #b91c1c;
-}
-
 @media (max-width: 767px) {
     .fact-check-timeline {
         box-sizing: border-box;
@@ -38,7 +34,7 @@
     .fact-check-timeline::before {
         top: 2rem;
         bottom: 2rem;
-        left: 2.875rem;
+        left: 3.75rem;
         transform: none;
         width: 0.15rem;
     }

@@ -1,6 +1,6 @@
 @using SaveNEIN.Client.Models
 
-<div class="fact-check-gauge @SizeClass" style="@GaugeStyle" aria-hidden="true">
+<div class="fact-check-gauge @SizeClass" style="@GaugeStyle" role="img" aria-label="@($"{VerdictLabel} rating")">
     <div class="fact-check-gauge__face">
         <span class="fact-check-gauge__tick fact-check-gauge__tick--one"></span>
         <span class="fact-check-gauge__tick fact-check-gauge__tick--two"></span>
@@ -8,7 +8,7 @@
         <span class="fact-check-gauge__tick fact-check-gauge__tick--four"></span>
         <span class="fact-check-gauge__needle"></span>
         <span class="fact-check-gauge__hub"></span>
-        <span class="fact-check-gauge__lamp"></span>
+        <span class="fact-check-gauge__label @VerdictClass">@VerdictLabel</span>
     </div>
 </div>
 
@@ -20,6 +20,22 @@
     public bool Large { get; set; }
 
     private string SizeClass => Large ? "fact-check-gauge--large" : "fact-check-gauge--timeline";
+
+    private string VerdictLabel => Verdict switch
+    {
+        FactCheckVerdict.True => "TRUE",
+        FactCheckVerdict.MostlyTrue => "MOSTLY TRUE",
+        FactCheckVerdict.MostlyFalse => "MOSTLY FALSE",
+        FactCheckVerdict.False => "FALSE",
+        _ => "UNRATED"
+    };
+
+    private string VerdictClass => Verdict switch
+    {
+        FactCheckVerdict.False => "is-negative",
+        FactCheckVerdict.MostlyFalse => "is-negative",
+        _ => string.Empty
+    };
 
     private string GaugeStyle => Verdict switch
     {

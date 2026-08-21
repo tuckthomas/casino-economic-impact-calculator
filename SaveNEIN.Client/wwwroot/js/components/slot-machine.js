@@ -56,12 +56,14 @@ window.SlotMachine = (function ()
     };
 
     let isInitialized = false;
+    let initializedCabinet = null;
     let deferredInitTimer = null;
     let sequenceMobileMaxWidth = 1023;
     let earlyGateObserver = null;
     let mobileSequenceReady = false;
     let slotIsVisible = true;
     let slotVisibilityObserver = null;
+    let observedSlotShell = null;
     let heroSwipeLayout = null;
     let heroSwipeBound = false;
     let heroTouchStartX = 0;
@@ -123,9 +125,13 @@ window.SlotMachine = (function ()
 
     function initSlotVisibilityTracking()
     {
-        if (slotVisibilityObserver) return;
         const slotShell = document.querySelector('#hero-section .hero-slot-shell');
         if (!slotShell) return;
+        if (slotVisibilityObserver && observedSlotShell === slotShell) return;
+
+        if (slotVisibilityObserver) slotVisibilityObserver.disconnect();
+        slotVisibilityObserver = null;
+        observedSlotShell = slotShell;
 
         if (typeof IntersectionObserver === 'undefined')
         {
@@ -375,6 +381,23 @@ window.SlotMachine = (function ()
     function renderAllColumns(columns)
     {
         columns.forEach((column, index) => renderColumnStrip(index, column));
+    }
+
+    function machineDomMatches(columns)
+    {
+        if (!Array.isArray(columns) || columns.length !== 3) return false;
+
+        return columns.every((column, columnIndex) =>
+        {
+            const strip = getStripElement(columnIndex);
+            if (!strip || !Array.isArray(column) || strip.children.length !== column.length) return false;
+
+            return column.every((tile, rowIndex) =>
+            {
+                const label = strip.children[rowIndex]?.querySelector('.modern-slot-cell-label');
+                return label?.textContent?.trim() === tile.label;
+            });
+        });
     }
 
     function updateCreditDisplay()
@@ -696,14 +719,22 @@ window.SlotMachine = (function ()
 
     function initializeMachine()
     {
-        if (isInitialized) return;
         const cabinet = getCabinet();
         if (!cabinet) return;
 
-        isInitialized = true;
+        const cabinetWasReplaced = initializedCabinet !== cabinet;
+        if (!isInitialized)
+        {
+            state.columns = createInitialColumns();
+            isInitialized = true;
+        }
+
+        initializedCabinet = cabinet;
         initSlotVisibilityTracking();
-        state.columns = createInitialColumns();
-        renderAllColumns(state.columns);
+        if (cabinetWasReplaced || !machineDomMatches(state.columns))
+        {
+            renderAllColumns(state.columns);
+        }
         updateCreditDisplay();
         bindControls();
         updateControls();

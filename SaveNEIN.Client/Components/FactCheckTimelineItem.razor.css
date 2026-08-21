@@ -1,7 +1,7 @@
 .fact-check-entry {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 7rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 8rem minmax(0, 1fr);
     align-items: start;
     width: 100%;
     margin: 0 0 4.5rem;
@@ -23,6 +23,7 @@
 .fact-check-entry__card {
     position: relative;
     width: min(100%, 31rem);
+    min-width: 0;
     border: 1px solid var(--fc-card-border, #cbd5e1);
     border-radius: 1rem;
     background: var(--fc-card, #ffffff);
@@ -67,7 +68,6 @@
 }
 
 .fact-check-entry__category,
-.fact-check-entry__captured,
 .fact-check-entry__claimant,
 .fact-check-entry__evidence-label,
 .fact-check-entry__detail-heading {
@@ -80,11 +80,6 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--fc-heading, #475569);
-}
-
-.fact-check-entry__captured {
-    color: var(--fc-muted, #64748b);
-    white-space: nowrap;
 }
 
 .fact-check-entry__claimant {
@@ -105,58 +100,6 @@
     font-weight: 900;
     text-transform: uppercase;
     color: var(--fc-text, #0f172a);
-}
-
-.fact-check-entry__verdict-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 1rem;
-}
-
-.fact-check-entry__verdict,
-.fact-check-entry__tag {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2rem;
-    border-radius: 9999px;
-    padding: 0.3rem 0.72rem;
-    font-size: 0.875rem;
-    line-height: 1.2;
-    font-weight: 900;
-    letter-spacing: 0.055em;
-    text-transform: uppercase;
-}
-
-.fact-check-entry__verdict {
-    border: 1px solid currentColor;
-}
-
-.fact-check-entry__verdict.is-true {
-    color: #166534;
-    background: #dcfce7;
-}
-
-.fact-check-entry__verdict.is-mostly-true {
-    color: #3f6212;
-    background: #ecfccb;
-}
-
-.fact-check-entry__verdict.is-mostly-false {
-    color: #9a3412;
-    background: #ffedd5;
-}
-
-.fact-check-entry__verdict.is-false {
-    color: #991b1b;
-    background: #fee2e2;
-}
-
-.fact-check-entry__tag {
-    border: 1px solid var(--fc-card-border, #cbd5e1);
-    color: var(--fc-muted, #475569);
-    background: var(--fc-surface, #f8fafc);
 }
 
 .fact-check-entry__evidence-summary {
@@ -216,25 +159,31 @@
 
 .fact-check-entry__details-body > p,
 .fact-check-entry__key-facts,
-.fact-check-entry__sources,
-.fact-check-entry__corrected {
+.fact-check-entry__sources {
     font-size: 0.95rem;
     line-height: 1.62;
 }
 
+.fact-check-entry__details-body > p + p {
+    margin-top: 0.8rem;
+}
+
 .fact-check-entry__key-facts {
     margin: 0.9rem 0 0;
-    padding-left: 1.2rem;
+    padding-left: 1.35rem;
+    list-style: disc outside;
+}
+
+.fact-check-entry__key-facts li {
+    display: list-item;
+}
+
+.fact-check-entry__key-facts li::marker {
+    color: #dc2626;
 }
 
 .fact-check-entry__key-facts li + li {
     margin-top: 0.4rem;
-}
-
-.fact-check-entry__corrected {
-    margin-top: 1rem;
-    border-left: 0.22rem solid var(--fc-muted, #64748b);
-    padding: 0.2rem 0 0.2rem 0.9rem;
 }
 
 .fact-check-entry__detail-heading {
@@ -280,13 +229,15 @@
 
 .fact-check-entry__table-wrap {
     width: 100%;
+    max-width: 100%;
     margin-top: 1rem;
-    overflow-x: auto;
+    overflow: hidden;
 }
 
 .fact-check-entry__table-wrap table {
     width: 100%;
-    min-width: 28rem;
+    min-width: 0;
+    table-layout: fixed;
     border-collapse: collapse;
     font-size: 0.875rem;
     line-height: 1.45;
@@ -304,6 +255,7 @@
     border: 1px solid var(--fc-card-border, #cbd5e1);
     padding: 0.55rem 0.65rem;
     text-align: left;
+    overflow-wrap: anywhere;
 }
 
 .fact-check-entry__table-wrap thead th {
@@ -313,7 +265,7 @@
 
 @media (max-width: 767px) {
     .fact-check-entry {
-        grid-template-columns: 4.25rem minmax(0, 1fr);
+        grid-template-columns: 6rem minmax(0, 1fr);
         gap: 0;
         margin-bottom: 3rem;
     }
@@ -350,23 +302,9 @@
         margin-bottom: 0.75rem;
     }
 
-    .fact-check-entry__captured {
-        white-space: normal;
-    }
-
     .fact-check-entry__claim {
         padding-left: 0.8rem;
         font-size: clamp(1.28rem, 7vw, 1.75rem);
-    }
-
-    .fact-check-entry__verdict-row {
-        gap: 0.4rem;
-    }
-
-    .fact-check-entry__verdict,
-    .fact-check-entry__tag {
-        min-height: 1.9rem;
-        padding: 0.28rem 0.58rem;
     }
 
     .fact-check-entry__evidence-summary {
