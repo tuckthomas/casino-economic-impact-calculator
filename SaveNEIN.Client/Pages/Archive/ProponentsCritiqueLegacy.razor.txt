@@ -1,0 +1,215 @@
+@inject IJSRuntime JSRuntime
+@using SaveNEIN.Client.Pages
+
+<section class="bg-slate-50 dark:bg-[#0B1221] py-24 relative overflow-hidden" id="proponents-critique">
+    <div class="mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
+        <!-- FULL PROPONENTS CRITIQUE SECTION -->
+        <div class="pt-0">
+                <div class="section-heading-block mb-12 text-center max-w-3xl mx-auto" id="decoding-the-spin">
+                    <h3 class="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-4">
+                        Casino Proponents <span class="text-orange-600">Critique</span>
+                    </h3>
+                    <p class="section-heading-description mt-4 text-xl italic text-slate-500 dark:text-slate-400 font-medium w-full max-w-none md:max-w-2xl md:mx-auto">
+                        "Nothing on these slot-machine reels is random. Every word is a side-by-side comparison of the
+                        promises being marketed to Northeast Indiana versus the real-world outcomes casinos tend to produce."
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Category 1 -->
+                        <div
+                            class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-xl hover:shadow-2xl">
+                            <div class="flex items-center justify-between gap-4 mb-6 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                <h4
+                                    class="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-orange-500">trending_down</span>
+                                    "Economic Engine" Myth
+                                </h4>
+                                <AppButton OnButtonClick="@(() => realityModal?.Open("economic-engine"))" Icon="menu_book">
+                                    Learn More
+                                </AppButton>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-8">
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-sm font-bold text-emerald-600 uppercase mb-3 block tracking-widest">The
+                                        Pitch</span>
+                                    <ul class="space-y-2 flex-1">
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            ECONOMIC ENGINE</li>
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            INCREDIBLE OPPORTUNITY</li>
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            REVITALIZED INFRASTRUCTURE</li>
+                                    </ul>
+                                    <div class="mt-4 text-sm text-slate-500 dark:text-slate-400 italic">
+                                        Promises of growth often ignore the displacement of existing spending.
+                                    </div>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-sm font-bold text-red-600 uppercase mb-3 block tracking-widest">The
+                                        Reality</span>
+                                    <ul class="space-y-2 flex-1">
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Local Businesses Lost</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Bankruptcies</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Poverty</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Foreclosure</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Bad Debt</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category 2 -->
+                        <div
+                            class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-xl hover:shadow-2xl">
+                            <div class="flex items-center justify-between gap-4 mb-6 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                <h4
+                                    class="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-orange-500">work_off</span>
+                                    "Jobs" Promise
+                                </h4>
+                                <AppButton OnButtonClick="@(() => realityModal?.Open("jobs-promise"))" Icon="menu_book">
+                                    Learn More
+                                </AppButton>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-8">
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-sm font-bold text-emerald-600 uppercase mb-3 block tracking-widest">The
+                                        Pitch</span>
+                                    <ul class="space-y-2 flex-1">
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            GOOD PAYING JOBS</li>
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            RETAIN TALENT</li>
+                                    </ul>
+                                    <div class="mt-4 text-sm text-slate-500 dark:text-slate-400 italic">
+                                        "Good jobs" that pay less than fast food?
+                                    </div>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-sm font-bold text-red-600 uppercase mb-3 block tracking-widest">The
+                                        Reality</span>
+                                    <ul class="space-y-2 flex-1">
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">The "5,520 Jobs" Myth</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Low Wage Jobs</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Embezzlement</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category 3 -->
+                        <div
+                            class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-xl hover:shadow-2xl">
+                            <div class="flex items-center justify-between gap-4 mb-6 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                <h4
+                                    class="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-orange-500">medical_services</span>
+                                    Community Health & Safety
+                                </h4>
+                                <AppButton OnButtonClick="@(() => realityModal?.Open("community-health"))" Icon="menu_book">
+                                    Learn More
+                                </AppButton>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-8">
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-sm font-bold text-emerald-600 uppercase mb-3 block tracking-widest">The
+                                        Pitch</span>
+                                    <ul class="space-y-2 flex-1">
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            COMMUNITY WELL-BEING</li>
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            HUMANITARIAN FUND</li>
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            NEIGHBORHOOD IMPROVEMENTS</li>
+                                    </ul>
+                                    <div class="mt-4 text-sm text-slate-500 dark:text-slate-400 italic">
+                                        How can a fund fix the damage caused by the funding source?
+                                    </div>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-sm font-bold text-red-600 uppercase mb-3 block tracking-widest">The
+                                        Reality</span>
+                                    <ul class="space-y-2 flex-1">
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Addiction</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Homelessness</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Mental Health Issues</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Substance Abuse</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Fatal Accidents</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category 4 -->
+                        <div
+                            class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-xl hover:shadow-2xl">
+                            <div class="flex items-center justify-between gap-4 mb-6 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                <h4
+                                    class="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-orange-500">public_off</span>
+                                    "World-Class" Destination
+                                </h4>
+                                <AppButton OnButtonClick="@(() => realityModal?.Open("world-class"))" Icon="menu_book">
+                                    Learn More
+                                </AppButton>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-8">
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-sm font-bold text-emerald-600 uppercase mb-3 block tracking-widest">The
+                                        Pitch</span>
+                                    <ul class="space-y-2 flex-1">
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            WORLD-CLASS DESTINATION</li>
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            PREMIER DESTINATION</li>
+                                        <li
+                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                                            RESPONSIBLE GAMING</li>
+                                    </ul>
+                                    <div class="mt-4 text-sm text-slate-500 dark:text-slate-400 italic">
+                                        "Responsible" for who? The casinos or the families?
+                                    </div>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-sm font-bold text-red-600 uppercase mb-3 block tracking-widest">The
+                                        Reality</span>
+                                    <ul class="space-y-2 flex-1">
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Saturation Barrier</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Human Trafficking</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Corruption</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Domestic Violence</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Child Neglect</li>
+                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Divorces</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    </div>
+</section>
+
+<RealityModal @ref="realityModal" />
+
+@code {
+    private RealityModal? realityModal;
+}
