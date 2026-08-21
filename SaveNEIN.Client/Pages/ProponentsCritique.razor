@@ -1,215 +1,547 @@
-@inject IJSRuntime JSRuntime
-@using SaveNEIN.Client.Pages
+@using SaveNEIN.Client.Models
 
-<section class="bg-slate-50 dark:bg-[#0B1221] py-24 relative overflow-hidden" id="proponents-critique">
-    <div class="mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
-        <!-- FULL PROPONENTS CRITIQUE SECTION -->
-        <div class="pt-0">
-                <div class="section-heading-block mb-12 text-center max-w-3xl mx-auto" id="decoding-the-spin">
-                    <h3 class="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-4">
-                        Casino Proponents <span class="text-orange-600">Critique</span>
-                    </h3>
-                    <p class="section-heading-description mt-4 text-xl italic text-slate-500 dark:text-slate-400 font-medium w-full max-w-none md:max-w-2xl md:mx-auto">
-                        "Nothing on these slot-machine reels is random. Every word is a side-by-side comparison of the
-                        promises being marketed to Northeast Indiana versus the real-world outcomes casinos tend to produce."
-                    </p>
+<section class="bg-slate-50 dark:bg-[#0B1221] py-24 relative overflow-hidden [--fc-card:#ffffff] [--fc-card-border:#cbd5e1] [--fc-text:#0f172a] [--fc-muted:#64748b] [--fc-surface:#f8fafc] [--fc-surface-border:#e2e8f0] [--fc-heading:#334155] [--fc-line:#94a3b8] dark:[--fc-card:#0f172a] dark:[--fc-card-border:#334155] dark:[--fc-text:#f8fafc] dark:[--fc-muted:#94a3b8] dark:[--fc-surface:#1e293b] dark:[--fc-surface-border:#334155] dark:[--fc-heading:#e2e8f0] dark:[--fc-line:#475569]" id="proponents-critique">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="section-heading-block mb-10 text-center max-w-4xl mx-auto" id="decoding-the-spin">
+            <p class="text-sm font-black uppercase tracking-[0.16em] text-red-700 dark:text-red-400 mb-3">SaveNEIN Research Fact Check</p>
+            <h3 class="text-3xl md:text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-4">
+                Casino Proponents <span class="text-red-700 dark:text-red-400">Fact Check</span>
+            </h3>
+            <p class="section-heading-description mt-4 text-lg md:text-xl text-slate-600 dark:text-slate-300 font-medium w-full max-w-3xl mx-auto">
+                Public casino claims checked against the studies, statutes, government guidance, and empirical evidence behind them.
+                The rating evaluates the claim as stated, including its geography, definition, timeframe, and level of certainty.
+            </p>
+        </div>
+
+        <details class="fact-check-methodology mx-auto mb-14 max-w-5xl rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
+            <summary class="cursor-pointer text-base font-black uppercase tracking-wide text-slate-900 dark:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-600">
+                How the ratings work
+            </summary>
+            <div class="mt-5 grid gap-4 md:grid-cols-2">
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
+                    <p class="text-sm font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-300">True</p>
+                    <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">Supported by the best available evidence without a material omitted qualification.</p>
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <!-- Category 1 -->
-                        <div
-                            class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-xl hover:shadow-2xl">
-                            <div class="flex items-center justify-between gap-4 mb-6 border-b border-slate-200 dark:border-slate-700 pb-2">
-                                <h4
-                                    class="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-orange-500">trending_down</span>
-                                    "Economic Engine" Myth
-                                </h4>
-                                <AppButton OnButtonClick="@(() => realityModal?.Open("economic-engine"))" Icon="menu_book">
-                                    Learn More
-                                </AppButton>
-                            </div>
-                            <div class="grid md:grid-cols-2 gap-8">
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-sm font-bold text-emerald-600 uppercase mb-3 block tracking-widest">The
-                                        Pitch</span>
-                                    <ul class="space-y-2 flex-1">
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            ECONOMIC ENGINE</li>
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            INCREDIBLE OPPORTUNITY</li>
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            REVITALIZED INFRASTRUCTURE</li>
-                                    </ul>
-                                    <div class="mt-4 text-sm text-slate-500 dark:text-slate-400 italic">
-                                        Promises of growth often ignore the displacement of existing spending.
-                                    </div>
-                                </div>
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-sm font-bold text-red-600 uppercase mb-3 block tracking-widest">The
-                                        Reality</span>
-                                    <ul class="space-y-2 flex-1">
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Local Businesses Lost</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Bankruptcies</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Poverty</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Foreclosure</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Bad Debt</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Category 2 -->
-                        <div
-                            class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-xl hover:shadow-2xl">
-                            <div class="flex items-center justify-between gap-4 mb-6 border-b border-slate-200 dark:border-slate-700 pb-2">
-                                <h4
-                                    class="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-orange-500">work_off</span>
-                                    "Jobs" Promise
-                                </h4>
-                                <AppButton OnButtonClick="@(() => realityModal?.Open("jobs-promise"))" Icon="menu_book">
-                                    Learn More
-                                </AppButton>
-                            </div>
-                            <div class="grid md:grid-cols-2 gap-8">
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-sm font-bold text-emerald-600 uppercase mb-3 block tracking-widest">The
-                                        Pitch</span>
-                                    <ul class="space-y-2 flex-1">
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            GOOD PAYING JOBS</li>
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            RETAIN TALENT</li>
-                                    </ul>
-                                    <div class="mt-4 text-sm text-slate-500 dark:text-slate-400 italic">
-                                        "Good jobs" that pay less than fast food?
-                                    </div>
-                                </div>
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-sm font-bold text-red-600 uppercase mb-3 block tracking-widest">The
-                                        Reality</span>
-                                    <ul class="space-y-2 flex-1">
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">The "5,520 Jobs" Myth</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Low Wage Jobs</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Embezzlement</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Category 3 -->
-                        <div
-                            class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-xl hover:shadow-2xl">
-                            <div class="flex items-center justify-between gap-4 mb-6 border-b border-slate-200 dark:border-slate-700 pb-2">
-                                <h4
-                                    class="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-orange-500">medical_services</span>
-                                    Community Health & Safety
-                                </h4>
-                                <AppButton OnButtonClick="@(() => realityModal?.Open("community-health"))" Icon="menu_book">
-                                    Learn More
-                                </AppButton>
-                            </div>
-                            <div class="grid md:grid-cols-2 gap-8">
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-sm font-bold text-emerald-600 uppercase mb-3 block tracking-widest">The
-                                        Pitch</span>
-                                    <ul class="space-y-2 flex-1">
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            COMMUNITY WELL-BEING</li>
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            HUMANITARIAN FUND</li>
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            NEIGHBORHOOD IMPROVEMENTS</li>
-                                    </ul>
-                                    <div class="mt-4 text-sm text-slate-500 dark:text-slate-400 italic">
-                                        How can a fund fix the damage caused by the funding source?
-                                    </div>
-                                </div>
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-sm font-bold text-red-600 uppercase mb-3 block tracking-widest">The
-                                        Reality</span>
-                                    <ul class="space-y-2 flex-1">
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Addiction</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Homelessness</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Mental Health Issues</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Substance Abuse</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Fatal Accidents</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Category 4 -->
-                        <div
-                            class="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-xl hover:shadow-2xl">
-                            <div class="flex items-center justify-between gap-4 mb-6 border-b border-slate-200 dark:border-slate-700 pb-2">
-                                <h4
-                                    class="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-orange-500">public_off</span>
-                                    "World-Class" Destination
-                                </h4>
-                                <AppButton OnButtonClick="@(() => realityModal?.Open("world-class"))" Icon="menu_book">
-                                    Learn More
-                                </AppButton>
-                            </div>
-                            <div class="grid md:grid-cols-2 gap-8">
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-sm font-bold text-emerald-600 uppercase mb-3 block tracking-widest">The
-                                        Pitch</span>
-                                    <ul class="space-y-2 flex-1">
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            WORLD-CLASS DESTINATION</li>
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            PREMIER DESTINATION</li>
-                                        <li
-                                            class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded border border-emerald-100 dark:border-emerald-800/50 text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                                            RESPONSIBLE GAMING</li>
-                                    </ul>
-                                    <div class="mt-4 text-sm text-slate-500 dark:text-slate-400 italic">
-                                        "Responsible" for who? The casinos or the families?
-                                    </div>
-                                </div>
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-sm font-bold text-red-600 uppercase mb-3 block tracking-widest">The
-                                        Reality</span>
-                                    <ul class="space-y-2 flex-1">
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Saturation Barrier</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Human Trafficking</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Corruption</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Domestic Violence</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Child Neglect</li>
-                                        <li class="bg-red-100 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800/50 text-sm font-bold text-red-700 dark:text-red-300">Divorces</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="rounded-xl border border-lime-200 bg-lime-50 p-4 dark:border-lime-900 dark:bg-lime-950/30">
+                    <p class="text-sm font-black uppercase tracking-wide text-lime-800 dark:text-lime-300">Mostly True</p>
+                    <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">The central assertion is supported, but important context, scope, or precision is missing.</p>
                 </div>
+                <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 dark:border-orange-900 dark:bg-orange-950/30">
+                    <p class="text-sm font-black uppercase tracking-wide text-orange-800 dark:text-orange-300">Mostly False</p>
+                    <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">A factual kernel exists, but the wording materially changes the geography, definition, magnitude, certainty, or implication.</p>
+                </div>
+                <div class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30">
+                    <p class="text-sm font-black uppercase tracking-wide text-red-800 dark:text-red-300">False</p>
+                    <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">The assertion is contradicted by the evidence or lacks an adequate factual basis as stated.</p>
+                </div>
+            </div>
+            <p class="mt-5 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                Secondary tags identify the type of problem, such as <strong>Projection</strong>, <strong>Unsupported</strong>,
+                <strong>Outdated</strong>, <strong>Geography Error</strong>, <strong>Definition Error</strong>, <strong>Missing Context</strong>,
+                <strong>Policy Promise</strong>, or <strong>Unproven Causation</strong>. A projection is not rated false merely because it is a projection.
+            </p>
+        </details>
+
+        <ol class="fact-check-timeline" aria-label="Casino proponents fact checks">
+            @for (var i = 0; i < FactChecks.Count; i++)
+            {
+                var claim = FactChecks[i];
+                <FactCheckTimelineItem @key="claim.Id" Claim="claim" IsRight="@(i % 2 == 1)" />
+            }
+        </ol>
+
+        <div class="mt-14 mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white/80 p-6 text-center dark:border-slate-700 dark:bg-slate-900/60">
+            <h4 class="text-xl font-black text-slate-900 dark:text-white">Source-first, not slogan-first</h4>
+            <p class="mt-3 text-base leading-7 text-slate-600 dark:text-slate-300">
+                These ratings are intentionally conservative. Commissioned research is not rejected because it was commissioned, and model output is not rejected because it is modeled.
+                The question is whether the public claim accurately describes what the cited evidence actually establishes.
+            </p>
+        </div>
     </div>
 </section>
 
-<RealityModal @ref="realityModal" />
-
 @code {
-    private RealityModal? realityModal;
+    private const string ClaimSourceUrl = "https://yesforallen.org/";
+    private const string CapturedDate = "August 8, 2026";
+    private const string ResearchCitation = "SaveNEIN, Yes for Allen Counter-Analysis and Fact Check (Aug. 8, 2026)";
+
+    private static readonly IReadOnlyList<FactCheckClaim> FactChecks = new List<FactCheckClaim>
+    {
+        new(
+            Id: "jobs-2000",
+            Slug: "2000-new-permanent-jobs",
+            Claimant: "Yes for Allen",
+            ClaimText: "2,000 New Permanent Jobs",
+            IsDirectQuote: true,
+            Category: "Jobs & Economic",
+            Verdict: FactCheckVerdict.MostlyFalse,
+            IssueTags: new[] { "GEOGRAPHY ERROR", "DEFINITION ERROR" },
+            ShortFinding: "CBRE's 2,001-job figure is the statewide direct + indirect + induced estimate. Its Allen County estimate is 1,676 total jobs, including 947 direct jobs.",
+            DetailedExplanation: "The campaign number is traceable to CBRE, but the cited table separates Allen County from Indiana statewide. RIMS II employment also counts full-time and part-time jobs rather than full-time-equivalent positions, and indirect or induced jobs are not casino payroll positions.",
+            CorrectedClaim: "CBRE projects 1,676 direct, indirect, and induced jobs occurring in Allen County at stabilization, including 947 direct jobs; its statewide total is 2,001.",
+            KeyFacts: new[]
+            {
+                "Allen County: 947 direct, 309 indirect, and 420 induced jobs, totaling 1,676.",
+                "Indiana statewide: 1,024 direct, 444 indirect, and 532 induced jobs, displayed as 2,001 total.",
+                "RIMS II employment is a jobs measure, not an FTE measure."
+            },
+            Sources: new[]
+            {
+                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "Operating-impact employment table; discussed in counter-analysis pp. 5 and 10-11."),
+                new FactCheckSource("U.S. Bureau of Economic Analysis RIMS II guidance", "Employment definitions; discussed in counter-analysis pp. 5 and 10-11."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: new[]
+            {
+                new FactCheckEvidenceTable(
+                    "CBRE operating employment impact",
+                    new[] { "Employment", "Allen County", "Indiana" },
+                    new List<IReadOnlyList<string>>
+                    {
+                        new[] { "Direct", "947", "1,024" },
+                        new[] { "Indirect", "309", "444" },
+                        new[] { "Induced", "420", "532" },
+                        new[] { "Total", "1,676", "2,001" }
+                    })
+            },
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "resident-jobs",
+            Slug: "jobs-for-allen-county-residents",
+            Claimant: "Yes for Allen",
+            ClaimText: "Jobs for Allen County residents",
+            IsDirectQuote: false,
+            Category: "Jobs & Economic",
+            Verdict: FactCheckVerdict.False,
+            IssueTags: new[] { "UNSUPPORTED" },
+            ShortFinding: "CBRE estimates where economic activity occurs. Its employment tables do not establish where the workers filling those positions would live.",
+            DetailedExplanation: "A regional input-output model can estimate employment associated with activity inside a study geography, but worker residence is a separate empirical question. The cited CBRE tables do not establish that the modeled jobs would be filled by Allen County residents.",
+            CorrectedClaim: "CBRE models jobs occurring in Allen County; it does not establish that those workers would all be Allen County residents.",
+            KeyFacts: new[] { "Job location and worker residence are different variables.", "No worker-residence table is identified in the cited public CBRE presentation." },
+            Sources: new[]
+            {
+                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "Employment tables; discussed in counter-analysis pp. 5 and 10-11."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "construction-jobs",
+            Slug: "5500-construction-jobs",
+            Claimant: "Yes for Allen",
+            ClaimText: "Approximately 5,500 construction jobs",
+            IsDirectQuote: true,
+            Category: "Jobs & Economic",
+            Verdict: FactCheckVerdict.MostlyFalse,
+            IssueTags: new[] { "GEOGRAPHY ERROR" },
+            ShortFinding: "CBRE reports 5,520 construction-related jobs statewide. The corresponding Allen County estimate is 3,383.",
+            DetailedExplanation: "The 5,520 figure exists, but it is the Indiana statewide modeled construction impact. Using it in an Allen County context without the corresponding 3,383 local estimate broadens the geography of the source figure.",
+            CorrectedClaim: "CBRE projects 3,383 construction-related jobs in Allen County and 5,520 statewide.",
+            KeyFacts: new[] { "Allen County construction-related jobs: 3,383.", "Indiana statewide construction-related jobs: 5,520." },
+            Sources: new[]
+            {
+                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "Construction employment table; discussed in counter-analysis pp. 5 and 11."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "economic-output",
+            Slug: "550-million-economic-output",
+            Claimant: "Yes for Allen",
+            ClaimText: "Nearly $550 million in annual economic output",
+            IsDirectQuote: true,
+            Category: "Economic",
+            Verdict: FactCheckVerdict.MostlyFalse,
+            IssueTags: new[] { "GEOGRAPHY ERROR", "DEFINITION ERROR" },
+            ShortFinding: "$549.3 million is CBRE's Indiana statewide RIMS II gross-output estimate. Allen County gross output is $471.6 million, and gross output is not GDP or net economic gain.",
+            DetailedExplanation: "The number is traceable to CBRE, but two qualifications change its meaning. First, it is statewide rather than Allen County. Second, BEA describes gross output as duplicative because intermediate transactions can be counted as products move through multiple businesses; value added is the GDP-comparable concept.",
+            CorrectedClaim: "CBRE projects $471.6 million of Allen County gross output and $549.3 million statewide; gross output is a duplicative production measure, not net new local wealth.",
+            KeyFacts: new[]
+            {
+                "Allen County modeled gross output: $471.6 million.",
+                "Indiana statewide modeled gross output: $549.3 million.",
+                "CBRE also reports materially different earnings figures: $86.2 million for Allen County and $109.9 million statewide."
+            },
+            Sources: new[]
+            {
+                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "RIMS II operating-output table; discussed in counter-analysis pp. 5 and 11."),
+                new FactCheckSource("U.S. Bureau of Economic Analysis", "Gross output and value-added definitions; discussed in counter-analysis p. 11."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: new[]
+            {
+                new FactCheckEvidenceTable(
+                    "Selected CBRE operating impact measures",
+                    new[] { "Measure", "Allen County", "Indiana" },
+                    new List<IReadOnlyList<string>>
+                    {
+                        new[] { "Gross output", "$471.6M", "$549.3M" },
+                        new[] { "Earnings", "$86.2M", "$109.9M" }
+                    })
+            },
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "keep-dollars-local",
+            Slug: "keep-dollars-local",
+            Claimant: "Yes for Allen",
+            ClaimText: "Keep Dollars Local",
+            IsDirectQuote: true,
+            Category: "Economic",
+            Verdict: FactCheckVerdict.MostlyFalse,
+            IssueTags: new[] { "MISSING CONTEXT" },
+            ShortFinding: "Some cross-border recapture is supported, but CBRE explicitly attributes only about $50.1 million of its $282.3 million stabilized GGR forecast to Michigan and Ohio recapture — roughly 17.8%.",
+            DetailedExplanation: "The underlying premise is not fabricated: some Northeast Indiana residents currently gamble out of state. The overstatement is implying that most of the proposed casino's forecast is existing local money simply being brought home. CBRE's explicit Michigan and Ohio revenue shifts account for about 18% of its stabilized forecast, while Spectrum describes limited Michigan draw and somewhat more opportunity from Ohio.",
+            CorrectedClaim: "The studies support some Michigan and Ohio recapture, but they do not support portraying most of a new casino's projected revenue as money merely being brought back from those states.",
+            KeyFacts: new[]
+            {
+                "CBRE: $35.5M recaptured from FireKeepers in Michigan.",
+                "CBRE: $14.6M-$14.7M combined from three cited Ohio properties.",
+                "Explicit Michigan/Ohio recapture is about $50.1M against $282.3M projected GGR, approximately 17.8%."
+            },
+            Sources: new[]
+            {
+                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "Casino-to-casino revenue shifts; discussed in counter-analysis pp. 6 and 12."),
+                new FactCheckSource("Spectrum Gaming Group relocation study", "Northeast interstate draw discussion; discussed in counter-analysis pp. 6 and 12."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "annual-revenue",
+            Slug: "100-million-new-annual-revenue",
+            Claimant: "Yes for Allen",
+            ClaimText: "More than $100 million in new revenue annually",
+            IsDirectQuote: true,
+            Category: "Tax & Fiscal",
+            Verdict: FactCheckVerdict.MostlyFalse,
+            IssueTags: new[] { "PROJECTION", "OUTDATED" },
+            ShortFinding: "The $107.4 million figure is CBRE's modeled stabilized Year 3 tax-distribution forecast, not observed revenue, and its supplemental-tax allocation predates Indiana's enacted 2026 formula.",
+            DetailedExplanation: "CBRE's figure depends on its gaming-revenue forecast, assumed development, property value, non-gaming activity, tax bases, and statutory structure. CBRE expressly stated that the supplemental wagering-tax allocation was unknown when the analysis was prepared. Indiana later enacted a 3.5% Northeast Indiana supplemental wagering tax distributed 45% to the host city, 45% to the host county, and 10% to the regional development authority.",
+            CorrectedClaim: "CBRE projected $107.4 million of combined Year 3 tax distributions under its assumptions; the figure is a forecast and its supplemental-tax allocation should be updated to enacted 2026 law.",
+            KeyFacts: new[]
+            {
+                "CBRE Year 3 modeled total tax distributions: $107.4M.",
+                "Enacted Northeast Indiana supplemental wagering tax: 3.5% of adjusted gross receipts.",
+                "Enacted supplemental distribution: 45% host city, 45% host county, 10% Northeast Indiana regional development authority."
+            },
+            Sources: new[]
+            {
+                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "Stabilized Year 3 fiscal table and limiting conditions; discussed in counter-analysis pp. 7-8 and 13-14."),
+                new FactCheckSource("Indiana 2026 casino legislation", "Enacted Northeast Indiana supplemental wagering-tax structure; discussed in counter-analysis pp. 7-8 and 13."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: new[]
+            {
+                new FactCheckEvidenceTable(
+                    "CBRE Year 3 modeled tax distributions",
+                    new[] { "Recipient category", "CBRE amount" },
+                    new List<IReadOnlyList<string>>
+                    {
+                        new[] { "Indiana", "$66.3M" },
+                        new[] { "Fort Wayne", "$25.0M" },
+                        new[] { "Allen County", "$1.7M" },
+                        new[] { "Other governing bodies / stakeholders", "$14.5M" },
+                        new[] { "Total", "$107.4M" }
+                    })
+            },
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "local-revenue",
+            Slug: "41-million-stays-local",
+            Claimant: "Yes for Allen",
+            ClaimText: "More than $41 million of that would stay local",
+            IsDirectQuote: true,
+            Category: "Tax & Fiscal",
+            Verdict: FactCheckVerdict.MostlyTrue,
+            IssueTags: new[] { "MISSING CONTEXT", "OUTDATED" },
+            ShortFinding: "CBRE's cited categories do total about $41.2 million, but $14.5 million is assigned to other governing bodies and stakeholders rather than Fort Wayne or Allen County, and the table predates the final 2026 supplemental-tax allocation.",
+            DetailedExplanation: "The arithmetic is traceable: $25.0 million attributed to Fort Wayne, $1.7 million to Allen County, and $14.5 million to other governing bodies and stakeholders equals approximately $41.2 million. The important qualification is that this is not $41.2 million of unrestricted city-and-county cash, and the underlying allocation model was prepared before the final statutory formula.",
+            CorrectedClaim: "CBRE's pre-enactment model allocated about $41.2 million across Fort Wayne, Allen County, and other governing bodies or stakeholders; it was not all unrestricted revenue to the city and county.",
+            KeyFacts: new[] { "Fort Wayne: $25.0M.", "Allen County: $1.7M.", "Other governing bodies and stakeholders: $14.5M." },
+            Sources: new[]
+            {
+                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "Year 3 fiscal table; discussed in counter-analysis pp. 5, 7-8, and 13."),
+                new FactCheckSource("Indiana 2026 casino legislation", "Final supplemental-tax allocation; discussed in counter-analysis pp. 7-8 and 13."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "tax-relief",
+            Slug: "tax-relief-for-residents",
+            Claimant: "Yes for Allen",
+            ClaimText: "Tax Relief for Residents",
+            IsDirectQuote: true,
+            Category: "Tax & Fiscal",
+            Verdict: FactCheckVerdict.MostlyFalse,
+            IssueTags: new[] { "POLICY PROMISE", "MISSING CONTEXT" },
+            ShortFinding: "Indiana law permits a host unit to use certain casino revenue to reduce its property-tax levy for a particular year, but it does not require a tax cut and does not reduce the unit's maximum levy.",
+            DetailedExplanation: "The statute creates an option, not an automatic household outcome. A receiving unit may use relevant revenue for a levy reduction, but the choice remains discretionary. The campaign therefore cannot treat tax relief as a guaranteed consequence of referendum approval.",
+            CorrectedClaim: "Casino revenue could be used for property-tax levy relief if the receiving local government chooses to do so; the statute does not require that result.",
+            KeyFacts: new[] { "Levy reduction is discretionary.", "The statutory option applies to a particular year.", "The revenue may not be used to reduce the unit's maximum levy." },
+            Sources: new[]
+            {
+                new FactCheckSource("Indiana 2026 casino legislation", "Host-unit use of casino revenue; discussed in counter-analysis pp. 5, 8, and 13."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "possible-uses",
+            Slug: "revenue-could-support-community-priorities",
+            Claimant: "Yes for Allen",
+            ClaimText: "That could include infrastructure improvements, investments in public safety and mental health services, and funding for local schools and other priorities",
+            IsDirectQuote: true,
+            Category: "Tax & Fiscal",
+            Verdict: FactCheckVerdict.MostlyTrue,
+            IssueTags: new[] { "POLICY PROMISE" },
+            ShortFinding: "The word 'could' is important. Indiana law leaves broad lawful uses available to receiving units, so these are plausible policy uses — but not binding appropriations or guaranteed spending commitments.",
+            DetailedExplanation: "The campaign's FAQ is carefully worded here. It describes potential uses rather than asserting a legally dedicated percentage. The evidence supports the possibility, while the omitted context is that no cited study or statute establishes that fixed amounts will actually be appropriated to the listed programs.",
+            CorrectedClaim: "The revenue could be appropriated to those priorities, but no fixed allocation to them is guaranteed by the cited material.",
+            KeyFacts: new[] { "The operative wording is 'could' and 'potential uses'.", "Receiving units retain discretion over lawful uses.", "A policy preference is not the same as a statutory earmark." },
+            Sources: new[]
+            {
+                new FactCheckSource("Yes for Allen FAQ", "FAQ 4 language reproduced and assessed in counter-analysis p. 8."),
+                new FactCheckSource("Indiana 2026 casino legislation", "Permitted local uses; discussed in counter-analysis p. 8."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "yes-vote-process",
+            Slug: "yes-vote-only-opens-license-competition",
+            Claimant: "Yes for Allen",
+            ClaimText: "A YES vote would only allow Allen County to compete for a casino license",
+            IsDirectQuote: true,
+            Category: "Referendum Process",
+            Verdict: FactCheckVerdict.True,
+            IssueTags: Array.Empty<string>(),
+            ShortFinding: "The referendum does not itself issue a casino license. A successful vote opens the county to applications, after which the Indiana Gaming Commission conducts the licensing process.",
+            DetailedExplanation: "Indiana's 2026 framework makes county voter approval a prerequisite to the state licensing competition. The referendum does not select an operator, approve a specific site, approve financing, or issue the gaming license itself.",
+            CorrectedClaim: "",
+            KeyFacts: new[] { "Voter approval opens eligibility for applications.", "The Indiana Gaming Commission conducts the licensing process.", "The referendum does not itself issue a license." },
+            Sources: new[]
+            {
+                new FactCheckSource("Indiana 2026 casino framework and IGC guidance", "Referendum and licensing process; discussed in counter-analysis pp. 6 and 6-7."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "igc-regulation",
+            Slug: "indiana-gaming-commission-regulation",
+            Claimant: "Yes for Allen",
+            ClaimText: "Gaming operations in Indiana are regulated by the Indiana Gaming Commission and subject to ongoing state oversight, licensing and compliance requirements",
+            IsDirectQuote: true,
+            Category: "Regulation",
+            Verdict: FactCheckVerdict.True,
+            IssueTags: Array.Empty<string>(),
+            ShortFinding: "The core statement is supported. An Indiana commercial casino would be regulated by the Indiana Gaming Commission and subject to licensing, enforcement, internal-control, exclusion, and compliance requirements.",
+            DetailedExplanation: "State oversight is real and should be acknowledged in a fair analysis. That fact does not independently resolve empirical questions about the size of gambling-related external costs, but the regulatory claim itself is sound.",
+            CorrectedClaim: "",
+            KeyFacts: new[] { "Commercial casinos are licensed and regulated by the Indiana Gaming Commission.", "Indiana also operates a Voluntary Exclusion Program." },
+            Sources: new[]
+            {
+                new FactCheckSource("Indiana Gaming Commission", "Commercial gaming oversight and Voluntary Exclusion Program; discussed in counter-analysis p. 7."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "most-regulated",
+            Slug: "most-highly-regulated-in-country",
+            Claimant: "Yes for Allen",
+            ClaimText: "Indiana maintains one of the most highly regulated gaming industries in the country",
+            IsDirectQuote: true,
+            Category: "Regulation",
+            Verdict: FactCheckVerdict.MostlyFalse,
+            IssueTags: new[] { "UNSUPPORTED" },
+            ShortFinding: "Indiana commercial gaming is heavily regulated, but the national superlative is not demonstrated by a comparative index, fifty-state statutory analysis, enforcement metric, or other cited ranking.",
+            DetailedExplanation: "The campaign combines a supportable core idea — Indiana regulates commercial gaming extensively — with a comparative national claim that the cited CBRE and Spectrum studies do not test. Without a defined metric and cross-state comparison, 'one of the most highly regulated' cannot be validated as stated.",
+            CorrectedClaim: "Indiana commercial casinos are subject to substantial state licensing and regulatory requirements.",
+            KeyFacts: new[] { "Neither cited economic study is a fifty-state regulatory comparison.", "No comparative ranking methodology is supplied with the campaign claim." },
+            Sources: new[]
+            {
+                new FactCheckSource("Indiana Gaming Commission", "State regulatory framework; discussed in counter-analysis p. 7."),
+                new FactCheckSource("CBRE and Spectrum studies", "Neither is a fifty-state comparative regulatory analysis; counter-analysis p. 7."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "no-vote",
+            Slug: "no-vote-gives-opportunity-away",
+            Claimant: "Yes for Allen",
+            ClaimText: "Voting NO means giving that opportunity to DeKalb or Steuben County instead",
+            IsDirectQuote: true,
+            Category: "Referendum Process",
+            Verdict: FactCheckVerdict.MostlyFalse,
+            IssueTags: new[] { "MISSING CONTEXT" },
+            ShortFinding: "A NO vote removes Allen County from the state licensing competition, but it does not itself award a casino to DeKalb or Steuben. A neighboring county must approve its own referendum and the Gaming Commission must later award a license there.",
+            DetailedExplanation: "The first part of the campaign's FAQ is substantially accurate: Allen County would no longer be eligible. The final sentence compresses multiple future contingencies into a direct consequence. DeKalb or Steuben would still need voter approval, qualifying applications, and a state licensing decision.",
+            CorrectedClaim: "A NO vote removes Allen County from consideration and leaves DeKalb and/or Steuben as potential host counties only if their voters approve the question and a license is later awarded there.",
+            KeyFacts: new[] { "Allen County NO means Allen County is not eligible for the Northeast license.", "A neighboring county must independently approve its referendum.", "The Indiana Gaming Commission must still approve an application." },
+            Sources: new[]
+            {
+                new FactCheckSource("Indiana 2026 casino framework and IGC guidance", "County eligibility and licensing contingencies; discussed in counter-analysis pp. 9-10."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "tribal-approval",
+            Slug: "tribal-casino-no-state-local-approval",
+            Claimant: "Yes for Allen",
+            ClaimText: "A tribal casino would be governed by federal law and would not require approval from state or local officials",
+            IsDirectQuote: true,
+            Category: "Tribal Gaming",
+            Verdict: FactCheckVerdict.MostlyFalse,
+            IssueTags: new[] { "MISSING CONTEXT", "DEFINITION ERROR" },
+            ShortFinding: "Federal law governs tribal gaming, but the categorical approval statement is too broad. The two-part Secretarial route requires Governor concurrence and state/local consultation; Class III gaming ordinarily uses a Tribal-State compact.",
+            DetailedExplanation: "IGRA generally restricts gaming on post-1988 trust acquisitions subject to statutory exceptions and the two-part Secretarial Determination process. On the two-part route, federal regulations require consultation with appropriate state and local officials and affirmative concurrence by the Governor. Resort-style Class III gaming also ordinarily requires a Tribal-State compact approved by Interior.",
+            CorrectedClaim: "Tribal gaming follows federal law and a different process from Indiana commercial licensing, but state participation can be legally required and local officials can be mandatory consultees depending on the federal pathway.",
+            KeyFacts: new[]
+            {
+                "The Fort Wayne parcel entered trust in 2024, so Section 2719 gaming-land rules are relevant.",
+                "The two-part Secretarial Determination route requires affirmative Governor concurrence.",
+                "Appropriate state and local officials are consulted on the two-part route.",
+                "Class III gaming ordinarily requires a valid Tribal-State compact approved by Interior."
+            },
+            Sources: new[]
+            {
+                new FactCheckSource("Indian Gaming Regulatory Act, 25 U.S.C. § 2719", "Post-1988 gaming-land framework; discussed in counter-analysis pp. 10 and 14-17."),
+                new FactCheckSource("25 CFR Part 292", "Exceptions and two-part Secretarial Determination; discussed in counter-analysis pp. 14-17."),
+                new FactCheckSource("National Indian Gaming Commission guidance", "Class III compact framework; discussed in counter-analysis p. 17."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "tribal-revenue",
+            Slug: "tribal-revenue-distribution",
+            Claimant: "Yes for Allen",
+            ClaimText: "Tribal gaming revenue is directed to the tribe for governmental purposes under federal law, not distributed to state and local governments the way commercial casino revenue is",
+            IsDirectQuote: true,
+            Category: "Tribal Gaming",
+            Verdict: FactCheckVerdict.MostlyTrue,
+            IssueTags: new[] { "MISSING CONTEXT" },
+            ShortFinding: "The structural distinction is real: tribal gaming is not taxed and distributed under Indiana's commercial-casino formula. But federal law permits tribal net gaming revenue to help fund operations of local government agencies.",
+            DetailedExplanation: "The campaign is correct that tribal gaming revenue does not automatically flow through Indiana's commercial statutory tax schedule. The missing context is that IGRA expressly permits net gaming revenue to help fund local government agencies, and compacts or intergovernmental agreements can address mitigation and payments.",
+            CorrectedClaim: "Tribal gaming revenue is not automatically distributed under Indiana's commercial-casino tax formula, although federal law permits tribal gaming funds to support local government operations and agreements may provide for payments or mitigation.",
+            KeyFacts: new[] { "Different tax/distribution structure: supported.", "IGRA permits net gaming revenues to help fund local government agencies.", "Compacts and intergovernmental agreements can address payments and mitigation." },
+            Sources: new[]
+            {
+                new FactCheckSource("Indian Gaming Regulatory Act", "Permissible uses of tribal net gaming revenue; discussed in counter-analysis pp. 10 and 17-18."),
+                new FactCheckSource("National Indian Gaming Commission", "Public guidance on permitted net-revenue uses; discussed in counter-analysis p. 18."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>()),
+
+        new(
+            Id: "tribal-inevitability",
+            Slug: "tribal-casino-inevitable",
+            Claimant: "Yes for Allen",
+            ClaimText: "A Miami Tribe casino on the Fort Wayne parcel is inevitable or imminent",
+            IsDirectQuote: false,
+            Category: "Tribal Gaming",
+            Verdict: FactCheckVerdict.False,
+            IssueTags: new[] { "UNSUPPORTED" },
+            ShortFinding: "The public record reviewed for the counter-analysis does not establish an announced, approved, or imminent Miami Tribe casino project on the Fort Wayne parcel.",
+            DetailedExplanation: "The Miami Tribe says the 45-acre property was purchased in 2021 for cultural, educational, and community functions and became the site of its Cultural Resources Extension Office. Spectrum likewise stated that the Tribe had not publicly articulated casino plans for the site. Spectrum modeled a tribal casino as a competitive sensitivity scenario, which is not proof that the scenario is planned or legally approved.",
+            CorrectedClaim: "A tribal casino is a theoretical competitive scenario, but the reviewed public record does not establish an announced or approved Miami Tribe casino project on the Fort Wayne trust parcel.",
+            KeyFacts: new[]
+            {
+                "The Tribe publicly describes the property as a community, education, and Cultural Resources Extension Office site.",
+                "Spectrum stated that the Tribe had not publicly articulated casino plans for the parcel.",
+                "Spectrum's tribal case is a sensitivity test, not a gaming-lands approval or project announcement."
+            },
+            Sources: new[]
+            {
+                new FactCheckSource("Miami Tribe of Oklahoma public announcement", "Fort Wayne trust property purpose; discussed in counter-analysis pp. 10 and 14-15."),
+                new FactCheckSource("Spectrum Gaming Group relocation study", "Hypothetical tribal sensitivity scenario and absence of publicly articulated casino plans; discussed in counter-analysis pp. 15 and 18."),
+                new FactCheckSource("SaveNEIN counter-analysis", ResearchCitation)
+            },
+            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
+            ClaimSourceUrl: ClaimSourceUrl,
+            ClaimCapturedDate: CapturedDate,
+            FirstPublished: "August 2026",
+            LastReviewed: "August 2026",
+            RevisionHistory: Array.Empty<string>())
+    };
 }
