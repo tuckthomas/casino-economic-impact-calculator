@@ -12,7 +12,7 @@
                 Casino Proponents <span class="text-red-700 dark:text-red-400">Fact Check</span>
             </h2>
             <p class="section-heading-description mt-4 text-xl italic text-slate-500 dark:text-slate-400 font-medium w-full max-w-none md:max-w-2xl md:mx-auto">
-                Evidence first: what the underlying record shows, followed by the claim being checked.
+                What the casino campaign says—and what the evidence actually shows.
             </p>
         </div>
 
@@ -32,10 +32,11 @@
         }
         else
         {
-            <ol class="fact-check-grid" aria-label="Casino proponents fact checks">
-                @foreach (var claim in _factChecks)
+            <ol class="fact-check-timeline" aria-label="Casino proponents fact checks">
+                @for (var i = 0; i < _factChecks.Count; i++)
                 {
-                    <FactCheckCard @key="claim.Id" Claim="claim" />
+                    var claim = _factChecks[i];
+                    <FactCheckCard @key="claim.Id" Claim="claim" IsRight="@(i % 2 == 1)" />
                 }
             </ol>
         }

@@ -13,24 +13,26 @@ Updated: August 21, 2026 ET
 - [x] Kept the live `ProponentsCritique.razor` component and `#proponents-critique` anchor in place.
 - [x] Added a reusable circular HTML/CSS `FactCheckGauge` with verdict-driven needle position and indicator color.
 - [x] Added the four verdict states: `TRUE`, `MOSTLY TRUE`, `MOSTLY FALSE`, and `FALSE`.
-- [x] Added secondary issue tags including projection, unsupported, outdated, geography error, definition error, missing context, and policy promise.
+- [x] Added secondary issue-tag support including projection, unsupported, outdated, geography error, definition error, missing context, and policy promise.
 - [x] Added expandable, keyboard-native `<details>` evidence/source sections.
 - [x] Avoided raster verdict assets and external mockup/CDN dependencies.
 - [x] Added `prefers-reduced-motion` handling for the gauge needle transition.
 
-## August 21 evidence-first / JSON refactor
+## August 21 reusable JSON refactor and requested visual-format swap
 
-- [x] Reversed the card information hierarchy so the evidence-backed finding is the dominant headline rather than the claimant's statement.
-- [x] Moved the claimant statement into a visually secondary `Claim being checked` panel.
-- [x] Moved the verdict gauge into that claim panel and explicitly labeled it `Claim rating`, preventing a `FALSE` gauge from being visually interpreted as rating the evidence-backed finding.
-- [x] Added concise `FindingHeadline` copy for scan-first readers while retaining the fuller `ShortFinding` explanation beneath it.
-- [x] Replaced the timeline-specific renderer with a reusable `FactCheckCard` Blazor component.
+- [x] Preserved/restored the existing centered alternating fact-check timeline on desktop and left-spine stacked timeline on mobile. The temporary two-column grid redesign was reverted because it was not requested.
+- [x] Implemented the requested visual-role swap inside the existing card format rather than introducing a new information architecture.
+- [x] `ShortFinding` — the evidence/corrective content that previously appeared inside the smaller evidence box — now receives the **same large, bold, uppercase, red-left-border treatment previously used by the claimant statement**.
+- [x] `ClaimText` — the claimant statement that previously received the dominant headline treatment — now receives the **same smaller bordered/surface-box treatment previously used by the evidence content**.
+- [x] The evidence label occupies the former claimant/framing label position above the dominant corrective text.
+- [x] The claimant/framing label now appears inside the smaller claim box above the claimant text.
+- [x] The verdict gauge remains attached to the timeline entry and remains verdict-driven; it was not repurposed as a rating of the evidence.
+- [x] Replaced the page-specific timeline renderer with a reusable `FactCheckCard` Blazor component while retaining the original timeline presentation.
 - [x] Kept `FactCheckGauge` as a separate reusable verdict component consumed by `FactCheckCard`.
 - [x] Removed the superseded `FactCheckTimelineItem` component and its scoped CSS so there is one maintained card-rendering path.
-- [x] Replaced the centered timeline layout with a responsive two-column card grid that collapses to one column on narrower viewports.
 - [x] Moved the currently displayed fact-check content out of `ProponentsCritique.razor` into `SaveNEIN.Client/wwwroot/data/fact-checks.json`.
 - [x] Added a versioned `FactCheckDocument` JSON contract and JSON-string verdict deserialization.
-- [x] `ProponentsCritique.razor` is now a thin loader/container; card order and content are controlled by JSON order rather than hardcoded Razor constructors.
+- [x] `ProponentsCritique.razor` is now a thin JSON loader/container; card order and content are controlled by JSON order rather than hardcoded Razor constructors.
 - [x] No database dependency was introduced. This content is intentionally repository-local because it is campaign/location-specific and should be replaceable by a downstream clone without schema migrations or seed-data cleanup.
 - [x] The same `FactCheckDocument` / `FactCheckClaim` contract can later be populated from an API or PostgreSQL JSONB payload without changing `FactCheckCard` or `FactCheckGauge`.
 - [x] Replaced the misleading flat `ClaimCapturedDate` concept in the JSON-driven contract with separate provenance fields: `ClaimSourceObservedOn`, `ClaimSourceObservationType`, and nullable `ClaimSourceArchivedUrl`.
@@ -55,9 +57,9 @@ Additional cards can be added, removed, reordered, or replaced by editing this J
 - [ ] Run `npm run check:ui-text`.
 - [ ] Run the Tailwind/CSS asset build.
 - [ ] Run `dotnet build SaveNEIN.sln`.
-- [ ] Inspect the live section at narrow mobile widths, tablet, and desktop.
+- [ ] Inspect the restored alternating timeline at narrow mobile widths, tablet, and desktop.
 - [ ] Verify light/dark theme presentation.
-- [ ] Confirm the evidence-first hierarchy is visually unambiguous at a glance and that `Claim rating` remains visually attached to the claimant statement.
+- [ ] Confirm at a glance that the corrective evidence receives the former dominant claim typography and the claimant statement receives the former evidence-box treatment.
 - [ ] Confirm JSON deserialization succeeds in the production WebAssembly build.
 - [ ] Confirm all external claimant/source links resolve as intended.
 - [ ] Perform final editorial review of verdict assignments and exact campaign wording before production publication.
