@@ -125,7 +125,7 @@
                     @if (Claim.ClaimSourceObservedOn is not null)
                     {
                         <p class="fact-check-card__provenance">
-                            @ObservationLabel @Claim.ClaimSourceObservedOn.Value.ToString("MMMM d, yyyy").
+                            @ObservationLabel @(Claim.ClaimSourceObservedOn.Value.ToString("MMMM d, yyyy")).
                             This is an observation date, not an archived-web capture date.
                         </p>
                     }
