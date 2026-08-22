@@ -27,7 +27,7 @@ The UI then sends readers directly to those live claimant URLs through `FactChec
 
 That means the displayed capture date and the linked evidence are not actually bound together. A campaign webmaster can edit or remove a sentence after SaveNEIN publishes a fact check. The SaveNEIN page could continue displaying a historical quote and historical capture date while its citation opens a materially different current page. That creates an avoidable evidentiary and reputational weakness.
 
-The August 8 Yes for Allen counter-analysis report was generated from content scraped from the campaign site. That scrape is valid **research provenance**, but it is not an archived website snapshot. It does not preserve or prove the complete historical HTML/DOM/JavaScript/resource state and cannot establish that the claimant page remained unchanged between August 8 and any later verification date. If the page changed during that interval and no real archive captured it, the report alone cannot reconstruct the historical website.
+The August 8 Yes for Allen counter-analysis report was generated from content scraped from the campaign site. That scrape is valid **research provenance**, but it is not an archived website snapshot. It does not preserve or prove the complete historical HTML/DOM/JavaScript/resource state and cannot establish that the claimant page remained unchanged between August 8 and any later verification date. Even if the same language is present now, the page could have changed in the interim and later changed back. If no genuine archive captured the relevant historical state, that state cannot be reconstructed from the derivative report alone.
 
 The implementation must create an immutable evidence chain:
 
@@ -63,7 +63,7 @@ The current claimant-controlled URL. Mutable and unsuitable by itself as histori
 Text or data extracted by a research process at a stated time. The August 8 Yes for Allen report belongs here. It can establish the provenance of the analytical input, but it may be incomplete and does not reproduce the historical website.
 
 ### Live-page verification
-A later review confirming what the claimant page says at that later moment. This does not retroactively prove the page was unchanged at an earlier time.
+A later review confirming what the claimant page says at that later moment. This does not retroactively prove the page was unchanged at an earlier time or continuously contained the same language.
 
 ### Immutable archive capture
 Preserved website evidence carrying its own capture timestamp and durable artifacts such as original response material, WARC/WACZ, rendered DOM/HTML, SingleFile, screenshot, resource files, metadata, and hashes. Only this category may be linked/labeled as an archived-site snapshot.
