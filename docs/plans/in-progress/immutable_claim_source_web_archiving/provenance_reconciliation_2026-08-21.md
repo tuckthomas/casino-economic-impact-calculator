@@ -12,6 +12,8 @@ Do not treat those as equivalent.
 
 A report containing scraped text cannot establish the complete HTML/DOM/JavaScript/resource state of the claimant page on August 8. It also cannot prove that the page was unchanged between August 8 and a later verification date. If the claimant edited or removed language after August 8 and before SaveNEIN began preserving immutable snapshots, SaveNEIN cannot reconstruct that historical page state merely from the report.
 
+Even if the same language appears on the live page today, that does not prove continuous presence. The page could have changed and later changed back. Therefore the August 8 scrape establishes only what the research process extracted into the report, not a reproducible historical website state.
+
 Accordingly:
 
 - `August 8, 2026` may be recorded as the date of the **report scrape / source observation used by the analysis**.
@@ -61,7 +63,7 @@ The page still includes language corresponding to fact checks such as:
 - `nearly $550 million in economic output annually by year three of operations`
 - `Keep Dollars Local`
 
-This verifies the live page on August 21. It does **not** retroactively prove that every element of the page was identical on August 8.
+This verifies the live page on August 21. It does **not** retroactively prove that every element of the page was identical on August 8 or that the relevant text remained continuously present throughout the interval.
 
 ### Steuben — Where Fun Wins — live page verified 2026-08-21
 
