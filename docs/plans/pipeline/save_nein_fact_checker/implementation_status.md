@@ -2,7 +2,7 @@
 
 Branch: `codex/consolidated-active-work`
 Issue: #35
-Updated: August 20, 2026 ET / August 21, 2026 UTC
+Updated: August 21, 2026 ET
 
 ## Implemented
 
@@ -11,30 +11,55 @@ Updated: August 20, 2026 ET / August 21, 2026 UTC
 - [x] Preserved the original `SaveNEIN.Client/Pages/ProponentsCritique.razor` byte-for-byte at `SaveNEIN.Client/Pages/Archive/ProponentsCritiqueLegacy.razor.txt`.
 - [x] Added archive/rollback documentation in `SaveNEIN.Client/Pages/Archive/README.md`.
 - [x] Kept the live `ProponentsCritique.razor` component and `#proponents-critique` anchor in place.
-- [x] Replaced the old four-card pitch/reality content with a data-driven vertical fact-check timeline.
-- [x] Added a centered alternating desktop timeline and left-spine stacked mobile layout.
-- [x] Added a reusable circular HTML/CSS fact-check gauge with verdict-driven needle position and indicator color.
+- [x] Added a reusable circular HTML/CSS `FactCheckGauge` with verdict-driven needle position and indicator color.
 - [x] Added the four verdict states: `TRUE`, `MOSTLY TRUE`, `MOSTLY FALSE`, and `FALSE`.
 - [x] Added secondary issue tags including projection, unsupported, outdated, geography error, definition error, missing context, and policy promise.
-- [x] Added a structured `FactCheckClaim` model with sources, key facts, evidence tables, correction wording, capture/review metadata, and revision-history support.
-- [x] Added reusable `FactCheckTimelineItem` and `FactCheckGauge` components.
 - [x] Added expandable, keyboard-native `<details>` evidence/source sections.
-- [x] Added concise methodology/rating definitions at the top of the section.
-- [x] Added true/mostly-true findings alongside negative ratings.
-- [x] Seeded the section from the August 2026 Yes for Allen counter-analysis, including jobs, construction jobs, gross output, cross-border recapture, tax/fiscal claims, referendum process, regulation, and tribal-gaming claims.
-- [x] Kept paraphrased campaign implications out of quotation marks and labeled them as framing rather than direct claims.
 - [x] Avoided raster verdict assets and external mockup/CDN dependencies.
-- [x] Kept visible supporting text at 14px / `text-sm` equivalent or larger.
 - [x] Added `prefers-reduced-motion` handling for the gauge needle transition.
+
+## August 21 evidence-first / JSON refactor
+
+- [x] Reversed the card information hierarchy so the evidence-backed finding is the dominant headline rather than the claimant's statement.
+- [x] Moved the claimant statement into a visually secondary `Claim being checked` panel.
+- [x] Moved the verdict gauge into that claim panel and explicitly labeled it `Claim rating`, preventing a `FALSE` gauge from being visually interpreted as rating the evidence-backed finding.
+- [x] Added concise `FindingHeadline` copy for scan-first readers while retaining the fuller `ShortFinding` explanation beneath it.
+- [x] Replaced the timeline-specific renderer with a reusable `FactCheckCard` Blazor component.
+- [x] Kept `FactCheckGauge` as a separate reusable verdict component consumed by `FactCheckCard`.
+- [x] Removed the superseded `FactCheckTimelineItem` component and its scoped CSS so there is one maintained card-rendering path.
+- [x] Replaced the centered timeline layout with a responsive two-column card grid that collapses to one column on narrower viewports.
+- [x] Moved the currently displayed fact-check content out of `ProponentsCritique.razor` into `SaveNEIN.Client/wwwroot/data/fact-checks.json`.
+- [x] Added a versioned `FactCheckDocument` JSON contract and JSON-string verdict deserialization.
+- [x] `ProponentsCritique.razor` is now a thin loader/container; card order and content are controlled by JSON order rather than hardcoded Razor constructors.
+- [x] No database dependency was introduced. This content is intentionally repository-local because it is campaign/location-specific and should be replaceable by a downstream clone without schema migrations or seed-data cleanup.
+- [x] The same `FactCheckDocument` / `FactCheckClaim` contract can later be populated from an API or PostgreSQL JSONB payload without changing `FactCheckCard` or `FactCheckGauge`.
+- [x] Replaced the misleading flat `ClaimCapturedDate` concept in the JSON-driven contract with separate provenance fields: `ClaimSourceObservedOn`, `ClaimSourceObservationType`, and nullable `ClaimSourceArchivedUrl`.
+- [x] August 8 Yes for Allen entries are identified as `ReportScrape` observations, not archived-web captures.
+- [x] The card labels a live claimant hyperlink as `View current claimant page`; when `ClaimSourceArchivedUrl` is populated later, the same component automatically changes the primary link label to `View archived claimant source`.
+
+## Current JSON content scope
+
+`SaveNEIN.Client/wwwroot/data/fact-checks.json` currently contains the six fact checks that were already being rendered by the pre-refactor `FalseFactChecks` selection, in the same display order:
+
+1. Allen County resident-jobs framing
+2. Keep Dollars Local framing
+3. Tribal-casino approval framing
+4. Steuben taxpayer-liability claim
+5. Steuben nonprofit/LDA framing
+6. Allen County NO-vote framing
+
+Additional cards can be added, removed, reordered, or replaced by editing this JSON document; no Razor component changes are required.
 
 ## Pending validation in the active development environment
 
 - [ ] Run `npm run check:ui-text`.
-- [ ] Allow/re-run the Tailwind CSS build so utilities introduced by the new Razor markup are present in generated `wwwroot/css/app.css`.
+- [ ] Run the Tailwind/CSS asset build.
 - [ ] Run `dotnet build SaveNEIN.sln`.
 - [ ] Inspect the live section at narrow mobile widths, tablet, and desktop.
-- [ ] Verify light/dark theme presentation after the Tailwind rebuild.
+- [ ] Verify light/dark theme presentation.
+- [ ] Confirm the evidence-first hierarchy is visually unambiguous at a glance and that `Claim rating` remains visually attached to the claimant statement.
+- [ ] Confirm JSON deserialization succeeds in the production WebAssembly build.
 - [ ] Confirm all external claimant/source links resolve as intended.
 - [ ] Perform final editorial review of verdict assignments and exact campaign wording before production publication.
 
-The implementation is intentionally left in `docs/plans/pipeline` until the local visual/build/editorial validation above is complete. After acceptance, move this subfolder to `docs/plans/completed` and close issue #35.
+The implementation remains in `docs/plans/pipeline` until the visual/build/editorial validation above is complete. The separate immutable claimant-source archiving plan remains in `docs/plans/in-progress/immutable_claim_source_web_archiving` and governs the future ArchiveBox integration.
