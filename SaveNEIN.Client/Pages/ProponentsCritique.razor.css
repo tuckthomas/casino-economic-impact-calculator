@@ -1,41 +1,38 @@
-.fact-check-desktop-columns {
+.fact-check-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
     gap: 2rem;
     width: 100%;
-}
-
-.fact-check-column,
-.fact-check-mobile-list {
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-.fact-check-column {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 2rem;
+.fact-check-loading,
+.fact-check-load-error {
+    width: 100%;
+    border: 1px solid var(--fc-card-border, #cbd5e1);
+    border-radius: 0.9rem;
+    background: var(--fc-card, #ffffff);
+    color: var(--fc-heading, #334155);
+    padding: 1rem 1.25rem;
+    text-align: center;
 }
 
-.fact-check-desktop-columns.is-measuring .fact-check-entry__details-body {
-    display: none;
+.fact-check-load-error {
+    border-color: rgba(185, 28, 28, 0.35);
+    color: #b91c1c;
 }
 
-.fact-check-mobile-list {
-    display: none;
+@media (max-width: 1000px) {
+    .fact-check-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.5rem;
+    }
 }
 
 @media (max-width: 767px) {
-    .fact-check-desktop-columns {
-        display: none;
-    }
-
-    .fact-check-mobile-list {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
+    .fact-check-grid {
+        gap: 1.25rem;
     }
 }

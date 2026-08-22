@@ -1,5 +1,6 @@
+@using System.Net.Http.Json
 @using SaveNEIN.Client.Models
-@inject IJSRuntime JSRuntime
+@inject HttpClient Http
 
 <section class="bg-slate-50 dark:bg-[#0B1221] py-24 relative overflow-hidden [--fc-card:#ffffff] [--fc-card-border:#cbd5e1] [--fc-text:#0f172a] [--fc-muted:#64748b] [--fc-surface:#f8fafc] [--fc-surface-border:#e2e8f0] [--fc-heading:#334155] [--fc-line:#94a3b8] dark:[--fc-card:#0f172a] dark:[--fc-card-border:#334155] dark:[--fc-text:#f8fafc] dark:[--fc-muted:#94a3b8] dark:[--fc-surface:#1e293b] dark:[--fc-surface-border:#334155] dark:[--fc-heading:#e2e8f0] dark:[--fc-line:#475569]" id="proponents-critique">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -11,529 +12,71 @@
                 Casino Proponents <span class="text-red-700 dark:text-red-400">Fact Check</span>
             </h2>
             <p class="section-heading-description mt-4 text-xl italic text-slate-500 dark:text-slate-400 font-medium w-full max-w-none md:max-w-2xl md:mx-auto">
-                What the casino campaign says—and what the evidence actually shows.
+                Evidence first: what the underlying record shows, followed by the claim being checked.
             </p>
         </div>
 
-        <div class="fact-check-desktop-columns" aria-label="Casino proponents fact checks">
-            <ol class="fact-check-column">
-                @foreach (var claim in DesktopLeftFactChecks)
+        @if (!_loaded)
+        {
+            <div class="fact-check-loading" role="status">Loading fact checks…</div>
+        }
+        else if (_loadFailed)
+        {
+            <div class="fact-check-load-error" role="alert">
+                Fact-check content could not be loaded.
+            </div>
+        }
+        else if (_factChecks.Count == 0)
+        {
+            <div class="fact-check-loading">No fact checks are configured for this deployment.</div>
+        }
+        else
+        {
+            <ol class="fact-check-grid" aria-label="Casino proponents fact checks">
+                @foreach (var claim in _factChecks)
                 {
-                    <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="desktop-left" />
+                    <FactCheckCard @key="claim.Id" Claim="claim" />
                 }
             </ol>
-            <ol class="fact-check-column">
-                @foreach (var claim in DesktopRightFactChecks)
-                {
-                    <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="desktop-right" />
-                }
-            </ol>
-        </div>
-
-        <ol class="fact-check-mobile-list" aria-label="Casino proponents fact checks">
-            @foreach (var claim in FalseFactChecks)
-            {
-                <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="mobile" />
-            }
-        </ol>
+        }
     </div>
 </section>
 
 @code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private const int SupportedSchemaVersion = 1;
+
+    private IReadOnlyList<FactCheckClaim> _factChecks = Array.Empty<FactCheckClaim>();
+    private bool _loaded;
+    private bool _loadFailed;
+
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
+        try
         {
-            await JSRuntime.InvokeVoidAsync("window.FactCheckLayout.init");
+            var document = await Http.GetFromJsonAsync<FactCheckDocument>("data/fact-checks.json");
+            if (document is null || document.SchemaVersion != SupportedSchemaVersion)
+            {
+                _loadFailed = true;
+                return;
+            }
+
+            _factChecks = document.FactChecks ?? Array.Empty<FactCheckClaim>();
+        }
+        catch (HttpRequestException)
+        {
+            _loadFailed = true;
+        }
+        catch (NotSupportedException)
+        {
+            _loadFailed = true;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            _loadFailed = true;
+        }
+        finally
+        {
+            _loaded = true;
         }
     }
-
-    private const string ClaimSourceUrl = "https://yesforallen.org/facts/";
-    private const string SteubenClaimSourceUrl = "https://steubenfunwins.com/myths-and-facts/";
-    private const string CbreAnalysisUrl = "https://cdn.insideindianabusiness.com/wp-content/uploads/2026/01/GFWI-Casino-Analysis-Presentation-Final-2025-12-03.pdf";
-    private const string SpectrumStudyUrl = "https://www.in.gov/igc/files/publications/Spectrum-Relocation-Report-to-Indiana-Gaming-Commission-9-30-2025-Final.pdf";
-    private const string IndianaCasinoLawSummaryUrl = "https://www.in.gov/dor/files/legislative-synopsis-2026.pdf";
-    private const string IgcNortheastGuidanceUrl = "https://www.in.gov/igc/pointsofinterest/?a=459803";
-    private const string CapturedDate = "August 8, 2026";
-    private const string SteubenCapturedDate = "August 21, 2026";
-
-    private static readonly IReadOnlyList<FactCheckClaim> FactChecks = new List<FactCheckClaim>
-    {
-        new(
-            Id: "resident-jobs",
-            Slug: "2000-new-permanent-jobs",
-            Claimant: "Yes for Allen",
-            ClaimText: "2,000 new permanent jobs for Allen County residents",
-            IsDirectQuote: false,
-            Category: "Jobs & Economic",
-            Verdict: FactCheckVerdict.False,
-            IssueTags: new[] { "GEOGRAPHY ERROR", "DEFINITION ERROR", "UNSUPPORTED RESIDENCY" },
-            ShortFinding: "CBRE reports gross modeled jobs, not net-new employment. Its Allen County total is 1,676—including only 947 direct jobs—and it subtracts no job losses from competing local businesses. That does not support a claim of 2,000 new permanent jobs for Allen County residents.",
-            DetailedExplanation: "Yes for Allen claims the development would create ‘over 2,000 new permanent jobs’ for Allen County residents.\n\nCBRE actually models 1,676 gross jobs in Allen County: 947 direct jobs and 729 indirect or induced multiplier jobs. The 2,001 figure is statewide, and neither figure establishes where workers would live.\n\nMost importantly, CBRE does not subtract jobs lost when casino spending or workers are diverted from existing restaurants, entertainment venues, hotels, and other local businesses. It therefore does not estimate Allen County’s net job gain.",
-            KeyFacts: new[]
-            {
-                "Allen County: 1,676 gross modeled jobs; only 947 are direct.",
-                "Statewide: 2,001 gross modeled jobs—not 2,001 Allen County jobs.",
-                "CBRE does not measure worker residency or subtract employment displaced from existing local businesses."
-            },
-            Sources: new[]
-            {
-                new FactCheckSource("Yes for Allen — Facts", "Campaign claim combining the statewide 2,001 modeled employment impact with an Allen County residency promise.", ClaimSourceUrl),
-                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "Operating-impact employment tables for Allen County and Indiana.", CbreAnalysisUrl),
-                new FactCheckSource("U.S. Bureau of Economic Analysis RIMS II User Guide", "Official definitions for RIMS II employment and output measures.", "https://www.bea.gov/sites/default/files/methodologies/RIMSII_User_Guide.pdf"),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "steuben-tax-liability",
-            Slug: "steuben-casino-decreases-taxpayer-liability",
-            Claimant: "Steuben — Where Fun Wins",
-            ClaimText: "Casinos provide net decreases to taxpayer liabilities",
-            IsDirectQuote: true,
-            Category: "Steuben County — Tax & Fiscal",
-            Verdict: FactCheckVerdict.False,
-            IssueTags: new[] { "POLICY PROMISE", "UNSUPPORTED" },
-            ShortFinding: "No cited evidence shows that a Steuben casino would reduce taxpayer liabilities. Casino payments go to government accounts, not automatically back to residents, and no law requires a tax cut. Without subtracting added public costs from projected receipts, the campaign cannot claim a net taxpayer benefit.",
-            DetailedExplanation: "Steuben’s promotional site claims casinos ‘provide net decreases to taxpayer liabilities.’\n\nHEA 1038 creates government revenue streams; it does not send casino money to taxpayers or require local officials to lower anyone’s tax bill. A limited budgeting option for a one-year levy reduction is not evidence that household taxes would actually fall, and it does not lower the unit’s maximum levy.\n\nA net-liability claim requires a complete accounting of revenue, added infrastructure and public-service costs, gambling-related costs, and local budget decisions. Steuben’s own page says its third-party impact study is still in progress. It therefore has no completed analysis establishing a net decrease for taxpayers.",
-            KeyFacts: new[]
-            {
-                "HEA 1038 requires no reduction in residents’ tax bills.",
-                "Government receipts are not a net benefit until added public costs are subtracted.",
-                "Steuben says its own third-party impact study is still in progress."
-            },
-            Sources: new[]
-            {
-                new FactCheckSource("Indiana Department of Revenue — 2026 Legislative Synopsis", "HEA 1038 supplemental wagering-tax distribution and permitted local uses, p. 80.", "https://www.in.gov/dor/files/legislative-synopsis-2026.pdf"),
-                new FactCheckSource("Steuben — Where Fun Wins", "Myths and Facts page claiming casinos provide net decreases to taxpayer liabilities.", SteubenClaimSourceUrl)
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: SteubenClaimSourceUrl,
-            ClaimCapturedDate: SteubenCapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "steuben-nonprofit-mandate",
-            Slug: "steuben-nonprofit-grants-required",
-            Claimant: "Steuben — Where Fun Wins",
-            ClaimText: "The new Steuben casino would be legally required to fund local nonprofits through a Local Development Agreement",
-            IsDirectQuote: false,
-            Category: "Steuben County — Tax & Fiscal",
-            Verdict: FactCheckVerdict.False,
-            IssueTags: new[] { "LEGAL CLAIM", "UNSUPPORTED" },
-            ShortFinding: "HEA 1038 mandates a 3.5% supplemental wagering tax distributed to the host municipality, host county, and regional development authority. It does not mandate a Local Development Agreement or grants to nonprofits.",
-            DetailedExplanation: "The Steuben site presents nonprofit grants through Local Development Agreements as a required destination for funds from the proposed casino. Existing Indiana casinos may have contractual local agreements, but the Northeast Indiana casino statute does not create that requirement. A future applicant could propose voluntary local commitments, but that is different from a legal mandate and cannot be promised before applications are filed and a license is awarded.",
-            KeyFacts: new[]
-            {
-                "The supplemental tax is 3.5% of adjusted gross receipts, not a mandated share of profits.",
-                "The statutory recipients are the host municipality, host county, and Northeast Indiana regional development authority.",
-                "No applicant or project has yet been selected, so any additional local agreement remains unestablished."
-            },
-            Sources: new[]
-            {
-                new FactCheckSource("Indiana Department of Revenue — 2026 Legislative Synopsis", "HEA 1038 tax base, recipients, and permitted uses, p. 80.", "https://www.in.gov/dor/files/legislative-synopsis-2026.pdf"),
-                new FactCheckSource("Indiana Gaming Commission — Northeast Indiana Casino Guidance", "Applications begin only after voter approval; no current operator or project award.", "https://www.in.gov/igc/pointsofinterest/?a=459803"),
-                new FactCheckSource("Steuben — Where Fun Wins", "Myths and Facts page framing nonprofit LDA grants as mandated casino funding.", SteubenClaimSourceUrl)
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: SteubenClaimSourceUrl,
-            ClaimCapturedDate: SteubenCapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "construction-jobs",
-            Slug: "5500-construction-jobs",
-            Claimant: "Yes for Allen",
-            ClaimText: "Approximately 5,500 construction jobs",
-            IsDirectQuote: true,
-            Category: "Jobs & Economic",
-            Verdict: FactCheckVerdict.MostlyFalse,
-            IssueTags: new[] { "GEOGRAPHY ERROR" },
-            ShortFinding: "CBRE reports 5,520 construction-related jobs statewide. The corresponding Allen County estimate is 3,383.",
-            DetailedExplanation: "The 5,520 figure exists, but it is the Indiana statewide modeled construction impact. Using it in an Allen County context without the corresponding 3,383 local estimate broadens the geography of the source figure.",
-            KeyFacts: new[] { "Allen County construction-related jobs: 3,383.", "Indiana statewide construction-related jobs: 5,520." },
-            Sources: new[]
-            {
-                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "Construction employment estimates for Allen County and Indiana.", CbreAnalysisUrl),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "economic-output",
-            Slug: "550-million-economic-output",
-            Claimant: "Yes for Allen",
-            ClaimText: "Nearly $550 million in annual economic output",
-            IsDirectQuote: true,
-            Category: "Economic",
-            Verdict: FactCheckVerdict.MostlyFalse,
-            IssueTags: new[] { "GEOGRAPHY ERROR", "DEFINITION ERROR" },
-            ShortFinding: "$549.3 million is CBRE's Indiana statewide RIMS II gross-output estimate. Allen County gross output is $471.6 million, and gross output is not GDP or net economic gain.",
-            DetailedExplanation: "The number is traceable to CBRE, but two qualifications change its meaning. First, it is statewide rather than Allen County. Second, BEA describes gross output as duplicative because intermediate transactions can be counted as products move through multiple businesses; value added is the GDP-comparable concept.",
-            KeyFacts: new[]
-            {
-                "Allen County modeled gross output: $471.6 million.",
-                "Indiana statewide modeled gross output: $549.3 million.",
-                "CBRE also reports materially different earnings figures: $86.2 million for Allen County and $109.9 million statewide."
-            },
-            Sources: new[]
-            {
-                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "RIMS II operating-output table for Allen County and Indiana.", CbreAnalysisUrl),
-                new FactCheckSource("U.S. Bureau of Economic Analysis RIMS II User Guide", "Official definitions and interpretation of gross output and value added.", "https://www.bea.gov/sites/default/files/methodologies/RIMSII_User_Guide.pdf"),
-            },
-            EvidenceTables: new[]
-            {
-                new FactCheckEvidenceTable(
-                    "Selected CBRE operating impact measures",
-                    new[] { "Measure", "Allen County", "Indiana" },
-                    new List<IReadOnlyList<string>>
-                    {
-                        new[] { "Gross output", "$471.6M", "$549.3M" },
-                        new[] { "Earnings", "$86.2M", "$109.9M" }
-                    })
-            },
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "keep-dollars-local",
-            Slug: "keep-dollars-local",
-            Claimant: "Yes for Allen",
-            ClaimText: "A casino would keep Northeast Indiana’s gambling dollars local",
-            IsDirectQuote: false,
-            Category: "Economic",
-            Verdict: FactCheckVerdict.False,
-            IssueTags: new[] { "SOURCE MISREPRESENTATION", "GEOGRAPHY ERROR", "MISSING CONTEXT" },
-            ShortFinding: "Casino revenue is not money returned to residents; it is the money gamblers lose after winnings are paid. Spectrum expects only a small share of revenue from other states, meaning most projected revenue would come from gamblers in the casino’s core regional market. Calling those losses ‘dollars kept local’ confuses casino income with community wealth.",
-            DetailedExplanation: "Yes for Allen says a casino would ‘bring that revenue back and put it to work here for Allen County residents.’\n\nBut a casino can generate that revenue only by retaining gamblers’ money after paying winnings. When the gamblers are local residents, the casino’s revenue is a direct loss to local households—not money returned to them or newly created for the community.\n\nSpectrum expects only a small percentage of the casino’s revenue to come from other states. Most would therefore come from its core regional market. Taxes, employee wages, and local purchases may recirculate a portion, but that does not make the casino’s entire revenue a local benefit—especially when gambling displaces spending at other local businesses.",
-            KeyFacts: new[]
-            {
-                "Adjusted gross receipts are wagers retained by the casino after winnings and limited deductions.",
-                "Spectrum expects only a small percentage of revenue from out-of-state gamblers.",
-                "Local gambling losses can replace household spending at existing restaurants, entertainment venues, and other businesses."
-            },
-            Sources: new[]
-            {
-                new FactCheckSource("Yes for Allen — Facts", "Campaign source for the quoted Keep Dollars Local claim.", ClaimSourceUrl),
-                new FactCheckSource("Indiana Gaming Commission — Annual Report", "Official definition of adjusted gross receipts as gaming receipts minus winnings and limited uncollectible receivables.", "https://www.in.gov/igc/files/CY2001-Annual.pdf"),
-                new FactCheckSource("Spectrum Gaming Group relocation study", "Official IGC study stating that only a small percentage of Northeast casino revenue is expected from other states.", SpectrumStudyUrl),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "annual-revenue",
-            Slug: "100-million-new-annual-revenue",
-            Claimant: "Yes for Allen",
-            ClaimText: "More than $100 million in new revenue annually",
-            IsDirectQuote: true,
-            Category: "Tax & Fiscal",
-            Verdict: FactCheckVerdict.MostlyFalse,
-            IssueTags: new[] { "PROJECTION", "OUTDATED" },
-            ShortFinding: "The $107.4 million figure is CBRE's modeled stabilized Year 3 tax-distribution forecast, not observed revenue, and its supplemental-tax allocation predates Indiana's enacted 2026 formula.",
-            DetailedExplanation: "CBRE's figure depends on its gaming-revenue forecast, assumed development, property value, non-gaming activity, tax bases, and statutory structure. CBRE expressly stated that the supplemental wagering-tax allocation was unknown when the analysis was prepared. Indiana later enacted a 3.5% Northeast Indiana supplemental wagering tax distributed 45% to the host city, 45% to the host county, and 10% to the regional development authority.",
-            KeyFacts: new[]
-            {
-                "CBRE Year 3 modeled total tax distributions: $107.4M.",
-                "Enacted Northeast Indiana supplemental wagering tax: 3.5% of adjusted gross receipts.",
-                "Enacted supplemental distribution: 45% host city, 45% host county, 10% Northeast Indiana regional development authority."
-            },
-            Sources: new[]
-            {
-                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "Stabilized Year 3 fiscal table and the study's limiting conditions.", CbreAnalysisUrl),
-                new FactCheckSource("Indiana Department of Revenue — 2026 Legislative Synopsis", "Enacted Northeast Indiana supplemental wagering-tax structure, p. 80.", IndianaCasinoLawSummaryUrl),
-            },
-            EvidenceTables: new[]
-            {
-                new FactCheckEvidenceTable(
-                    "CBRE Year 3 modeled tax distributions",
-                    new[] { "Recipient category", "CBRE amount" },
-                    new List<IReadOnlyList<string>>
-                    {
-                        new[] { "Indiana", "$66.3M" },
-                        new[] { "Fort Wayne", "$25.0M" },
-                        new[] { "Allen County", "$1.7M" },
-                        new[] { "Other governing bodies / stakeholders", "$14.5M" },
-                        new[] { "Total", "$107.4M" }
-                    })
-            },
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "local-revenue",
-            Slug: "41-million-stays-local",
-            Claimant: "Yes for Allen",
-            ClaimText: "More than $41 million of that would stay local",
-            IsDirectQuote: true,
-            Category: "Tax & Fiscal",
-            Verdict: FactCheckVerdict.MostlyTrue,
-            IssueTags: new[] { "MISSING CONTEXT", "OUTDATED" },
-            ShortFinding: "CBRE's cited categories do total about $41.2 million, but $14.5 million is assigned to other governing bodies and stakeholders rather than Fort Wayne or Allen County, and the table predates the final 2026 supplemental-tax allocation.",
-            DetailedExplanation: "The arithmetic is traceable: $25.0 million attributed to Fort Wayne, $1.7 million to Allen County, and $14.5 million to other governing bodies and stakeholders equals approximately $41.2 million. The important qualification is that this is not $41.2 million of unrestricted city-and-county cash, and the underlying allocation model was prepared before the final statutory formula.",
-            KeyFacts: new[] { "Fort Wayne: $25.0M.", "Allen County: $1.7M.", "Other governing bodies and stakeholders: $14.5M." },
-            Sources: new[]
-            {
-                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "Stabilized Year 3 fiscal table.", CbreAnalysisUrl),
-                new FactCheckSource("Indiana Department of Revenue — 2026 Legislative Synopsis", "Final supplemental wagering-tax allocation, p. 80.", IndianaCasinoLawSummaryUrl),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "tax-relief",
-            Slug: "tax-relief-for-residents",
-            Claimant: "Yes for Allen",
-            ClaimText: "Tax Relief for Residents",
-            IsDirectQuote: true,
-            Category: "Tax & Fiscal",
-            Verdict: FactCheckVerdict.MostlyFalse,
-            IssueTags: new[] { "POLICY PROMISE", "MISSING CONTEXT" },
-            ShortFinding: "Indiana law permits a host unit to use certain casino revenue to reduce its property-tax levy for a particular year, but it does not require a tax cut and does not reduce the unit's maximum levy.",
-            DetailedExplanation: "The statute creates an option, not an automatic household outcome. A receiving unit may use relevant revenue for a levy reduction, but the choice remains discretionary. The campaign therefore cannot treat tax relief as a guaranteed consequence of referendum approval.",
-            KeyFacts: new[] { "Levy reduction is discretionary.", "The statutory option applies to a particular year.", "The revenue may not be used to reduce the unit's maximum levy." },
-            Sources: new[]
-            {
-                new FactCheckSource("Indiana Department of Revenue — 2026 Legislative Synopsis", "Permitted host-unit uses of Northeast casino revenue, p. 80.", IndianaCasinoLawSummaryUrl),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "possible-uses",
-            Slug: "revenue-could-support-community-priorities",
-            Claimant: "Yes for Allen",
-            ClaimText: "That could include infrastructure improvements, investments in public safety and mental health services, and funding for local schools and other priorities",
-            IsDirectQuote: true,
-            Category: "Tax & Fiscal",
-            Verdict: FactCheckVerdict.MostlyTrue,
-            IssueTags: new[] { "POLICY PROMISE" },
-            ShortFinding: "The word 'could' is important. Indiana law leaves broad lawful uses available to receiving units, so these are plausible policy uses — but not binding appropriations or guaranteed spending commitments.",
-            DetailedExplanation: "The campaign's FAQ is carefully worded here. It describes potential uses rather than asserting a legally dedicated percentage. The evidence supports the possibility, while the omitted context is that no cited study or statute establishes that fixed amounts will actually be appropriated to the listed programs.",
-            KeyFacts: new[] { "The operative wording is 'could' and 'potential uses'.", "Receiving units retain discretion over lawful uses.", "A policy preference is not the same as a statutory earmark." },
-            Sources: new[]
-            {
-                new FactCheckSource("Yes for Allen FAQ", "Campaign statement describing possible uses of casino revenue.", ClaimSourceUrl),
-                new FactCheckSource("Indiana Department of Revenue — 2026 Legislative Synopsis", "Permitted local uses of supplemental wagering-tax receipts, p. 80.", IndianaCasinoLawSummaryUrl),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "yes-vote-process",
-            Slug: "yes-vote-only-opens-license-competition",
-            Claimant: "Yes for Allen",
-            ClaimText: "A YES vote would only allow Allen County to compete for a casino license",
-            IsDirectQuote: true,
-            Category: "Referendum Process",
-            Verdict: FactCheckVerdict.True,
-            IssueTags: Array.Empty<string>(),
-            ShortFinding: "The referendum does not itself issue a casino license. A successful vote opens the county to applications, after which the Indiana Gaming Commission conducts the licensing process.",
-            DetailedExplanation: "Indiana's 2026 framework makes county voter approval a prerequisite to the state licensing competition. The referendum does not select an operator, approve a specific site, approve financing, or issue the gaming license itself.",
-            KeyFacts: new[] { "Voter approval opens eligibility for applications.", "The Indiana Gaming Commission conducts the licensing process.", "The referendum does not itself issue a license." },
-            Sources: new[]
-            {
-                new FactCheckSource("Indiana Gaming Commission — Northeast Indiana Casino Guidance", "Official referendum and licensing process.", IgcNortheastGuidanceUrl),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "igc-regulation",
-            Slug: "indiana-gaming-commission-regulation",
-            Claimant: "Yes for Allen",
-            ClaimText: "Gaming operations in Indiana are regulated by the Indiana Gaming Commission and subject to ongoing state oversight, licensing and compliance requirements",
-            IsDirectQuote: true,
-            Category: "Regulation",
-            Verdict: FactCheckVerdict.True,
-            IssueTags: Array.Empty<string>(),
-            ShortFinding: "The core statement is supported. An Indiana commercial casino would be regulated by the Indiana Gaming Commission and subject to licensing, enforcement, internal-control, exclusion, and compliance requirements.",
-            DetailedExplanation: "State oversight is real and should be acknowledged in a fair analysis. That fact does not independently resolve empirical questions about the size of gambling-related external costs, but the regulatory claim itself is sound.",
-            KeyFacts: new[] { "Commercial casinos are licensed and regulated by the Indiana Gaming Commission.", "Indiana also operates a Voluntary Exclusion Program." },
-            Sources: new[]
-            {
-                new FactCheckSource("Indiana Gaming Commission", "Official description of commercial gaming oversight and regulatory responsibilities.", "https://www.in.gov/igc/about-us/"),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "most-regulated",
-            Slug: "most-highly-regulated-in-country",
-            Claimant: "Yes for Allen",
-            ClaimText: "Indiana maintains one of the most highly regulated gaming industries in the country",
-            IsDirectQuote: true,
-            Category: "Regulation",
-            Verdict: FactCheckVerdict.MostlyFalse,
-            IssueTags: new[] { "UNSUPPORTED" },
-            ShortFinding: "Indiana commercial gaming is heavily regulated, but the national superlative is not demonstrated by a comparative index, fifty-state statutory analysis, enforcement metric, or other cited ranking.",
-            DetailedExplanation: "The campaign combines a supportable core idea — Indiana regulates commercial gaming extensively — with a comparative national claim that the cited CBRE and Spectrum studies do not test. Without a defined metric and cross-state comparison, 'one of the most highly regulated' cannot be validated as stated.",
-            KeyFacts: new[] { "Neither cited economic study is a fifty-state regulatory comparison.", "No comparative ranking methodology is supplied with the campaign claim." },
-            Sources: new[]
-            {
-                new FactCheckSource("Indiana Gaming Commission — Statutes and Rules", "Indiana's published commercial gaming statutes and rules.", "https://www.in.gov/igc/statutes-and-rules/"),
-                new FactCheckSource("CBRE Greater Fort Wayne Area Casino Analysis", "The commissioned analysis does not provide a fifty-state regulatory ranking.", CbreAnalysisUrl),
-                new FactCheckSource("Spectrum Gaming Group relocation study", "The official IGC study does not provide a fifty-state regulatory ranking.", SpectrumStudyUrl),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "steuben-local-business",
-            Slug: "steuben-casino-helps-local-businesses",
-            Claimant: "Steuben — Where Fun Wins",
-            ClaimText: "A Detroit property-value study proves casinos help surrounding businesses instead of displacing them",
-            IsDirectQuote: false,
-            Category: "Steuben County — Local Business",
-            Verdict: FactCheckVerdict.False,
-            IssueTags: Array.Empty<string>(),
-            ShortFinding: "The cited Detroit study measured retail property values—not business sales, profits, employment, or closures. It cannot establish that a Steuben casino would help independent businesses, while separate research finds that casinos substitute for spending at entertainment and amusement businesses.",
-            DetailedExplanation: "Steuben’s promotional site cites a study of commercial property values around Detroit casinos as evidence that casinos complement other businesses rather than displace them.\n\nThat study did not measure whether nearby restaurants, entertainment venues, hotels, or retailers gained or lost customers, revenue, jobs, or profits. Its authors studied property values in a major urban casino market and described their result as suggestive—not proof of what would happen to independent businesses in Steuben County.\n\nResearch using industry-level sales data found substitution between casinos and entertainment and amusement businesses. A property-value result cannot erase those operating losses or establish that a proposed Steuben casino would benefit surrounding businesses.",
-            KeyFacts: new[]
-            {
-                "The cited Detroit study measured retail property values, not local-business performance.",
-                "It did not study Steuben County or a comparable Northeast Indiana market.",
-                "Separate sales research found casinos substitute for entertainment and amusement spending."
-            },
-            Sources: new[]
-            {
-                new FactCheckSource("Steuben — Where Fun Wins: Myths and Facts", "Primary campaign source applying a Detroit property-value study to local-business impacts in Steuben County.", SteubenClaimSourceUrl),
-                new FactCheckSource("Wiley and Walker — Casino Revenues and Retail Property Values: The Detroit Case", "The campaign’s cited study; its outcome is retail property value in Detroit, not business sales, profits, employment, or closures.", "https://www.walkerd.people.charleston.edu/pubs/2010/DetroitJREFE.pdf"),
-                new FactCheckSource("Siegel and Anders — Public Policy and the Displacement Effects of Casinos", "Primary study finding substitution between casino gambling and entertainment and amusement businesses.", "https://doi.org/10.1023/A:1022230124148"),
-                new FactCheckSource("Federal Reserve Bank of St. Louis — Casinos and Economic Development", "Primary-source economic review explaining substitution when casino customers are primarily local.", "https://www.stlouisfed.org/community-development/publications/bridges/casinos-and-economic-development-a-look-at-the-issues"),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: SteubenClaimSourceUrl,
-            ClaimCapturedDate: SteubenCapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "tribal-approval",
-            Slug: "tribal-casino-no-state-local-approval",
-            Claimant: "Yes for Allen",
-            ClaimText: "A tribal casino would require no state or local approval",
-            IsDirectQuote: false,
-            Category: "Tribal Gaming",
-            Verdict: FactCheckVerdict.False,
-            IssueTags: new[] { "MISSING CONTEXT", "DEFINITION ERROR" },
-            ShortFinding: "Federal law governs tribal gaming, but it does not eliminate state and local participation. The ordinary off-reservation route requires the Governor’s concurrence and consultation with state and local officials; Class III casino gaming also requires a Tribal-State compact.",
-            DetailedExplanation: "Yes for Allen states: ‘A tribal casino would be governed by federal law and would not require approval from state or local officials.’ A tribe cannot simply build a casino on ordinary land in Allen County. Gaming must occur on eligible Indian lands, and IGRA generally prohibits gaming on land taken into trust after October 17, 1988 unless a statutory exception applies. Under the two-part Secretarial Determination route, Interior must consult appropriate state and local officials, determine that gaming would not harm the surrounding community, and obtain the Governor’s affirmative concurrence. Full-scale Class III casino gaming additionally requires a Tribal-State compact approved by the U.S. Department of the Interior. Local officials do not possess a universal veto under every possible IGRA exception, but Yes for Allen’s categorical statement that no state or local approval is required is false.",
-            KeyFacts: new[]
-            {
-                "The Fort Wayne parcel entered trust in 2024, so Section 2719 gaming-land rules are relevant.",
-                "The two-part Secretarial Determination route requires affirmative Governor concurrence.",
-                "Appropriate state and local officials are consulted on the two-part route.",
-                "Class III gaming ordinarily requires a valid Tribal-State compact approved by Interior."
-            },
-            Sources: new[]
-            {
-                new FactCheckSource("Yes for Allen — Facts", "Campaign source for the quoted tribal-casino approval claim.", ClaimSourceUrl),
-                new FactCheckSource("Indian Gaming Regulatory Act", "Federal statutory framework for gaming on Indian lands and Class III Tribal-State compacts.", "https://www.nigc.gov/office-of-general-counsel/laws-and-regulations/indian-gaming-regulatory-act"),
-                new FactCheckSource("25 CFR Part 292", "Federal rules for gaming on trust lands acquired after October 17, 1988.", "https://www.ecfr.gov/current/title-25/chapter-I/subchapter-N/part-292"),
-                new FactCheckSource("U.S. Department of the Interior — Gaming Land Decisions", "Official explanation of eligible Indian lands, the post-1988 prohibition, and IGRA exceptions.", "https://www.bia.gov/as-ia/oig/gaming-land-decisions"),
-                new FactCheckSource("Indiana Gaming Commission — 2021 Annual Report", "Indiana’s Class III compact with the Pokagon Band required gubernatorial negotiation, legislative ratification, and Interior review.", "https://www.in.gov/igc/files/FY2021-Annual.pdf"),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-        new(
-            Id: "tribal-revenue",
-            Slug: "tribal-revenue-distribution",
-            Claimant: "Yes for Allen",
-            ClaimText: "Tribal gaming revenue is directed to the tribe for governmental purposes under federal law, not distributed to state and local governments the way commercial casino revenue is",
-            IsDirectQuote: true,
-            Category: "Tribal Gaming",
-            Verdict: FactCheckVerdict.MostlyTrue,
-            IssueTags: new[] { "MISSING CONTEXT" },
-            ShortFinding: "The structural distinction is real: tribal gaming is not taxed and distributed under Indiana's commercial-casino formula. But federal law permits tribal net gaming revenue to help fund operations of local government agencies.",
-            DetailedExplanation: "The campaign is correct that tribal gaming revenue does not automatically flow through Indiana's commercial statutory tax schedule. The missing context is that IGRA expressly permits net gaming revenue to help fund local government agencies, and compacts or intergovernmental agreements can address mitigation and payments.",
-            KeyFacts: new[] { "Different tax/distribution structure: supported.", "IGRA permits net gaming revenues to help fund local government agencies.", "Compacts and intergovernmental agreements can address payments and mitigation." },
-            Sources: new[]
-            {
-                new FactCheckSource("Indian Gaming Regulatory Act", "Federal statutory purposes for which tribal net gaming revenue may be used.", "https://www.nigc.gov/office-of-general-counsel/laws-and-regulations/indian-gaming-regulatory-act"),
-                new FactCheckSource("National Indian Gaming Commission FAQ", "Official public guidance on tribal gaming requirements and revenue uses.", "https://www.nigc.gov/commission/frequently-asked-questions/"),
-            },
-            EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
-            FirstPublished: "August 2026",
-            LastReviewed: "August 2026",
-            RevisionHistory: Array.Empty<string>()),
-
-    };
-
-    private static readonly string[] FalseFactCheckOrder =
-    {
-        "resident-jobs",
-        "keep-dollars-local",
-        "tribal-approval",
-        "steuben-tax-liability",
-        "steuben-nonprofit-mandate",
-        "steuben-local-business"
-    };
-
-    private static readonly IReadOnlyList<FactCheckClaim> FalseFactChecks = FalseFactCheckOrder
-        .Select(id => FactChecks.Single(claim => claim.Id == id))
-        .Where(claim => claim.Verdict == FactCheckVerdict.False)
-        .ToArray();
-
-    private static readonly IReadOnlyList<FactCheckClaim> DesktopLeftFactChecks = FalseFactChecks
-        .Where((_, index) => index % 2 == 0)
-        .ToArray();
-
-    private static readonly IReadOnlyList<FactCheckClaim> DesktopRightFactChecks = FalseFactChecks
-        .Where((_, index) => index % 2 == 1)
-        .ToArray();
 }
