@@ -19,7 +19,7 @@
     [Parameter]
     public bool Large { get; set; }
 
-    private string SizeClass => Large ? "fact-check-gauge--large" : "fact-check-gauge--timeline";
+    private string SizeClass => Large ? "fact-check-gauge--large" : "fact-check-gauge--compact";
 
     private string VerdictLabel => Verdict switch
     {
