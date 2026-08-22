@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace SaveNEIN.Client.Models;
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<FactCheckVerdict>))]
 public enum FactCheckVerdict
 {
     True,
