@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using SaveNEIN.Server.Configuration;
 using SaveNEIN.Server.Controllers;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Services;
@@ -32,7 +34,7 @@ namespace SaveNEIN.Server.Tests
                 config,
                 db);
 
-            var controller = new CensusController(db, seeder, memoryCache);
+            var controller = new CensusController(db, seeder, memoryCache, Options.Create(new TaxAllocationOptions()));
 
             var result = await controller.GetPopulationHeatmap(stateFips);
 

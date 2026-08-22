@@ -1,18 +1,18 @@
 @using SaveNEIN.Client.Models
 
-<li class="fact-check-entry @(IsRight ? "is-right" : "is-left")" id="fact-check-@Claim.Slug">
-    <div class="fact-check-entry__marker">
-        <FactCheckGauge Verdict="Claim.Verdict" />
-    </div>
-
-    <article class="fact-check-entry__card" aria-labelledby="fact-check-title-@Claim.Id">
-        <div class="fact-check-entry__eyebrow-row">
-            <span class="fact-check-entry__category">@Claim.Category</span>
+<li class="fact-check-entry" id="fact-check-@Claim.Slug-@IdSuffix">
+    <article class="fact-check-entry__card" aria-labelledby="fact-check-title-@Claim.Id-@IdSuffix">
+        <div class="fact-check-entry__header">
+            <div class="fact-check-entry__heading-copy">
+                <span class="fact-check-entry__category">@Claim.Category</span>
+                <p class="fact-check-entry__claimant">@(Claim.IsDirectQuote ? $"{Claim.Claimant} claim" : $"{Claim.Claimant} framing")</p>
+            </div>
+            <div class="fact-check-entry__gauge">
+                <FactCheckGauge Verdict="Claim.Verdict" />
+            </div>
         </div>
 
-        <p class="fact-check-entry__claimant">@(Claim.IsDirectQuote ? $"{Claim.Claimant} claim" : $"{Claim.Claimant} framing")</p>
-
-        <h4 class="fact-check-entry__claim" id="fact-check-title-@Claim.Id">
+        <h4 class="fact-check-entry__claim" id="fact-check-title-@Claim.Id-@IdSuffix">
             @if (Claim.IsDirectQuote)
             {
                 <span>&ldquo;@Claim.ClaimText&rdquo;</span>
@@ -117,7 +117,7 @@
     public FactCheckClaim Claim { get; set; } = default!;
 
     [Parameter]
-    public bool IsRight { get; set; }
+    public string IdSuffix { get; set; } = "default";
 
     private IEnumerable<string> DetailParagraphs => Claim.DetailedExplanation.Split(
         new[] { "\r\n\r\n", "\n\n" },

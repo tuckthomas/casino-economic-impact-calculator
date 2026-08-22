@@ -18,6 +18,8 @@ builder.Services.AddMemoryCache();
 builder.Services.AddRazorPages();
 builder.Services.AddOpenApi();
 builder.Services.Configure<TaxAllocationOptions>(builder.Configuration.GetSection("TaxAllocation"));
+builder.Services.Configure<DailySignupDigestOptions>(builder.Configuration.GetSection(DailySignupDigestOptions.ConfigurationSection));
+builder.Services.Configure<ZohoMailOptions>(builder.Configuration.GetSection(ZohoMailOptions.ConfigurationSection));
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -31,6 +33,14 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), 
         o => o.UseNetTopologySuite()));
+
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.IZohoMailSender, SaveNEIN.Server.Services.ZohoMailSender>((serviceProvider, client) =>
+{
+    var options = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ZohoMailOptions>>().Value;
+    client.BaseAddress = new Uri(options.ApiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddHostedService<SaveNEIN.Server.Services.DailySignupDigestWorker>();
 
 // Register Valhalla Client
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.Valhalla.ValhallaClient>(client =>

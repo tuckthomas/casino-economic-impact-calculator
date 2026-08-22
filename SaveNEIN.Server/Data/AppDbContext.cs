@@ -63,6 +63,7 @@ public class AppDbContext : DbContext
     public DbSet<SaveNEIN.Server.Data.Entities.SensitivityAnalysis> SensitivityAnalyses => Set<SaveNEIN.Server.Data.Entities.SensitivityAnalysis>();
     public DbSet<SaveNEIN.Server.Data.Entities.SensitivityAnalysisPoint> SensitivityAnalysisPoints => Set<SaveNEIN.Server.Data.Entities.SensitivityAnalysisPoint>();
     public DbSet<SaveNEIN.Server.Data.Entities.CoalitionSignup> CoalitionSignups => Set<SaveNEIN.Server.Data.Entities.CoalitionSignup>();
+    public DbSet<SaveNEIN.Server.Data.Entities.DailySignupDigestDelivery> DailySignupDigestDeliveries => Set<SaveNEIN.Server.Data.Entities.DailySignupDigestDelivery>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -851,6 +852,10 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.CoalitionSignup>()
             .HasIndex(signup => signup.NormalizedEmail)
+            .IsUnique();
+
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.DailySignupDigestDelivery>()
+            .HasIndex(delivery => delivery.ReportDateLocal)
             .IsUnique();
 
         ConfigureModelFoundationColumnNames(modelBuilder);

@@ -6,7 +6,7 @@
     width: 100%;
     height: 100svh;
     object-fit: cover;
-    object-position: center;
+    object-position: right center;
     filter: brightness(0.6) contrast(1.2);
 }
 

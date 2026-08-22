@@ -1,4 +1,5 @@
 @using SaveNEIN.Client.Models
+@inject IJSRuntime JSRuntime
 
 <section class="bg-slate-50 dark:bg-[#0B1221] py-24 relative overflow-hidden [--fc-card:#ffffff] [--fc-card-border:#cbd5e1] [--fc-text:#0f172a] [--fc-muted:#64748b] [--fc-surface:#f8fafc] [--fc-surface-border:#e2e8f0] [--fc-heading:#334155] [--fc-line:#94a3b8] dark:[--fc-card:#0f172a] dark:[--fc-card-border:#334155] dark:[--fc-text:#f8fafc] dark:[--fc-muted:#94a3b8] dark:[--fc-surface:#1e293b] dark:[--fc-surface-border:#334155] dark:[--fc-heading:#e2e8f0] dark:[--fc-line:#475569]" id="proponents-critique">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -14,17 +15,39 @@
             </p>
         </div>
 
-        <ol class="fact-check-timeline" aria-label="Casino proponents fact checks">
-            @for (var i = 0; i < FalseFactChecks.Count; i++)
+        <div class="fact-check-desktop-columns" aria-label="Casino proponents fact checks">
+            <ol class="fact-check-column">
+                @foreach (var claim in DesktopLeftFactChecks)
+                {
+                    <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="desktop-left" />
+                }
+            </ol>
+            <ol class="fact-check-column">
+                @foreach (var claim in DesktopRightFactChecks)
+                {
+                    <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="desktop-right" />
+                }
+            </ol>
+        </div>
+
+        <ol class="fact-check-mobile-list" aria-label="Casino proponents fact checks">
+            @foreach (var claim in FalseFactChecks)
             {
-                var claim = FalseFactChecks[i];
-                <FactCheckTimelineItem @key="claim.Id" Claim="claim" IsRight="@(i % 2 == 1)" />
+                <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="mobile" />
             }
         </ol>
     </div>
 </section>
 
 @code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("window.FactCheckLayout.init");
+        }
+    }
+
     private const string ClaimSourceUrl = "https://yesforallen.org/facts/";
     private const string SteubenClaimSourceUrl = "https://steubenfunwins.com/myths-and-facts/";
     private const string CbreAnalysisUrl = "https://cdn.insideindianabusiness.com/wp-content/uploads/2026/01/GFWI-Casino-Analysis-Presentation-Final-2025-12-03.pdf";
@@ -402,25 +425,32 @@
             RevisionHistory: Array.Empty<string>()),
 
         new(
-            Id: "no-vote",
-            Slug: "no-vote-gives-opportunity-away",
-            Claimant: "Yes for Allen",
-            ClaimText: "A NO vote gives Allen County’s casino opportunity to DeKalb or Steuben",
+            Id: "steuben-local-business",
+            Slug: "steuben-casino-helps-local-businesses",
+            Claimant: "Steuben — Where Fun Wins",
+            ClaimText: "A Detroit property-value study proves casinos help surrounding businesses instead of displacing them",
             IsDirectQuote: false,
-            Category: "Referendum Process",
+            Category: "Steuben County — Local Business",
             Verdict: FactCheckVerdict.False,
-            IssueTags: new[] { "MISSING CONTEXT" },
-            ShortFinding: "An Allen County NO vote awards nothing to DeKalb or Steuben. Either county must independently pass its own referendum, attract a qualifying application, and win the Indiana Gaming Commission’s licensing decision. If no county votes YES, no license is awarded.",
-            DetailedExplanation: "Yes for Allen states: ‘Voting NO means giving that opportunity to DeKalb or Steuben County instead.’\n\nThat is not how the statutory process works. An Allen County NO vote only makes Allen County ineligible. It does not transfer a license, application, project, or economic benefit to another county.\n\nDeKalb or Steuben must separately vote YES and then prevail in the state licensing process. Yes for Allen’s own page acknowledges that if no county passes its ballot measure, no license will be awarded.",
-            KeyFacts: new[] { "No license is transferred by an Allen County NO vote.", "Each neighboring county must pass its own referendum.", "The Indiana Gaming Commission—not Allen County voters—selects the license recipient." },
+            IssueTags: Array.Empty<string>(),
+            ShortFinding: "The cited Detroit study measured retail property values—not business sales, profits, employment, or closures. It cannot establish that a Steuben casino would help independent businesses, while separate research finds that casinos substitute for spending at entertainment and amusement businesses.",
+            DetailedExplanation: "Steuben’s promotional site cites a study of commercial property values around Detroit casinos as evidence that casinos complement other businesses rather than displace them.\n\nThat study did not measure whether nearby restaurants, entertainment venues, hotels, or retailers gained or lost customers, revenue, jobs, or profits. Its authors studied property values in a major urban casino market and described their result as suggestive—not proof of what would happen to independent businesses in Steuben County.\n\nResearch using industry-level sales data found substitution between casinos and entertainment and amusement businesses. A property-value result cannot erase those operating losses or establish that a proposed Steuben casino would benefit surrounding businesses.",
+            KeyFacts: new[]
+            {
+                "The cited Detroit study measured retail property values, not local-business performance.",
+                "It did not study Steuben County or a comparable Northeast Indiana market.",
+                "Separate sales research found casinos substitute for entertainment and amusement spending."
+            },
             Sources: new[]
             {
-                new FactCheckSource("Yes for Allen — Facts", "Campaign source for the quoted claim and its acknowledgment that no license is awarded if no county passes.", ClaimSourceUrl),
-                new FactCheckSource("Indiana Gaming Commission — Northeast Indiana Casino Guidance", "Official county eligibility and licensing contingencies.", IgcNortheastGuidanceUrl),
+                new FactCheckSource("Steuben — Where Fun Wins: Myths and Facts", "Primary campaign source applying a Detroit property-value study to local-business impacts in Steuben County.", SteubenClaimSourceUrl),
+                new FactCheckSource("Wiley and Walker — Casino Revenues and Retail Property Values: The Detroit Case", "The campaign’s cited study; its outcome is retail property value in Detroit, not business sales, profits, employment, or closures.", "https://www.walkerd.people.charleston.edu/pubs/2010/DetroitJREFE.pdf"),
+                new FactCheckSource("Siegel and Anders — Public Policy and the Displacement Effects of Casinos", "Primary study finding substitution between casino gambling and entertainment and amusement businesses.", "https://doi.org/10.1023/A:1022230124148"),
+                new FactCheckSource("Federal Reserve Bank of St. Louis — Casinos and Economic Development", "Primary-source economic review explaining substitution when casino customers are primarily local.", "https://www.stlouisfed.org/community-development/publications/bridges/casinos-and-economic-development-a-look-at-the-issues"),
             },
             EvidenceTables: Array.Empty<FactCheckEvidenceTable>(),
-            ClaimSourceUrl: ClaimSourceUrl,
-            ClaimCapturedDate: CapturedDate,
+            ClaimSourceUrl: SteubenClaimSourceUrl,
+            ClaimCapturedDate: SteubenCapturedDate,
             FirstPublished: "August 2026",
             LastReviewed: "August 2026",
             RevisionHistory: Array.Empty<string>()),
@@ -491,11 +521,19 @@
         "tribal-approval",
         "steuben-tax-liability",
         "steuben-nonprofit-mandate",
-        "no-vote"
+        "steuben-local-business"
     };
 
     private static readonly IReadOnlyList<FactCheckClaim> FalseFactChecks = FalseFactCheckOrder
         .Select(id => FactChecks.Single(claim => claim.Id == id))
         .Where(claim => claim.Verdict == FactCheckVerdict.False)
+        .ToArray();
+
+    private static readonly IReadOnlyList<FactCheckClaim> DesktopLeftFactChecks = FalseFactChecks
+        .Where((_, index) => index % 2 == 0)
+        .ToArray();
+
+    private static readonly IReadOnlyList<FactCheckClaim> DesktopRightFactChecks = FalseFactChecks
+        .Where((_, index) => index % 2 == 1)
         .ToArray();
 }
