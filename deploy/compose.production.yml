@@ -71,11 +71,21 @@ services:
       ZohoMail__RefreshToken: ${ZOHO_MAIL_REFRESH_TOKEN:-}
       ZohoMail__ApiBaseUrl: ${ZOHO_MAIL_API_BASE_URL:-https://mail.zoho.com/api/}
       ZohoMail__TokenEndpoint: ${ZOHO_MAIL_TOKEN_ENDPOINT:-https://accounts.zoho.com/oauth/v2/token}
+      ArchiveBox__Enabled: ${ARCHIVEBOX_ENABLED:-false}
+      ArchiveBox__InternalBaseUrl: http://archivebox:8000
+      ArchiveBox__ApiToken: ${ARCHIVEBOX_API_TOKEN:-}
+      ArchiveBox__CaptureAdminToken: ${ARCHIVEBOX_CAPTURE_ADMIN_TOKEN:-}
+      ArchiveBox__DataPath: /var/lib/savenein/archivebox
+      ArchiveBox__ArchiveUserName: ${ARCHIVEBOX_ADMIN_USERNAME:-savenein}
     depends_on:
       db:
         condition: service_healthy
       valhalla:
         condition: service_started
+      archivebox:
+        condition: service_started
+    volumes:
+      - archivebox_data:/var/lib/savenein/archivebox:ro
     expose:
       - "8080"
     healthcheck:
@@ -112,6 +122,29 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  archivebox:
+    image: archivebox/archivebox@sha256:2ccfe19800291c41a0ae0f18f4a4735d4671e2fc2ddb933a7d1a0420911490ba
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      BASE_URL: http://archivebox:8000
+      SERVER_SECURITY_MODE: safe-onedomain-nojsreplay
+      PUBLIC_ADD_VIEW: "False"
+      PUBLIC_INDEX: "False"
+      ADMIN_USERNAME: ${ARCHIVEBOX_ADMIN_USERNAME:-savenein}
+      ADMIN_PASSWORD: ${ARCHIVEBOX_ADMIN_PASSWORD:?ARCHIVEBOX_ADMIN_PASSWORD is required}
+    volumes:
+      - archivebox_data:/data
+      - archivebox_data:/data/personas
+      - archivebox_tmp:/tmp/archivebox
+    shm_size: "1gb"
+    pids_limit: 2048
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   certbot:
     image: certbot/certbot:latest
     profiles: ["maintenance"]
@@ -121,3 +154,5 @@ services:
 
 volumes:
   postgres_data:
+  archivebox_data:
+  archivebox_tmp:

@@ -64,6 +64,7 @@ public class AppDbContext : DbContext
     public DbSet<SaveNEIN.Server.Data.Entities.SensitivityAnalysisPoint> SensitivityAnalysisPoints => Set<SaveNEIN.Server.Data.Entities.SensitivityAnalysisPoint>();
     public DbSet<SaveNEIN.Server.Data.Entities.CoalitionSignup> CoalitionSignups => Set<SaveNEIN.Server.Data.Entities.CoalitionSignup>();
     public DbSet<SaveNEIN.Server.Data.Entities.DailySignupDigestDelivery> DailySignupDigestDeliveries => Set<SaveNEIN.Server.Data.Entities.DailySignupDigestDelivery>();
+    public DbSet<SaveNEIN.Server.Data.Entities.ArchivedWebSource> ArchivedWebSources => Set<SaveNEIN.Server.Data.Entities.ArchivedWebSource>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -857,6 +858,32 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<SaveNEIN.Server.Data.Entities.DailySignupDigestDelivery>()
             .HasIndex(delivery => delivery.ReportDateLocal)
             .IsUnique();
+
+        modelBuilder.Entity<SaveNEIN.Server.Data.Entities.ArchivedWebSource>(entity =>
+        {
+            entity.ToTable("archived_web_sources");
+            entity.HasKey(capture => capture.Id);
+            entity.HasIndex(capture => capture.ArchiveBoxSnapshotId).IsUnique();
+            entity.HasIndex(capture => new { capture.SourceKey, capture.CapturedAtUtc });
+            entity.Property(capture => capture.Id).HasColumnName("id");
+            entity.Property(capture => capture.SourceKey).HasColumnName("source_key").HasMaxLength(100);
+            entity.Property(capture => capture.OriginalUrl).HasColumnName("original_url").HasMaxLength(2048);
+            entity.Property(capture => capture.ObservedAtUtc).HasColumnName("observed_at_utc");
+            entity.Property(capture => capture.ObservationType).HasColumnName("observation_type").HasMaxLength(50);
+            entity.Property(capture => capture.ArchiveBoxSnapshotId).HasColumnName("archivebox_snapshot_id").HasMaxLength(64);
+            entity.Property(capture => capture.CapturedAtUtc).HasColumnName("captured_at_utc");
+            entity.Property(capture => capture.PublicArchivedUrl).HasColumnName("public_archived_url").HasMaxLength(2048);
+            entity.Property(capture => capture.HttpStatus).HasColumnName("http_status");
+            entity.Property(capture => capture.CaptureStatus).HasColumnName("capture_status").HasMaxLength(30);
+            entity.Property(capture => capture.NormalizedText).HasColumnName("normalized_text");
+            entity.Property(capture => capture.NormalizedTextSha256).HasColumnName("normalized_text_sha256").HasMaxLength(64);
+            entity.Property(capture => capture.ArtifactManifestJson).HasColumnName("artifact_manifest_json").HasColumnType("jsonb");
+            entity.Property(capture => capture.ArchiveRelativePath).HasColumnName("archive_relative_path").HasMaxLength(2048);
+            entity.Property(capture => capture.VerifiedAtUtc).HasColumnName("verified_at_utc");
+            entity.Property(capture => capture.VerificationStatus).HasColumnName("verification_status").HasMaxLength(30);
+            entity.Property(capture => capture.VerificationNote).HasColumnName("verification_note");
+            entity.Property(capture => capture.CreatedAtUtc).HasColumnName("created_at_utc");
+        });
 
         ConfigureModelFoundationColumnNames(modelBuilder);
     }

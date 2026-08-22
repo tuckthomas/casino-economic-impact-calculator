@@ -12,21 +12,25 @@
             </div>
         </div>
 
-        <h4 class="fact-check-entry__claim" id="fact-check-title-@Claim.Id-@IdSuffix">
-            @if (Claim.IsDirectQuote)
-            {
-                <span>&ldquo;@Claim.ClaimText&rdquo;</span>
-            }
-            else
-            {
-                <span>@Claim.ClaimText</span>
-            }
-        </h4>
-
         <div class="fact-check-entry__evidence-summary">
-            <p class="fact-check-entry__evidence-label">The evidence</p>
-            <p>@Claim.ShortFinding</p>
+            <p class="fact-check-entry__evidence-label">Claim being checked</p>
+            <p class="fact-check-entry__claim-text">
+                @if (Claim.IsDirectQuote)
+                {
+                    <span>&ldquo;@Claim.ClaimText&rdquo;</span>
+                }
+                else
+                {
+                    <span>@Claim.ClaimText</span>
+                }
+            </p>
         </div>
+
+        <section class="fact-check-entry__finding" aria-label="Evidence-backed finding">
+            <p class="fact-check-entry__finding-label">The evidence shows</p>
+            <h4 id="fact-check-title-@Claim.Id-@IdSuffix">@Claim.FindingHeadline</h4>
+            <p>@Claim.ShortFinding</p>
+        </section>
 
         <details class="fact-check-entry__details">
             <summary>View evidence &amp; sources</summary>
@@ -99,10 +103,23 @@
                             </li>
                         }
                     </ul>
+                    @if (!string.IsNullOrWhiteSpace(Claim.ClaimSourceArchivedUrl) && Claim.ClaimSourceCapturedAtUtc is not null)
+                    {
+                        <a class="fact-check-entry__claim-source" href="@Claim.ClaimSourceArchivedUrl" target="_blank" rel="noopener noreferrer">
+                            View archived claimant source — captured @Claim.ClaimSourceCapturedAtUtc.Value.ToString("MMMM d, yyyy")
+                            <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                        </a>
+                    }
+                    else if (Claim.ClaimSourceObservedOn is not null)
+                    {
+                        <p class="fact-check-entry__source-provenance">
+                            Claimant source observed @ObservationLabel on @Claim.ClaimSourceObservedOn.Value.ToString("MMMM d, yyyy"); no immutable capture exists for that date.
+                        </p>
+                    }
                     @if (!string.IsNullOrWhiteSpace(Claim.ClaimSourceUrl))
                     {
-                        <a class="fact-check-entry__claim-source" href="@Claim.ClaimSourceUrl" target="_blank" rel="noopener noreferrer">
-                            View claimant source
+                        <a class="fact-check-entry__claim-source fact-check-entry__claim-source--live" href="@Claim.ClaimSourceUrl" target="_blank" rel="noopener noreferrer">
+                            View current claimant page
                             <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
                         </a>
                     }
@@ -122,5 +139,12 @@
     private IEnumerable<string> DetailParagraphs => Claim.DetailedExplanation.Split(
         new[] { "\r\n\r\n", "\n\n" },
         StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    private string ObservationLabel => Claim.ClaimSourceObservationType switch
+    {
+        "ReportScrape" => "in a research scrape",
+        "LiveReview" => "during a live-page review",
+        _ => "during research"
+    };
 
 }

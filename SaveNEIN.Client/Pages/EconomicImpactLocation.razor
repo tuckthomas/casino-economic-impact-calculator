@@ -57,7 +57,37 @@
     }
 </style>
 
-<section class="relative overflow-hidden bg-[#0f172a]" id="economic-analysis" aria-labelledby="economic-analysis-title">
+@if (IsRenovationGateEnabled)
+{
+    <div class="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
+        <div role="dialog"
+             aria-modal="true"
+             aria-labelledby="economic-impact-renovation-title"
+             aria-describedby="economic-impact-renovation-description"
+             class="w-full max-w-xl rounded-3xl border border-slate-700 bg-slate-900 p-6 text-center shadow-2xl sm:p-10">
+            <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-500">
+                <span class="material-symbols-outlined text-3xl" aria-hidden="true">construction</span>
+            </div>
+            <p class="mb-2 text-sm font-bold uppercase tracking-wider text-orange-500">Economic Impact Model</p>
+            <h1 id="economic-impact-renovation-title" class="text-3xl font-black tracking-tight text-white sm:text-4xl">
+                Currently Under Renovation
+            </h1>
+            <p id="economic-impact-renovation-description" class="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-slate-300">
+                We’re connecting the location and drive-time selections in Part 1 to the complete analysis in Part 2. The updated model will be available soon.
+            </p>
+            <div class="mt-8 flex justify-center">
+                <AppButton type="button"
+                           OnButtonClick="@(_ => NavigationManager.NavigateTo("/"))"
+                           Icon="arrow_back"
+                           Class="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 text-base">
+                    Return to Home
+                </AppButton>
+            </div>
+        </div>
+    </div>
+}
+
+<section class="relative overflow-hidden bg-[#0f172a]" id="economic-analysis" aria-labelledby="economic-analysis-title" aria-hidden="@IsRenovationGateEnabled" inert="@IsRenovationGateEnabled">
     <div class="economic-analysis-body mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
         <div class="section-heading-block mb-12 text-center max-w-4xl mx-auto" id="economic-analysis-header">
             <span class="text-orange-600 font-bold tracking-wider uppercase text-sm">Economic Analysis</span>
@@ -375,6 +405,7 @@
 </section>
 
 @code {
+    private const bool IsRenovationGateEnabled = true;
     private readonly LocationFormModel _locationForm = new();
 
     private Task HandleLocationFormSubmit() => Task.CompletedTask;
@@ -413,7 +444,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !IsRenovationGateEnabled)
         {
             await JSRuntime.InvokeVoidAsync("window.MapLibreImpactMap.init", "impact-map");
         }

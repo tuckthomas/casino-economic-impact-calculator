@@ -20,6 +20,7 @@ builder.Services.AddOpenApi();
 builder.Services.Configure<TaxAllocationOptions>(builder.Configuration.GetSection("TaxAllocation"));
 builder.Services.Configure<DailySignupDigestOptions>(builder.Configuration.GetSection(DailySignupDigestOptions.ConfigurationSection));
 builder.Services.Configure<ZohoMailOptions>(builder.Configuration.GetSection(ZohoMailOptions.ConfigurationSection));
+builder.Services.Configure<ArchiveBoxOptions>(builder.Configuration.GetSection(ArchiveBoxOptions.ConfigurationSection));
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -41,6 +42,13 @@ builder.Services.AddHttpClient<SaveNEIN.Server.Services.IZohoMailSender, SaveNEI
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddHostedService<SaveNEIN.Server.Services.DailySignupDigestWorker>();
+builder.Services.AddSingleton<SaveNEIN.Server.Services.IArchiveSourceUrlValidator, SaveNEIN.Server.Services.ArchiveSourceUrlValidator>();
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.IArchiveBoxCaptureService, SaveNEIN.Server.Services.ArchiveBoxCaptureService>((serviceProvider, client) =>
+{
+    var options = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ArchiveBoxOptions>>().Value;
+    client.BaseAddress = new Uri(options.InternalBaseUrl.TrimEnd('/') + "/");
+    client.Timeout = Timeout.InfiniteTimeSpan;
+});
 
 // Register Valhalla Client
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.Valhalla.ValhallaClient>(client =>

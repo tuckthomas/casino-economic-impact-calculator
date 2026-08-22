@@ -45,9 +45,39 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Host=127.0.0.1;Database=savenein;Username=postgres;Password=password
       - ASPNETCORE_URLS=http://0.0.0.0:80
+      - ArchiveBox__Enabled=${ARCHIVEBOX_ENABLED:-false}
+      - ArchiveBox__InternalBaseUrl=http://127.0.0.1:8001
+      - ArchiveBox__ApiToken=${ARCHIVEBOX_API_TOKEN:-}
+      - ArchiveBox__CaptureAdminToken=${ARCHIVEBOX_CAPTURE_ADMIN_TOKEN:-}
+      - ArchiveBox__DataPath=/var/lib/savenein/archivebox
     depends_on:
       - savenein-db
+      - savenein-archivebox
+    volumes:
+      - archivebox_data:/var/lib/savenein/archivebox:ro
+
+  savenein-archivebox:
+    image: archivebox/archivebox@sha256:2ccfe19800291c41a0ae0f18f4a4735d4671e2fc2ddb933a7d1a0420911490ba
+    container_name: savenein-archivebox
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      BASE_URL: http://127.0.0.1:8001
+      SERVER_SECURITY_MODE: safe-onedomain-nojsreplay
+      PUBLIC_ADD_VIEW: "False"
+      PUBLIC_INDEX: "False"
+      ADMIN_USERNAME: ${ARCHIVEBOX_ADMIN_USERNAME:-savenein}
+      ADMIN_PASSWORD: ${ARCHIVEBOX_ADMIN_PASSWORD:-change-me-before-enabling}
+    volumes:
+      - archivebox_data:/data
+      - archivebox_data:/data/personas
+      - archivebox_tmp:/tmp/archivebox
+    shm_size: "1gb"
+    pids_limit: 2048
+    restart: unless-stopped
 
 volumes:
   postgres_data:
   cloudbeaver_data:
+  archivebox_data:
+  archivebox_tmp:

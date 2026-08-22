@@ -40,6 +40,7 @@
 .fact-check-entry__category,
 .fact-check-entry__claimant,
 .fact-check-entry__evidence-label,
+.fact-check-entry__finding-label,
 .fact-check-entry__detail-heading {
     font-size: 0.875rem;
     line-height: 1.35;
@@ -58,18 +59,6 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: #b91c1c;
-}
-
-.fact-check-entry__claim {
-    margin: 0;
-    padding: 0.2rem 0 0.35rem 1rem;
-    border-left: 0.24rem solid #dc2626;
-    font-size: clamp(1.45rem, 2vw, 2.15rem);
-    line-height: 1.08;
-    letter-spacing: -0.025em;
-    font-weight: 900;
-    text-transform: uppercase;
-    color: var(--fc-text, #0f172a);
 }
 
 .fact-check-entry__evidence-summary {
@@ -93,6 +82,42 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--fc-muted, #64748b);
+}
+
+.fact-check-entry__claim-text {
+    color: var(--fc-heading, #334155);
+    font-weight: 750;
+}
+
+.fact-check-entry__finding {
+    margin-top: 1.15rem;
+    color: var(--fc-heading, #334155);
+}
+
+.fact-check-entry__finding-label {
+    margin: 0 0 0.45rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #b91c1c;
+}
+
+.fact-check-entry__finding h4 {
+    margin: 0;
+    padding: 0.2rem 0 0.35rem 1rem;
+    border-left: 0.24rem solid #dc2626;
+    color: var(--fc-text, #0f172a);
+    font-size: clamp(1.45rem, 2vw, 2.15rem);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.fact-check-entry__finding > p:last-child {
+    margin: 1rem 0 0;
+    font-size: 1rem;
+    line-height: 1.55;
 }
 
 .fact-check-entry__details {
@@ -270,7 +295,7 @@
         order: -1;
     }
 
-    .fact-check-entry__claim {
+    .fact-check-entry__finding h4 {
         padding-left: 0.8rem;
         font-size: clamp(1.28rem, 7vw, 1.75rem);
     }
@@ -284,4 +309,14 @@
     .fact-check-entry__details > summary::after {
         transition: none;
     }
+}
+.fact-check-entry__source-provenance {
+    margin: 0 0 0.75rem;
+    color: var(--fc-muted);
+    font-size: 0.95rem;
+    font-style: italic;
+}
+
+.fact-check-entry__claim-source--live {
+    margin-top: 0.65rem;
 }
