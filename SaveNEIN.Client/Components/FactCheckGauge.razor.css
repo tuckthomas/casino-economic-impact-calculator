@@ -144,7 +144,7 @@
 }
 
 @media (max-width: 767px) {
-    .fact-check-gauge--compact {
+    .fact-check-gauge--timeline {
         --gauge-size: 5.25rem;
         padding: 0.2rem;
         box-shadow:
@@ -154,7 +154,7 @@
             0 0 0.7rem var(--verdict-glow);
     }
 
-    .fact-check-gauge--compact .fact-check-gauge__label {
+    .fact-check-gauge--timeline .fact-check-gauge__label {
         font-size: 0.46rem;
     }
 }

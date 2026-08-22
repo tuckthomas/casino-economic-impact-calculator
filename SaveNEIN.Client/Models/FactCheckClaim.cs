@@ -1,8 +1,5 @@
-using System.Text.Json.Serialization;
-
 namespace SaveNEIN.Client.Models;
 
-[JsonConverter(typeof(JsonStringEnumConverter<FactCheckVerdict>))]
 public enum FactCheckVerdict
 {
     True,
@@ -21,10 +18,6 @@ public sealed record FactCheckEvidenceTable(
     IReadOnlyList<string> Headers,
     IReadOnlyList<IReadOnlyList<string>> Rows);
 
-public sealed record FactCheckDocument(
-    int SchemaVersion,
-    IReadOnlyList<FactCheckClaim> FactChecks);
-
 public sealed record FactCheckClaim(
     string Id,
     string Slug,
@@ -34,16 +27,13 @@ public sealed record FactCheckClaim(
     string Category,
     FactCheckVerdict Verdict,
     IReadOnlyList<string> IssueTags,
-    string FindingHeadline,
     string ShortFinding,
     string DetailedExplanation,
     IReadOnlyList<string> KeyFacts,
     IReadOnlyList<FactCheckSource> Sources,
     IReadOnlyList<FactCheckEvidenceTable> EvidenceTables,
     string ClaimSourceUrl,
-    DateOnly? ClaimSourceObservedOn,
-    string? ClaimSourceObservationType,
-    string? ClaimSourceArchivedUrl,
+    string ClaimCapturedDate,
     string FirstPublished,
     string LastReviewed,
     IReadOnlyList<string> RevisionHistory);
