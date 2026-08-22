@@ -1,0 +1,308 @@
+.fact-check-card {
+    min-width: 0;
+    list-style: none;
+}
+
+.fact-check-card__article {
+    height: 100%;
+    min-width: 0;
+    border: 1px solid var(--fc-card-border, #cbd5e1);
+    border-radius: 1rem;
+    background: var(--fc-card, #ffffff);
+    color: var(--fc-text, #0f172a);
+    padding: 1.5rem;
+    box-shadow: 0 1rem 2.4rem rgba(15, 23, 42, 0.10);
+}
+
+.fact-check-card__topline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.1rem;
+}
+
+.fact-check-card__category,
+.fact-check-card__finding-label,
+.fact-check-card__claim-label,
+.fact-check-card__claimant,
+.fact-check-card__rating-label,
+.fact-check-card__detail-heading {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    font-weight: 900;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.fact-check-card__category {
+    color: var(--fc-heading, #475569);
+}
+
+.fact-check-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem;
+}
+
+.fact-check-card__tags span {
+    border: 1px solid var(--fc-surface-border, #e2e8f0);
+    border-radius: 9999px;
+    background: var(--fc-surface, #f8fafc);
+    color: var(--fc-muted, #64748b);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.68rem;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.fact-check-card__finding {
+    margin: 0;
+}
+
+.fact-check-card__finding-label {
+    margin: 0 0 0.45rem;
+    color: #b91c1c;
+}
+
+.fact-check-card__finding h4 {
+    margin: 0;
+    padding: 0.25rem 0 0.4rem 1rem;
+    border-left: 0.24rem solid #dc2626;
+    color: var(--fc-text, #0f172a);
+    font-size: clamp(1.4rem, 2vw, 2.05rem);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.fact-check-card__finding-summary {
+    margin: 1rem 0 0;
+    color: var(--fc-heading, #334155);
+    font-size: 1rem;
+    line-height: 1.58;
+}
+
+.fact-check-card__claim {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1.25rem;
+    align-items: center;
+    margin-top: 1.35rem;
+    padding: 1rem 1rem 1rem 1.1rem;
+    border: 1px solid rgba(185, 28, 28, 0.22);
+    border-left: 0.24rem solid #b91c1c;
+    border-radius: 0.8rem;
+    background: color-mix(in srgb, var(--fc-surface, #f8fafc) 92%, #fee2e2 8%);
+}
+
+.fact-check-card__claim-copy {
+    min-width: 0;
+}
+
+.fact-check-card__claim-label {
+    margin: 0 0 0.28rem;
+    color: var(--fc-muted, #64748b);
+}
+
+.fact-check-card__claimant {
+    margin: 0 0 0.35rem;
+    color: #b91c1c;
+}
+
+.fact-check-card__claim-text {
+    margin: 0;
+    color: var(--fc-heading, #334155);
+    font-size: 1rem;
+    line-height: 1.45;
+    font-weight: 750;
+}
+
+.fact-check-card__rating {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 0 0 auto;
+}
+
+.fact-check-card__rating-label {
+    color: var(--fc-muted, #64748b);
+    text-align: center;
+}
+
+.fact-check-card__details {
+    margin-top: 1rem;
+    border-top: 1px solid var(--fc-surface-border, #e2e8f0);
+    padding-top: 0.85rem;
+}
+
+.fact-check-card__details > summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    cursor: pointer;
+    border-radius: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    color: #b91c1c;
+    font-size: 0.875rem;
+    line-height: 1.3;
+    font-weight: 900;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+}
+
+.fact-check-card__details > summary:hover,
+.fact-check-card__details > summary:focus-visible {
+    background: var(--fc-surface, #f8fafc);
+    outline: 2px solid transparent;
+}
+
+.fact-check-card__details-body {
+    padding-top: 0.8rem;
+    color: var(--fc-heading, #334155);
+}
+
+.fact-check-card__details-body > p,
+.fact-check-card__key-facts,
+.fact-check-card__sources {
+    font-size: 0.95rem;
+    line-height: 1.62;
+}
+
+.fact-check-card__details-body > p + p {
+    margin-top: 0.8rem;
+}
+
+.fact-check-card__key-facts {
+    margin: 0.9rem 0 0;
+    padding-left: 1.35rem;
+    list-style: disc outside;
+}
+
+.fact-check-card__key-facts li {
+    display: list-item;
+}
+
+.fact-check-card__key-facts li::marker {
+    color: #dc2626;
+}
+
+.fact-check-card__key-facts li + li {
+    margin-top: 0.4rem;
+}
+
+.fact-check-card__detail-heading {
+    margin: 0 0 0.35rem;
+    color: var(--fc-heading, #475569);
+}
+
+.fact-check-card__sources {
+    margin-top: 1rem;
+}
+
+.fact-check-card__sources ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.fact-check-card__sources li + li {
+    margin-top: 0.35rem;
+}
+
+.fact-check-card__sources a,
+.fact-check-card__claim-source {
+    color: #b91c1c;
+    text-decoration: underline;
+    text-underline-offset: 0.15rem;
+}
+
+.fact-check-card__claim-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+    min-height: 2.5rem;
+    font-weight: 800;
+}
+
+.fact-check-card__claim-source .material-symbols-outlined {
+    font-size: 1.2rem;
+}
+
+.fact-check-card__provenance {
+    margin: 0.65rem 0 0;
+    color: var(--fc-muted, #64748b);
+    font-size: 0.82rem !important;
+    line-height: 1.45 !important;
+}
+
+.fact-check-card__table-wrap {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 1rem;
+    overflow-x: auto;
+}
+
+.fact-check-card__table-wrap table {
+    width: 100%;
+    min-width: 30rem;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+
+.fact-check-card__table-wrap caption {
+    margin-bottom: 0.45rem;
+    text-align: left;
+    font-weight: 900;
+    color: var(--fc-heading, #334155);
+}
+
+.fact-check-card__table-wrap th,
+.fact-check-card__table-wrap td {
+    border: 1px solid var(--fc-card-border, #cbd5e1);
+    padding: 0.55rem 0.65rem;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.fact-check-card__table-wrap thead th {
+    background: var(--fc-surface, #e2e8f0);
+    color: var(--fc-text, #0f172a);
+}
+
+@media (max-width: 700px) {
+    .fact-check-card__article {
+        padding: 1.1rem;
+        border-radius: 0.85rem;
+        box-shadow: none;
+    }
+
+    .fact-check-card__topline {
+        flex-direction: column;
+        gap: 0.55rem;
+    }
+
+    .fact-check-card__tags {
+        justify-content: flex-start;
+    }
+
+    .fact-check-card__finding h4 {
+        padding-left: 0.8rem;
+        font-size: clamp(1.25rem, 6vw, 1.7rem);
+    }
+
+    .fact-check-card__claim {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .fact-check-card__rating {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 0.8rem;
+    }
+}
