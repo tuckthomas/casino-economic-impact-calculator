@@ -16,7 +16,11 @@
             </p>
         </div>
 
-        @if (_loadFailed)
+        @if (!_loaded)
+        {
+            <div class="fact-check-loading" role="status">Loading fact checks…</div>
+        }
+        else if (_loadFailed)
         {
             <div class="fact-check-load-error" role="alert">
                 Fact-check content could not be loaded.
@@ -24,7 +28,7 @@
         }
         else if (_factChecks.Count == 0)
         {
-            <div class="fact-check-loading" role="status">Loading fact checks…</div>
+            <div class="fact-check-loading">No fact checks are configured for this deployment.</div>
         }
         else
         {
@@ -39,7 +43,10 @@
 </section>
 
 @code {
+    private const int SupportedSchemaVersion = 1;
+
     private IReadOnlyList<FactCheckClaim> _factChecks = Array.Empty<FactCheckClaim>();
+    private bool _loaded;
     private bool _loadFailed;
 
     protected override async Task OnInitializedAsync()
@@ -47,7 +54,13 @@
         try
         {
             var document = await Http.GetFromJsonAsync<FactCheckDocument>("data/fact-checks.json");
-            _factChecks = document?.FactChecks ?? Array.Empty<FactCheckClaim>();
+            if (document is null || document.SchemaVersion != SupportedSchemaVersion)
+            {
+                _loadFailed = true;
+                return;
+            }
+
+            _factChecks = document.FactChecks ?? Array.Empty<FactCheckClaim>();
         }
         catch (HttpRequestException)
         {
@@ -60,6 +73,10 @@
         catch (System.Text.Json.JsonException)
         {
             _loadFailed = true;
+        }
+        finally
+        {
+            _loaded = true;
         }
     }
 }
