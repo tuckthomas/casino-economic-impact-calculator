@@ -1,38 +1,50 @@
 @using SaveNEIN.Client.Models
 
-<li class="fact-check-entry @(IsRight ? "is-right" : "is-left")" id="fact-check-@Claim.Slug">
-    <div class="fact-check-entry__marker">
-        <FactCheckGauge Verdict="Claim.Verdict" />
-    </div>
-
-    <article class="fact-check-entry__card" aria-labelledby="fact-check-finding-@Claim.Id">
-        <div class="fact-check-entry__eyebrow-row">
-            <span class="fact-check-entry__category">@Claim.Category</span>
+<li class="fact-check-card" id="fact-check-@Claim.Slug">
+    <article class="fact-check-card__article" aria-labelledby="fact-check-finding-@Claim.Id">
+        <div class="fact-check-card__topline">
+            <span class="fact-check-card__category">@Claim.Category</span>
+            @if (Claim.IssueTags.Count > 0)
+            {
+                <div class="fact-check-card__tags" aria-label="Finding qualifiers">
+                    @foreach (var tag in Claim.IssueTags)
+                    {
+                        <span>@tag</span>
+                    }
+                </div>
+            }
         </div>
 
-        <p class="fact-check-entry__claimant">The evidence</p>
+        <section class="fact-check-card__finding" aria-label="Evidence-backed finding">
+            <p class="fact-check-card__finding-label">The evidence shows</p>
+            <h4 id="fact-check-finding-@Claim.Id">@Claim.FindingHeadline</h4>
+            <p class="fact-check-card__finding-summary">@Claim.ShortFinding</p>
+        </section>
 
-        <h4 class="fact-check-entry__claim" id="fact-check-finding-@Claim.Id">
-            @Claim.ShortFinding
-        </h4>
+        <section class="fact-check-card__claim" aria-label="Claim being checked">
+            <div class="fact-check-card__claim-copy">
+                <p class="fact-check-card__claim-label">Claim being checked</p>
+                <p class="fact-check-card__claimant">@(Claim.IsDirectQuote ? $"{Claim.Claimant} claim" : $"{Claim.Claimant} framing")</p>
+                <p class="fact-check-card__claim-text">
+                    @if (Claim.IsDirectQuote)
+                    {
+                        <span>&ldquo;@Claim.ClaimText&rdquo;</span>
+                    }
+                    else
+                    {
+                        <span>@Claim.ClaimText</span>
+                    }
+                </p>
+            </div>
+            <div class="fact-check-card__rating">
+                <span class="fact-check-card__rating-label">Claim rating</span>
+                <FactCheckGauge Verdict="Claim.Verdict" />
+            </div>
+        </section>
 
-        <div class="fact-check-entry__evidence-summary" aria-label="Claim being checked">
-            <p class="fact-check-entry__evidence-label">@(Claim.IsDirectQuote ? $"{Claim.Claimant} claim" : $"{Claim.Claimant} framing")</p>
-            <p>
-                @if (Claim.IsDirectQuote)
-                {
-                    <span>&ldquo;@Claim.ClaimText&rdquo;</span>
-                }
-                else
-                {
-                    <span>@Claim.ClaimText</span>
-                }
-            </p>
-        </div>
-
-        <details class="fact-check-entry__details">
+        <details class="fact-check-card__details">
             <summary>View evidence &amp; sources</summary>
-            <div class="fact-check-entry__details-body">
+            <div class="fact-check-card__details-body">
                 @foreach (var paragraph in DetailParagraphs)
                 {
                     <p>@paragraph</p>
@@ -40,7 +52,7 @@
 
                 @if (Claim.KeyFacts.Count > 0)
                 {
-                    <ul class="fact-check-entry__key-facts">
+                    <ul class="fact-check-card__key-facts">
                         @foreach (var fact in Claim.KeyFacts)
                         {
                             <li>@fact</li>
@@ -50,7 +62,7 @@
 
                 @foreach (var table in Claim.EvidenceTables)
                 {
-                    <div class="fact-check-entry__table-wrap">
+                    <div class="fact-check-card__table-wrap">
                         <table>
                             <caption>@table.Caption</caption>
                             <thead>
@@ -83,8 +95,8 @@
                     </div>
                 }
 
-                <div class="fact-check-entry__sources">
-                    <p class="fact-check-entry__detail-heading">Sources</p>
+                <div class="fact-check-card__sources">
+                    <p class="fact-check-card__detail-heading">Sources</p>
                     <ul>
                         @foreach (var source in Claim.Sources)
                         {
@@ -104,7 +116,7 @@
 
                     @if (!string.IsNullOrWhiteSpace(ClaimantSourceUrl))
                     {
-                        <a class="fact-check-entry__claim-source" href="@ClaimantSourceUrl" target="_blank" rel="noopener noreferrer">
+                        <a class="fact-check-card__claim-source" href="@ClaimantSourceUrl" target="_blank" rel="noopener noreferrer">
                             @ClaimantSourceLabel
                             <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
                         </a>
@@ -112,7 +124,7 @@
 
                     @if (Claim.ClaimSourceObservedOn is not null)
                     {
-                        <p class="fact-check-entry__provenance">
+                        <p class="fact-check-card__provenance">
                             @ObservationLabel @(Claim.ClaimSourceObservedOn.Value.ToString("MMMM d, yyyy")).
                             This is an observation date, not an archived-web capture date.
                         </p>
@@ -126,9 +138,6 @@
 @code {
     [Parameter, EditorRequired]
     public FactCheckClaim Claim { get; set; } = default!;
-
-    [Parameter]
-    public bool IsRight { get; set; }
 
     private IEnumerable<string> DetailParagraphs => Claim.DetailedExplanation.Split(
         new[] { "\r\n\r\n", "\n\n" },
