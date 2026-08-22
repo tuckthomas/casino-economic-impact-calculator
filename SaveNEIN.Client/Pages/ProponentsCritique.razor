@@ -46,7 +46,7 @@
     {
         try
         {
-            var document = await Http.GetFromJsonAsync<FactCheckDocument>("data/fact-checks.json").ConfigureAwait(false);
+            var document = await Http.GetFromJsonAsync<FactCheckDocument>("data/fact-checks.json");
             _factChecks = document?.FactChecks ?? Array.Empty<FactCheckClaim>();
         }
         catch (HttpRequestException)
