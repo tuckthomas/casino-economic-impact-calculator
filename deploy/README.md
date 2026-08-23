@@ -2,7 +2,8 @@
 
 The production stack runs the ASP.NET application, PostgreSQL/PostGIS,
 Valhalla, and Nginx as separate containers. Only Nginx publishes ports 80 and
-443. Keep the real `.env` file outside the repository.
+443. Copy [`.env.example`](.env.example) to the Git-ignored `deploy/.env` and
+populate private values before deployment; never commit the real `.env` file.
 
 See [the production deployment workflow](../docs/runbooks/PRODUCTION_DEPLOYMENT_WORKFLOW.md)
 for the complete local-to-GitHub-to-VPS release process, validation, rollback,

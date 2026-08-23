@@ -137,7 +137,7 @@ internal sealed class DailySignupDigestWorker : BackgroundService
     {
         var missing = new List<string>();
         if (string.IsNullOrWhiteSpace(_options.SenderAddress)) missing.Add("DailySignupDigest:SenderAddress");
-        if (_options.Recipients.Count == 0 || _options.Recipients.Any(string.IsNullOrWhiteSpace)) missing.Add("DailySignupDigest:Recipients");
+        if (_options.GetRecipients().Count == 0) missing.Add("DailySignupDigest:RecipientsCsv");
 
         using var scope = _scopeFactory.CreateScope();
         var zoho = scope.ServiceProvider.GetRequiredService<IOptions<ZohoMailOptions>>().Value;

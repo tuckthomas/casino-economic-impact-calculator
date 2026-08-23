@@ -60,11 +60,7 @@ services:
       DailySignupDigest__TimeZoneId: ${DAILY_SIGNUP_DIGEST_TIME_ZONE_ID:-America/Indiana/Indianapolis}
       DailySignupDigest__DeliveryLocalTime: ${DAILY_SIGNUP_DIGEST_DELIVERY_LOCAL_TIME:-08:00}
       DailySignupDigest__SenderAddress: ${DAILY_SIGNUP_DIGEST_SENDER_ADDRESS:-outreach@savefw.com}
-      DailySignupDigest__Recipients__0: ${DAILY_SIGNUP_DIGEST_RECIPIENT_0:-}
-      DailySignupDigest__Recipients__1: ${DAILY_SIGNUP_DIGEST_RECIPIENT_1:-}
-      DailySignupDigest__Recipients__2: ${DAILY_SIGNUP_DIGEST_RECIPIENT_2:-}
-      DailySignupDigest__Recipients__3: ${DAILY_SIGNUP_DIGEST_RECIPIENT_3:-}
-      DailySignupDigest__Recipients__4: ${DAILY_SIGNUP_DIGEST_RECIPIENT_4:-}
+      DailySignupDigest__RecipientsCsv: ${DAILY_SIGNUP_DIGEST_RECIPIENTS:-}
       ZohoMail__AccountId: ${ZOHO_MAIL_ACCOUNT_ID:-}
       ZohoMail__ClientId: ${ZOHO_MAIL_CLIENT_ID:-}
       ZohoMail__ClientSecret: ${ZOHO_MAIL_CLIENT_SECRET:-}

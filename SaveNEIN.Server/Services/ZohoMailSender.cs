@@ -39,7 +39,7 @@ internal sealed class ZohoMailSender : IZohoMailSender
         {
             fromAddress = _digest.SenderAddress,
             toAddress = _digest.SenderAddress,
-            bccAddress = string.Join(',', _digest.Recipients),
+            bccAddress = string.Join(',', _digest.GetRecipients()),
             subject = message.Subject,
             content = message.Content,
             mailFormat = message.MailFormat,
