@@ -120,48 +120,23 @@ Do not introduce Browsertrix in Phase 1 unless an actual target page cannot be p
 
 ### Existing state
 
-The repository's `docker-compose.yml` currently defines:
-
-- `savenein-db`
-- `savenein-db-gui`
-- `valhalla`
-- `savenein-app`
-
-All currently use host networking where applicable.
+Production uses `deploy/compose.production.yml`, which provides the app,
+PostGIS, Valhalla, Nginx, and ArchiveBox on an isolated Docker network.
+`compose.development.yml` only runs the app and reaches the VPS development
+database and Valhalla instance through private SSH tunnels. It must not start a
+second local archive, routing, or database stack.
 
 ### Add `savenein-archivebox`
 
-Add an ArchiveBox service to `docker-compose.yml` using the existing host-network convention unless the broader Docker networking strategy is deliberately refactored in the same change.
-
-Target shape:
-
-```yaml
-savenein-archivebox:
-  image: archivebox/archivebox:<PINNED_VERSION_OR_DIGEST>
-  container_name: savenein-archivebox
-  network_mode: "host"
-  command: server 0.0.0.0:8001
-  volumes:
-    - archivebox_data:/data
-  environment:
-    # Use ArchiveBox-supported configuration only; verify exact names
-    # against the pinned version before committing.
-    - PUBLIC_INDEX=True
-    - PUBLIC_ADD_VIEW=False
-    - PERMISSIONS=public
-  restart: unless-stopped
-```
-
-Add:
-
-```yaml
-volumes:
-  archivebox_data:
-```
+ArchiveBox is operated by the production Compose stack; the development app
+uses the VPS-hosted archive service when it is enabled. Its persistent volume,
+private API configuration, and reverse-proxy access are defined only in
+`deploy/compose.production.yml`.
 
 ### Port choice
 
-Use an ArchiveBox internal host port that does not collide with the ASP.NET application or other services. `8001` is the recommended initial value, but verify the deployment environment before finalizing it.
+Use the internal Docker service address for the application-to-ArchiveBox API;
+do not publish ArchiveBox directly from the development stack.
 
 ### Initialization
 

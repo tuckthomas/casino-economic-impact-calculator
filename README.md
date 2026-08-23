@@ -61,7 +61,8 @@ Save Northeast Indiana (SaveNEIN) is an interactive open-source platform designe
 ├── 📁 scripts/dev          # Local dev lifecycle & watcher scripts
 ├── 📁 docs                 # Plans, runbooks, methodology, examples
 ├── 📁 infra/valhalla       # Valhalla config + tile inputs
-├── 📄 docker-compose.yml   # Development stack (app, db, valhalla, cloudbeaver)
+├── 📄 compose.development.yml # Development app using the VPS development services
+├── 📄 deploy/compose.production.yml # Production stack
 ├── 📄 Dockerfile           # Production image build
 └── 📄 SaveNEIN.sln         # Solution entry point
 ```
@@ -175,17 +176,19 @@ Once **Docker** is installed, simply clone the repo and start the containers. Th
 git clone https://github.com/tuckthomas/casino-economic-impact-calculator.git
 cd casino-economic-impact-calculator
 
-# 2. Start the application
-docker compose up --build -d
+# 2. Create the Git-ignored development settings file (one time)
+cp compose.development.env.example .env.development
+
+# 3. Start the development application after the VPS tunnels are available
+docker compose --env-file deploy/.env --env-file .env.development \
+  -f compose.development.yml up --build -d
 ```
 
 The application is now running! Access the services at:
 
 | Service | URL | Description |
 | :--- | :--- | :--- |
-| **Production Web Application** | **http://localhost:80** | Main user interface |
-| **CloudBeaver** | **http://localhost:8978** | Database GUI Management |
-| **Valhalla API** | **http://localhost:8002** | Isochrone & Routing API |
+| **Development Web Application** | **http://localhost:5000** | Main user interface |
 
 ---
 
@@ -194,10 +197,8 @@ The application is now running! Access the services at:
 If you wish to modify code locally, run the app outside Docker, or use hot reload, you will need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and **Node.js/npm**.
 
 ```bash
-# 1. Ensure shared backend services are running (db + valhalla)
-docker compose up -d savenein-db valhalla
-
-# 2. Start the local dev watcher (port 5000)
+# Start the local dev watcher (port 5000). Set its connection and Valhalla
+# environment variables from the same private development configuration.
 npm run dev
 ```
 

@@ -1,0 +1,22 @@
+name: savenein-development
+
+# This stack intentionally does not create a database, Valhalla instance, or
+# ArchiveBox instance. It uses the private VPS development services through
+# localhost SSH tunnels, keeping seeded data and the routing graph in one place.
+services:
+  app:
+    image: savenein-development-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:5000
+      ConnectionStrings__DefaultConnection: Host=${DEV_DATABASE_HOST:-host.docker.internal};Port=${DEV_DATABASE_PORT:-15434};Database=${DEV_DATABASE_NAME:-savefw_dev};Username=${DEV_DATABASE_USERNAME:-savefw_app};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      Valhalla__BaseUrl: ${DEV_VALHALLA_BASE_URL:-http://host.docker.internal:18002}
+      TigerSeeding__IngestAddressRanges: "false"
+      ArchiveBox__Enabled: "false"
+    ports:
+      - "5000:5000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
