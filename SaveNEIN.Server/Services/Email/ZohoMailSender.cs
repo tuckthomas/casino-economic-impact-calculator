@@ -4,7 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Options;
 using SaveNEIN.Server.Configuration;
 
-namespace SaveNEIN.Server.Services;
+namespace SaveNEIN.Server.Services.Email;
 
 internal interface IZohoMailSender
 {

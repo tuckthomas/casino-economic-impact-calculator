@@ -193,7 +193,8 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             .SingleOrDefaultAsync(item => item.Id == id && item.VerificationStatus == "Verified", cancellationToken);
         if (capture is null) return null;
         var directory = ResolveStoredRelativePath(capture.ArchiveRelativePath);
-        return (RequireFile(directory, "singlefile", "singlefile.html"), capture);
+        var singleFilePath = Path.Combine(directory, "singlefile", "singlefile.html");
+        return File.Exists(singleFilePath) ? (singleFilePath, capture) : null;
     }
 
     private string ResolveArchiveDirectory(string archivePath)

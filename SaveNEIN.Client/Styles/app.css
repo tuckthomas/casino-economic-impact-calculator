@@ -29,12 +29,12 @@ body {
 
 
 @media (max-width: 640px) {
-    #proponents-critique > .mx-auto,
-    #polling-results > .mx-auto,
-    #crime-safety > .mx-auto,
-    #economic-analysis > .economic-analysis-body,
-    #economic-analysis > .mx-auto,
-    #voice-your-opinion > .mx-auto,
+    #casino-fact-checks > .mx-auto,
+    #casino-voter-opinion > .mx-auto,
+    #casino-public-safety > .mx-auto,
+    #casino-substitution-effect > .economic-analysis-body,
+    #casino-substitution-effect > .mx-auto,
+    #casino-community-action > .mx-auto,
     #legislators > .mx-auto {
         margin-left: 0;
         margin-right: 0;
@@ -43,11 +43,11 @@ body {
         width: 100%;
     }
 
-    #proponents-critique div[class*="rounded-"][class*="shadow"],
-    #polling-results div[class*="rounded-"][class*="shadow"],
-    #crime-safety div[class*="rounded-"][class*="shadow"],
-    #economic-analysis div[class*="rounded-"][class*="shadow"],
-    #voice-your-opinion div[class*="rounded-"][class*="shadow"],
+    #casino-fact-checks div[class*="rounded-"][class*="shadow"],
+    #casino-voter-opinion div[class*="rounded-"][class*="shadow"],
+    #casino-public-safety div[class*="rounded-"][class*="shadow"],
+    #casino-substitution-effect div[class*="rounded-"][class*="shadow"],
+    #casino-community-action div[class*="rounded-"][class*="shadow"],
     #legislators div[class*="rounded-"][class*="shadow"] {
         box-shadow: none;
     }
@@ -79,11 +79,11 @@ body {
     }
 
     /* Force identical horizontal bounds for section descriptions on mobile */
-    #proponents-critique .section-heading-block > p,
-    #economic-analysis .section-heading-block > p,
-    #polling-results .section-heading-block > p,
-    #crime-safety .section-heading-block > p,
-    #economic-analysis .section-heading-block > div {
+    #casino-fact-checks .section-heading-block > p,
+    #casino-substitution-effect .section-heading-block > p,
+    #casino-voter-opinion .section-heading-block > p,
+    #casino-public-safety .section-heading-block > p,
+    #casino-substitution-effect .section-heading-block > div {
         box-sizing: border-box;
         width: 100% !important;
         max-width: none !important;
@@ -550,24 +550,27 @@ input[type=number] {
 
 /* Reusable raised/pressed button mechanics */
 .btn-raised {
+    /* Defaults apply before the runtime derives a depth color from the button fill. */
+    --btn-raised-depth: rgba(15, 23, 42, 0.55);
+    --btn-raised-ambient: rgba(15, 23, 42, 0.22);
     box-shadow:
-        0 4px 0 rgba(15, 23, 42, 0.55),
-        0 8px 14px rgba(0, 0, 0, 0.32);
+        0 6px 0 var(--btn-raised-depth),
+        0 12px 18px var(--btn-raised-ambient);
     transform: translateY(0);
     transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .btn-raised:hover {
     box-shadow:
-        0 4px 0 rgba(15, 23, 42, 0.6),
-        0 10px 16px rgba(0, 0, 0, 0.36);
+        0 6px 0 var(--btn-raised-depth),
+        0 14px 20px var(--btn-raised-ambient);
 }
 
 .btn-raised:active {
     transform: translateY(3px);
     box-shadow:
-        0 1px 0 rgba(15, 23, 42, 0.5),
-        0 3px 6px rgba(0, 0, 0, 0.24);
+        0 1px 0 var(--btn-raised-depth),
+        0 3px 6px var(--btn-raised-ambient);
 }
 
 @keyframes fadeInUp {

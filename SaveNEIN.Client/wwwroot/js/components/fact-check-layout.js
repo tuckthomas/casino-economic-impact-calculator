@@ -12,6 +12,7 @@ window.FactCheckLayout = (() => {
         cards.forEach(card => card.style.minHeight = '');
 
         if (window.matchMedia('(max-width: 767px)').matches || columns.length !== 2) return;
+        if (layout.querySelector('.fact-check-entry__details[open]')) return;
 
         const leftCards = columns[0].querySelectorAll(':scope > .fact-check-entry > .fact-check-entry__card');
         const rightCards = columns[1].querySelectorAll(':scope > .fact-check-entry > .fact-check-entry__card');
@@ -31,6 +32,15 @@ window.FactCheckLayout = (() => {
         }
 
         layout.classList.remove('is-measuring');
+
+        cards.forEach(card => {
+            const main = card.querySelector('.fact-check-entry__card-main');
+            if (!main) return;
+
+            card.style.setProperty(
+                '--fact-check-collapsed-main-height',
+                `${Math.ceil(main.getBoundingClientRect().height)}px`);
+        });
     }
 
     function scheduleAlignment() {
@@ -38,8 +48,34 @@ window.FactCheckLayout = (() => {
         resizeFrame = window.requestAnimationFrame(alignPairs);
     }
 
+    function releaseExpandedDetails(details) {
+        const activeCard = details.closest('.fact-check-entry__card');
+        if (!activeCard) return;
+
+        document.querySelectorAll('.fact-check-entry__card').forEach(card => {
+            if (card === activeCard) return;
+
+            card.style.minHeight = '';
+        });
+    }
+
     function init() {
         scheduleAlignment();
+
+        document.querySelectorAll('.fact-check-entry__details').forEach(details => {
+            if (details.dataset.layoutToggleBound === 'true') return;
+
+            details.dataset.layoutToggleBound = 'true';
+            details.addEventListener('toggle', () => {
+                if (details.open) {
+                    releaseExpandedDetails(details);
+                    return;
+                }
+
+                // Reapply bottom alignment only after the open card is closed.
+                alignPairs();
+            });
+        });
 
         if (document.fonts?.ready) {
             document.fonts.ready.then(scheduleAlignment);
@@ -51,5 +87,20 @@ window.FactCheckLayout = (() => {
         }
     }
 
-    return { init };
+    function scrollToClaim(slug) {
+        const encodedSlug = window.CSS?.escape ? window.CSS.escape(slug) : slug;
+        const suffix = window.matchMedia('(max-width: 767px)').matches
+            ? '-all-fact-checks-mobile'
+            : '-all-fact-checks-desktop-';
+        const selector = window.matchMedia('(max-width: 767px)').matches
+            ? `#fact-check-${encodedSlug}${suffix}`
+            : `[id^="fact-check-${encodedSlug}${suffix}"]`;
+        const claim = document.querySelector(selector);
+
+        if (claim) {
+            requestAnimationFrame(() => claim.scrollIntoView({ block: 'start' }));
+        }
+    }
+
+    return { init, scrollToClaim };
 })();

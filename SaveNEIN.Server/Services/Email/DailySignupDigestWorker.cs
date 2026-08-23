@@ -4,7 +4,7 @@ using SaveNEIN.Server.Configuration;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Data.Entities;
 
-namespace SaveNEIN.Server.Services;
+namespace SaveNEIN.Server.Services.Email;
 
 internal sealed class DailySignupDigestWorker : BackgroundService
 {

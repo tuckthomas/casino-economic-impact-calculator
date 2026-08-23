@@ -844,6 +844,9 @@
 @media (max-width: 1023px) {
     #hero-section {
         overflow-x: hidden;
+        height: 100svh;
+        min-height: 100svh;
+        max-height: 100svh;
     }
 
     #hero-section .hero-layout {
@@ -852,6 +855,7 @@
         align-items: stretch;
         width: 100vw;
         max-width: none;
+        height: 100%;
         min-height: 100svh;
         margin: 0;
         padding: 0;
@@ -880,22 +884,23 @@
     }
 
     .hero-copy {
+        box-sizing: border-box;
         max-width: 100%;
-        justify-content: center;
+        justify-content: flex-start;
         padding-left: clamp(0.75rem, 4vw, 1.25rem);
         padding-right: clamp(0.75rem, 4vw, 1.25rem);
-        padding-top: 3.5rem;
-        padding-bottom: clamp(5.5rem, 13vh, 7rem);
+        padding-top: clamp(0.85rem, 2.5vh, 1.25rem);
+        padding-bottom: 5rem;
         z-index: 20;
     }
 
     #hero-section .hero-mobile-intro::before {
         content: "";
         display: block;
-        width: min(88vw, 24rem);
+        width: min(66vw, 15rem);
         aspect-ratio: 6471 / 2892;
         height: auto;
-        margin: 0 0 1.25rem 0;
+        margin: 0 0 0.45rem 0;
         background: left center / contain no-repeat url('assets/SaveNEIN_SVG_Dark_Mode_Small.svg');
         opacity: 0;
         pointer-events: none;
@@ -910,24 +915,37 @@
         animation: none;
     }
 
+    #hero-section .hero-headline {
+        margin-bottom: 0.8rem;
+        font-size: clamp(2rem, 9vw, 2.35rem);
+        line-height: 1.02;
+    }
+
+    #hero-section .hero-kicker {
+        margin-bottom: 0;
+        font-size: clamp(1.2rem, 6vw, 1.45rem);
+        line-height: 1.15;
+    }
+
     #hero-section .hero-tagline {
         display: none;
     }
 
     #hero-section .hero-visual-stage {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
         width: 100%;
         min-height: 100svh;
-        padding: clamp(0.75rem, 2.5vw, 1.5rem) clamp(0.25rem, 2vw, 0.75rem);
+        box-sizing: border-box;
+        padding: clamp(3.7rem, 11svh, 5rem) clamp(0.25rem, 2vw, 0.75rem) 5.25rem;
         z-index: 24;
         pointer-events: auto;
         overflow: hidden;
     }
 
     #hero-section .hero-slot-shell {
-        width: min(94vw, 34rem, calc((100svh - 2rem) * 0.78));
+        width: min(88vw, 31rem, calc((100svh - 4.5rem) * 0.72));
         max-width: 34rem;
         margin-top: 0;
         opacity: 1;
@@ -942,7 +960,8 @@
         align-items: center;
         justify-content: flex-end;
         width: 100%;
-        margin-top: 0.7rem;
+        margin-top: 0.35rem;
+        margin-bottom: 0.55rem;
         padding-right: 0.05rem;
         gap: 0.45rem;
         pointer-events: none;
@@ -952,7 +971,7 @@
     }
 
     .hero-mobile-swipe-hint .swipe-text {
-        font-size: 0.875rem;
+        font-size: 0.8rem;
         line-height: 1.2;
         font-weight: 700;
         letter-spacing: 0.02em;
@@ -982,7 +1001,7 @@
         justify-content: center;
         position: absolute;
         left: 50%;
-        bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+        bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
         transform: translateX(-50%) translateY(10px);
         pointer-events: auto;
         z-index: 50;
@@ -1000,7 +1019,7 @@
 
     .hero-mobile-scroll-hint .hero-mobile-scroll-text {
         margin-bottom: 0.35rem;
-        font-size: 0.875rem;
+        font-size: 0.75rem;
         line-height: 1.12;
         text-align: center;
         font-weight: 700;
@@ -1010,8 +1029,8 @@
     }
 
     .hero-mobile-scroll-hint .hero-mobile-scroll-circle {
-        width: 2.55rem;
-        height: 2.55rem;
+        width: 2.15rem;
+        height: 2.15rem;
         border-radius: 9999px;
         border: 2px solid rgba(241, 245, 249, 0.75);
         display: inline-flex;
@@ -1029,8 +1048,24 @@
         flex-shrink: 0;
     }
 
+    #hero-section .hero-copy > .hero-animate {
+        margin-bottom: 0;
+        gap: 0.65rem;
+    }
+
+    #hero-section .hero-copy > .hero-animate .btn-raised {
+        padding-top: 0.72rem;
+        padding-bottom: 0.72rem;
+    }
+
+    /* The display repeats the logo already visible in the hero. Remove it only on
+       the mobile slide so the full siren and cabinet fit inside the viewport. */
+    #hero-section .modern-slot-upper-display {
+        display: none;
+    }
+
     .modern-slot-machine {
-        padding-top: clamp(3.15rem, 11vw, 4rem);
+        padding-top: clamp(0.9rem, 3vw, 1.25rem);
         padding-left: clamp(0.65rem, 2.5vw, 0.9rem);
         padding-right: clamp(0.65rem, 2.5vw, 0.9rem);
         padding-bottom: clamp(0.7rem, 2.5vw, 1rem);

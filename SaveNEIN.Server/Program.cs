@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.HttpOverrides;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Configuration;
+using SaveNEIN.Server.Services.Email;
 using SaveNEIN.Shared;
 using QuestPDF.Infrastructure;
 
@@ -17,6 +18,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddRazorPages();
 builder.Services.AddOpenApi();
+builder.Services.AddSingleton<SaveNEIN.Server.Services.IFactCheckShareImageService, SaveNEIN.Server.Services.FactCheckShareImageService>();
 builder.Services.Configure<TaxAllocationOptions>(builder.Configuration.GetSection("TaxAllocation"));
 builder.Services.Configure<DailySignupDigestOptions>(builder.Configuration.GetSection(DailySignupDigestOptions.ConfigurationSection));
 builder.Services.Configure<ZohoMailOptions>(builder.Configuration.GetSection(ZohoMailOptions.ConfigurationSection));
@@ -35,13 +37,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), 
         o => o.UseNetTopologySuite()));
 
-builder.Services.AddHttpClient<SaveNEIN.Server.Services.IZohoMailSender, SaveNEIN.Server.Services.ZohoMailSender>((serviceProvider, client) =>
+builder.Services.AddHttpClient<IZohoMailSender, ZohoMailSender>((serviceProvider, client) =>
 {
     var options = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ZohoMailOptions>>().Value;
     client.BaseAddress = new Uri(options.ApiBaseUrl);
     client.Timeout = TimeSpan.FromSeconds(30);
 });
-builder.Services.AddHostedService<SaveNEIN.Server.Services.DailySignupDigestWorker>();
+builder.Services.AddHostedService<DailySignupDigestWorker>();
 builder.Services.AddSingleton<SaveNEIN.Server.Services.IArchiveSourceUrlValidator, SaveNEIN.Server.Services.ArchiveSourceUrlValidator>();
 builder.Services.AddHttpClient<SaveNEIN.Server.Services.IArchiveBoxCaptureService, SaveNEIN.Server.Services.ArchiveBoxCaptureService>((serviceProvider, client) =>
 {
@@ -327,6 +329,11 @@ app.MapGet("/api/legislators", async (AppDbContext db) =>
 
 app.MapGet("/api/impacts", async (AppDbContext db) =>
     await db.ImpactFacts.ToListAsync());
+
+app.MapGet("/fact-checks/{slug}/share.png", (string slug, SaveNEIN.Server.Services.IFactCheckShareImageService shareImages) =>
+    shareImages.TryGetImage(slug, out var image)
+        ? Results.File(image, "image/png", enableRangeProcessing: false)
+        : Results.NotFound());
 
 app.MapRazorPages();
 app.MapControllers();

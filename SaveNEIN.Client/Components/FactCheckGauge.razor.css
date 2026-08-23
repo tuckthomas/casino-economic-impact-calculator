@@ -1,161 +1,118 @@
 .fact-check-gauge {
     --gauge-size: 7.25rem;
     --needle-angle: -90deg;
-    --verdict-color: #94a3b8;
-    --verdict-glow: rgba(148, 163, 184, 0.35);
     position: relative;
     width: var(--gauge-size);
     height: var(--gauge-size);
-    border-radius: 9999px;
-    padding: 0.28rem;
-    background:
-        linear-gradient(145deg, #cbd5e1 0%, #64748b 38%, #e2e8f0 58%, #475569 100%);
-    box-shadow:
-        0 0 0 0.18rem #0f172a,
-        0 0 0 0.28rem rgba(220, 38, 38, 0.72),
-        0 0.6rem 1.6rem rgba(2, 6, 23, 0.34),
-        0 0 1.1rem var(--verdict-glow);
+    flex: 0 0 var(--gauge-size);
+    filter: drop-shadow(0 0.55rem 0.8rem rgba(2, 6, 23, 0.28));
 }
 
 .fact-check-gauge--large {
     --gauge-size: 8.5rem;
 }
 
-.fact-check-gauge__face {
-    position: relative;
+.fact-check-gauge--compact {
+    --gauge-size: 5.5rem;
+}
+
+.fact-check-gauge__face,
+.fact-check-gauge__dial {
     width: 100%;
     height: 100%;
-    overflow: hidden;
-    border-radius: 9999px;
-    background:
-        radial-gradient(circle at 50% 60%, rgba(255, 255, 255, 0.98) 0 43%, transparent 44%),
-        conic-gradient(from 210deg,
-            #991b1b 0deg 42deg,
-            #dc2626 42deg 82deg,
-            #cbd5e1 82deg 122deg,
-            #64748b 122deg 152deg,
-            #0f3b66 152deg 240deg,
-            #0f172a 240deg 360deg);
-    box-shadow:
-        inset 0 0 1.1rem rgba(15, 23, 42, 0.36),
-        inset 0 0 0 0.14rem rgba(15, 23, 42, 0.58);
 }
 
-.fact-check-gauge__face::before {
-    content: "";
+.fact-check-gauge__face {
+    position: relative;
+}
+
+.fact-check-gauge__dial {
     position: absolute;
-    inset: 17% 13% 12%;
-    border-radius: 9999px;
-    background: radial-gradient(circle at 50% 34%, #ffffff 0%, #f8fafc 55%, #e2e8f0 100%);
-    box-shadow: inset 0 -0.3rem 0.8rem rgba(100, 116, 139, 0.22);
+    inset: 0;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
 }
-
-.fact-check-gauge__face::after {
-    content: "";
-    position: absolute;
-    left: 15%;
-    right: 15%;
-    bottom: 8%;
-    height: 31%;
-    border-radius: 0 0 9999px 9999px;
-    background: linear-gradient(180deg, #12213a 0%, #081225 100%);
-    border-top: 1px solid rgba(148, 163, 184, 0.55);
-}
-
-.fact-check-gauge__tick {
-    position: absolute;
-    z-index: 3;
-    top: 19%;
-    left: 49%;
-    width: 2%;
-    height: 11%;
-    border-radius: 9999px;
-    background: rgba(71, 85, 105, 0.72);
-    transform-origin: 50% 282%;
-}
-
-.fact-check-gauge__tick--one { transform: rotate(-58deg); }
-.fact-check-gauge__tick--two { transform: rotate(-20deg); }
-.fact-check-gauge__tick--three { transform: rotate(20deg); }
-.fact-check-gauge__tick--four { transform: rotate(58deg); }
 
 .fact-check-gauge__needle {
     position: absolute;
-    z-index: 5;
+    z-index: 2;
     left: 50%;
-    top: 51%;
-    width: 36%;
-    height: 4%;
-    border-radius: 9999px 65% 65% 9999px;
-    transform: rotate(var(--needle-angle));
+    top: 50%;
+    width: 35%;
+    height: 5.2%;
+    transform: translateY(-50%) rotate(var(--needle-angle));
     transform-origin: 0 50%;
-    background: linear-gradient(180deg, #1e293b 0%, #020617 68%, #334155 100%);
-    box-shadow: 0 0.12rem 0.2rem rgba(2, 6, 23, 0.42);
+    border-radius: 9999px;
+    clip-path: polygon(0 22%, 87% 22%, 100% 50%, 87% 78%, 0 78%);
+    background: linear-gradient(180deg, #334c70 0%, #14294a 38%, #06142c 75%, #020817 100%);
+    box-shadow:
+        0 0.08rem 0 rgba(203, 213, 225, 0.62) inset,
+        0 0.16rem 0.28rem rgba(2, 6, 23, 0.58);
     transition: transform 480ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .fact-check-gauge__hub {
     position: absolute;
-    z-index: 6;
+    z-index: 3;
     left: 50%;
-    top: 51%;
-    width: 17%;
+    top: 50%;
+    width: 15.5%;
     aspect-ratio: 1;
     transform: translate(-50%, -50%);
     border-radius: 9999px;
-    background: radial-gradient(circle at 38% 32%, #f8fafc 0 12%, #94a3b8 20%, #334155 46%, #0f172a 70%);
-    border: 0.08rem solid #cbd5e1;
-    box-shadow: 0 0.16rem 0.38rem rgba(2, 6, 23, 0.48);
+    border: 0.08rem solid #dbe4ef;
+    background:
+        radial-gradient(circle at 35% 30%, #ffffff 0 8%, #dbe4ef 12%, #94a3b8 28%, #334155 51%, #0f172a 72%, #020617 100%);
+    box-shadow:
+        0 0 0 0.09rem rgba(15, 23, 42, 0.75),
+        0 0.18rem 0.34rem rgba(2, 6, 23, 0.55),
+        inset 0 0.1rem 0.12rem rgba(255, 255, 255, 0.5);
 }
 
 .fact-check-gauge__label {
     position: absolute;
-    z-index: 7;
-    left: 50%;
-    top: 61%;
-    bottom: auto;
+    z-index: 4;
+    left: 14%;
+    right: 14%;
+    top: 65%;
+    height: 22%;
     display: flex;
-    height: 31%;
-    width: 80%;
-    transform: translateX(-50%);
     align-items: center;
     justify-content: center;
     color: #ffffff;
-    font-size: 0.62rem;
+    font-size: 0.7rem;
     font-weight: 1000;
     line-height: 1;
-    letter-spacing: 0.025em;
+    letter-spacing: 0.035em;
     text-align: center;
-    text-shadow: 0 1px 2px rgba(2, 6, 23, 0.9);
+    text-shadow: 0 1px 2px rgba(2, 6, 23, 0.95);
     white-space: nowrap;
 }
 
 .fact-check-gauge__label.is-negative {
-    color: #ffffff;
-    -webkit-text-stroke: 0;
+    color: #ef4444;
     text-shadow:
-        0 0 2px rgba(220, 38, 38, 0.95),
-        0 0 6px rgba(220, 38, 38, 0.72),
-        0 0 11px rgba(220, 38, 38, 0.42);
+        0 1px 1px rgba(2, 6, 23, 0.9),
+        0 0 0.22rem rgba(239, 68, 68, 0.52);
 }
 
 .fact-check-gauge--large .fact-check-gauge__label {
-    font-size: 0.8rem;
+    font-size: 0.88rem;
+}
+
+.fact-check-gauge--compact .fact-check-gauge__label {
+    font-size: 0.52rem;
 }
 
 @media (max-width: 767px) {
     .fact-check-gauge--timeline {
         --gauge-size: 5.25rem;
-        padding: 0.2rem;
-        box-shadow:
-            0 0 0 0.12rem #0f172a,
-            0 0 0 0.2rem rgba(220, 38, 38, 0.72),
-            0 0.35rem 0.9rem rgba(2, 6, 23, 0.28),
-            0 0 0.7rem var(--verdict-glow);
     }
 
     .fact-check-gauge--timeline .fact-check-gauge__label {
-        font-size: 0.46rem;
+        font-size: 0.49rem;
     }
 }
 

@@ -3,7 +3,7 @@ using System.Net;
 using System.Text;
 using SaveNEIN.Server.Data.Entities;
 
-namespace SaveNEIN.Server.Services;
+namespace SaveNEIN.Server.Services.Email;
 
 internal sealed record SignupDigestMessage(string Subject, string Content, string MailFormat);
 

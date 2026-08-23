@@ -2,10 +2,7 @@
 
 <div class="fact-check-gauge @SizeClass" style="@GaugeStyle" role="img" aria-label="@($"{VerdictLabel} rating")">
     <div class="fact-check-gauge__face">
-        <span class="fact-check-gauge__tick fact-check-gauge__tick--one"></span>
-        <span class="fact-check-gauge__tick fact-check-gauge__tick--two"></span>
-        <span class="fact-check-gauge__tick fact-check-gauge__tick--three"></span>
-        <span class="fact-check-gauge__tick fact-check-gauge__tick--four"></span>
+        <img class="fact-check-gauge__dial" src="/assets/fact-check-gauge-face.png" alt="" aria-hidden="true" />
         <span class="fact-check-gauge__needle"></span>
         <span class="fact-check-gauge__hub"></span>
         <span class="fact-check-gauge__label @VerdictClass">@VerdictLabel</span>
@@ -19,7 +16,14 @@
     [Parameter]
     public bool Large { get; set; }
 
-    private string SizeClass => Large ? "fact-check-gauge--large" : "fact-check-gauge--timeline";
+    [Parameter]
+    public bool Compact { get; set; }
+
+    private string SizeClass => Large
+        ? "fact-check-gauge--large"
+        : Compact
+            ? "fact-check-gauge--compact"
+            : "fact-check-gauge--timeline";
 
     private string VerdictLabel => Verdict switch
     {
@@ -39,10 +43,10 @@
 
     private string GaugeStyle => Verdict switch
     {
-        FactCheckVerdict.True => "--needle-angle:-30deg;--verdict-color:#22c55e;--verdict-glow:rgba(34,197,94,.46);",
-        FactCheckVerdict.MostlyTrue => "--needle-angle:-62deg;--verdict-color:#84cc16;--verdict-glow:rgba(132,204,22,.40);",
-        FactCheckVerdict.MostlyFalse => "--needle-angle:-118deg;--verdict-color:#f59e0b;--verdict-glow:rgba(245,158,11,.42);",
-        FactCheckVerdict.False => "--needle-angle:192deg;--verdict-color:#dc2626;--verdict-glow:rgba(220,38,38,.45);",
-        _ => "--needle-angle:-90deg;--verdict-color:#94a3b8;--verdict-glow:rgba(148,163,184,.35);"
+        FactCheckVerdict.True => "--needle-angle:-20deg;",
+        FactCheckVerdict.MostlyTrue => "--needle-angle:-55deg;",
+        FactCheckVerdict.MostlyFalse => "--needle-angle:-130deg;",
+        FactCheckVerdict.False => "--needle-angle:-170deg;",
+        _ => "--needle-angle:-90deg;"
     };
 }

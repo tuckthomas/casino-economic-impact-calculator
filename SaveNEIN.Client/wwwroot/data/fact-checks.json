@@ -1,5 +1,13 @@
 {
   "schemaVersion": 1,
+  "homepageFactCheckIds": [
+    "resident-jobs",
+    "keep-dollars-local",
+    "tribal-approval",
+    "steuben-tax-liability",
+    "steuben-nonprofit-mandate",
+    "steuben-local-business"
+  ],
   "factChecks": [
     {
       "id": "resident-jobs",
@@ -14,13 +22,13 @@
         "DEFINITION ERROR",
         "UNSUPPORTED RESIDENCY"
       ],
-      "findingHeadline": "CBRE models 1,676 Allen County jobs — not 2,000 jobs for Allen County residents",
-      "shortFinding": "CBRE reports gross modeled jobs, not net-new employment. Its Allen County total is 1,676—including only 947 direct jobs—and it subtracts no job losses from competing local businesses. That does not support a claim of 2,000 new permanent jobs for Allen County residents.",
-      "detailedExplanation": "Yes for Allen claims the development would create ‘over 2,000 new permanent jobs’ for Allen County residents.\n\nCBRE actually models 1,676 gross jobs in Allen County: 947 direct jobs and 729 indirect or induced multiplier jobs. The 2,001 figure is statewide, and neither figure establishes where workers would live.\n\nMost importantly, CBRE does not subtract jobs lost when casino spending or workers are diverted from existing restaurants, entertainment venues, hotels, and other local businesses. It therefore does not estimate Allen County’s net job gain.",
+      "findingHeadline": "CBRE models 1,676 Allen County jobs—not 2,000 permanent jobs for Allen County residents—and even that is not a net-jobs total",
+      "shortFinding": "CBRE says 947 of the 1,676 are direct jobs at the proposed casino. The rest are estimates of additional jobs supported elsewhere. It does not subtract jobs lost when residents shift money and workers away from local restaurants, hotels, retailers, entertainment, and other businesses. So neither 2,000 nor 1,676 is a count of net new local jobs.",
+      "detailedExplanation": "Yes for Allen promotes ‘over 2,000 new permanent jobs’ for Allen County residents. The underlying CBRE table instead lists 1,676 Allen County jobs: 947 direct jobs, 309 indirect jobs, and 420 induced jobs. Its 2,001 total is statewide, not an Allen County count.\n\nThe 729 indirect and induced jobs are RIMS II multiplier estimates, not casino payroll positions. BEA explains that RIMS II employment includes full- and part-time jobs and estimates the later rounds of activity from a change in final demand. Neither figure establishes where workers would live.\n\nThe larger problem is that the published CBRE analysis shows an adjustment for revenue displaced from existing Indiana casinos, but does not show a corresponding deduction for consumer spending shifted from Allen County restaurants, entertainment, retail, hotels, or other local businesses. Without that economy-wide substitution adjustment, the multiplier total is a gross impact—not a demonstrated net gain in local jobs.",
       "keyFacts": [
-        "Allen County: 1,676 gross modeled jobs; only 947 are direct.",
-        "Statewide: 2,001 gross modeled jobs—not 2,001 Allen County jobs.",
-        "CBRE does not measure worker residency or subtract employment displaced from existing local businesses."
+        "Allen County: 947 direct jobs, plus 309 indirect and 420 induced RIMS II estimates, totaling 1,676.",
+        "Statewide: 1,024 direct jobs plus 977 indirect and induced jobs, totaling 2,001—not 2,001 Allen County jobs.",
+        "CBRE shows casino-to-casino displacement but not a published deduction for non-casino local-business substitution."
       ],
       "sources": [
         {
@@ -30,12 +38,12 @@
         },
         {
           "label": "CBRE Greater Fort Wayne Area Casino Analysis",
-          "citation": "Operating-impact employment tables for Allen County and Indiana.",
+          "citation": "Operating-impact employment table: 947 direct, 309 indirect, and 420 induced jobs in Allen County; 1,024 direct, 444 indirect, and 532 induced statewide.",
           "url": "https://cdn.insideindianabusiness.com/wp-content/uploads/2026/01/GFWI-Casino-Analysis-Presentation-Final-2025-12-03.pdf"
         },
         {
           "label": "U.S. Bureau of Economic Analysis RIMS II User Guide",
-          "citation": "Official definitions for RIMS II employment and output measures.",
+          "citation": "Official guidance: RIMS II employment is total full- and part-time jobs produced from a change in final demand, including multiplier effects.",
           "url": "https://www.bea.gov/sites/default/files/methodologies/RIMSII_User_Guide.pdf"
         }
       ],
@@ -253,12 +261,12 @@
       "category": "Steuben County — Local Business",
       "verdict": "False",
       "issueTags": [],
-      "findingHeadline": "A Detroit property-value study does not prove a Steuben casino would help local businesses",
-      "shortFinding": "The cited Detroit study measured retail property values—not business sales, profits, employment, or closures. It cannot establish that a Steuben casino would help independent businesses, while separate research finds that casinos substitute for spending at entertainment and amusement businesses.",
-      "detailedExplanation": "Steuben’s promotional site cites a study of commercial property values around Detroit casinos as evidence that casinos complement other businesses rather than displace them.\n\nThat study did not measure whether nearby restaurants, entertainment venues, hotels, or retailers gained or lost customers, revenue, jobs, or profits. Its authors studied property values in a major urban casino market and described their result as suggestive—not proof of what would happen to independent businesses in Steuben County.\n\nResearch using industry-level sales data found substitution between casinos and entertainment and amusement businesses. A property-value result cannot erase those operating losses or establish that a proposed Steuben casino would benefit surrounding businesses.",
+      "findingHeadline": "Commercial-property sales do not measure the substitution effect on local businesses",
+      "shortFinding": "The cited Detroit study tracked commercial-property sale prices—not the customer spending, revenue, profits, jobs, or closures of nearby businesses. It therefore cannot refute whether casino spending displaces money from those businesses.",
+      "detailedExplanation": "Steuben’s promotional site cites a Detroit study of commercial-property values around casinos to dispute the substitution effect. But a building’s sale price is not a measure of how nearby restaurants, entertainment venues, hotels, or retailers perform after casino spending enters the market.\n\nThe Detroit study did not track whether those businesses gained or lost customers, revenue, profits, jobs, or whether any closed. It did not measure the share of casino spending diverted from existing local businesses.\n\nResearch that examines industry-level sales addresses that separate operating question and finds substitution between casinos and entertainment and amusement businesses. A property-sales result cannot rebut evidence about business revenue displacement.",
       "keyFacts": [
-        "The cited Detroit study measured retail property values, not local-business performance.",
-        "It did not study Steuben County or a comparable Northeast Indiana market.",
+        "Commercial-property sale prices are not business revenue, customer spending, profit, employment, or closure data.",
+        "The Detroit study did not measure whether casino spending displaced spending from nearby businesses.",
         "Separate sales research found casinos substitute for entertainment and amusement spending."
       ],
       "sources": [

@@ -1,0 +1,37 @@
+@using SaveNEIN.Client.Models
+
+@if (Claims.Count > 0)
+{
+    <div class="fact-check-desktop-columns" aria-label="Casino proponents fact checks">
+        <ol class="fact-check-column">
+            @foreach (var claim in LeftClaims)
+            {
+                <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="@($"{IdPrefix}-desktop-left")" />
+            }
+        </ol>
+        <ol class="fact-check-column">
+            @foreach (var claim in RightClaims)
+            {
+                <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="@($"{IdPrefix}-desktop-right")" />
+            }
+        </ol>
+    </div>
+
+    <ol class="fact-check-mobile-list" aria-label="Casino proponents fact checks">
+        @foreach (var claim in Claims)
+        {
+            <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="@($"{IdPrefix}-mobile")" />
+        }
+    </ol>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<FactCheckClaim> Claims { get; set; } = Array.Empty<FactCheckClaim>();
+
+    [Parameter]
+    public string IdPrefix { get; set; } = "fact-check";
+
+    private IReadOnlyList<FactCheckClaim> LeftClaims => Claims.Where((_, index) => index % 2 == 0).ToArray();
+    private IReadOnlyList<FactCheckClaim> RightClaims => Claims.Where((_, index) => index % 2 == 1).ToArray();
+}

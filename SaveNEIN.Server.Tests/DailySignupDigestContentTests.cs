@@ -1,5 +1,5 @@
 using SaveNEIN.Server.Data.Entities;
-using SaveNEIN.Server.Services;
+using SaveNEIN.Server.Services.Email;
 
 namespace SaveNEIN.Server.Tests;
 

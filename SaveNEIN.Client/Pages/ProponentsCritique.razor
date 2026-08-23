@@ -1,13 +1,14 @@
-@using System.Net.Http.Json
 @using SaveNEIN.Client.Models
-@inject HttpClient Http
+@using SaveNEIN.Client.Services
+@inject FactCheckContentService FactCheckContent
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
-<section class="bg-slate-50 dark:bg-[#0B1221] py-24 relative overflow-hidden [--fc-card:#ffffff] [--fc-card-border:#cbd5e1] [--fc-text:#0f172a] [--fc-muted:#64748b] [--fc-surface:#f8fafc] [--fc-surface-border:#e2e8f0] [--fc-heading:#334155] [--fc-line:#94a3b8] dark:[--fc-card:#0f172a] dark:[--fc-card-border:#334155] dark:[--fc-text:#f8fafc] dark:[--fc-muted:#94a3b8] dark:[--fc-surface:#1e293b] dark:[--fc-surface-border:#334155] dark:[--fc-heading:#e2e8f0] dark:[--fc-line:#475569]" id="proponents-critique">
+<section class="bg-slate-50 dark:bg-[#0B1221] py-24 relative overflow-hidden [--fc-card:#ffffff] [--fc-card-border:#cbd5e1] [--fc-text:#0f172a] [--fc-muted:#64748b] [--fc-surface:#f8fafc] [--fc-surface-border:#e2e8f0] [--fc-heading:#334155] [--fc-line:#94a3b8] dark:[--fc-card:#0f172a] dark:[--fc-card-border:#334155] dark:[--fc-text:#f8fafc] dark:[--fc-muted:#94a3b8] dark:[--fc-surface:#1e293b] dark:[--fc-surface-border:#334155] dark:[--fc-heading:#e2e8f0] dark:[--fc-line:#475569]" id="casino-fact-checks">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="section-heading-block mb-16 text-center max-w-3xl mx-auto" id="decoding-the-spin">
             <span class="section-eyebrow text-red-700 dark:text-red-400">
-                Save<span class="text-slate-900 dark:text-white">NE</span>IN Research Fact Check
+                Save<span class="text-slate-900 dark:text-white">NEIN</span> Research Fact Check
             </span>
             <h2 class="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl uppercase">
                 Casino Proponents <span class="text-red-700 dark:text-red-400">Fact Check</span>
@@ -17,37 +18,22 @@
             </p>
         </div>
 
-        @if (!_loaded)
-        {
-            <div class="fact-check-loading" role="status">Loading fact checks…</div>
-        }
-        else if (_loadFailed)
+        @if (_loadFailed)
         {
             <div class="fact-check-load-error" role="alert">Fact-check content could not be loaded.</div>
         }
         else
         {
-            <div class="fact-check-desktop-columns" aria-label="Casino proponents fact checks">
-                <ol class="fact-check-column">
-                    @foreach (var claim in DesktopLeftFactChecks)
-                    {
-                        <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="desktop-left" />
-                    }
-                </ol>
-                <ol class="fact-check-column">
-                    @foreach (var claim in DesktopRightFactChecks)
-                    {
-                        <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="desktop-right" />
-                    }
-                </ol>
-            </div>
+            <FactCheckCatalog Claims="FalseFactChecks" IdPrefix="homepage-fact-checks" />
 
-            <ol class="fact-check-mobile-list" aria-label="Casino proponents fact checks">
-                @foreach (var claim in FalseFactChecks)
-                {
-                    <FactCheckCard @key="claim.Id" Claim="claim" IdSuffix="mobile" />
-                }
-            </ol>
+            <div class="mt-12 flex justify-center">
+                <AppButton type="button"
+                           Icon="arrow_forward"
+                           Class="bg-red-700 px-6 py-3 text-base text-white hover:bg-red-800"
+                           OnButtonClick="GoToFactChecks">
+                    View All Fact Checks
+                </AppButton>
+            </div>
         }
     </div>
 </section>
@@ -56,9 +42,6 @@
     private const int SupportedSchemaVersion = 1;
 
     private IReadOnlyList<FactCheckClaim> FalseFactChecks = Array.Empty<FactCheckClaim>();
-    private IReadOnlyList<FactCheckClaim> DesktopLeftFactChecks = Array.Empty<FactCheckClaim>();
-    private IReadOnlyList<FactCheckClaim> DesktopRightFactChecks = Array.Empty<FactCheckClaim>();
-    private bool _loaded;
     private bool _loadFailed;
     private bool _layoutInitialized;
 
@@ -66,47 +49,42 @@
     {
         try
         {
-            var document = await Http.GetFromJsonAsync<FactCheckDocument>("data/fact-checks.json");
-            if (document is null || document.SchemaVersion != SupportedSchemaVersion)
+            var document = FactCheckContent.GetDocument();
+            if (document.SchemaVersion != SupportedSchemaVersion)
             {
                 _loadFailed = true;
                 return;
             }
 
-            FalseFactChecks = document.FactChecks
+            var falseClaims = document.FactChecks
                 .Where(claim => claim.Verdict == FactCheckVerdict.False)
                 .ToArray();
-            FalseFactChecks = await AttachVerifiedArchivesAsync(FalseFactChecks);
-            DesktopLeftFactChecks = FalseFactChecks.Where((_, index) => index % 2 == 0).ToArray();
-            DesktopRightFactChecks = FalseFactChecks.Where((_, index) => index % 2 == 1).ToArray();
+
+            var homepageIds = document.HomepageFactCheckIds ?? Array.Empty<string>();
+            ApplyClaims(homepageIds.Count == 0
+                ? falseClaims
+                : homepageIds
+                    .Select(id => falseClaims.FirstOrDefault(claim => string.Equals(claim.Id, id, StringComparison.Ordinal)))
+                    .Where(claim => claim is not null)
+                    .Cast<FactCheckClaim>()
+                    .ToArray());
+
+            ApplyClaims(await FactCheckContent.AttachVerifiedArchivesAsync(FalseFactChecks));
         }
-        catch (HttpRequestException) { _loadFailed = true; }
-        catch (NotSupportedException) { _loadFailed = true; }
         catch (System.Text.Json.JsonException) { _loadFailed = true; }
-        finally { _loaded = true; }
+        catch (InvalidOperationException) { _loadFailed = true; }
     }
 
-    private async Task<IReadOnlyList<FactCheckClaim>> AttachVerifiedArchivesAsync(IReadOnlyList<FactCheckClaim> claims)
+    private void ApplyClaims(IReadOnlyList<FactCheckClaim> claims)
     {
-        var archives = new Dictionary<string, WebArchiveMetadata>(StringComparer.OrdinalIgnoreCase);
-        foreach (var sourceKey in claims.Select(claim => claim.ArchiveSourceKey).Where(key => !string.IsNullOrWhiteSpace(key)).Distinct())
-        {
-            try
-            {
-                var archive = await Http.GetFromJsonAsync<WebArchiveMetadata>($"api/web-archives/{Uri.EscapeDataString(sourceKey!)}/latest");
-                if (archive is not null) archives[sourceKey!] = archive;
-            }
-            catch (HttpRequestException) { }
-        }
-
-        return claims.Select(claim => claim.ArchiveSourceKey is not null && archives.TryGetValue(claim.ArchiveSourceKey, out var archive)
-            ? claim with { ClaimSourceArchivedUrl = archive.ArchivedUrl, ClaimSourceCapturedAtUtc = archive.CapturedAtUtc }
-            : claim).ToArray();
+        FalseFactChecks = claims;
     }
+
+    private void GoToFactChecks() => NavigationManager.NavigateTo("/fact-checks");
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_loaded && !_loadFailed && !_layoutInitialized)
+        if (!_loadFailed && !_layoutInitialized)
         {
             _layoutInitialized = true;
             await JSRuntime.InvokeVoidAsync("window.FactCheckLayout.init");

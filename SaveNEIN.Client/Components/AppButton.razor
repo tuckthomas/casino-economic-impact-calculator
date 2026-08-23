@@ -1,16 +1,32 @@
 @inherits ComponentBase
 
-<button class="@CssClass" @onclick="OnClickHandler" disabled="@Disabled" @attributes="AdditionalAttributes">
-    @if (!string.IsNullOrEmpty(Icon))
-    {
-        <span class="material-symbols-outlined text-[18px]">@Icon</span>
-    }
-    @ChildContent
-</button>
+@if (!string.IsNullOrWhiteSpace(Href))
+{
+    <a class="@CssClass" href="@Href" target="@Target" rel="@Rel" @onclick="OnClickHandler" @attributes="AdditionalAttributes">
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <span class="material-symbols-outlined text-[18px]">@Icon</span>
+        }
+        @ChildContent
+    </a>
+}
+else
+{
+    <button class="@CssClass" @onclick="OnClickHandler" disabled="@Disabled" @attributes="AdditionalAttributes">
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <span class="material-symbols-outlined text-[18px]">@Icon</span>
+        }
+        @ChildContent
+    </button>
+}
 
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public string? Icon { get; set; }
+    [Parameter] public string? Href { get; set; }
+    [Parameter] public string? Target { get; set; }
+    [Parameter] public string? Rel { get; set; }
     [Parameter] public EventCallback<MouseEventArgs> OnButtonClick { get; set; }
     [Parameter] public string Class { get; set; } = "bg-red-600 hover:bg-red-700 text-white";
     [Parameter] public bool Disabled { get; set; }

@@ -2,39 +2,46 @@
 
 <li class="fact-check-entry" id="fact-check-@Claim.Slug-@IdSuffix">
     <article class="fact-check-entry__card" aria-labelledby="fact-check-title-@Claim.Id-@IdSuffix">
+        <div class="fact-check-entry__card-main">
         <div class="fact-check-entry__header">
             <div class="fact-check-entry__heading-copy">
                 <span class="fact-check-entry__category">@Claim.Category</span>
                 <p class="fact-check-entry__claimant">@(Claim.IsDirectQuote ? $"{Claim.Claimant} claim" : $"{Claim.Claimant} framing")</p>
             </div>
-            <div class="fact-check-entry__gauge">
-                <FactCheckGauge Verdict="Claim.Verdict" />
+
+            <div class="fact-check-entry__evidence-summary">
+                <p class="fact-check-entry__evidence-label">Claim:</p>
+                <p class="fact-check-entry__claim-text">
+                    @if (Claim.IsDirectQuote)
+                    {
+                        <span>&ldquo;@Claim.ClaimText&rdquo;</span>
+                    }
+                    else
+                    {
+                        <span>@Claim.ClaimText</span>
+                    }
+                </p>
+            </div>
+
+            <div class="fact-check-entry__utility">
+                <FactCheckShare Claim="Claim" />
+                <div class="fact-check-entry__gauge">
+                    <FactCheckGauge Verdict="Claim.Verdict" />
+                </div>
             </div>
         </div>
 
-        <div class="fact-check-entry__evidence-summary">
-            <p class="fact-check-entry__evidence-label">Claim being checked</p>
-            <p class="fact-check-entry__claim-text">
-                @if (Claim.IsDirectQuote)
-                {
-                    <span>&ldquo;@Claim.ClaimText&rdquo;</span>
-                }
-                else
-                {
-                    <span>@Claim.ClaimText</span>
-                }
-            </p>
-        </div>
-
         <section class="fact-check-entry__finding" aria-label="Evidence-backed finding">
-            <p class="fact-check-entry__finding-label">The evidence shows</p>
+            <p class="fact-check-entry__finding-label">Evidence summary:</p>
             <h4 id="fact-check-title-@Claim.Id-@IdSuffix">@Claim.FindingHeadline</h4>
             <p>@Claim.ShortFinding</p>
         </section>
 
         <details class="fact-check-entry__details">
             <summary>View evidence &amp; sources</summary>
-            <div class="fact-check-entry__details-body">
+        </details>
+        </div>
+        <div class="fact-check-entry__details-body">
                 @foreach (var paragraph in DetailParagraphs)
                 {
                     <p>@paragraph</p>
@@ -124,8 +131,7 @@
                         </a>
                     }
                 </div>
-            </div>
-        </details>
+        </div>
     </article>
 </li>
 

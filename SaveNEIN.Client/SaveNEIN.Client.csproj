@@ -24,6 +24,10 @@
     <ProjectReference Include="..\SaveNEIN.Shared\SaveNEIN.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\data\fact-checks.json" LogicalName="SaveNEIN.Client.Data.fact-checks.json" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(DotNetWatchBuild)' == 'true'">
     <Content Update="wwwroot/css/app.css" Watch="false" />
     <Content Update="wwwroot/js/lib/**/*" Watch="false" />

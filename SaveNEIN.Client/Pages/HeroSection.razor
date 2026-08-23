@@ -45,14 +45,20 @@
                 </span>
             </p>
 
-            <div class="hero-animate mb-10 lg:mb-12 flex flex-col sm:flex-row gap-4 sm:items-center" style="display: inline-block; opacity: 0; animation: fadeInUp 0.6s ease 1.15s both;">
-                <a href="/get-involved" class="inline-flex items-center justify-center gap-2 bg-accent hover:bg-red-700 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-accent/25 w-full sm:w-auto text-lg group">
+            <div class="hero-animate mb-10 lg:mb-12 flex flex-col gap-4 sm:flex-row sm:items-center" style="opacity: 0; animation: fadeInUp 0.6s ease 1.15s both;">
+                <AppButton Href="/get-involved"
+                           Icon="group_add"
+                           Class="w-full bg-accent px-8 py-4 text-lg text-white hover:bg-red-700 sm:w-auto">
                     Get Involved
-                    <span class="material-symbols-outlined transition-transform group-hover:translate-x-1" aria-hidden="true">arrow_forward</span>
-                </a>
+                </AppButton>
+                <AppButton Href="/fact-checks"
+                           Icon="fact_check"
+                           Class="w-full bg-white px-8 py-4 text-lg text-slate-900 hover:bg-slate-100 sm:w-auto">
+                    View the Facts
+                </AppButton>
             </div>
 
-            <a href="#proponents-critique" class="hero-desktop-learn-more hidden lg:flex" aria-label="Learn more and continue to the next section">
+            <a href="#casino-fact-checks" class="hero-desktop-learn-more hidden lg:flex" aria-label="Learn more and continue to the casino fact checks">
                 <span class="hero-desktop-learn-more-text">Learn More</span>
                 <span class="hero-desktop-learn-more-circle" aria-hidden="true">
                     <svg class="hero-desktop-learn-more-chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -61,16 +67,6 @@
                 </span>
             </a>
 
-            <div class="hero-mobile-scroll-hint">
-                <a href="#proponents-critique" class="hero-mobile-scroll-link" aria-label="Scroll to Casino Proponents Critique section">
-                    <span class="hero-mobile-scroll-text">Scroll to<br/>Learn More</span>
-                    <span class="hero-mobile-scroll-circle">
-                        <svg class="hero-mobile-scroll-chevron-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </span>
-                </a>
-            </div>
         </div>
 
         <div class="hero-visual-stage relative w-full lg:w-[55%]">
@@ -132,6 +128,17 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="hero-mobile-scroll-hint">
+        <a href="#casino-fact-checks" class="hero-mobile-scroll-link" aria-label="Scroll to casino fact checks">
+            <span class="hero-mobile-scroll-text">Scroll to<br/>Learn More</span>
+            <span class="hero-mobile-scroll-circle">
+                <svg class="hero-mobile-scroll-chevron-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </span>
+        </a>
     </div>
 </section>
 

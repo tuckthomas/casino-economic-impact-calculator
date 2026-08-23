@@ -5,357 +5,138 @@
   </picture>
 
   # Save Northeast Indiana
+
   ### Protect Our Future
 
-  <p>
-    A data-driven, grassroots platform exposing the hidden economic and social costs of proposed casino expansions.
-  </p>
-
-  <br />
+  <p>A public-information and research platform for evaluating proposed casino impacts in Northeast Indiana.</p>
 
   <p>
     <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET_10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10" /></a>
     <a href="https://learn.microsoft.com/en-us/dotnet/csharp/"><img src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white" alt="C#" /></a>
-    <a href="https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor"><img src="https://img.shields.io/badge/Blazor_WASM-512BD4?style=for-the-badge&logo=blazor&logoColor=white" alt="Blazor" /></a>
-    <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL_18-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL 18" /></a>
-    <a href="https://postgis.net/"><img src="https://img.shields.io/badge/PostGIS_3.6-005C84?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostGIS" /></a>
-    <a href="https://github.com/valhalla/valhalla"><img src="https://img.shields.io/badge/Valhalla-FF6F00?style=for-the-badge&logo=openstreetmap&logoColor=white" alt="Valhalla" /></a>
-    <a href="https://cloudbeaver.io/"><img src="https://img.shields.io/badge/CloudBeaver-372923?style=for-the-badge&logo=dbeaver&logoColor=white" alt="CloudBeaver" /></a>
-    <a href="https://learn.microsoft.com/en-us/dotnet/core/extensions/workers"><img src="https://img.shields.io/badge/Worker_Service-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt="Worker Service" /></a>
+    <a href="https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor"><img src="https://img.shields.io/badge/Blazor_WASM-512BD4?style=for-the-badge&logo=blazor&logoColor=white" alt="Blazor WebAssembly" /></a>
+    <a href="https://developer.mozilla.org/docs/Web/JavaScript"><img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript" /></a>
     <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" /></a>
+    <a href="https://maplibre.org/"><img src="https://img.shields.io/badge/MapLibre_GL_JS-396CB2?style=for-the-badge&logo=openstreetmap&logoColor=white" alt="MapLibre GL JS" /></a>
+    <a href="https://www.chartjs.org/"><img src="https://img.shields.io/badge/Chart.js-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white" alt="Chart.js" /></a>
+    <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL_18-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL 18" /></a>
+    <a href="https://postgis.net/"><img src="https://img.shields.io/badge/PostGIS_3.6-005C84?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostGIS 3.6" /></a>
+    <a href="https://github.com/valhalla/valhalla"><img src="https://img.shields.io/badge/Valhalla-FF6F00?style=for-the-badge&logo=openstreetmap&logoColor=white" alt="Valhalla" /></a>
+    <a href="https://archivebox.io/"><img src="https://img.shields.io/badge/ArchiveBox-4B5563?style=for-the-badge&logo=archivebox&logoColor=white" alt="ArchiveBox" /></a>
     <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" /></a>
-    <a href="https://maplibre.org/"><img src="https://img.shields.io/badge/MapLibre_GL_JS-396CB2?style=for-the-badge&logo=maplibre&logoColor=white" alt="MapLibre GL JS" /></a>
+    <a href="https://nginx.org/"><img src="https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white" alt="Nginx" /></a>
   </p>
 
 </div>
 
-<br />
+## Overview
 
----
+SaveNEIN presents public-facing research, fact checks, polling, crime and safety information, and the economic case against the proposed casino. It also contains a data-intensive economic-impact workbench that uses server-side routing, versioned inputs, and stored model results.
 
-## Project Overview
+The public site is built as a Blazor WebAssembly client served by an ASP.NET Core host. JavaScript is used where browser-native libraries are the right tool: interactive maps, charts, share actions, layout behavior, and related client-side integrations.
 
-Save Northeast Indiana (SaveNEIN) is an interactive open-source platform designed to educate citizens, policymakers, and researchers. It provides deterministic financial modeling and geospatial analysis regarding casino impacts on community character and fiscal health.
+## Current capabilities
 
-### Core Objectives
-*   **Public Education:** Uncover documented social costs including addiction, crime, and wealth extraction.
-*   **Data Transparency:** Provide interactive modeling tools to visualize community deficits and providing the data to the public as an open source project (AGPL-3.0 license) to allow for community contribution and collaboration.
-*   **Policy Critique:** Refute marketing claims with independent studies and empirical data.
-*   **Advocacy:** Mobilize the community to demand a public referendum, which has been the historical precedent for other Indiana areas.
+- Reusable, JSON-backed fact-check cards with ratings, source material, share images, and social sharing.
+- Archived claimant-source preservation through ArchiveBox, with capture metadata and browser-facing archive links.
+- Interactive MapLibre maps backed by PostGIS data and Valhalla drive-time routing.
+- A versioned economic-impact model and generated reports; the public location-to-analysis workflow is currently gated while its inputs are reconnected.
+- Coalition registration plus a daily Zoho email digest for configured recipients.
 
----
-
-## Repository Structure
+## Repository structure
 
 ```text
-📁 SaveNEIN
-├── 📁 SaveNEIN.Client      # Blazor WebAssembly UI
-│   ├── 📁 Pages            # Razor Components (Hero, Map, EconomicImpact, etc.)
-│   └── 📁 wwwroot          # Static assets and modular JavaScript
-├── 📁 SaveNEIN.Server      # ASP.NET Core host + API
-│   ├── 📁 Controllers      # Census, map, PDF, and policy endpoints
-│   ├── 📁 Data             # DbContext, migrations, seed/init logic
-│   ├── 📁 Services         # TIGER ingestion, Valhalla integration, modeling services
-│   └── 📄 Program.cs       # Runtime pipeline and app wiring
-├── 📁 SaveNEIN.Shared      # Shared contracts/models
-├── 📁 scripts/dev          # Local dev lifecycle & watcher scripts
-├── 📁 docs                 # Plans, runbooks, methodology, examples
-├── 📁 infra/valhalla       # Valhalla config + tile inputs
-├── 📄 compose.development.yml # Development app using the VPS development services
-├── 📄 deploy/compose.production.yml # Production stack
-├── 📄 Dockerfile           # Production image build
-└── 📄 SaveNEIN.sln         # Solution entry point
+SaveNEIN/
+├── SaveNEIN.Client/                 Blazor WebAssembly client
+│   ├── Components/                  Reusable UI components
+│   ├── Layout/                      Application layouts
+│   ├── Models/                      Client contracts and fact-check models
+│   ├── Pages/                       Public pages and economic-impact workflow
+│   ├── Services/                    Client-side content services
+│   ├── Styles/                      Tailwind source styles
+│   └── wwwroot/                     Assets, data, CSS, and JavaScript modules
+├── SaveNEIN.Server/                 ASP.NET Core host and API
+│   ├── Configuration/               Typed configuration options
+│   ├── Controllers/                 HTTP APIs
+│   ├── Data/                        DbContext, migrations, and data initialization
+│   ├── Migrations/                  Entity Framework migrations
+│   ├── Pages/                       Server-rendered document shell and social metadata
+│   ├── Services/                    Archive, email, maps, reports, and model services
+│   └── Workers/                     Background processing
+├── SaveNEIN.Server.Tests/           Server test suite
+├── SaveNEIN.Shared/                 Contracts shared by client and server
+├── deploy/                          Production Compose, Nginx, certificates, and systemd assets
+├── docs/                            Migrations, operations notes, plans, and runbooks
+├── infra/valhalla/                  Valhalla configuration and generated-data locations
+├── scripts/                         Development and validation tooling
+├── compose.development.yml          Development app Compose configuration
+├── compose.development.env.example  Development environment template
+├── Dockerfile                       Application image build
+└── SaveNEIN.sln                     Solution entry point
 ```
 
----
+CloudBeaver is not part of the current application or Compose setup.
 
-# Key Features
+## Development
 
-## Economic Impact Calculator
-The core of the platform is an interactive financial model that allows citizens to audit the "net benefit" claims made by developers. Users can adjust critical variables—including Adjusted Gross Revenue (AGR), tax revenue allocation strategies, and social cost multipliers—to calculate the true projected community deficit. Unlike static reports, this tool recalculates in real-time, showing how even optimistic revenue projections often fail to cover the public sector costs of addiction and crime. This transparency is vital for ensuring that the community isn't left with a multi-decade fiscal burden.
-<br /><br />
+### Prerequisites
 
-## Programmatic Economic Analysis
-Moving beyond "AI estimates" or "black box" consulting studies, SaveNEIN employs a deterministic, rule-based analysis. This system processes user inputs against fixed mathematical formulas derived from peer-reviewed economic literature (Grinols, Welte, et al.). By basing the logic on established academic precedents, the platform ensures that every result is reproducible, transparent, and mathematically verifiable. This provides a "Programmatic Fact Check" that updates instantly as variables change, removing human bias from the calculation.
-<br /><br />
+- .NET SDK 10
+- Node.js 20+
+- Docker Desktop or Docker Engine for containerized development
+- Access to the configured development services, if using this repository's VPS-backed development setup
 
-## Economic Impact Simulator
-For users who want to explore "What If" scenarios, the Simulator provides a guided wizard. It allows users to rapidly toggle between the State's conservative revenue estimates ($43M-$112M) and the Developer's sales pitch ($330M), applying varying degrees of social cost sensitivity to see if *any* scenario results in a net positive for the taxpayer. This helps demonstrate that the "economic engine" promised by promoters is often a mathematical impossibility when accounting for the predictable rise in local social expenditures.
-<br /><br />
-<img src="docs/examples/Economic-Impact-Simulator-Example.png" alt="Simulator Interface" width="600" />
-<br /><br />
+### Development Compose
 
-## Interactive Slot Machine
-A visual metaphor for the marketing strategies used to sell the casino project. The digital slot machine demonstrates the "Near Miss" psychological effect—where "JOBS" appears just one click away from "ADDICTION"—highlighting how promises of economic prosperity are often just a mechanism for revenue generation. This tool is designed to educate the public on the intentional design of gambling environments and their linguistic framing in political discourse.
-<br /><br />
+`compose.development.yml` starts only the application container. It deliberately connects through private SSH tunnels to the VPS development database (`savefw_dev`) and Valhalla service rather than creating a second local database or routing stack.
 
-## Impact Zone Visualizer
-This MapLibre GL JS-based geospatial tool visualizes the geographic scope of problem gambling with both radius bands and Valhalla-powered drive-time logic. The Valhalla integration is active in the application and the project supports precomputed isochrone coverage through seeded grid points. Current seeded coverage is intentionally limited while additional county/state grid points are prepared.
-<br /><br />
-<img src="docs/examples/Casino-Impact-Zone-Visualizer-Example-v2.png" alt="Map Visualizer" width="600" />
-<br /><br />
-
-## Analyzing the Claims
-A direct, side-by-side comparison of the marketing claims ("Economic Engine," "World-Class Destination") versus the documented reality found in similar markets ("Substitution Effect," "Market Saturation"). This section uses a "Claim vs. Reality" format, supported by direct links to independent studies and government data, to help citizens see past the promotional campaigns and understand the systemic risks.
-
-## Detailed Demographics
-The platform integrates granular population data for all 92 Indiana counties, allowing the impact model to be applied specifically to the local demographics of Allen County and its neighbors. This ensures that the analysis isn't just a generic statewide average, but a tailored report based on the specific socio-economic profile of the affected region.
-
----
-
-# Architecture
-
-This project is built using a modern .NET 10 distributed architecture:
-
-*   **Backend:** .NET 10 Web API utilizing Entity Framework Core.
-*   **Frontend:** Blazor WebAssembly styled with Tailwind CSS.
-*   **Database:** PostgreSQL 18 + PostGIS (Dockerized) with automated data seeding.
-*   **Routing:** Self-hosted Valhalla engine for offline isochrone generation.
-*   **Management:** CloudBeaver for web-based database administration.
-*   **Maps:** MapLibre GL JS with Protomaps PMTiles for offline vector maps.
-*   **Deployment:** Fully containerized environment via Docker Compose.
-
----
-
-# Installation
-
-The easiest way to run Save Northeast Indiana is using **Docker**. This ensures the application, database, and all dependencies run exactly as intended without installing anything else on your machine.
-
-## System Requirements
-
-This project includes a **Valhalla** routing engine for offline isochrone generation. This adds specific hardware requirements, particularly during the initial graph build process.
-
-| Resource | Minimum | Recommended | Notes |
-| :--- | :--- | :--- | :--- |
-| **RAM** | 8 GB | 16 GB | **Crucial:** Valhalla needs ~8-10GB RAM to "cook" the graph tiles for the 5-state Midwest region. Runtime usage is lower (~4GB). |
-| **CPU** | 4 Cores | 8+ Cores | Build is CPU-intensive but runs once. Runtime scaling depends on request volume. |
-| **Storage** | 20 GB | 100 GB | Graph tiles and PBF files consume ~10-15GB. 100GB is recommended for a stable server environment. |
-
-**Note for Proxmox/Container Users:**
-If running in a container (LXC/Docker), ensure you have allocated at least **10GB RAM** for the initial build. You may scale this down to **4-6GB** once the `custom_files/valhalla_tiles.tar` has been generated, as the runtime engine uses memory mapping.
-
----
-
-## 1. Prerequisites
-
-You only need **Docker** installed.
-
-<details>
-<summary><strong>Click here for Docker Installation Instructions</strong></summary>
-
-## Windows
-1. Download [Docker Desktop for Windows](https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe).
-2. Run the installer and follow the on-screen instructions.
-3. Restart your computer if prompted.
-4. Open PowerShell and verify by running: `docker --version`
-
-## macOS
-1. Download [Docker Desktop for Mac](https://docs.docker.com/desktop/install/mac-install/).
-   - [Apple Silicon (M1/M2/M3)](https://desktop.docker.com/mac/main/arm64/Docker.dmg)
-   - [Intel Chip](https://desktop.docker.com/mac/main/amd64/Docker.dmg)
-2. Drag the Docker icon to your Applications folder.
-3. Open Docker from Applications.
-4. Open Terminal and verify by running: `docker --version`
-
-## Linux (Ubuntu/Debian)
-Run the convenience script to install Docker Engine:
-```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-```
-Verify installation: `docker --version`
-
-</details>
-
-## 2. Run the Application
-
-Once **Docker** is installed, simply clone the repo and start the containers. The repository handles everything else (database setup, data seeding, dependencies).
+1. Copy [`deploy/.env.example`](deploy/.env.example) to the Git-ignored `deploy/.env` and set the private credentials.
+2. Copy [`compose.development.env.example`](compose.development.env.example) to the Git-ignored `.env.development`.
+3. Ensure the local SSH tunnels for Postgres and Valhalla are running.
+4. Start the app:
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/tuckthomas/casino-economic-impact-calculator.git
-cd casino-economic-impact-calculator
-
-# 2. Create the Git-ignored development settings file (one time)
-cp compose.development.env.example .env.development
-
-# 3. Start the development application after the VPS tunnels are available
 docker compose --env-file deploy/.env --env-file .env.development \
   -f compose.development.yml up --build -d
 ```
 
-The application is now running! Access the services at:
+The development site is then available at `http://localhost:5000`.
 
-| Service | URL | Description |
-| :--- | :--- | :--- |
-| **Development Web Application** | **http://localhost:5000** | Main user interface |
+### Local watch mode
 
----
-
-## For Developers (Optional)
-
-If you wish to modify code locally, run the app outside Docker, or use hot reload, you will need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and **Node.js/npm**.
+For native local development, use the provided watcher after supplying the same private connection and Valhalla environment variables:
 
 ```bash
-# Start the local dev watcher (port 5000). Set its connection and Valhalla
-# environment variables from the same private development configuration.
 npm run dev
 ```
 
-Useful dev commands:
+Other useful commands:
 
 ```bash
 npm run dev:start
 npm run dev:status
 npm run dev:stop
 npm run dev:restart
+dotnet test SaveNEIN.Server.Tests/SaveNEIN.Server.Tests.csproj
 ```
 
-> **Note:** Frontend dependency copy/build (`copy-libs`, Tailwind compile) is integrated into the project build/watch flow.
+Tailwind compilation and vendored-library copying are integrated into the .NET client build.
 
-### Versioned model-data providers
+## Production
 
-The gravity model does not read live third-party data during a model run. Provider adapters first create a source-catalog record and an immutable, sealed dataset snapshot; finalized runs then reference those exact snapshot IDs.
+Production uses [`deploy/compose.production.yml`](deploy/compose.production.yml), not the development Compose file. It runs the application, PostgreSQL/PostGIS, Valhalla, Nginx, ArchiveBox, and certificate-maintenance services on an isolated Docker network.
 
-The Census ACS 5-year adapters currently support national ZCTA age bins (`B01001`) and median household income (`B19013`). Configure the required Census API key outside source control:
+Private settings, credentials, database passwords, email recipients, and ArchiveBox tokens belong only in the Git-ignored `deploy/.env`. See the [production deployment workflow](docs/runbooks/PRODUCTION_DEPLOYMENT_WORKFLOW.md) before deploying.
 
-```powershell
-$env:CensusAcs__ApiKey = '<Census Data API key>'
-```
+## Data and source integrity
 
-Provider ingestion is available at:
+Model inputs are versioned and sealed before finalized analysis runs reference them. Claimant websites cited by fact checks can be captured through ArchiveBox so the public record identifies the actual capture date rather than treating a live page as immutable historical evidence.
 
-- `POST /api/model-data/providers/census-acs/zcta-age-population`
-- `POST /api/model-data/providers/census-acs/zcta-median-household-income`
+## License
 
-Both endpoints require an existing sealed origin-geography snapshot. They use stable IDs such as `USA-ZCTA-46802`; the adapters deliberately identify Census ZCTAs as statistical geographies and do not silently treat them as USPS ZIP Codes. ACS median household income is also kept distinct from IRS adjusted gross income.
-
-## Dependencies & Offline Support
-
-This application is designed to run **fully offline**. All critical external assets—including CSS frameworks, JavaScript libraries, Fonts, and Map Tiles—have been localized or vendored to ensure zero dependency on external CDNs during runtime. This architecture guarantees stability, privacy, and performance even in isolated environments.
-
-### NPM Packages (Frontend)
-Managed via `package.json` and built using `npm run build:css` / `copy-libs`.
-
-| Package | Version | Purpose |
-| :--- | :--- | :--- |
-| **tailwindcss** | ^3.4.0 | Utility-first CSS framework (Built via CLI) |
-| **@fontsource-variable/public-sans** | ^5.2.7 | Typography (Variable Font) |
-| **@fontsource-variable/material-symbols-outlined** | ^5.2.30 | Iconography (Variable Font) |
-
-### .NET Packages (Server)
-Managed via NuGet in `SaveNEIN.Server.csproj`.
-
-| Package | Version | Purpose |
-| :--- | :--- | :--- |
-| **Npgsql.EntityFrameworkCore.PostgreSQL** | 10.0.0 | Database Provider for PostgreSQL |
-| **Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite** | 10.0.0 | Spatial Support (PostGIS) |
-| **NetTopologySuite.IO.ShapeFile** | 2.1.0 | SHP File Ingestion (Census Data) |
-| **NetTopologySuite.IO.Esri.Shapefile** | 1.2.0 | Extended Shapefile Support |
-| **QuestPDF** | 2025.12.1 | PDF Report Generation |
-| **Microsoft.AspNetCore.Components.WebAssembly.Server** | 10.0.1 | Blazor Server Hosting |
-| **Microsoft.EntityFrameworkCore.Design** | 10.0.1 | EF Core Migration Tooling |
-| **Microsoft.AspNetCore.OpenApi** | 9.0.11 | Swagger/OpenAPI Generation |
-
-### Vendored Libraries
-These libraries are manually included in `wwwroot/js/lib` or `wwwroot/css` to avoid external fetch requests.
-
-| Library | Version | Purpose |
-| :--- | :--- | :--- |
-| **MapLibre GL JS** | v4.x | GPU-accelerated vector maps |
-| **PMTiles.js** | v2.x | Offline vector tile protocol for Protomaps |
-| **PDF.js** | v3.x | Client-side PDF rendering |
-| **PageFlip** | v2.x | Flipbook animation effect |
-
----
-
-# Open Source and Contributions
-
-This project is shared openly to encourage community involvement. We invite developers and data scientists to:
-
-1.  Improve the Calculator: Refine social cost algorithms and add granular data points.
-2.  Enhance Visualizations: Expand mapping and charting capabilities.
-3.  Audit Sources: Ensure the latest research is reflected in the platform models.
-
-# Contact
-
-For inquiries, feedback, or to join the coalition, please reach out to:
-outreach@savenein.com
-
-# Data and Sources
-
-
-## Dependencies & Offline Support
-
-This application is designed to run **fully offline**. All critical external assets—including CSS frameworks, JavaScript libraries, Fonts, and Map Tiles—have been localized or vendored to ensure zero dependency on external CDNs during runtime. This architecture guarantees stability, privacy, and performance even in isolated environments.
-
-### NPM Packages (Frontend)
-Managed via `package.json` and built using `npm run build:css` / `copy-libs`.
-
-| Package | Version | Purpose |
-| :--- | :--- | :--- |
-| **tailwindcss** | ^3.4.0 | Utility-first CSS framework (Built via CLI) |
-| **@fontsource-variable/public-sans** | ^5.2.7 | Typography (Variable Font) |
-| **@fontsource-variable/material-symbols-outlined** | ^5.2.30 | Iconography (Variable Font) |
-
-### .NET Packages (Server)
-Managed via NuGet in `SaveNEIN.Server.csproj`.
-
-| Package | Version | Purpose |
-| :--- | :--- | :--- |
-| **Npgsql.EntityFrameworkCore.PostgreSQL** | 10.0.0 | Database Provider for PostgreSQL |
-| **Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite** | 10.0.0 | Spatial Support (PostGIS) |
-| **NetTopologySuite.IO.ShapeFile** | 2.1.0 | SHP File Ingestion (Census Data) |
-| **NetTopologySuite.IO.Esri.Shapefile** | 1.2.0 | Extended Shapefile Support |
-| **QuestPDF** | 2025.12.1 | PDF Report Generation |
-| **Microsoft.AspNetCore.Components.WebAssembly.Server** | 10.0.1 | Blazor Server Hosting |
-| **Microsoft.EntityFrameworkCore.Design** | 10.0.1 | EF Core Migration Tooling |
-| **Microsoft.AspNetCore.OpenApi** | 9.0.11 | Swagger/OpenAPI Generation |
-
-### Vendored Libraries
-These libraries are manually included in `wwwroot/js/lib` or `wwwroot/css` to avoid external fetch requests.
-
-| Library | Version | Purpose |
-| :--- | :--- | :--- |
-| **MapLibre GL JS** | v4.x | GPU-accelerated vector maps |
-| **PMTiles.js** | v2.x | Offline vector tile protocol for Protomaps |
-| **PDF.js** | v3.x | Client-side PDF rendering |
-| **PageFlip** | v2.x | Flipbook animation effect |
-
----
-
-# Open Source and Contributions
-
-This project is shared openly to encourage community involvement. We invite developers and data scientists to:
-
-1.  Improve the Calculator: Refine social cost algorithms and add granular data points.
-2.  Enhance Visualizations: Expand mapping and charting capabilities.
-3.  Audit Sources: Ensure the latest research is reflected in the platform models.
-
-# Contact
-
-For inquiries, feedback, or to join the coalition, please reach out to:
-outreach@savenein.com
-
-# Data and Sources
-
-Social cost modeling is derived from established academic research:
-*   Grinols (2011): Social cost per problem gambler calculations (adjusted for 2025 inflation).
-*   Welte et al.: Proximity-based multipliers for gambling addiction risk.
-*   Spectrum Gaming: Comparison of state-commissioned revenue projections.
-
----
-
-# License
-
-- **Base Platform & Web Application**: Licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](file:///m:/SaveNEIN/LICENSE.md).
-- **Advanced Economic Modeling Subsystem**: The gravity modeling engine, sector-weighted displacement calculator, Census ACS ingestion, backtest calibration, sensitivity analysis, stored report generators, and associated database migrations are licensed under the [PolyForm Noncommercial License 1.0.0](file:///m:/SaveNEIN/LICENSE-MODEL.md). Commercial use, monetization, paid consulting, or commercial hosting of the modeling engine without a commercial license is strictly prohibited.
-
----
+- **Base platform and web application:** [GNU Affero General Public License v3.0](LICENSE.md)
+- **Advanced economic modeling subsystem:** [PolyForm Noncommercial License 1.0.0](LICENSE-MODEL.md)
 
 <div align="center">
   <p><em>A volunteer effort by concerned residents of Northeast Indiana.</em></p>
-  <p>
-    <a href="https://savenein.com"><strong>Visit Live Site</strong></a>
-  </p>
+  <p><a href="https://savenein.com"><strong>Visit the live site</strong></a></p>
 </div>

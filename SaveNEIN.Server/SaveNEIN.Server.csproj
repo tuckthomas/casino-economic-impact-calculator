@@ -21,6 +21,8 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="10.0.0" />
     <PackageReference Include="PdfPig" Version="0.1.15" />
     <PackageReference Include="QuestPDF" Version="2025.12.1" />
+    <PackageReference Include="SkiaSharp" Version="4.151.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.151.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,6 +37,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\SaveNEIN.Client\wwwroot\assets\SAVENEIN.png"
+                      LogicalName="SaveNEIN.Server.Assets.SAVENEIN.png" />
+    <EmbeddedResource Include="..\SaveNEIN.Client\wwwroot\assets\fact-check-gauge-face.png"
+                      LogicalName="SaveNEIN.Server.Assets.fact-check-gauge-face.png" />
     <EmbeddedResource Include="..\docs\migrations\005_casino_competitors.sql"
                       Link="Data\Migrations\005_casino_competitors.sql" />
     <EmbeddedResource Include="..\docs\migrations\006_gravity_model_foundation.sql"

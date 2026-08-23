@@ -1,0 +1,108 @@
+@using SaveNEIN.Client.Models
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<button type="button"
+        class="fact-check-share__trigger"
+        aria-label="Share this fact check"
+        title="Share this fact check"
+        @onclick="Open">
+    <span class="material-symbols-outlined" aria-hidden="true">share</span>
+</button>
+
+@if (_isOpen)
+{
+    <div class="fact-check-share__backdrop" role="presentation" @onclick="Close">
+        <section class="fact-check-share__dialog" role="dialog" aria-modal="true" aria-labelledby="fact-check-share-title" @onclick:stopPropagation="true">
+            <div class="fact-check-share__dialog-header">
+                <div>
+                    <p class="fact-check-share__eyebrow">Share this fact check</p>
+                    <h3 id="fact-check-share-title">Spread the evidence</h3>
+                </div>
+                <button type="button" class="fact-check-share__close" aria-label="Close share dialog" @onclick="Close">
+                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                </button>
+            </div>
+
+            <a class="fact-check-share__preview" href="@ShareUrl" target="_blank" rel="noopener noreferrer" aria-label="Open this fact check">
+                <img src="@ShareImageUrl" alt="Fact check: @Claim.ClaimText" />
+            </a>
+
+            <div class="fact-check-share__actions" aria-label="Share options">
+                <AppButton Href="@XShareUrl" Target="_blank" Rel="noopener noreferrer" OnButtonClick="Close" Class="fact-check-share__action min-h-[2.75rem] w-full bg-[#111827] text-white hover:bg-[#030712]" aria-label="Share on X">
+                    <svg class="fact-check-share__brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231L18.244 2.25Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" /></svg>
+                    <span>X</span>
+                </AppButton>
+                <AppButton Href="@FacebookShareUrl" Target="_blank" Rel="noopener noreferrer" OnButtonClick="Close" Class="fact-check-share__action min-h-[2.75rem] w-full bg-[#1877f2] text-white hover:bg-[#0f5ecc]" aria-label="Share on Facebook">
+                    <svg class="fact-check-share__brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 21v-8h2.75l.41-3.12H13.5V7.89c0-.9.25-1.52 1.55-1.52h1.76V3.58A23.5 23.5 0 0 0 14.25 3c-2.54 0-4.28 1.55-4.28 4.4v2.48H7.09V13h2.88v8h3.53Z" /></svg>
+                    <span>Facebook</span>
+                </AppButton>
+                <AppButton Href="@LinkedInShareUrl" Target="_blank" Rel="noopener noreferrer" OnButtonClick="Close" Class="fact-check-share__action min-h-[2.75rem] w-full bg-[#0a66c2] text-white hover:bg-[#004182]" aria-label="Share on LinkedIn">
+                    <svg class="fact-check-share__brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.94 8.5H3.56V19h3.38V8.5ZM5.25 3A1.97 1.97 0 1 0 5.25 6.94 1.97 1.97 0 0 0 5.25 3ZM20.44 12.98c0-3.17-1.69-4.64-3.94-4.64-1.82 0-2.63 1-3.08 1.7V8.5h-3.38V19h3.38v-5.2c0-1.37.26-2.7 1.95-2.7 1.67 0 1.7 1.56 1.7 2.8V19h3.37v-6.02Z" /></svg>
+                    <span>LinkedIn</span>
+                </AppButton>
+                <AppButton Href="@WhatsAppShareUrl" Target="_blank" Rel="noopener noreferrer" OnButtonClick="Close" Class="fact-check-share__action min-h-[2.75rem] w-full bg-[#25d366] text-white hover:bg-[#128c7e]" aria-label="Share on WhatsApp">
+                    <svg class="fact-check-share__brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.52 3.48A11.93 11.93 0 0 0 12.05 0C5.47 0 .12 5.35.12 11.94c0 2.1.55 4.15 1.59 5.95L0 24l6.28-1.65a11.9 11.9 0 0 0 5.76 1.47h.01c6.58 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.4Zm-8.47 18.33a9.9 9.9 0 0 1-5.05-1.38l-.36-.21-3.73.98 1-3.63-.24-.37a9.88 9.88 0 0 1-1.53-5.26c0-5.46 4.45-9.9 9.91-9.9a9.84 9.84 0 0 1 7 2.9 9.83 9.83 0 0 1 2.9 7c0 5.45-4.45 9.87-9.9 9.87Zm5.43-7.4c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.66.15-.2.3-.76.96-.93 1.16-.17.2-.34.22-.63.08a8.07 8.07 0 0 1-2.37-1.46 8.9 8.9 0 0 1-1.64-2.04c-.17-.3-.02-.46.13-.6.14-.14.3-.34.45-.5.15-.17.2-.29.3-.49.1-.2.05-.37-.02-.52-.08-.15-.66-1.59-.9-2.18-.25-.58-.49-.5-.66-.5h-.57c-.2 0-.52.07-.8.37-.27.3-1.05 1.03-1.05 2.5s1.08 2.9 1.23 3.1c.15.2 2.12 3.24 5.15 4.55.72.31 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.75-.72 2-1.42.25-.7.25-1.3.18-1.42-.07-.12-.27-.2-.57-.35Z" /></svg>
+                    <span>WhatsApp</span>
+                </AppButton>
+                <AppButton Href="@EmailShareUrl" OnButtonClick="Close" Class="fact-check-share__action min-h-[2.75rem] w-full bg-[#4f46e5] text-white hover:bg-[#3730a3]" aria-label="Share by email">
+                    <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+                    <span>Email</span>
+                </AppButton>
+                <AppButton OnButtonClick="CopyShareImage" Class="fact-check-share__action min-h-[2.75rem] w-full bg-[#475569] text-white hover:bg-[#334155]" aria-label="Copy fact check image">
+                    <span class="material-symbols-outlined" aria-hidden="true">@(_copied ? "check" : "content_copy")</span>
+                    <span>@(_copied ? "Copied" : "Copy")</span>
+                </AppButton>
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public FactCheckClaim Claim { get; set; } = default!;
+
+    private bool _isOpen;
+    private bool _copied;
+
+    private string SharePath => $"fact-checks/{Uri.EscapeDataString(Claim.Slug)}";
+    private string ShareUrl => $"https://savenein.com/{SharePath}";
+    private string ShareImageUrl => new Uri(new Uri(NavigationManager.BaseUri), $"{SharePath}/share.png").AbsoluteUri;
+
+    private string VerdictLabel => Claim.Verdict switch
+    {
+        FactCheckVerdict.True => "TRUE",
+        FactCheckVerdict.MostlyTrue => "MOSTLY TRUE",
+        FactCheckVerdict.MostlyFalse => "MOSTLY FALSE",
+        FactCheckVerdict.False => "FALSE",
+        _ => "UNRATED"
+    };
+
+    private string ShareText => Limit(
+        $"{Claim.Claimant} claim: “{Claim.ClaimText}”\n\nSaveNEIN rates this: {VerdictLabel}. {Claim.ShortFinding}",
+        240);
+
+    private string ShareMessage => $"{ShareText}\n\nRead the evidence: {ShareUrl}";
+    private string XShareUrl => $"https://x.com/intent/post?text={Uri.EscapeDataString(ShareText)}&url={Uri.EscapeDataString(ShareUrl)}";
+    private string FacebookShareUrl => $"https://www.facebook.com/sharer/sharer.php?u={Uri.EscapeDataString(ShareUrl)}";
+    private string LinkedInShareUrl => $"https://www.linkedin.com/sharing/share-offsite/?url={Uri.EscapeDataString(ShareUrl)}";
+    private string WhatsAppShareUrl => $"https://api.whatsapp.com/send?text={Uri.EscapeDataString(ShareMessage)}";
+    private string EmailShareUrl => $"mailto:?subject={Uri.EscapeDataString($"Fact check: {Claim.FindingHeadline}")}&body={Uri.EscapeDataString(ShareMessage)}";
+
+    private void Open()
+    {
+        _copied = false;
+        _isOpen = true;
+    }
+
+    private void Close() => _isOpen = false;
+
+    private async Task CopyShareImage()
+    {
+        await JSRuntime.InvokeVoidAsync("window.FactCheckShare.copyImage", ShareImageUrl);
+        _copied = true;
+    }
+
+    private static string Limit(string value, int maxLength) =>
+        value.Length <= maxLength ? value : $"{value[..(maxLength - 1)].TrimEnd()}…";
+}

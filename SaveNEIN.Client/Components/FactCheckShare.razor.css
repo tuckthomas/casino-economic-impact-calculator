@@ -1,0 +1,122 @@
+.fact-check-share__trigger,
+.fact-check-share__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--fc-card-border, #cbd5e1);
+    border-radius: 999px;
+    background: var(--fc-card, #ffffff);
+    color: #b91c1c;
+    transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.fact-check-share__trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.fact-check-share__trigger:hover,
+.fact-check-share__trigger:focus-visible,
+.fact-check-share__close:hover,
+.fact-check-share__close:focus-visible {
+    background: #b91c1c;
+    color: #ffffff;
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.fact-check-share__trigger .material-symbols-outlined,
+.fact-check-share__close .material-symbols-outlined {
+    font-size: 1.2rem;
+}
+
+.fact-check-share__backdrop {
+    position: fixed;
+    /* A modal must cover every page-level header and navigation surface. */
+    z-index: 3000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.62);
+}
+
+.fact-check-share__dialog {
+    width: min(100%, 42rem);
+    border: 1px solid var(--fc-card-border, #cbd5e1);
+    border-radius: 1rem;
+    background: var(--fc-card, #ffffff);
+    color: var(--fc-text, #0f172a);
+    padding: 1.5rem;
+    box-shadow: 0 1.5rem 4rem rgba(15, 23, 42, 0.35);
+}
+
+.fact-check-share__dialog-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.fact-check-share__eyebrow {
+    margin: 0;
+    color: #b91c1c;
+    font-size: 0.8rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.fact-check-share__dialog h3 {
+    margin: 0.2rem 0 0;
+    font-size: 1.5rem;
+    font-weight: 900;
+}
+
+.fact-check-share__close {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 auto;
+}
+
+.fact-check-share__preview {
+    display: block;
+    margin-top: 1.25rem;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0.7rem;
+    background: transparent;
+    box-shadow: none;
+}
+
+.fact-check-share__preview:focus-visible {
+    outline: 3px solid #b91c1c;
+    outline-offset: 3px;
+}
+
+.fact-check-share__preview img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.fact-check-share__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+}
+
+::deep .fact-check-share__brand-icon {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+    fill: currentColor;
+}
+
+::deep .fact-check-share__action .material-symbols-outlined {
+    font-size: 1.05rem;
+}
+
+@media (max-width: 420px) {
+}

@@ -23,7 +23,8 @@ public sealed record FactCheckEvidenceTable(
 
 public sealed record FactCheckDocument(
     int SchemaVersion,
-    IReadOnlyList<FactCheckClaim> FactChecks);
+    IReadOnlyList<FactCheckClaim> FactChecks,
+    IReadOnlyList<string>? HomepageFactCheckIds = null);
 
 public sealed record FactCheckClaim(
     string Id,

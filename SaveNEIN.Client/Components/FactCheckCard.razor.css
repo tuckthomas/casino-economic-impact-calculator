@@ -19,20 +19,44 @@
     box-shadow: 0 1rem 2.4rem rgba(15, 23, 42, 0.12);
 }
 
-.fact-check-entry__header {
+.fact-check-entry__card-main {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    flex: 1 0 auto;
+    flex-direction: column;
+}
+
+.fact-check-entry__card:has(.fact-check-entry__details[open]) .fact-check-entry__card-main {
+    min-height: var(--fact-check-collapsed-main-height);
+}
+
+.fact-check-entry__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "metadata gauge"
+        "claim gauge";
+    column-gap: 1.25rem;
+    row-gap: 0.9rem;
+    align-items: start;
+    margin-bottom: 0.25rem;
 }
 
 .fact-check-entry__heading-copy {
+    grid-area: metadata;
     min-width: 0;
     padding-top: 0.2rem;
 }
 
+.fact-check-entry__utility {
+    grid-area: gauge;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+}
+
 .fact-check-entry__gauge {
+    align-self: center;
     flex: 0 0 auto;
     padding: 0.35rem 0.35rem 0.15rem;
 }
@@ -62,7 +86,9 @@
 }
 
 .fact-check-entry__evidence-summary {
-    margin-top: 1.15rem;
+    grid-area: claim;
+    min-width: 0;
+    margin: 0;
     padding: 1rem;
     border: 1px solid var(--fc-surface-border, #e2e8f0);
     border-radius: 0.8rem;
@@ -81,7 +107,7 @@
     font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--fc-muted, #64748b);
+    color: var(--fc-heading, #334155);
 }
 
 .fact-check-entry__claim-text {
@@ -167,8 +193,13 @@
 }
 
 .fact-check-entry__details-body {
+    display: none;
     padding-top: 0.8rem;
     color: var(--fc-heading, #334155);
+}
+
+.fact-check-entry__card:has(.fact-check-entry__details[open]) .fact-check-entry__details-body {
+    display: block;
 }
 
 .fact-check-entry__details-body > p,
@@ -285,14 +316,14 @@
     }
 
     .fact-check-entry__header {
-        align-items: center;
-        flex-direction: column;
-        gap: 0.75rem;
-        text-align: center;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 0.85rem;
+        row-gap: 0.75rem;
+        text-align: left;
     }
 
-    .fact-check-entry__gauge {
-        order: -1;
+    .fact-check-entry__utility {
+        align-self: center;
     }
 
     .fact-check-entry__finding h4 {
@@ -302,6 +333,24 @@
 
     .fact-check-entry__evidence-summary {
         padding: 0.85rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .fact-check-entry__header {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "gauge"
+            "metadata"
+            "claim";
+    }
+
+    .fact-check-entry__gauge {
+        justify-self: center;
+    }
+
+    .fact-check-entry__heading-copy {
+        text-align: center;
     }
 }
 
