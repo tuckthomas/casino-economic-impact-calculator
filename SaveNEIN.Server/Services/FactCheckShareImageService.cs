@@ -65,11 +65,9 @@ public sealed class FactCheckShareImageService : IFactCheckShareImageService
 
         using var sourceFont = Font(20, SKFontStyleWeight.SemiBold);
         using var panelLabelFont = Font(19, SKFontStyleWeight.ExtraBold);
-        using var claimFont = Font(28, SKFontStyleWeight.Bold);
         using var verdictLabelFont = Font(19, SKFontStyleWeight.ExtraBold);
         using var verdictFont = Font(34, SKFontStyleWeight.ExtraBold);
         using var evidenceLabelFont = Font(19, SKFontStyleWeight.ExtraBold);
-        using var findingFont = Font(30, SKFontStyleWeight.ExtraBold);
         using var ctaFont = Font(22, SKFontStyleWeight.SemiBold, SKFontStyleSlant.Italic);
 
         using var logo = LoadLogo();
@@ -77,26 +75,44 @@ public sealed class FactCheckShareImageService : IFactCheckShareImageService
         canvas.DrawBitmap(logo, new SKRect(972, 24, 1142, 101));
 
         const float textRight = 795;
-        var claimPanel = new SKRoundRect(new SKRect(58, 100, textRight, 286), 18, 18);
+        var factTextSize = FindFactTextSize(claim, textRight);
+        using var claimFont = Font(factTextSize, SKFontStyleWeight.Bold);
+        using var findingFont = Font(factTextSize, SKFontStyleWeight.Bold);
         using var panelPaint = new SKPaint { Color = SKColor.Parse("#F1F5F9"), IsAntialias = true };
         using var panelBorderPaint = new SKPaint { Color = SKColor.Parse("#E2E8F0"), IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2 };
+        var claimLines = Wrap(claim.ClaimText, claimFont, textRight - 164);
+        const float claimTextBaseline = 172;
+        var claimLineHeight = factTextSize * 1.11f;
+        var claimPanelBottom = claimTextBaseline + ((claimLines.Count - 1) * claimLineHeight) + 26;
+        var claimPanel = new SKRoundRect(new SKRect(58, 100, textRight, claimPanelBottom), 18, 18);
         canvas.DrawRoundRect(claimPanel, panelPaint);
         canvas.DrawRoundRect(claimPanel, panelBorderPaint);
-        canvas.DrawText("CLAIM:", 82, 133, panelLabelFont, navyPaint);
-        var claimLines = Wrap(claim.ClaimText, claimFont, textRight - 164);
-        DrawLines(canvas, claimLines, 82, 172, claimFont, navyPaint, 31);
+        canvas.DrawText("CLAIM:", 82, 133, panelLabelFont, redPaint);
+        DrawLines(canvas, claimLines, 82, claimTextBaseline, claimFont, navyPaint, claimLineHeight);
 
-        const float verdictLabelY = 315;
-        DrawRatingLabel(canvas, 58, verdictLabelY, verdictLabelFont, redPaint, navyPaint);
-        canvas.DrawText(VerdictLabel(claim.Verdict), 58, verdictLabelY + 42, verdictFont, redPaint);
+        var verdictLabelY = claimPanelBottom + 46;
+        var verdictX = DrawRatingLabel(canvas, 58, verdictLabelY, verdictLabelFont, redPaint, navyPaint);
+        var verdictText = VerdictLabel(claim.Verdict);
+        canvas.DrawText(verdictText, verdictX, verdictLabelY, verdictFont, redPaint);
+        using var verdictUnderline = new SKPaint { Color = SKColor.Parse("#C91D25"), IsAntialias = true, StrokeWidth = 2 };
+        canvas.DrawLine(verdictX, verdictLabelY + 7, verdictX + verdictFont.MeasureText(verdictText), verdictLabelY + 7, verdictUnderline);
 
-        canvas.DrawText("EVIDENCE SUMMARY:", 58, 401, evidenceLabelFont, redPaint);
-        var findingLines = Wrap(claim.FindingHeadline, findingFont, textRight - 58);
-        DrawLines(canvas, findingLines, 58, 443, findingFont, navyPaint, 35);
+        var findingLines = Wrap(claim.FindingHeadline, findingFont, textRight - 106);
+        var evidencePanelTop = verdictLabelY + 28;
+        const float evidenceTextOffset = 74;
+        var evidenceLineHeight = factTextSize * 1.11f;
+        var evidenceTextBaseline = evidencePanelTop + evidenceTextOffset;
+        var evidencePanelBottom = evidenceTextBaseline + ((findingLines.Count - 1) * evidenceLineHeight) + 24;
+        var evidencePanel = new SKRoundRect(new SKRect(58, evidencePanelTop, textRight, evidencePanelBottom), 18, 18);
+        canvas.DrawRoundRect(evidencePanel, panelPaint);
+        canvas.DrawRoundRect(evidencePanel, panelBorderPaint);
+        canvas.DrawText("EVIDENCE SUMMARY:", 82, evidencePanelTop + 34, evidenceLabelFont, redPaint);
+        DrawLines(canvas, findingLines, 82, evidenceTextBaseline, findingFont, navyPaint, evidenceLineHeight);
 
         using var divider = new SKPaint { Color = SKColor.Parse("#CBD5E1"), IsAntialias = true, StrokeWidth = 2 };
-        canvas.DrawLine(58, 564, textRight, 564, divider);
-        canvas.DrawText("Vote NO this November. Learn the facts at SaveNEIN.com", 58, 600, ctaFont, navyPaint);
+        var dividerY = Height - 66;
+        canvas.DrawLine(58, dividerY, textRight, dividerY, divider);
+        canvas.DrawText("Vote NO this November. Learn the facts at SaveNEIN.com", 58, dividerY + 36, ctaFont, navyPaint);
 
         DrawGauge(canvas, new SKPoint(1002, 333), 130, claim.Verdict);
 
@@ -191,17 +207,39 @@ public sealed class FactCheckShareImageService : IFactCheckShareImageService
             ?? throw new InvalidOperationException("SaveNEIN logo asset is invalid.");
     }
 
-    private static void DrawRatingLabel(SKCanvas canvas, float x, float baseline, SKFont font, SKPaint redPaint, SKPaint navyPaint)
+    private static float DrawRatingLabel(SKCanvas canvas, float x, float baseline, SKFont font, SKPaint redPaint, SKPaint navyPaint)
     {
         canvas.DrawText("SAVE", x, baseline, font, redPaint);
         var offset = font.MeasureText("SAVE");
         canvas.DrawText("NEIN", x + offset, baseline, font, navyPaint);
         offset += font.MeasureText("NEIN");
         canvas.DrawText(" RATES THIS:", x + offset, baseline, font, redPaint);
+        return x + offset + font.MeasureText(" RATES THIS:") + 12;
     }
 
     private static SKFont Font(float size, SKFontStyleWeight weight, SKFontStyleSlant slant = SKFontStyleSlant.Upright) =>
         new(SKTypeface.FromFamilyName("Arial", weight, SKFontStyleWidth.Normal, slant), size);
+
+    private static float FindFactTextSize(FactCheckClaim claim, float textRight)
+    {
+        for (var size = 28f; size >= 18f; size -= 1f)
+        {
+            using var font = Font(size, SKFontStyleWeight.Bold);
+            var claimLines = Wrap(claim.ClaimText, font, textRight - 164);
+            var findingLines = Wrap(claim.FindingHeadline, font, textRight - 106);
+            var lineHeight = size * 1.11f;
+            var claimPanelBottom = 172 + ((claimLines.Count - 1) * lineHeight) + 26;
+            var verdictLabelY = claimPanelBottom + 46;
+            var evidencePanelTop = verdictLabelY + 28;
+            var evidencePanelBottom = evidencePanelTop + 74 + ((findingLines.Count - 1) * lineHeight) + 24;
+            if (evidencePanelBottom <= Height - 86)
+            {
+                return size;
+            }
+        }
+
+        return 18f;
+    }
 
     private static IReadOnlyList<string> Wrap(string text, SKFont font, float maxWidth)
     {
