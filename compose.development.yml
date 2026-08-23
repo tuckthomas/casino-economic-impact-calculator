@@ -1,8 +1,10 @@
 name: savenein-development
 
-# This stack intentionally does not create a database, Valhalla instance, or
-# ArchiveBox instance. It uses the private VPS development services through
-# localhost SSH tunnels, keeping seeded data and the routing graph in one place.
+# This file is for occasional production-like container validation. Normal
+# day-to-day development uses `npm run dev` and native `dotnet watch`.
+# It intentionally does not create a database, Valhalla instance, or ArchiveBox
+# instance. It uses the private VPS development services through localhost SSH
+# tunnels, keeping seeded data and the routing graph in one place.
 services:
   app:
     image: savenein-development-app:latest

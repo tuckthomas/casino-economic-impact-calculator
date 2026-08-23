@@ -4,16 +4,15 @@ This document defines how code moves from the Windows development checkout to
 the production VPS. GitHub `main` is the source of truth. The VPS is a deployment
 target and must not be used as the primary development copy.
 
-## Current state
+## Release pipeline
 
-The current release process is a **manual deployment workflow**, not a complete
-CI/CD pipeline. Changes are developed locally, pushed to GitHub, and then pulled
-and rebuilt on the VPS. The desired future state is described under
-[Planned CI/CD pipeline](#planned-cicd-pipeline).
+This is a CI/CD workflow. Normal development uses native `dotnet watch`; Docker
+is used for production-like validation in GitHub Actions and for the production
+release, not for every local edit.
 
 ```text
-M:\SaveNEIN  ->  GitHub main  ->  /opt/save-nein/app on the VPS
- development       source             production
+M:\SaveNEIN -> GitHub pull request/main -> CI validates Docker image -> VPS deploys verified main
+ development        source of truth          GitHub Actions             production
 ```
 
 Production details:
@@ -25,6 +24,8 @@ Production details:
 - VPS checkout: `/opt/save-nein/app`
 - Compose file: `/opt/save-nein/app/deploy/compose.production.yml`
 - Environment file: `/opt/save-nein/deploy/.env`
+- CI workflow: `.github/workflows/continuous-integration.yml`
+- CD workflow: `.github/workflows/continuous-deployment.yml`
 
 The real environment file, database data, TLS private keys, certificates,
 generated Valhalla files, and generated geographic data must never be committed.
@@ -54,17 +55,21 @@ docker compose --env-file deploy/.env.example `
   -f deploy/compose.production.yml config --quiet
 ```
 
-For application changes, validate the production image when Docker Desktop is
-available:
+For application changes, use native hot reload against the VPS development
+database and Valhalla tunnel:
 
 ```powershell
-docker build --tag savenein-validation:local .
+npm run dev
 ```
 
-The repository currently uses Unix `cp` commands in `npm run copy-libs`, so a
-native Windows `dotnet build` is not a reliable validation path until that
-cross-platform issue is corrected. The Docker build uses the same Linux build
-environment as production.
+Use the container only when validating a Compose/Dockerfile change locally:
+
+```powershell
+npm run validate:container
+```
+
+GitHub Actions runs the production Dockerfile build on every pull request and
+every push to `main`.
 
 ## 3. Commit and publish to GitHub `main`
 
@@ -83,33 +88,22 @@ For a larger or riskier change, a feature branch and pull request can be used,
 but the change is not ready for production until it has been merged into GitHub
 `main`.
 
-## 4. Deploy GitHub `main` to the VPS
+## 4. Automatic deployment to the VPS
 
-Connect from Windows:
+A successful CI run for `main` triggers the deployment workflow. The workflow
+uses a dedicated SSH key that is forced to run only the VPS deployment script.
+That script refuses to deploy a dirty production checkout, fast-forwards it to
+the verified `main` commit, rebuilds the production Compose app, and waits for
+`https://savenein.com/` to return HTTP 200.
 
-```powershell
-ssh savefw-vps
-```
+The repository must have these GitHub Actions secrets configured:
 
-Then run on the VPS:
+- `VPS_DEPLOY_HOST`
+- `VPS_DEPLOY_USER`
+- `VPS_DEPLOY_SSH_KEY`
 
-```bash
-cd /opt/save-nein/app
-
-# Stop if this reports local modifications. Production must remain pull-only.
-git status --short --branch
-
-git fetch origin main
-git merge --ff-only origin/main
-
-docker compose \
-  --env-file /opt/save-nein/deploy/.env \
-  -f deploy/compose.production.yml \
-  up -d --build --remove-orphans
-```
-
-Never use `git reset --hard` to hide unexplained production changes. Determine
-why the checkout is dirty before deploying.
+The private production `.env`, database credentials, and application secrets
+remain on the VPS and are never copied into GitHub Actions.
 
 ## 5. Verify production
 
@@ -145,24 +139,7 @@ Do not roll application code backward across an incompatible database migration
 without a tested database recovery plan. Take a logical backup of non-reseedable
 visitor data before deploying schema-changing releases.
 
-## Planned CI/CD pipeline
-
-The recommended automated pipeline is:
-
-1. A push to GitHub `main` triggers GitHub Actions.
-2. Actions restores dependencies and runs validation.
-3. Actions builds a production container image tagged with the Git commit SHA.
-4. The image is pushed to GitHub Container Registry.
-5. A dedicated, restricted deployment credential tells the VPS to pull that
-   exact image.
-6. The VPS starts the release and runs health checks.
-7. A failed health check retains or restores the previous known-good image.
-
-This is the point at which the process becomes a CI/CD pipeline: **continuous
-integration** validates and builds every change, while **continuous deployment**
-promotes a successful `main` build to the VPS.
-
-Do not reuse a personal SSH key for automation. The pipeline should use a
-dedicated deployment identity with only the permissions required to update this
-application. GitHub Actions secrets must contain only deployment-specific
-credentials, never the production `.env` file or database contents.
+Do not reuse a personal SSH key for automation. The pipeline uses a dedicated
+deployment identity with only the permissions required to update this
+application. GitHub Actions secrets contain deployment-specific credentials,
+never the production `.env` file or database contents.
