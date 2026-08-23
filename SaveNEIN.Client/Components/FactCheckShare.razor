@@ -67,7 +67,8 @@
 
     private string SharePath => $"fact-checks/{Uri.EscapeDataString(Claim.Slug)}";
     private string ShareUrl => $"https://savenein.com/{SharePath}";
-    private string ShareImageUrl => new Uri(new Uri(NavigationManager.BaseUri), $"{SharePath}/share.png").AbsoluteUri;
+    private const string ShareGraphicRevision = "2";
+    private string ShareImageUrl => new Uri(new Uri(NavigationManager.BaseUri), $"{SharePath}/share.png?v={ShareGraphicRevision}").AbsoluteUri;
 
     private string VerdictLabel => Claim.Verdict switch
     {

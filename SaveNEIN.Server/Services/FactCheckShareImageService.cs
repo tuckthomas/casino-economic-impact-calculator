@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Text.Json;
 using SaveNEIN.Client.Models;
 using SkiaSharp;
@@ -15,7 +14,6 @@ public sealed class FactCheckShareImageService : IFactCheckShareImageService
     private const int Width = 1200;
     private const int Height = 630;
     private readonly IReadOnlyDictionary<string, FactCheckClaim> _claims;
-    private readonly ConcurrentDictionary<string, byte[]> _images = new(StringComparer.OrdinalIgnoreCase);
 
     public FactCheckShareImageService()
     {
@@ -37,7 +35,10 @@ public sealed class FactCheckShareImageService : IFactCheckShareImageService
             return false;
         }
 
-        image = _images.GetOrAdd(claim.Slug, _ => Render(claim));
+        // Share graphics are small and must always reflect the current claim
+        // content. Rendering on request avoids serving a stale image after a
+        // development hot reload or a content update.
+        image = Render(claim);
         return true;
     }
 
@@ -64,7 +65,7 @@ public sealed class FactCheckShareImageService : IFactCheckShareImageService
 
         using var sourceFont = Font(20, SKFontStyleWeight.SemiBold);
         using var panelLabelFont = Font(19, SKFontStyleWeight.ExtraBold);
-        using var claimFont = Font(31, SKFontStyleWeight.Bold);
+        using var claimFont = Font(28, SKFontStyleWeight.Bold);
         using var verdictLabelFont = Font(19, SKFontStyleWeight.ExtraBold);
         using var verdictFont = Font(34, SKFontStyleWeight.ExtraBold);
         using var evidenceLabelFont = Font(19, SKFontStyleWeight.ExtraBold);
@@ -76,26 +77,26 @@ public sealed class FactCheckShareImageService : IFactCheckShareImageService
         canvas.DrawBitmap(logo, new SKRect(972, 24, 1142, 101));
 
         const float textRight = 795;
-        var claimPanel = new SKRoundRect(new SKRect(58, 100, textRight, 252), 18, 18);
+        var claimPanel = new SKRoundRect(new SKRect(58, 100, textRight, 286), 18, 18);
         using var panelPaint = new SKPaint { Color = SKColor.Parse("#F1F5F9"), IsAntialias = true };
         using var panelBorderPaint = new SKPaint { Color = SKColor.Parse("#E2E8F0"), IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2 };
         canvas.DrawRoundRect(claimPanel, panelPaint);
         canvas.DrawRoundRect(claimPanel, panelBorderPaint);
         canvas.DrawText("CLAIM:", 82, 133, panelLabelFont, navyPaint);
-        var claimLines = Wrap(claim.ClaimText, claimFont, textRight - 164, 3);
-        DrawLines(canvas, claimLines, 82, 176, claimFont, navyPaint, 34);
+        var claimLines = Wrap(claim.ClaimText, claimFont, textRight - 164);
+        DrawLines(canvas, claimLines, 82, 172, claimFont, navyPaint, 31);
 
-        const float verdictLabelY = 281;
+        const float verdictLabelY = 315;
         DrawRatingLabel(canvas, 58, verdictLabelY, verdictLabelFont, redPaint, navyPaint);
         canvas.DrawText(VerdictLabel(claim.Verdict), 58, verdictLabelY + 42, verdictFont, redPaint);
 
-        canvas.DrawText("EVIDENCE SUMMARY:", 58, 367, evidenceLabelFont, redPaint);
-        var findingLines = Wrap(claim.FindingHeadline, findingFont, textRight - 58, 4);
-        DrawLines(canvas, findingLines, 58, 409, findingFont, navyPaint, 35);
+        canvas.DrawText("EVIDENCE SUMMARY:", 58, 401, evidenceLabelFont, redPaint);
+        var findingLines = Wrap(claim.FindingHeadline, findingFont, textRight - 58);
+        DrawLines(canvas, findingLines, 58, 443, findingFont, navyPaint, 35);
 
         using var divider = new SKPaint { Color = SKColor.Parse("#CBD5E1"), IsAntialias = true, StrokeWidth = 2 };
-        canvas.DrawLine(58, 558, textRight, 558, divider);
-        canvas.DrawText("Vote NO this November. Learn the facts at SaveNEIN.com", 58, 594, ctaFont, navyPaint);
+        canvas.DrawLine(58, 564, textRight, 564, divider);
+        canvas.DrawText("Vote NO this November. Learn the facts at SaveNEIN.com", 58, 600, ctaFont, navyPaint);
 
         DrawGauge(canvas, new SKPoint(1002, 333), 130, claim.Verdict);
 
@@ -202,7 +203,7 @@ public sealed class FactCheckShareImageService : IFactCheckShareImageService
     private static SKFont Font(float size, SKFontStyleWeight weight, SKFontStyleSlant slant = SKFontStyleSlant.Upright) =>
         new(SKTypeface.FromFamilyName("Arial", weight, SKFontStyleWidth.Normal, slant), size);
 
-    private static IReadOnlyList<string> Wrap(string text, SKFont font, float maxWidth, int maxLines)
+    private static IReadOnlyList<string> Wrap(string text, SKFont font, float maxWidth)
     {
         var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var lines = new List<string>();
@@ -219,20 +220,11 @@ public sealed class FactCheckShareImageService : IFactCheckShareImageService
 
             lines.Add(current);
             current = word;
-            if (lines.Count == maxLines - 1)
-            {
-                break;
-            }
         }
 
-        if (!string.IsNullOrEmpty(current) && lines.Count < maxLines)
+        if (!string.IsNullOrEmpty(current))
         {
             lines.Add(current);
-        }
-
-        if (lines.Count == maxLines && string.Join(' ', words) != string.Join(' ', lines))
-        {
-            lines[^1] = $"{lines[^1].TrimEnd('…')}…";
         }
 
         return lines;

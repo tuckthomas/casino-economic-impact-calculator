@@ -330,10 +330,13 @@ app.MapGet("/api/legislators", async (AppDbContext db) =>
 app.MapGet("/api/impacts", async (AppDbContext db) =>
     await db.ImpactFacts.ToListAsync());
 
-app.MapGet("/fact-checks/{slug}/share.png", (string slug, SaveNEIN.Server.Services.IFactCheckShareImageService shareImages) =>
-    shareImages.TryGetImage(slug, out var image)
+app.MapGet("/fact-checks/{slug}/share.png", (string slug, HttpResponse response, SaveNEIN.Server.Services.IFactCheckShareImageService shareImages) =>
+{
+    response.Headers.CacheControl = "no-store, max-age=0";
+    return shareImages.TryGetImage(slug, out var image)
         ? Results.File(image, "image/png", enableRangeProcessing: false)
-        : Results.NotFound());
+        : Results.NotFound();
+});
 
 app.MapRazorPages();
 app.MapControllers();
