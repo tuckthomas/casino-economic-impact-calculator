@@ -30,11 +30,15 @@ else
     [Parameter] public EventCallback<MouseEventArgs> OnButtonClick { get; set; }
     [Parameter] public string Class { get; set; } = "bg-red-600 hover:bg-red-700 text-white";
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Circular { get; set; }
     
     [Parameter(CaptureUnmatchedValues = true)]
     public Dictionary<string, object>? AdditionalAttributes { get; set; }
 
-    private string CssClass => $"btn-raised flex items-center justify-center gap-1.5 px-4 py-2 font-bold rounded-lg transition-all text-sm m-0 shrink-0 {Class} {(Disabled ? "opacity-50 cursor-not-allowed" : "")}";
+    private string CssClass =>
+        $"btn-raised flex items-center justify-center font-bold transition-all text-sm m-0 shrink-0 " +
+        $"{(Circular ? "h-10 w-10 rounded-full p-0" : "gap-1.5 rounded-lg px-4 py-2")} " +
+        $"{Class} {(Disabled ? "opacity-50 cursor-not-allowed" : "")}";
 
     private async Task OnClickHandler(MouseEventArgs e)
     {

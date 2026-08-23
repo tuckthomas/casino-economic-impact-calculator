@@ -2,13 +2,13 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 
-<button type="button"
-        class="fact-check-share__trigger"
-        aria-label="Share this fact check"
-        title="Share this fact check"
-        @onclick="Open">
-    <span class="material-symbols-outlined" aria-hidden="true">share</span>
-</button>
+<AppButton type="button"
+           Circular="true"
+           Icon="share"
+           Class="fact-check-share__trigger bg-[#c91d25] text-white hover:bg-[#a81820]"
+           aria-label="Share this fact check"
+           title="Share this fact check"
+           OnButtonClick="Open" />
 
 @if (_isOpen)
 {

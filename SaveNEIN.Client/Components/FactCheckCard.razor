@@ -5,12 +5,17 @@
         <div class="fact-check-entry__card-main">
         <div class="fact-check-entry__header">
             <div class="fact-check-entry__heading-copy">
-                <span class="fact-check-entry__category">@Claim.Category</span>
-                <p class="fact-check-entry__claimant">@(Claim.IsDirectQuote ? $"{Claim.Claimant} claim" : $"{Claim.Claimant} framing")</p>
+                <div class="fact-check-entry__tags" aria-label="Fact check tags">
+                    @foreach (var impactTag in Claim.ImpactTags)
+                    {
+                        <span class="fact-check-entry__tag fact-check-entry__tag--impact">@impactTag</span>
+                    }
+                    <span class="fact-check-entry__tag fact-check-entry__tag--source">@Claim.SourceTag</span>
+                </div>
             </div>
 
             <div class="fact-check-entry__evidence-summary">
-                <p class="fact-check-entry__evidence-label">Claim:</p>
+                <p class="fact-check-entry__evidence-label">@($"{Claim.SourceTag.ToUpperInvariant()}'S CLAIM:")</p>
                 <p class="fact-check-entry__claim-text">
                     @if (Claim.IsDirectQuote)
                     {
@@ -98,9 +103,9 @@
                         @foreach (var source in Claim.Sources)
                         {
                             <li>
-                                @if (!string.IsNullOrWhiteSpace(source.Url))
+                                @if (!string.IsNullOrWhiteSpace(SourceHref(source)))
                                 {
-                                    <a href="@source.Url" target="_blank" rel="noopener noreferrer">@source.Label</a>
+                                    <a href="@SourceHref(source)" target="_blank" rel="noopener noreferrer">@source.Label@(source.ArchivedUrl is not null ? " [Archive]" : string.Empty)</a>
                                 }
                                 else
                                 {
@@ -114,14 +119,9 @@
                     {
                         <a class="fact-check-entry__claim-source" href="@Claim.ClaimSourceArchivedUrl" target="_blank" rel="noopener noreferrer">
                             View archived claimant source — captured @Claim.ClaimSourceCapturedAtUtc.Value.ToString("MMMM d, yyyy")
+                            [Archive]
                             <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
                         </a>
-                    }
-                    else if (Claim.ClaimSourceObservedOn is not null)
-                    {
-                        <p class="fact-check-entry__source-provenance">
-                            Claimant source observed @ObservationLabel on @Claim.ClaimSourceObservedOn.Value.ToString("MMMM d, yyyy"); no immutable capture exists for that date.
-                        </p>
                     }
                     @if (!string.IsNullOrWhiteSpace(Claim.ClaimSourceUrl))
                     {
@@ -146,11 +146,6 @@
         new[] { "\r\n\r\n", "\n\n" },
         StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-    private string ObservationLabel => Claim.ClaimSourceObservationType switch
-    {
-        "ReportScrape" => "in a research scrape",
-        "LiveReview" => "during a live-page review",
-        _ => "during research"
-    };
+    private static string? SourceHref(FactCheckSource source) => source.ArchivedUrl ?? source.Url;
 
 }

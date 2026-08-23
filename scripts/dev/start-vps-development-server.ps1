@@ -41,6 +41,9 @@ function Get-DevEnvironment {
         ArchiveBox__Enabled = 'false'
         TigerSeeding__IngestAddressRanges = 'false'
         DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER = '1'
+        # Apply ordinary edits through hot reload and automatically restart the
+        # development host when an edit cannot be hot reloaded.
+        DOTNET_WATCH_RESTART_ON_RUDE_EDIT = '1'
     }
 }
 
@@ -77,7 +80,13 @@ function Get-NativeServerStatus {
     if (Test-Path -LiteralPath $pidFile) {
         $serverPid = [int](Get-Content -LiteralPath $pidFile -Raw).Trim()
         if (Get-Process -Id $serverPid -ErrorAction SilentlyContinue) {
-            Write-Output "Native development server is running (PID $serverPid) at http://localhost:5000."
+            $listener = Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($listener) {
+                Write-Output "Native development server is running (PID $serverPid) at http://localhost:5000."
+                return
+            }
+
+            Write-Output "Native development watcher is running (PID $serverPid), but the app is not listening on port 5000."
             return
         }
     }

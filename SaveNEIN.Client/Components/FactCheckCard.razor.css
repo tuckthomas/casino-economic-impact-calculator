@@ -61,8 +61,6 @@
     padding: 0.35rem 0.35rem 0.15rem;
 }
 
-.fact-check-entry__category,
-.fact-check-entry__claimant,
 .fact-check-entry__evidence-label,
 .fact-check-entry__finding-label,
 .fact-check-entry__detail-heading {
@@ -70,19 +68,33 @@
     line-height: 1.35;
 }
 
-.fact-check-entry__category {
-    font-weight: 900;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--fc-heading, #475569);
+.fact-check-entry__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
 }
 
-.fact-check-entry__claimant {
-    margin: 0.55rem 0 0;
+.fact-check-entry__tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.9rem;
+    border-radius: 999px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
     font-weight: 900;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
+    line-height: 1.15;
     text-transform: uppercase;
-    color: #b91c1c;
+}
+
+.fact-check-entry__tag--impact {
+    background: #0b1221;
+    color: #ffffff;
+}
+
+.fact-check-entry__tag--source {
+    background: #c91d25;
+    color: #ffffff;
 }
 
 .fact-check-entry__evidence-summary {
@@ -359,13 +371,6 @@
         transition: none;
     }
 }
-.fact-check-entry__source-provenance {
-    margin: 0 0 0.75rem;
-    color: var(--fc-muted);
-    font-size: 0.95rem;
-    font-style: italic;
-}
-
 .fact-check-entry__claim-source--live {
     margin-top: 0.65rem;
 }

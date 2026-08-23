@@ -33,7 +33,8 @@ public sealed class FactCheckContentService(HttpClient httpClient)
         IReadOnlyList<FactCheckClaim> claims)
     {
         var sourceKeys = claims
-            .Select(claim => claim.ArchiveSourceKey)
+            .SelectMany(claim => new[] { claim.ArchiveSourceKey }
+                .Concat(claim.Sources.Select(source => source.ArchiveSourceKey)))
             .Where(key => !string.IsNullOrWhiteSpace(key))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Cast<string>()
@@ -48,13 +49,21 @@ public sealed class FactCheckContentService(HttpClient httpClient)
             .ToDictionary(result => result.SourceKey, result => result.Archive!, StringComparer.OrdinalIgnoreCase);
 
         return claims.Select(claim =>
-            claim.ArchiveSourceKey is not null && archives.TryGetValue(claim.ArchiveSourceKey, out var archive)
+        {
+            var archivedSources = claim.Sources.Select(source =>
+                source.ArchiveSourceKey is not null && archives.TryGetValue(source.ArchiveSourceKey, out var sourceArchive)
+                    ? source with { ArchivedUrl = ResolveArchivedUrl(sourceArchive.ArchivedUrl) }
+                    : source).ToArray();
+
+            return claim.ArchiveSourceKey is not null && archives.TryGetValue(claim.ArchiveSourceKey, out var claimArchive)
                 ? claim with
                 {
-                    ClaimSourceArchivedUrl = ResolveArchivedUrl(archive.ArchivedUrl),
-                    ClaimSourceCapturedAtUtc = archive.CapturedAtUtc
+                    Sources = archivedSources,
+                    ClaimSourceArchivedUrl = ResolveArchivedUrl(claimArchive.ArchivedUrl),
+                    ClaimSourceCapturedAtUtc = claimArchive.CapturedAtUtc
                 }
-                : claim).ToArray();
+                : claim with { Sources = archivedSources };
+        }).ToArray();
     }
 
     private string ResolveArchivedUrl(string archivedUrl)

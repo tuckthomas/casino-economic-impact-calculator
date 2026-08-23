@@ -27,7 +27,7 @@
 </section>
 
 @code {
-    private const int SupportedSchemaVersion = 1;
+    private const int SupportedSchemaVersion = 2;
     [Parameter] public string? Slug { get; set; }
     private IReadOnlyList<FactCheckClaim> AllFactChecks = Array.Empty<FactCheckClaim>();
     private bool _loadFailed;

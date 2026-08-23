@@ -73,8 +73,14 @@
                 Currently Under Renovation
             </h1>
             <p id="economic-impact-renovation-description" class="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-slate-300">
-                We’re updating this tool so you can choose a proposed location and review its potential economic and community impacts. It will be available soon.
+                We’re updating the Social Cost Model and Net Economic Impact Estimator to include a built-in Gross Revenue and Adjusted Gross Revenue gravity model. It will be available soon.
             </p>
+            <p id="gravity-model-tooltip-trigger" class="mx-auto mt-4 w-fit cursor-help font-bold text-white underline decoration-orange-500 decoration-2 underline-offset-4">
+                What is a Gravity Model?
+            </p>
+            <AppTooltip TargetId="gravity-model-tooltip-trigger"
+                        Text="It estimates how strongly people are drawn to a location based on population, travel time, and competing destinations."
+                        AriaLabel="What is a Gravity Model?" />
             <div class="mt-8 flex justify-center">
                 <AppButton type="button"
                            OnButtonClick="@(_ => NavigationManager.NavigateTo("/"))"

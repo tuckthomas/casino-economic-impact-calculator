@@ -11,10 +11,14 @@ public enum FactCheckVerdict
     False
 }
 
-public sealed record FactCheckSource(
-    string Label,
-    string Citation,
-    string? Url = null);
+public sealed record FactCheckSource
+{
+    public string Label { get; init; } = string.Empty;
+    public string Citation { get; init; } = string.Empty;
+    public string? Url { get; init; }
+    public string? ArchiveSourceKey { get; init; }
+    public string? ArchivedUrl { get; init; }
+}
 
 public sealed record FactCheckEvidenceTable(
     string Caption,
@@ -32,7 +36,8 @@ public sealed record FactCheckClaim(
     string Claimant,
     string ClaimText,
     bool IsDirectQuote,
-    string Category,
+    string SourceTag,
+    IReadOnlyList<string> ImpactTags,
     FactCheckVerdict Verdict,
     IReadOnlyList<string> IssueTags,
     string FindingHeadline,

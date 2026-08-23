@@ -32,10 +32,14 @@ public sealed class WebArchivesController(IArchiveBoxCaptureService archives, IO
     {
         var result = await archives.GetSingleFileAsync(id, cancellationToken);
         if (result is null) return NotFound();
-        Response.Headers.ContentSecurityPolicy = "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:";
+        var contentType = Path.GetExtension(result.Value.Path).Equals(".pdf", StringComparison.OrdinalIgnoreCase)
+            ? "application/pdf"
+            : "text/html; charset=utf-8";
+        if (contentType.StartsWith("text/html", StringComparison.Ordinal))
+            Response.Headers.ContentSecurityPolicy = "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:";
         Response.Headers.XContentTypeOptions = "nosniff";
         Response.Headers.CacheControl = "public,max-age=31536000,immutable";
-        return PhysicalFile(result.Value.Path, "text/html; charset=utf-8", enableRangeProcessing: true);
+        return PhysicalFile(result.Value.Path, contentType, enableRangeProcessing: true);
     }
 
     private bool HasValidAdminToken()

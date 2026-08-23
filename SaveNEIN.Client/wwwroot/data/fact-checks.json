@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "homepageFactCheckIds": [
     "resident-jobs",
     "keep-dollars-local",
@@ -15,7 +15,8 @@
       "claimant": "Yes for Allen",
       "claimText": "2,000 new permanent jobs for Allen County residents",
       "isDirectQuote": false,
-      "category": "Jobs & Economic",
+      "sourceTag": "Yes for Allen",
+      "impactTags": ["Jobs", "Economics"],
       "verdict": "False",
       "issueTags": [
         "GEOGRAPHY ERROR",
@@ -34,17 +35,20 @@
         {
           "label": "Yes for Allen — Facts",
           "citation": "Campaign claim combining the statewide 2,001 modeled employment impact with an Allen County residency promise.",
-          "url": "https://yesforallen.org/facts/"
+          "url": "https://yesforallen.org/facts/",
+          "archiveSourceKey": "yes-for-allen-facts"
         },
         {
           "label": "CBRE Greater Fort Wayne Area Casino Analysis",
           "citation": "Operating-impact employment table: 947 direct, 309 indirect, and 420 induced jobs in Allen County; 1,024 direct, 444 indirect, and 532 induced statewide.",
-          "url": "https://cdn.insideindianabusiness.com/wp-content/uploads/2026/01/GFWI-Casino-Analysis-Presentation-Final-2025-12-03.pdf"
+          "url": "https://cdn.insideindianabusiness.com/wp-content/uploads/2026/01/GFWI-Casino-Analysis-Presentation-Final-2025-12-03.pdf",
+          "archiveSourceKey": "cbre-greater-fort-wayne-casino-analysis"
         },
         {
           "label": "U.S. Bureau of Economic Analysis RIMS II User Guide",
           "citation": "Official guidance: RIMS II employment is total full- and part-time jobs produced from a change in final demand, including multiplier effects.",
-          "url": "https://www.bea.gov/sites/default/files/methodologies/RIMSII_User_Guide.pdf"
+          "url": "https://www.bea.gov/sites/default/files/methodologies/RIMSII_User_Guide.pdf",
+          "archiveSourceKey": "bea-rims-ii-user-guide"
         }
       ],
       "evidenceTables": [],
@@ -63,7 +67,8 @@
       "claimant": "Yes for Allen",
       "claimText": "A casino would keep Northeast Indiana’s gambling dollars local",
       "isDirectQuote": false,
-      "category": "Economic",
+      "sourceTag": "Yes for Allen",
+      "impactTags": ["Economics"],
       "verdict": "False",
       "issueTags": [
         "SOURCE MISREPRESENTATION",
@@ -82,17 +87,20 @@
         {
           "label": "Yes for Allen — Facts",
           "citation": "Campaign source for the quoted Keep Dollars Local claim.",
-          "url": "https://yesforallen.org/facts/"
+          "url": "https://yesforallen.org/facts/",
+          "archiveSourceKey": "yes-for-allen-facts"
         },
         {
           "label": "Indiana Gaming Commission — Annual Report",
           "citation": "Official definition of adjusted gross receipts as gaming receipts minus winnings and limited uncollectible receivables.",
-          "url": "https://www.in.gov/igc/files/CY2001-Annual.pdf"
+          "url": "https://www.in.gov/igc/files/CY2001-Annual.pdf",
+          "archiveSourceKey": "indiana-gaming-commission-cy2001-annual-report"
         },
         {
           "label": "Spectrum Gaming Group relocation study",
           "citation": "Official IGC study stating that only a small percentage of Northeast casino revenue is expected from other states.",
-          "url": "https://www.in.gov/igc/files/publications/Spectrum-Relocation-Report-to-Indiana-Gaming-Commission-9-30-2025-Final.pdf"
+          "url": "https://www.in.gov/igc/files/publications/Spectrum-Relocation-Report-to-Indiana-Gaming-Commission-9-30-2025-Final.pdf",
+          "archiveSourceKey": "spectrum-relocation-study"
         }
       ],
       "evidenceTables": [],
@@ -111,13 +119,14 @@
       "claimant": "Yes for Allen",
       "claimText": "A tribal casino would require no state or local approval",
       "isDirectQuote": false,
-      "category": "Tribal Gaming",
+      "sourceTag": "Yes for Allen",
+      "impactTags": ["Tribal Gaming"],
       "verdict": "False",
       "issueTags": [
         "MISSING CONTEXT",
         "DEFINITION ERROR"
       ],
-      "findingHeadline": "The ordinary off-reservation Class III casino path requires state participation",
+      "findingHeadline": "The ordinary off-reservation route requires the Governor’s concurrence, consultation with state and local officials, and Class III casino gaming also requires a Tribal-State compact.",
       "shortFinding": "Federal law governs tribal gaming, but it does not eliminate state and local participation. The ordinary off-reservation route requires the Governor’s concurrence and consultation with state and local officials; Class III casino gaming also requires a Tribal-State compact.",
       "detailedExplanation": "Yes for Allen states: ‘A tribal casino would be governed by federal law and would not require approval from state or local officials.’ A tribe cannot simply build a casino on ordinary land in Allen County. Gaming must occur on eligible Indian lands, and IGRA generally prohibits gaming on land taken into trust after October 17, 1988 unless a statutory exception applies. Under the two-part Secretarial Determination route, Interior must consult appropriate state and local officials, determine that gaming would not harm the surrounding community, and obtain the Governor’s affirmative concurrence. Full-scale Class III casino gaming additionally requires a Tribal-State compact approved by the U.S. Department of the Interior. Local officials do not possess a universal veto under every possible IGRA exception, but Yes for Allen’s categorical statement that no state or local approval is required is false.",
       "keyFacts": [
@@ -130,27 +139,32 @@
         {
           "label": "Yes for Allen — Facts",
           "citation": "Campaign source for the quoted tribal-casino approval claim.",
-          "url": "https://yesforallen.org/facts/"
+          "url": "https://yesforallen.org/facts/",
+          "archiveSourceKey": "yes-for-allen-facts"
         },
         {
           "label": "Indian Gaming Regulatory Act",
           "citation": "Federal statutory framework for gaming on Indian lands and Class III Tribal-State compacts.",
-          "url": "https://www.nigc.gov/office-of-general-counsel/laws-and-regulations/indian-gaming-regulatory-act"
+          "url": "https://www.nigc.gov/office-of-general-counsel/laws-and-regulations/indian-gaming-regulatory-act",
+          "archiveSourceKey": "indian-gaming-regulatory-act"
         },
         {
           "label": "25 CFR Part 292",
           "citation": "Federal rules for gaming on trust lands acquired after October 17, 1988.",
-          "url": "https://www.ecfr.gov/current/title-25/chapter-I/subchapter-N/part-292"
+          "url": "https://www.ecfr.gov/current/title-25/chapter-I/subchapter-N/part-292",
+          "archiveSourceKey": "ecfr-25-cfr-part-292"
         },
         {
           "label": "U.S. Department of the Interior — Gaming Land Decisions",
           "citation": "Official explanation of eligible Indian lands, the post-1988 prohibition, and IGRA exceptions.",
-          "url": "https://www.bia.gov/as-ia/oig/gaming-land-decisions"
+          "url": "https://www.bia.gov/as-ia/oig/gaming-land-decisions",
+          "archiveSourceKey": "interior-gaming-land-decisions"
         },
         {
           "label": "Indiana Gaming Commission — 2021 Annual Report",
           "citation": "Indiana’s Class III compact with the Pokagon Band required gubernatorial negotiation, legislative ratification, and Interior review.",
-          "url": "https://www.in.gov/igc/files/FY2021-Annual.pdf"
+          "url": "https://www.in.gov/igc/files/FY2021-Annual.pdf",
+          "archiveSourceKey": "indiana-gaming-commission-fy2021-annual-report"
         }
       ],
       "evidenceTables": [],
@@ -169,7 +183,8 @@
       "claimant": "Steuben — Where Fun Wins",
       "claimText": "Casinos provide net decreases to taxpayer liabilities",
       "isDirectQuote": true,
-      "category": "Steuben County — Tax & Fiscal",
+      "sourceTag": "Steuben — Where Fun Wins",
+      "impactTags": ["Tax", "Fiscal"],
       "verdict": "False",
       "issueTags": [
         "POLICY PROMISE",
@@ -187,12 +202,14 @@
         {
           "label": "Indiana Department of Revenue — 2026 Legislative Synopsis",
           "citation": "HEA 1038 supplemental wagering-tax distribution and permitted local uses, p. 80.",
-          "url": "https://www.in.gov/dor/files/legislative-synopsis-2026.pdf"
+          "url": "https://www.in.gov/dor/files/legislative-synopsis-2026.pdf",
+          "archiveSourceKey": "indiana-2026-legislative-synopsis"
         },
         {
           "label": "Steuben — Where Fun Wins",
           "citation": "Myths and Facts page claiming casinos provide net decreases to taxpayer liabilities.",
-          "url": "https://steubenfunwins.com/myths-and-facts/"
+          "url": "https://steubenfunwins.com/myths-and-facts/",
+          "archiveSourceKey": "steuben-myths-facts"
         }
       ],
       "evidenceTables": [],
@@ -211,7 +228,8 @@
       "claimant": "Steuben — Where Fun Wins",
       "claimText": "The new Steuben casino would be legally required to fund local nonprofits through a Local Development Agreement",
       "isDirectQuote": false,
-      "category": "Steuben County — Tax & Fiscal",
+      "sourceTag": "Steuben — Where Fun Wins",
+      "impactTags": ["Tax", "Fiscal"],
       "verdict": "False",
       "issueTags": [
         "LEGAL CLAIM",
@@ -229,17 +247,20 @@
         {
           "label": "Indiana Department of Revenue — 2026 Legislative Synopsis",
           "citation": "HEA 1038 tax base, recipients, and permitted uses, p. 80.",
-          "url": "https://www.in.gov/dor/files/legislative-synopsis-2026.pdf"
+          "url": "https://www.in.gov/dor/files/legislative-synopsis-2026.pdf",
+          "archiveSourceKey": "indiana-2026-legislative-synopsis"
         },
         {
           "label": "Indiana Gaming Commission — Northeast Indiana Casino Guidance",
           "citation": "Applications begin only after voter approval; no current operator or project award.",
-          "url": "https://www.in.gov/igc/pointsofinterest/?a=459803"
+          "url": "https://www.in.gov/igc/pointsofinterest/?a=459803",
+          "archiveSourceKey": "indiana-northeast-casino-guidance"
         },
         {
           "label": "Steuben — Where Fun Wins",
           "citation": "Myths and Facts page framing nonprofit LDA grants as mandated casino funding.",
-          "url": "https://steubenfunwins.com/myths-and-facts/"
+          "url": "https://steubenfunwins.com/myths-and-facts/",
+          "archiveSourceKey": "steuben-myths-facts"
         }
       ],
       "evidenceTables": [],
@@ -258,7 +279,8 @@
       "claimant": "Steuben — Where Fun Wins",
       "claimText": "A Detroit property-value study proves casinos help surrounding businesses instead of displacing them",
       "isDirectQuote": false,
-      "category": "Steuben County — Local Business",
+      "sourceTag": "Steuben — Where Fun Wins",
+      "impactTags": ["Local Business"],
       "verdict": "False",
       "issueTags": [],
       "findingHeadline": "Commercial-property sales do not measure the substitution effect on local businesses",
@@ -273,22 +295,26 @@
         {
           "label": "Steuben — Where Fun Wins: Myths and Facts",
           "citation": "Primary campaign source applying a Detroit property-value study to local-business impacts in Steuben County.",
-          "url": "https://steubenfunwins.com/myths-and-facts/"
+          "url": "https://steubenfunwins.com/myths-and-facts/",
+          "archiveSourceKey": "steuben-myths-facts"
         },
         {
           "label": "Wiley and Walker — Casino Revenues and Retail Property Values: The Detroit Case",
           "citation": "The campaign’s cited study; its outcome is retail property value in Detroit, not business sales, profits, employment, or closures.",
-          "url": "https://www.walkerd.people.charleston.edu/pubs/2010/DetroitJREFE.pdf"
+          "url": "https://www.walkerd.people.charleston.edu/pubs/2010/DetroitJREFE.pdf",
+          "archiveSourceKey": "wiley-walker-detroit-case"
         },
         {
           "label": "Siegel and Anders — Public Policy and the Displacement Effects of Casinos",
           "citation": "Primary study finding substitution between casino gambling and entertainment and amusement businesses.",
-          "url": "https://doi.org/10.1023/A:1022230124148"
+          "url": "https://doi.org/10.1023/A:1022230124148",
+          "archiveSourceKey": "siegel-anders-displacement-effects"
         },
         {
           "label": "Federal Reserve Bank of St. Louis — Casinos and Economic Development",
           "citation": "Primary-source economic review explaining substitution when casino customers are primarily local.",
-          "url": "https://www.stlouisfed.org/community-development/publications/bridges/casinos-and-economic-development-a-look-at-the-issues"
+          "url": "https://www.stlouisfed.org/community-development/publications/bridges/casinos-and-economic-development-a-look-at-the-issues",
+          "archiveSourceKey": "st-louis-fed-casinos-economic-development"
         }
       ],
       "evidenceTables": [],

@@ -126,16 +126,21 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
 
         if (snapshot.DownloadedAt is null) throw new InvalidOperationException("Sealed ArchiveBox snapshot has no capture timestamp.");
         var archiveDirectory = ResolveArchiveDirectory(snapshot.ArchivePath);
-        var textPath = RequireFile(archiveDirectory, "htmltotext", "htmltotext.txt");
-        var singleFilePath = RequireFile(archiveDirectory, "singlefile", "singlefile.html");
-        RequireFile(archiveDirectory, "dom", "output.html");
-        RequireFile(archiveDirectory, "screenshot", "screenshot.png");
-        if (!Directory.EnumerateFiles(Path.Combine(archiveDirectory, "wget"), "*.warc.gz", SearchOption.AllDirectories).Any())
+        var textPath = Path.Combine(archiveDirectory, "htmltotext", "htmltotext.txt");
+        var publicArtifactPath = FindPublicArtifact(archiveDirectory)
+            ?? throw new InvalidOperationException("ArchiveBox capture did not produce a browser-viewable artifact.");
+        var wgetDirectory = Path.Combine(archiveDirectory, "wget");
+        if (!Directory.Exists(wgetDirectory) ||
+            !Directory.EnumerateFiles(wgetDirectory, "*.warc.gz", SearchOption.AllDirectories).Any())
             throw new InvalidOperationException("ArchiveBox capture did not produce a WARC artifact.");
 
-        var normalizedText = await File.ReadAllTextAsync(textPath, timeout.Token);
+        var normalizedText = File.Exists(textPath)
+            ? await File.ReadAllTextAsync(textPath, timeout.Token)
+            : string.Empty;
         var headersPath = RequireFile(archiveDirectory, "headers", "headers.json");
         var httpStatus = await ReadHttpStatusAsync(headersPath, timeout.Token);
+        if (source.RequiredTexts.Length > 0 && string.IsNullOrEmpty(normalizedText))
+            throw new InvalidOperationException("Capture verification requires extracted text, but ArchiveBox did not produce it.");
         var missingTexts = source.RequiredTexts.Where(required => !normalizedText.Contains(required, StringComparison.OrdinalIgnoreCase)).ToArray();
         if (missingTexts.Length > 0)
             throw new InvalidOperationException($"Capture verification failed; {missingTexts.Length} required text fragment(s) were absent.");
@@ -174,7 +179,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
 
         _db.ArchivedWebSources.Add(record);
         await _db.SaveChangesAsync(timeout.Token);
-        _ = singleFilePath;
+        _ = publicArtifactPath;
         return ToMetadata(record);
     }
 
@@ -193,8 +198,8 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             .SingleOrDefaultAsync(item => item.Id == id && item.VerificationStatus == "Verified", cancellationToken);
         if (capture is null) return null;
         var directory = ResolveStoredRelativePath(capture.ArchiveRelativePath);
-        var singleFilePath = Path.Combine(directory, "singlefile", "singlefile.html");
-        return File.Exists(singleFilePath) ? (singleFilePath, capture) : null;
+        var publicArtifactPath = FindPublicArtifact(directory);
+        return publicArtifactPath is not null ? (publicArtifactPath, capture) : null;
     }
 
     private string ResolveArchiveDirectory(string archivePath)
@@ -222,6 +227,19 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         return path;
     }
 
+    private static string? FindPublicArtifact(string archiveDirectory)
+    {
+        var singleFile = Path.Combine(archiveDirectory, "singlefile", "singlefile.html");
+        if (File.Exists(singleFile)) return singleFile;
+
+        var renderedDom = Path.Combine(archiveDirectory, "dom", "output.html");
+        if (File.Exists(renderedDom)) return renderedDom;
+
+        return Directory.Exists(archiveDirectory)
+            ? Directory.EnumerateFiles(archiveDirectory, "*.pdf", SearchOption.AllDirectories).FirstOrDefault()
+            : null;
+    }
+
     private static bool IsEvidenceArtifact(string path)
     {
         var normalized = path.Replace('\\', '/');
@@ -231,7 +249,8 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
                normalized.EndsWith("/singlefile/singlefile.html", StringComparison.OrdinalIgnoreCase) ||
                normalized.EndsWith("/screenshot/screenshot.png", StringComparison.OrdinalIgnoreCase) ||
                normalized.EndsWith("/archivewebpage/archivewebpage.wacz", StringComparison.OrdinalIgnoreCase) ||
-               normalized.EndsWith("/headers/headers.json", StringComparison.OrdinalIgnoreCase);
+               normalized.EndsWith("/headers/headers.json", StringComparison.OrdinalIgnoreCase) ||
+               normalized.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
     }
 
     private static async Task<int?> ReadHttpStatusAsync(string headersPath, CancellationToken cancellationToken)
