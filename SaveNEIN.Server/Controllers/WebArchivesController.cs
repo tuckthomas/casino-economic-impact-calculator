@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SaveNEIN.Server.Configuration;
@@ -9,12 +10,18 @@ namespace SaveNEIN.Server.Controllers;
 
 [ApiController]
 [Route("api/web-archives")]
-public sealed class WebArchivesController(IArchiveBoxCaptureService archives, IOptions<ArchiveBoxOptions> options) : ControllerBase
+public sealed class WebArchivesController(
+    IArchiveBoxCaptureService archives,
+    IOptions<ArchiveBoxOptions> options,
+    IHttpClientFactory httpClientFactory,
+    IHostEnvironment hostEnvironment,
+    IConfiguration configuration) : ControllerBase
 {
     [HttpGet("{sourceKey}/latest")]
     public async Task<ActionResult<WebArchiveMetadata>> GetLatest(string sourceKey, CancellationToken cancellationToken)
     {
-        var capture = await archives.GetLatestAsync(sourceKey, cancellationToken);
+        var capture = await archives.GetLatestAsync(sourceKey, cancellationToken)
+            ?? await GetPublishedCaptureForDevelopmentAsync(sourceKey, cancellationToken);
         return capture is null ? NotFound() : Ok(capture);
     }
 
@@ -50,5 +57,29 @@ public sealed class WebArchivesController(IArchiveBoxCaptureService archives, IO
         return CryptographicOperations.FixedTimeEquals(
             SHA256.HashData(Encoding.UTF8.GetBytes(expected)),
             SHA256.HashData(Encoding.UTF8.GetBytes(supplied)));
+    }
+
+    private async Task<WebArchiveMetadata?> GetPublishedCaptureForDevelopmentAsync(string sourceKey, CancellationToken cancellationToken)
+    {
+        if (!hostEnvironment.IsDevelopment() ||
+            !Uri.TryCreate(configuration["ArchiveRegistry:PublishedBaseUrl"], UriKind.Absolute, out var registryBaseUrl) ||
+            registryBaseUrl.Scheme != Uri.UriSchemeHttps ||
+            !string.Equals(registryBaseUrl.Host, "savenein.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        try
+        {
+            var requestUrl = new Uri(registryBaseUrl, $"api/web-archives/{Uri.EscapeDataString(sourceKey)}/latest");
+            using var response = await httpClientFactory.CreateClient().GetAsync(requestUrl, cancellationToken);
+            return response.IsSuccessStatusCode
+                ? await response.Content.ReadFromJsonAsync<WebArchiveMetadata>(cancellationToken: cancellationToken)
+                : null;
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
     }
 }
