@@ -18,6 +18,7 @@ public sealed record FactCheckSource
     public string? Url { get; init; }
     public string? ArchiveSourceKey { get; init; }
     public string? ArchivedUrl { get; init; }
+    public DateTime? ArchivedAtUtc { get; init; }
 }
 
 public sealed record FactCheckEvidenceTable(

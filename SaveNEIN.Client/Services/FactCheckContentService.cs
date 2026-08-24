@@ -52,7 +52,11 @@ public sealed class FactCheckContentService(HttpClient httpClient)
         {
             var archivedSources = claim.Sources.Select(source =>
                 source.ArchiveSourceKey is not null && archives.TryGetValue(source.ArchiveSourceKey, out var sourceArchive)
-                    ? source with { ArchivedUrl = ResolveArchivedUrl(sourceArchive.ArchivedUrl) }
+                    ? source with
+                    {
+                        ArchivedUrl = ResolveArchivedUrl(sourceArchive.ArchivedUrl),
+                        ArchivedAtUtc = sourceArchive.CapturedAtUtc
+                    }
                     : source).ToArray();
 
             return claim.ArchiveSourceKey is not null && archives.TryGetValue(claim.ArchiveSourceKey, out var claimArchive)

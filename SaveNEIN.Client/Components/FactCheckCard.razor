@@ -105,7 +105,7 @@
                             <li>
                                 @if (!string.IsNullOrWhiteSpace(SourceHref(source)))
                                 {
-                                    <a href="@SourceHref(source)" target="_blank" rel="noopener noreferrer">@source.Label@(source.ArchivedUrl is not null ? " [Archive]" : string.Empty)</a>
+                                    <a href="@SourceHref(source)" target="_blank" rel="noopener noreferrer">@ArchiveLinkText(source)</a>
                                 }
                                 else
                                 {
@@ -118,15 +118,7 @@
                     @if (!string.IsNullOrWhiteSpace(Claim.ClaimSourceArchivedUrl) && Claim.ClaimSourceCapturedAtUtc is not null)
                     {
                         <a class="fact-check-entry__claim-source" href="@Claim.ClaimSourceArchivedUrl" target="_blank" rel="noopener noreferrer">
-                            View archived claimant source — captured @Claim.ClaimSourceCapturedAtUtc.Value.ToString("MMMM d, yyyy")
-                            [Archive]
-                            <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
-                        </a>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(Claim.ClaimSourceUrl))
-                    {
-                        <a class="fact-check-entry__claim-source fact-check-entry__claim-source--live" href="@Claim.ClaimSourceUrl" target="_blank" rel="noopener noreferrer">
-                            View current claimant page
+                            View archived claimant source [Archived @Claim.ClaimSourceCapturedAtUtc.Value.ToString("MM/dd/yyyy")]
                             <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
                         </a>
                     }
@@ -146,6 +138,14 @@
         new[] { "\r\n\r\n", "\n\n" },
         StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-    private static string? SourceHref(FactCheckSource source) => source.ArchivedUrl ?? source.Url;
+    // Public fact-check links must always resolve to the immutable capture, never the live source.
+    private static string? SourceHref(FactCheckSource source) =>
+        source.ArchivedAtUtc is not null && !string.IsNullOrWhiteSpace(source.ArchivedUrl)
+            ? source.ArchivedUrl
+            : null;
+
+    private static string ArchiveLinkText(FactCheckSource source) => source.ArchivedAtUtc is { } archivedAt
+        ? $"{source.Label} [Archived {archivedAt:MM/dd/yyyy}]"
+        : source.Label;
 
 }
