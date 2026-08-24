@@ -5,9 +5,9 @@
 <div class="bg-slate-900 dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100 font-display selection:bg-accent selection:text-black">
     @if (!IsHomeRoute)
     {
-    <header class="sticky top-0 z-50 w-full border-b border-white/5 bg-slate-950/90 backdrop-blur-md text-white shadow-lg shadow-black/20">
+    <header class="sticky top-0 z-50 w-full border-b border-white/5 bg-[#0f172a] text-white shadow-lg shadow-black/20">
         <nav class="w-full text-white">
-            <div class="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+            <div class="flex flex-col gap-3 px-4 py-3 sm:px-6 lg:grid lg:min-h-14 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-x-6 lg:px-8">
                 <div class="flex items-center justify-between gap-4">
                     <a class="flex items-center gap-3 group shrink-0" href="/">
                         <img src="assets/SaveNEIN_SVG_Dark_Mode_Small.svg" alt="Save Northeast Indiana" class="h-12 w-auto object-contain" />
@@ -25,8 +25,8 @@
                         <AppTooltip TargetId="mobile-main-github-source-link" Text="View Source on GitHub" />
                     </div>
                 </div>
-                <div class="-mx-4 overflow-x-auto overflow-y-hidden px-4 scrollbar-none [scrollbar-width:none] [-webkit-overflow-scrolling:touch] min-w-0 lg:mx-0 lg:px-0">
-                    <div class="flex items-center min-w-max pb-0.5 lg:pb-0 gap-1 sm:gap-2">
+                <div class="-mx-4 min-w-0 overflow-x-auto overflow-y-hidden px-4 scrollbar-none [scrollbar-width:none] [-webkit-overflow-scrolling:touch] lg:mx-0 lg:justify-self-center lg:overflow-visible lg:px-0">
+                    <div class="flex min-w-max items-center gap-1 pb-0.5 sm:gap-2 lg:mx-auto lg:w-max lg:pb-0">
                         <a class="relative inline-flex items-center justify-center px-3 py-1.5 text-sm font-semibold text-slate-300 hover:text-white transition-colors whitespace-nowrap"
                             href="/">Home</a>
                         <span class="text-slate-600 select-none">|</span>
@@ -52,7 +52,7 @@
                             href="/economic-impact/location">Economic Impact Model</a>
                     </div>
                 </div>
-                <div class="hidden items-center lg:flex">
+                <div class="hidden items-center lg:flex lg:justify-self-end">
                     <a href="https://github.com/tuckthomas/casino-economic-impact-calculator.git" target="_blank" rel="noopener noreferrer"
                         class="flex size-10 items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
                         id="desktop-main-github-source-link" aria-label="View Source on GitHub">
