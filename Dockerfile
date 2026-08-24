@@ -33,6 +33,6 @@ RUN dotnet publish "SaveNEIN.Server.csproj" -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 # Install debugging tools
-RUN apt-get update && apt-get install -y curl procps vim && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl procps vim fontconfig libfontconfig1 && rm -rf /var/lib/apt/lists/*
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "SaveNEIN.Server.dll"]
