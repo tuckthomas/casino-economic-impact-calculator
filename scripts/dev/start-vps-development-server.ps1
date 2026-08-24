@@ -34,6 +34,13 @@ function Get-DevEnvironment {
         throw 'POSTGRES_PASSWORD is blank in deploy/.env.'
     }
 
+    # Keep development build caches and npm's temporary files in the workspace
+    # instead of consuming the Windows system drive.
+    $developmentCacheRoot = Join-Path $repositoryRoot '.cache\development'
+    $npmCacheDirectory = Join-Path $developmentCacheRoot 'npm'
+    $temporaryDirectory = Join-Path $developmentCacheRoot 'tmp'
+    New-Item -ItemType Directory -Force -Path $npmCacheDirectory, $temporaryDirectory | Out-Null
+
     return @{
         ASPNETCORE_ENVIRONMENT = 'Development'
         ConnectionStrings__DefaultConnection = "Host=127.0.0.1;Port=15434;Database=savefw_dev;Username=savefw_app;Password=$postgresPassword"
@@ -44,6 +51,10 @@ function Get-DevEnvironment {
         # Apply ordinary edits through hot reload and automatically restart the
         # development host when an edit cannot be hot reloaded.
         DOTNET_WATCH_RESTART_ON_RUDE_EDIT = '1'
+        NPM_CONFIG_CACHE = $npmCacheDirectory
+        TEMP = $temporaryDirectory
+        TMP = $temporaryDirectory
+        TMPDIR = $temporaryDirectory
     }
 }
 

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.HttpOverrides;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Configuration;
@@ -192,6 +193,9 @@ builder.Services.AddScoped<SaveNEIN.Server.Services.Reports.IReportArtifactServi
 
 var app = builder.Build();
 var databaseInitializationEnabled = app.Configuration.GetValue("DatabaseInitialization:Enabled", true);
+var factCheckAssetDirectory = ResolveFactCheckAssetDirectory(app.Environment);
+app.Services.GetRequiredService<SaveNEIN.Server.Services.IFactCheckShareImageService>()
+    .GenerateStaticAssets(factCheckAssetDirectory);
 
 app.UseForwardedHeaders();
 
@@ -320,6 +324,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseBlazorFrameworkFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(factCheckAssetDirectory),
+    RequestPath = "/assets/fact-checks"
+});
 app.UseStaticFiles();
 app.UseRouting();
 
@@ -330,19 +339,36 @@ app.MapGet("/api/legislators", async (AppDbContext db) =>
 app.MapGet("/api/impacts", async (AppDbContext db) =>
     await db.ImpactFacts.ToListAsync());
 
-app.MapGet("/fact-checks/{slug}/share.png", (string slug, HttpResponse response, SaveNEIN.Server.Services.IFactCheckShareImageService shareImages) =>
-{
-    response.Headers.CacheControl = "no-store, max-age=0";
-    return shareImages.TryGetImage(slug, out var image)
-        ? Results.File(image, "image/png", enableRangeProcessing: false)
-        : Results.NotFound();
-});
+app.MapGet("/fact-checks/{slug}/share.png", (string slug) =>
+    Results.Redirect($"/assets/fact-checks/{Uri.EscapeDataString(slug)}.png", permanent: false));
 
 app.MapRazorPages();
 app.MapControllers();
 app.MapFallbackToPage("/Index");
 
 app.Run();
+
+static string ResolveFactCheckAssetDirectory(IWebHostEnvironment environment)
+{
+    if (environment.IsDevelopment())
+    {
+        var contentRoot = Path.GetFullPath(environment.ContentRootPath);
+        var clientRoots = new[]
+        {
+            Path.Combine(contentRoot, "SaveNEIN.Client"),
+            Path.GetFullPath(Path.Combine(contentRoot, "..", "SaveNEIN.Client"))
+        };
+
+        var clientRoot = clientRoots.FirstOrDefault(Directory.Exists);
+        if (clientRoot is not null)
+        {
+            return Path.Combine(clientRoot, "wwwroot", "assets", "fact-checks");
+        }
+    }
+
+    var webRoot = environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot");
+    return Path.Combine(webRoot, "assets", "fact-checks");
+}
 
 static async Task WarmStateCacheAsync(IServiceProvider services)
 {

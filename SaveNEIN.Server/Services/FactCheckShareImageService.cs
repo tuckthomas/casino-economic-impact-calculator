@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 using SaveNEIN.Client.Models;
 using SkiaSharp;
 
@@ -7,10 +9,12 @@ namespace SaveNEIN.Server.Services;
 public interface IFactCheckShareImageService
 {
     bool TryGetImage(string slug, out byte[] image);
+    void GenerateStaticAssets(string outputDirectory);
 }
 
 public sealed class FactCheckShareImageService : IFactCheckShareImageService
 {
+    private const string TemplateRevision = "3";
     private const int Width = 1200;
     private const int Height = 630;
     private readonly IReadOnlyDictionary<string, FactCheckClaim> _claims;
@@ -40,6 +44,61 @@ public sealed class FactCheckShareImageService : IFactCheckShareImageService
         // development hot reload or a content update.
         image = Render(claim);
         return true;
+    }
+
+    public void GenerateStaticAssets(string outputDirectory)
+    {
+        Directory.CreateDirectory(outputDirectory);
+        var manifestPath = Path.Combine(outputDirectory, ".fact-check-share-manifest.json");
+        var existingManifest = ReadManifest(manifestPath);
+        var nextManifest = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var claim in _claims.Values)
+        {
+            var contentHash = ContentHash(claim);
+            nextManifest[claim.Slug] = contentHash;
+            var imagePath = Path.Combine(outputDirectory, $"{claim.Slug}.png");
+
+            if (File.Exists(imagePath) &&
+                existingManifest.TryGetValue(claim.Slug, out var existingHash) &&
+                string.Equals(existingHash, contentHash, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var temporaryPath = $"{imagePath}.{Guid.NewGuid():N}.tmp";
+            File.WriteAllBytes(temporaryPath, Render(claim));
+            File.Move(temporaryPath, imagePath, overwrite: true);
+        }
+
+        var manifestJson = JsonSerializer.Serialize(nextManifest, new JsonSerializerOptions { WriteIndented = true });
+        var temporaryManifestPath = $"{manifestPath}.{Guid.NewGuid():N}.tmp";
+        File.WriteAllText(temporaryManifestPath, manifestJson, Encoding.UTF8);
+        File.Move(temporaryManifestPath, manifestPath, overwrite: true);
+    }
+
+    private static Dictionary<string, string> ReadManifest(string manifestPath)
+    {
+        if (!File.Exists(manifestPath))
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(manifestPath))
+                ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static string ContentHash(FactCheckClaim claim)
+    {
+        var content = $"{TemplateRevision}|{JsonSerializer.Serialize(claim)}";
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content)));
     }
 
     private static byte[] Render(FactCheckClaim claim)

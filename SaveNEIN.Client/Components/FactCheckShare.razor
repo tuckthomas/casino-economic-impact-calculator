@@ -19,13 +19,19 @@
                     <p class="fact-check-share__eyebrow">Share this fact check</p>
                     <h3 id="fact-check-share-title">Spread the evidence</h3>
                 </div>
-                <button type="button" class="fact-check-share__close" aria-label="Close share dialog" @onclick="Close">
-                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
-                </button>
+                <AppButton type="button"
+                           Circular="true"
+                           Icon="close"
+                           Class="fact-check-share__trigger bg-[#c91d25] text-white hover:bg-[#a81820]"
+                           aria-label="Close share dialog"
+                           title="Close share dialog"
+                           OnButtonClick="Close" />
             </div>
 
-            <a class="fact-check-share__preview" href="@ShareUrl" target="_blank" rel="noopener noreferrer" aria-label="Open this fact check">
-                <img src="@ShareImageUrl" alt="Fact check: @Claim.ClaimText" />
+            <a class="fact-check-share__preview @(_imageLoaded ? "is-loaded" : "is-loading")" href="@ShareUrl" target="_blank" rel="noopener noreferrer" aria-label="Open this fact check">
+                <span class="fact-check-share__preview-loader" aria-hidden="true"></span>
+                <span class="sr-only" aria-live="polite">Loading share graphic</span>
+                <img src="@ShareImageUrl" alt="Fact check: @Claim.ClaimText" @onload="OnImageLoaded" />
             </a>
 
             <div class="fact-check-share__actions" aria-label="Share options">
@@ -64,11 +70,12 @@
 
     private bool _isOpen;
     private bool _copied;
+    private bool _imageLoaded;
 
     private string SharePath => $"fact-checks/{Uri.EscapeDataString(Claim.Slug)}";
     private string ShareUrl => $"https://savenein.com/{SharePath}";
-    private const string ShareGraphicRevision = "2";
-    private string ShareImageUrl => new Uri(new Uri(NavigationManager.BaseUri), $"{SharePath}/share.png?v={ShareGraphicRevision}").AbsoluteUri;
+    private const string ShareGraphicRevision = "3";
+    private string ShareImageUrl => new Uri(new Uri(NavigationManager.BaseUri), $"assets/fact-checks/{Uri.EscapeDataString(Claim.Slug)}.png?v={ShareGraphicRevision}").AbsoluteUri;
 
     private string VerdictLabel => Claim.Verdict switch
     {
@@ -93,10 +100,13 @@
     private void Open()
     {
         _copied = false;
+        _imageLoaded = false;
         _isOpen = true;
     }
 
     private void Close() => _isOpen = false;
+
+    private void OnImageLoaded() => _imageLoaded = true;
 
     private async Task CopyShareImage()
     {
