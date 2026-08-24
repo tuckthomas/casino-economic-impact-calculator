@@ -115,13 +115,6 @@
                             </li>
                         }
                     </ul>
-                    @if (!string.IsNullOrWhiteSpace(Claim.ClaimSourceArchivedUrl) && Claim.ClaimSourceCapturedAtUtc is not null)
-                    {
-                        <a class="fact-check-entry__claim-source" href="@Claim.ClaimSourceArchivedUrl" target="_blank" rel="noopener noreferrer">
-                            View archived claimant source [Archived @Claim.ClaimSourceCapturedAtUtc.Value.ToString("MM/dd/yyyy")]
-                            <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
-                        </a>
-                    }
                 </div>
         </div>
     </article>
