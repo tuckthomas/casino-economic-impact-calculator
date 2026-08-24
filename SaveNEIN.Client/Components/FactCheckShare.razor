@@ -86,16 +86,18 @@
         _ => "UNRATED"
     };
 
-    private string ShareText => Limit(
-        $"{Claim.Claimant} claim: “{Claim.ClaimText}”\n\nSaveNEIN rates this: {VerdictLabel}. {Claim.ShortFinding}",
-        240);
+    private string ShareTitle => $"Fact Check: {Claim.ClaimText} | Rating: {VerdictLabel} | SaveNEIN";
 
-    private string ShareMessage => $"{ShareText}\n\nRead the evidence: {ShareUrl}";
-    private string XShareUrl => $"https://x.com/intent/post?text={Uri.EscapeDataString(ShareText)}&url={Uri.EscapeDataString(ShareUrl)}";
+    private string ShareBody => $"{Claim.DetailedExplanation}\n\nKey facts:\n{string.Join("\n", Claim.KeyFacts.Select(fact => $"- {fact}"))}";
+
+    // X limits prefilled text; WhatsApp and email receive the complete formatted explanation.
+    private string XShareText => Limit($"{ShareTitle}\n\n{ShareBody}", 240);
+    private string ShareMessage => $"{ShareTitle}\n\n{ShareBody}\n\nRead the evidence: {ShareUrl}";
+    private string XShareUrl => $"https://x.com/intent/post?text={Uri.EscapeDataString(XShareText)}&url={Uri.EscapeDataString(ShareUrl)}";
     private string FacebookShareUrl => $"https://www.facebook.com/sharer/sharer.php?u={Uri.EscapeDataString(ShareUrl)}";
     private string LinkedInShareUrl => $"https://www.linkedin.com/sharing/share-offsite/?url={Uri.EscapeDataString(ShareUrl)}";
     private string WhatsAppShareUrl => $"https://api.whatsapp.com/send?text={Uri.EscapeDataString(ShareMessage)}";
-    private string EmailShareUrl => $"mailto:?subject={Uri.EscapeDataString($"Fact check: {Claim.FindingHeadline}")}&body={Uri.EscapeDataString(ShareMessage)}";
+    private string EmailShareUrl => $"mailto:?subject={Uri.EscapeDataString(ShareTitle)}&body={Uri.EscapeDataString(ShareMessage)}";
 
     private void Open()
     {

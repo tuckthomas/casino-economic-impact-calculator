@@ -28,7 +28,21 @@
     var sharedFactCheckImageUrl = sharedFactCheck is null
         ? null
         : $"{publicOrigin}/fact-checks/{Uri.EscapeDataString(sharedFactCheck.Slug)}/share.png";
-    var sharedFactCheckTitle = sharedFactCheck is null ? null : $"Fact Check: {sharedFactCheck.ClaimText} | SaveNEIN";
+    var sharedFactCheckTitle = sharedFactCheck is null
+        ? null
+        : $"Fact Check: {sharedFactCheck.ClaimText} | Rating: {VerdictLabel(sharedFactCheck.Verdict)} | SaveNEIN";
+    var sharedFactCheckDescription = sharedFactCheck is null
+        ? null
+        : $"{sharedFactCheck.DetailedExplanation}\n\nKey facts:\n{string.Join("\n", sharedFactCheck.KeyFacts.Select(fact => $"- {fact}"))}";
+
+    static string VerdictLabel(FactCheckVerdict verdict) => verdict switch
+    {
+        FactCheckVerdict.True => "TRUE",
+        FactCheckVerdict.MostlyTrue => "MOSTLY TRUE",
+        FactCheckVerdict.MostlyFalse => "MOSTLY FALSE",
+        FactCheckVerdict.False => "FALSE",
+        _ => "UNRATED"
+    };
 }
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
@@ -41,12 +55,12 @@
 
     @if (sharedFactCheck is not null)
     {
-        <meta name="description" content="@sharedFactCheck.ShortFinding" />
+        <meta name="description" content="@sharedFactCheckDescription" />
         <link rel="canonical" href="@sharedFactCheckUrl" />
         <meta property="og:type" content="article" />
         <meta property="og:site_name" content="SaveNEIN" />
         <meta property="og:title" content="@sharedFactCheckTitle" />
-        <meta property="og:description" content="@sharedFactCheck.ShortFinding" />
+        <meta property="og:description" content="@sharedFactCheckDescription" />
         <meta property="og:url" content="@sharedFactCheckUrl" />
         <meta property="og:image" content="@sharedFactCheckImageUrl" />
         <meta property="og:image:type" content="image/png" />
@@ -54,7 +68,7 @@
         <meta property="og:image:height" content="630" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="@sharedFactCheckTitle" />
-        <meta name="twitter:description" content="@sharedFactCheck.ShortFinding" />
+        <meta name="twitter:description" content="@sharedFactCheckDescription" />
         <meta name="twitter:image" content="@sharedFactCheckImageUrl" />
     }
 
