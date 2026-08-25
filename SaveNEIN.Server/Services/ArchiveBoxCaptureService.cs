@@ -269,10 +269,10 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             Id = Guid.NewGuid(),
             SourceKey = source.Key,
             OriginalUrl = uri.AbsoluteUri,
-            ObservedAtUtc = source.ObservedAtUtc,
+            ObservedAtUtc = NormalizeUtc(source.ObservedAtUtc),
             ObservationType = source.ObservationType,
             ArchiveBoxSnapshotId = snapshotId,
-            CapturedAtUtc = capturedAtUtc,
+            CapturedAtUtc = NormalizeUtc(capturedAtUtc),
             PublicArchivedUrl = string.Empty,
             HttpStatus = httpStatus,
             CaptureStatus = captureStatus,
@@ -292,6 +292,16 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         _ = publicArtifactPath;
         return ToMetadata(record);
     }
+
+    private static DateTime NormalizeUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+    };
+
+    private static DateTime? NormalizeUtc(DateTime? value) =>
+        value.HasValue ? NormalizeUtc(value.Value) : null;
 
     private static bool HasRequiredArtifacts(string archiveDirectory) =>
         FindPublicArtifact(archiveDirectory) is not null &&
