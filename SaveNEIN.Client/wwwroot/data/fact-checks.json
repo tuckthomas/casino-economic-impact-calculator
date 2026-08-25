@@ -75,12 +75,14 @@
         "GEOGRAPHY ERROR",
         "MISSING CONTEXT"
       ],
-      "findingHeadline": "Most projected casino revenue would come from the regional market — not from out-of-state money",
-      "shortFinding": "Casino revenue is not money returned to residents; it is the money gamblers lose after winnings are paid. Spectrum expects only a small share of revenue from other states, meaning most projected revenue would come from gamblers in the casino’s core regional market. Calling those losses ‘dollars kept local’ confuses casino income with community wealth.",
-      "detailedExplanation": "Yes for Allen says a casino would ‘bring that revenue back and put it to work here for Allen County residents.’\n\nBut a casino can generate that revenue only by retaining gamblers’ money after paying winnings. When the gamblers are local residents, the casino’s revenue is a direct loss to local households—not money returned to them or newly created for the community.\n\nSpectrum expects only a small percentage of the casino’s revenue to come from other states. Most would therefore come from its core regional market. Taxes, employee wages, and local purchases may recirculate a portion, but that does not make the casino’s entire revenue a local benefit—especially when gambling displaces spending at other local businesses.",
+      "findingHeadline": "‘Underserved’ does not mean the money is already leaving — much of the projected revenue would come from more local gambling",
+      "shortFinding": "The studies do not show that Northeast Indiana residents already spend hundreds of millions of dollars at Michigan and Ohio casinos. CBRE explicitly modeled $50.2 million in Michigan and Ohio recapture—17.8% of its $282.3 million casino forecast. Spectrum explicitly identified only $15.6 million retained by Michigan casinos, did not separately quantify Ohio leakage for its Northeast proxy, and expected only a small share of revenue from other states. In Spectrum’s model, ‘underserved’ means residents could gamble much more if a casino were closer—not that the projected money is already being spent elsewhere.",
+      "detailedExplanation": "Yes for Allen frames the casino as a way to bring Northeast Indiana gambling dollars home from Michigan and Ohio. Neither major study supports treating the full projected casino market as money already leaking across state lines.\n\nCBRE projected $282.3 million in stabilized gross gaming revenue for a Fort Wayne casino. Its modeled effects on Michigan and Ohio competitors total $50.2 million: $35.5 million attributed to Michigan and $14.7 million to Ohio. That is about 17.8% of CBRE’s total forecast—not most of it. CBRE produced those estimates through a gravity model using population, income, casino scale and attractiveness, and travel distance to predict how a hypothetical casino would redistribute regional gaming revenue.\n\nSpectrum used rated and tracked patron data supplied by Indiana casino operators, including player ZIP codes and theoretical casino value. For its Northeast proxy at I-69 and State Road 8, Spectrum estimated $15.6 million would remain retained by Michigan casinos. It did not separately identify comparable Ohio leakage in that Northeast market-potential table. Spectrum’s resulting Northeast casino estimate was $204.3 million, while the report cautioned that only small percentages would come from other states and that there was limited opportunity to attract play from Michigan.\n\nThe word ‘underserved’ is therefore crucial. It does not mean Northeast Indiana residents are already spending the projected casino revenue somewhere else. It means Spectrum’s model predicts that substantially more gambling could occur if casino supply were brought closer and made more convenient. Much of the projected revenue may come from creating additional local gambling, not simply recovering existing Michigan and Ohio spending.\n\nCasino revenue is the money gamblers lose after winnings are paid. When that revenue comes from local residents, it is a loss to local households—not money returned to the community. Taxes, wages, and purchases may recirculate a portion, but that does not convert the casino’s entire revenue into a local benefit, especially when gambling displaces spending at existing local businesses.",
       "keyFacts": [
-        "Adjusted gross receipts are wagers retained by the casino after winnings and limited deductions.",
-        "Spectrum expects only a small percentage of revenue from out-of-state gamblers.",
+        "CBRE explicitly modeled $35.5 million from Michigan and $14.7 million from Ohio—$50.2 million, or about 17.8% of its $282.3 million forecast.",
+        "Spectrum explicitly identified $15.6 million retained by Michigan casinos and did not separately quantify Ohio leakage for its Northeast proxy.",
+        "Spectrum expected only a small percentage of Northeast casino revenue from other states and limited opportunity to attract play from Michigan.",
+        "‘Underserved’ means the model predicts more gambling if a casino is nearby; it does not mean that money is already being spent elsewhere.",
         "Local gambling losses can replace household spending at existing restaurants, entertainment venues, and other businesses."
       ],
       "sources": [
@@ -91,6 +93,12 @@
           "archiveSourceKey": "yes-for-allen-facts"
         },
         {
+          "label": "CBRE Greater Fort Wayne Area Casino Analysis",
+          "citation": "$282.3 million stabilized GGR forecast and modeled effects of $35.5 million on Michigan casinos and $14.7 million on Ohio casinos.",
+          "url": "https://cdn.insideindianabusiness.com/wp-content/uploads/2026/01/GFWI-Casino-Analysis-Presentation-Final-2025-12-03.pdf",
+          "archiveSourceKey": "cbre-greater-fort-wayne-casino-analysis"
+        },
+        {
           "label": "Indiana Gaming Commission — Annual Report",
           "citation": "Official definition of adjusted gross receipts as gaming receipts minus winnings and limited uncollectible receivables.",
           "url": "https://www.in.gov/igc/files/CY2001-Annual.pdf",
@@ -98,12 +106,21 @@
         },
         {
           "label": "Spectrum Gaming Group relocation study",
-          "citation": "Official IGC study stating that only a small percentage of Northeast casino revenue is expected from other states.",
+          "citation": "$204.3 million Northeast estimate; $15.6 million retained by Michigan casinos; tracked-patron methodology; and cautions that only a small percentage would come from other states.",
           "url": "https://www.in.gov/igc/files/publications/Spectrum-Relocation-Report-to-Indiana-Gaming-Commission-9-30-2025-Final.pdf",
           "archiveSourceKey": "spectrum-relocation-study"
         }
       ],
-      "evidenceTables": [],
+      "evidenceTables": [
+        {
+          "caption": "Explicit Michigan and Ohio leakage or recapture estimates",
+          "headers": ["Study", "Michigan", "Ohio", "Explicit Michigan + Ohio estimate"],
+          "rows": [
+            ["CBRE", "$35.5M", "$14.7M", "$50.2M"],
+            ["Spectrum", "$15.6M", "Not separately quantified for Northeast proxy", "At least $15.6M explicitly quantified"]
+          ]
+        }
+      ],
       "claimSourceUrl": "https://yesforallen.org/facts/",
       "archiveSourceKey": "yes-for-allen-facts",
       "claimSourceObservedOn": "2026-08-08",
