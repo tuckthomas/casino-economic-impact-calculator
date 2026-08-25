@@ -70,7 +70,7 @@ public sealed class ArchiveBoxCaptureServiceTests
 
             await service.CaptureAsync("test-source", CancellationToken.None);
 
-            Assert.Contains("\"depth\":7", handler.PostedJson);
+            Assert.Contains("\"depth\":4", handler.PostedJson);
             Assert.True(handler.CrawlWasPolled);
         }
         finally { Directory.Delete(root, true); }

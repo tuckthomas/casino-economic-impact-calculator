@@ -116,7 +116,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(Math.Clamp(_options.CaptureTimeoutSeconds, 30, 3600)));
 
-        var crawlDepth = Math.Clamp(_options.CrawlDepth, 0, 10);
+        var crawlDepth = Math.Clamp(_options.CrawlDepth, 0, 4);
         using var response = await _http.PostAsJsonAsync(
             "api/v1/core/snapshots",
             new { url = uri.AbsoluteUri, depth = crawlDepth },
@@ -200,7 +200,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             if (storedSnapshot is null ||
                 !string.Equals(storedSnapshot.Type, "Snapshot", StringComparison.OrdinalIgnoreCase) ||
                 !string.Equals(storedSnapshot.Status, "sealed", StringComparison.OrdinalIgnoreCase) ||
-                storedSnapshot.Depth < Math.Clamp(_options.CrawlDepth, 0, 10) ||
+                storedSnapshot.Depth < Math.Clamp(_options.CrawlDepth, 0, 4) ||
                 !Uri.TryCreate(storedSnapshot.Url, UriKind.Absolute, out var storedUri) ||
                 !Uri.Compare(uri, storedUri, UriComponents.AbsoluteUri, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase).Equals(0))
             {
