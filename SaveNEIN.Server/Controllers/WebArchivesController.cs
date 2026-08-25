@@ -35,18 +35,38 @@ public sealed class WebArchivesController(
     }
 
     [HttpGet("captures/{id:guid}/singlefile")]
-    public async Task<IActionResult> GetSingleFile(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetSingleFile(Guid id, [FromQuery] string? url, CancellationToken cancellationToken)
     {
-        var result = await archives.GetSingleFileAsync(id, cancellationToken);
-        if (result is null) return NotFound();
-        var contentType = Path.GetExtension(result.Value.Path).Equals(".pdf", StringComparison.OrdinalIgnoreCase)
+        var result = await archives.GetArchivedPageAsync(id, url, cancellationToken);
+        if (result is null)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return NotFound();
+            ApplyArchiveHeaders(isHtml: true);
+            return new ContentResult
+            {
+                Content = ArchiveHtmlRewriter.MissingLinkedPage(url),
+                ContentType = "text/html; charset=utf-8",
+                StatusCode = StatusCodes.Status404NotFound
+            };
+        }
+
+        var contentType = Path.GetExtension(result.Path).Equals(".pdf", StringComparison.OrdinalIgnoreCase)
             ? "application/pdf"
             : "text/html; charset=utf-8";
-        if (contentType.StartsWith("text/html", StringComparison.Ordinal))
-            Response.Headers.ContentSecurityPolicy = "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:";
+        var isHtml = contentType.StartsWith("text/html", StringComparison.Ordinal);
+        ApplyArchiveHeaders(isHtml);
+        if (!isHtml) return PhysicalFile(result.Path, contentType, enableRangeProcessing: true);
+
+        var html = await System.IO.File.ReadAllTextAsync(result.Path, cancellationToken);
+        return Content(ArchiveHtmlRewriter.Rewrite(html, result.PageUrl, id), contentType, Encoding.UTF8);
+    }
+
+    private void ApplyArchiveHeaders(bool isHtml)
+    {
+        if (isHtml)
+            Response.Headers.ContentSecurityPolicy = "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; form-action 'none'";
         Response.Headers.XContentTypeOptions = "nosniff";
         Response.Headers.CacheControl = "public,max-age=31536000,immutable";
-        return PhysicalFile(result.Value.Path, contentType, enableRangeProcessing: true);
     }
 
     private bool HasValidAdminToken()

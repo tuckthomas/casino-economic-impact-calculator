@@ -10,6 +10,7 @@ Copy the blank `ARCHIVEBOX_*` entries from `deploy/.env.example` into the privat
 - `ARCHIVEBOX_API_TOKEN`: the ArchiveBox bearer token used by the SaveNEIN backend.
 - `ARCHIVEBOX_CAPTURE_ADMIN_TOKEN`: an independent long random token protecting SaveNEIN's capture endpoint.
 - `ARCHIVEBOX_ENABLED`: leave `false` until ArchiveBox is initialized and the API token is present; then set `true`.
+- `ARCHIVEBOX_CRAWL_MAX_URLS`, `ARCHIVEBOX_CRAWL_MAX_SIZE`, and `ARCHIVEBOX_CRAWL_TIMEOUT`: hard safety ceilings for recursive source-site captures. Production defaults are 250 pages, 512 MB, and one hour per source.
 
 ## First initialization
 
@@ -44,7 +45,7 @@ curl --fail --request POST \
   https://savenein.com/api/web-archives/capture/steuben-myths-facts
 ```
 
-The backend publishes a manifest only after ArchiveBox reports the snapshot sealed, all required DOM/SingleFile/screenshot/WARC artifacts exist, their SHA-256 hashes are recorded, and the configured claimant wording is present in normalized captured text.
+The backend submits configured sources as bounded recursive crawls and publishes a manifest only after ArchiveBox reports the crawl and seed snapshot sealed, all required DOM/SingleFile/screenshot/WARC artifacts exist, their SHA-256 hashes are recorded, and the configured claimant wording is present in normalized captured text. Public archived HTML rewrites web links through SaveNEIN's archive resolver; navigation never falls through to a live website.
 
 ## Provenance rule
 

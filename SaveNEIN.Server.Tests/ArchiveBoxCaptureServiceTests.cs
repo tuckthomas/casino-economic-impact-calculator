@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SaveNEIN.Server.Configuration;
 using SaveNEIN.Server.Data;
+using SaveNEIN.Server.Data.Entities;
 using SaveNEIN.Server.Services;
 
 namespace SaveNEIN.Server.Tests;
@@ -52,6 +53,68 @@ public sealed class ArchiveBoxCaptureServiceTests
             Assert.Equal(200, stored.HttpStatus);
             Assert.Contains("singlefile/singlefile.html", stored.ArtifactManifestJson);
             Assert.Equal(64, stored.NormalizedTextSha256.Length);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task CaptureSubmitsConfiguredRecursiveDepthAndWaitsForCrawl()
+    {
+        var root = CreateArchive("snapshot-1", "Claim text preserved");
+        try
+        {
+            await using var db = CreateDb();
+            var capturedAt = new DateTime(2026, 8, 25, 1, 30, 0, DateTimeKind.Utc);
+            var handler = new SnapshotHandler(capturedAt, "sealed");
+            var service = CreateService(db, root, capturedAt, "Claim text preserved", crawlDepth: 7, handler: handler);
+
+            await service.CaptureAsync("test-source", CancellationToken.None);
+
+            Assert.Contains("\"depth\":7", handler.PostedJson);
+            Assert.True(handler.CrawlWasPolled);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task ArchivedChildPageResolvesOnlyWithinSeedCrawl()
+    {
+        var root = CreateArchive("snapshot-root", "Claim text preserved");
+        var rootDirectory = GetArchiveDirectory(root, "snapshot-root");
+        var childDirectory = GetArchiveDirectory(root, "snapshot-child");
+        Directory.CreateDirectory(childDirectory);
+        WriteArtifact(childDirectory, "singlefile", "singlefile.html", "<html><body>child</body></html>");
+        var capturedAt = new DateTime(2026, 8, 25, 1, 30, 0, DateTimeKind.Utc);
+        File.WriteAllText(Path.Combine(rootDirectory, "index.jsonl"),
+            $$"""{"type":"Snapshot","id":"snapshot-root","crawl_id":"crawl-1","url":"https://example.com/","status":"sealed","depth":0,"created_at":"{{capturedAt:O}}"}""");
+        File.WriteAllText(Path.Combine(childDirectory, "index.jsonl"),
+            $$"""{"type":"Snapshot","id":"snapshot-child","crawl_id":"crawl-1","url":"https://example.com/details","status":"sealed","depth":1,"created_at":"{{capturedAt:O}}"}""");
+
+        try
+        {
+            await using var db = CreateDb();
+            var id = Guid.NewGuid();
+            db.ArchivedWebSources.Add(new ArchivedWebSource
+            {
+                Id = id,
+                SourceKey = "test-source",
+                OriginalUrl = "https://example.com/",
+                ArchiveBoxSnapshotId = "snapshot-root",
+                CapturedAtUtc = capturedAt,
+                PublicArchivedUrl = $"/api/web-archives/captures/{id}/singlefile",
+                ArchiveRelativePath = Path.GetRelativePath(root, rootDirectory).Replace('\\', '/'),
+                VerificationStatus = "Verified",
+                CreatedAtUtc = capturedAt
+            });
+            await db.SaveChangesAsync();
+            var service = CreateService(db, root, capturedAt, "Claim text preserved");
+
+            var child = await service.GetArchivedPageAsync(id, "https://example.com/details#section", CancellationToken.None);
+            var missing = await service.GetArchivedPageAsync(id, "https://example.com/not-captured", CancellationToken.None);
+
+            Assert.NotNull(child);
+            Assert.Equal(Path.GetFullPath(Path.Combine(childDirectory, "singlefile", "singlefile.html")), child.Path);
+            Assert.Null(missing);
         }
         finally { Directory.Delete(root, true); }
     }
@@ -142,7 +205,14 @@ public sealed class ArchiveBoxCaptureServiceTests
         return new AppDbContext(options);
     }
 
-    private static ArchiveBoxCaptureService CreateService(AppDbContext db, string root, DateTime capturedAt, string requiredText, string finalStatus = "sealed")
+    private static ArchiveBoxCaptureService CreateService(
+        AppDbContext db,
+        string root,
+        DateTime capturedAt,
+        string requiredText,
+        string finalStatus = "sealed",
+        int crawlDepth = 0,
+        SnapshotHandler? handler = null)
     {
         var options = Options.Create(new ArchiveBoxOptions
         {
@@ -150,6 +220,7 @@ public sealed class ArchiveBoxCaptureServiceTests
             ApiToken = "test-token",
             DataPath = root,
             ArchiveUserName = "savenein",
+            CrawlDepth = crawlDepth,
             Sources =
             [
                 new ArchiveSourceOptions
@@ -162,14 +233,14 @@ public sealed class ArchiveBoxCaptureServiceTests
                 }
             ]
         });
-        var handler = new SnapshotHandler(capturedAt, finalStatus);
+        handler ??= new SnapshotHandler(capturedAt, finalStatus);
         return new ArchiveBoxCaptureService(new HttpClient(handler) { BaseAddress = new Uri("http://archivebox/") }, db, options, new AllowAllValidator());
     }
 
     private static string CreateArchive(string snapshotId, string text)
     {
         var root = Path.Combine(Path.GetTempPath(), "savenein-archive-tests", Guid.NewGuid().ToString("N"));
-        var archive = Path.Combine(root, "archive", "users", "savenein", "snapshots", "20260822", "example.com", snapshotId);
+        var archive = GetArchiveDirectory(root, snapshotId);
         WriteArtifact(archive, "htmltotext", "htmltotext.txt", text);
         WriteArtifact(archive, "singlefile", "singlefile.html", "<html><body>preserved</body></html>");
         WriteArtifact(archive, "dom", "output.html", "<html><body>preserved</body></html>");
@@ -178,6 +249,9 @@ public sealed class ArchiveBoxCaptureServiceTests
         WriteArtifact(archive, "wget", "warc", "capture.warc.gz", "warc");
         return root;
     }
+
+    private static string GetArchiveDirectory(string root, string snapshotId) =>
+        Path.Combine(root, "archive", "users", "savenein", "snapshots", "20260822", "example.com", snapshotId);
 
     private static void WriteArtifact(string root, params string[] pieces)
     {
@@ -195,17 +269,25 @@ public sealed class ArchiveBoxCaptureServiceTests
     private sealed class SnapshotHandler(DateTime capturedAt, string finalStatus) : HttpMessageHandler
     {
         private int _requests;
+        public string? PostedJson { get; private set; }
+        public bool CrawlWasPolled { get; private set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             _requests++;
+            if (request.Method == HttpMethod.Post)
+                PostedJson = await request.Content!.ReadAsStringAsync(cancellationToken);
+            var isCrawl = request.RequestUri!.AbsolutePath.Contains("/any/", StringComparison.Ordinal);
+            CrawlWasPolled |= isCrawl;
             var status = _requests == 1 ? "queued" : finalStatus;
+            if (isCrawl) status = finalStatus;
             var downloadedAt = status == "sealed" ? $",\"downloaded_at\":\"{capturedAt:O}\"" : string.Empty;
-            var json = $"{{\"id\":\"snapshot-1\",\"status\":\"{status}\",\"archive_path\":\"savenein/20260822/example.com/snapshot-1\"{downloadedAt}}}";
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            var id = isCrawl ? "crawl-1" : "snapshot-1";
+            var json = $"{{\"id\":\"{id}\",\"crawl_id\":\"crawl-1\",\"status\":\"{status}\",\"archive_path\":\"savenein/20260822/example.com/snapshot-1\"{downloadedAt}}}";
+            return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(json, Encoding.UTF8, "application/json")
-            });
+            };
         }
     }
 }

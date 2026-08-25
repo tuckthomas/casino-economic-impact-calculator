@@ -11,6 +11,7 @@ public sealed class ArchiveBoxOptions
     public string DataPath { get; init; } = "/var/lib/savenein/archivebox";
     public string ArchiveUserName { get; init; } = "savenein";
     public int CaptureTimeoutSeconds { get; init; } = 600;
+    public int CrawlDepth { get; init; }
     public string[] AllowedSourceHosts { get; init; } = [];
     public ArchiveSourceOptions[] Sources { get; init; } = [];
 }

@@ -29,8 +29,10 @@ public interface IArchiveBoxCaptureService
 {
     Task<WebArchiveMetadata> CaptureAsync(string sourceKey, CancellationToken cancellationToken);
     Task<WebArchiveMetadata?> GetLatestAsync(string sourceKey, CancellationToken cancellationToken);
-    Task<(string Path, ArchivedWebSource Capture)?> GetSingleFileAsync(Guid id, CancellationToken cancellationToken);
+    Task<ArchivedPage?> GetArchivedPageAsync(Guid id, string? targetUrl, CancellationToken cancellationToken);
 }
+
+public sealed record ArchivedPage(string Path, ArchivedWebSource Capture, Uri PageUrl);
 
 public interface IArchiveSourceUrlValidator
 {
@@ -114,7 +116,12 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(Math.Clamp(_options.CaptureTimeoutSeconds, 30, 3600)));
 
-        using var response = await _http.PostAsJsonAsync("api/v1/core/snapshots", new { url = uri.AbsoluteUri, depth = 0 }, JsonOptions, timeout.Token);
+        var crawlDepth = Math.Clamp(_options.CrawlDepth, 0, 10);
+        using var response = await _http.PostAsJsonAsync(
+            "api/v1/core/snapshots",
+            new { url = uri.AbsoluteUri, depth = crawlDepth },
+            JsonOptions,
+            timeout.Token);
         response.EnsureSuccessStatusCode();
         var snapshot = await response.Content.ReadFromJsonAsync<ArchiveBoxSnapshot>(JsonOptions, timeout.Token)
             ?? throw new InvalidOperationException("ArchiveBox returned an empty capture response.");
@@ -126,6 +133,20 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             await Task.Delay(TimeSpan.FromSeconds(2), timeout.Token);
             snapshot = await _http.GetFromJsonAsync<ArchiveBoxSnapshot>($"api/v1/core/snapshot/{snapshot.Id}", JsonOptions, timeout.Token)
                 ?? throw new InvalidOperationException("ArchiveBox snapshot disappeared while capture was running.");
+        }
+
+        if (crawlDepth > 0 && !string.IsNullOrWhiteSpace(snapshot.CrawlId))
+        {
+            var crawl = await _http.GetFromJsonAsync<ArchiveBoxCrawl>($"api/v1/core/any/{snapshot.CrawlId}", JsonOptions, timeout.Token)
+                ?? throw new InvalidOperationException("ArchiveBox crawl disappeared while capture was running.");
+            while (!string.Equals(crawl.Status, "sealed", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.Equals(crawl.Status, "failed", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException($"ArchiveBox crawl {crawl.Id} failed.");
+                await Task.Delay(TimeSpan.FromSeconds(2), timeout.Token);
+                crawl = await _http.GetFromJsonAsync<ArchiveBoxCrawl>($"api/v1/core/any/{crawl.Id}", JsonOptions, timeout.Token)
+                    ?? throw new InvalidOperationException("ArchiveBox crawl disappeared while capture was running.");
+            }
         }
 
         if (snapshot.DownloadedAt is null) throw new InvalidOperationException("Sealed ArchiveBox snapshot has no capture timestamp.");
@@ -179,6 +200,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             if (storedSnapshot is null ||
                 !string.Equals(storedSnapshot.Type, "Snapshot", StringComparison.OrdinalIgnoreCase) ||
                 !string.Equals(storedSnapshot.Status, "sealed", StringComparison.OrdinalIgnoreCase) ||
+                storedSnapshot.Depth < Math.Clamp(_options.CrawlDepth, 0, 10) ||
                 !Uri.TryCreate(storedSnapshot.Url, UriKind.Absolute, out var storedUri) ||
                 !Uri.Compare(uri, storedUri, UriComponents.AbsoluteUri, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase).Equals(0))
             {
@@ -286,14 +308,99 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         return record is null ? null : ToMetadata(record);
     }
 
-    public async Task<(string Path, ArchivedWebSource Capture)?> GetSingleFileAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ArchivedPage?> GetArchivedPageAsync(Guid id, string? targetUrl, CancellationToken cancellationToken)
     {
         var capture = await _db.ArchivedWebSources.AsNoTracking()
             .SingleOrDefaultAsync(item => item.Id == id && item.VerificationStatus == "Verified", cancellationToken);
         if (capture is null) return null;
-        var directory = ResolveStoredRelativePath(capture.ArchiveRelativePath);
+
+        var rootDirectory = ResolveStoredRelativePath(capture.ArchiveRelativePath);
+        var rootSnapshot = await ReadStoredSnapshotAsync(Path.Combine(rootDirectory, "index.jsonl"), cancellationToken);
+        if (rootSnapshot is null || !Uri.TryCreate(rootSnapshot.Url, UriKind.Absolute, out var rootUri)) return null;
+
+        var directory = rootDirectory;
+        var pageUri = rootUri;
+        if (!string.IsNullOrWhiteSpace(targetUrl))
+        {
+            if (!Uri.TryCreate(targetUrl, UriKind.Absolute, out var requestedUri) ||
+                (requestedUri.Scheme != Uri.UriSchemeHttp && requestedUri.Scheme != Uri.UriSchemeHttps))
+            {
+                return null;
+            }
+
+            requestedUri = WithoutFragment(requestedUri);
+            var matchingSnapshot = await FindCrawlSnapshotAsync(rootSnapshot.CrawlId, requestedUri, cancellationToken);
+            if (matchingSnapshot is null) return null;
+            directory = matchingSnapshot.Value.Directory;
+            pageUri = matchingSnapshot.Value.Url;
+        }
+
         var publicArtifactPath = FindPublicArtifact(directory);
-        return publicArtifactPath is not null ? (publicArtifactPath, capture) : null;
+        return publicArtifactPath is not null ? new ArchivedPage(publicArtifactPath, capture, pageUri) : null;
+    }
+
+    private async Task<(string Directory, Uri Url)?> FindCrawlSnapshotAsync(
+        string crawlId,
+        Uri requestedUri,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(crawlId)) return null;
+        var snapshotRoot = Path.Combine(_options.DataPath, "archive", "users", _options.ArchiveUserName, "snapshots");
+        if (!Directory.Exists(snapshotRoot)) return null;
+
+        foreach (var indexPath in Directory.EnumerateFiles(snapshotRoot, "index.jsonl", SearchOption.AllDirectories))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var snapshot = await ReadStoredSnapshotAsync(indexPath, cancellationToken);
+            if (snapshot is null ||
+                !string.Equals(snapshot.CrawlId, crawlId, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(snapshot.Status, "sealed", StringComparison.OrdinalIgnoreCase) ||
+                !Uri.TryCreate(snapshot.Url, UriKind.Absolute, out var snapshotUri) ||
+                Uri.Compare(
+                    requestedUri,
+                    WithoutFragment(snapshotUri),
+                    UriComponents.HttpRequestUrl,
+                    UriFormat.SafeUnescaped,
+                    StringComparison.OrdinalIgnoreCase) != 0)
+            {
+                continue;
+            }
+
+            var directory = Path.GetDirectoryName(indexPath)!;
+            if (FindPublicArtifact(directory) is not null)
+                return (directory, snapshotUri);
+        }
+
+        return null;
+    }
+
+    private static async Task<StoredArchiveBoxSnapshot?> ReadStoredSnapshotAsync(
+        string indexPath,
+        CancellationToken cancellationToken)
+    {
+        if (!File.Exists(indexPath)) return null;
+        try
+        {
+            using var reader = new StreamReader(indexPath);
+            var firstLine = await reader.ReadLineAsync(cancellationToken);
+            return string.IsNullOrWhiteSpace(firstLine)
+                ? null
+                : JsonSerializer.Deserialize<StoredArchiveBoxSnapshot>(firstLine, JsonOptions);
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static Uri WithoutFragment(Uri uri)
+    {
+        var builder = new UriBuilder(uri) { Fragment = string.Empty };
+        return builder.Uri;
     }
 
     private string ResolveArchiveDirectory(string archivePath)
@@ -373,6 +480,8 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
     private sealed class ArchiveBoxSnapshot
     {
         public string Id { get; init; } = string.Empty;
+        [JsonPropertyName("crawl_id")]
+        public string CrawlId { get; init; } = string.Empty;
         public string Status { get; init; } = string.Empty;
         [JsonPropertyName("downloaded_at")]
         public DateTime? DownloadedAt { get; init; }
@@ -380,12 +489,21 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         public string ArchivePath { get; init; } = string.Empty;
     }
 
+    private sealed class ArchiveBoxCrawl
+    {
+        public string Id { get; init; } = string.Empty;
+        public string Status { get; init; } = string.Empty;
+    }
+
     private sealed class StoredArchiveBoxSnapshot
     {
         public string Type { get; init; } = string.Empty;
         public string Id { get; init; } = string.Empty;
+        [JsonPropertyName("crawl_id")]
+        public string CrawlId { get; init; } = string.Empty;
         public string Url { get; init; } = string.Empty;
         public string Status { get; init; } = string.Empty;
+        public int Depth { get; init; }
         [JsonPropertyName("created_at")]
         public DateTimeOffset CreatedAt { get; init; }
     }

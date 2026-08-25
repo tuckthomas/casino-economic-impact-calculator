@@ -128,6 +128,10 @@ services:
       SERVER_SECURITY_MODE: safe-onedomain-nojsreplay
       PUBLIC_ADD_VIEW: "False"
       PUBLIC_INDEX: "False"
+      CRAWL_MAX_URLS: ${ARCHIVEBOX_CRAWL_MAX_URLS:-250}
+      CRAWL_MAX_SIZE: ${ARCHIVEBOX_CRAWL_MAX_SIZE:-512MB}
+      CRAWL_TIMEOUT: ${ARCHIVEBOX_CRAWL_TIMEOUT:-3600}
+      URL_ALLOWLIST: ${ARCHIVEBOX_URL_ALLOWLIST:-^https?://([a-z0-9-]+\.)*(yesforallen\.org|steubenfunwins\.com|insideindianabusiness\.com|bea\.gov|in\.gov|nigc\.gov|ecfr\.gov|bia\.gov|doi\.org|springer\.com|stlouisfed\.org)/}
       ADMIN_USERNAME: ${ARCHIVEBOX_ADMIN_USERNAME:-savenein}
       ADMIN_PASSWORD: ${ARCHIVEBOX_ADMIN_PASSWORD:?ARCHIVEBOX_ADMIN_PASSWORD is required}
     volumes:
