@@ -1049,7 +1049,7 @@
     }
 
     #hero-section .hero-copy > .hero-animate {
-        margin-top: clamp(1.15rem, 3.2svh, 1.75rem);
+        margin-top: clamp(2rem, 7svh, 4rem);
         margin-bottom: 0;
         gap: 0.65rem;
     }
@@ -1135,20 +1135,6 @@
 
     .modern-slot-payline-arrow-right {
         right: -0.45rem;
-    }
-}
-
-@media (max-width: 767px) {
-    #hero-section {
-        height: min(100svh, 46rem);
-        min-height: min(100svh, 46rem);
-        max-height: min(100svh, 46rem);
-    }
-
-    #hero-section .hero-layout,
-    .hero-copy,
-    #hero-section .hero-visual-stage {
-        min-height: 100%;
     }
 }
 

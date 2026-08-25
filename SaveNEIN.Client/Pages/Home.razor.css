@@ -15,12 +15,6 @@
     min-height: 100svh;
 }
 
-@media (max-width: 767px) {
-    .home-hero-shell {
-        min-height: min(100svh, 46rem);
-    }
-}
-
 .home-sticky-header-shell {
     background: #0f172a;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
