@@ -897,10 +897,10 @@
     #hero-section .hero-mobile-intro::before {
         content: "";
         display: block;
-        width: min(66vw, 15rem);
+        width: min(74vw, 17.5rem);
         aspect-ratio: 6471 / 2892;
         height: auto;
-        margin: 0 0 0.45rem 0;
+        margin: 0 0 0.7rem 0;
         background: left center / contain no-repeat url('assets/SaveNEIN_SVG_Dark_Mode_Small.svg');
         opacity: 0;
         pointer-events: none;
@@ -1049,6 +1049,7 @@
     }
 
     #hero-section .hero-copy > .hero-animate {
+        margin-top: clamp(1.15rem, 3.2svh, 1.75rem);
         margin-bottom: 0;
         gap: 0.65rem;
     }
@@ -1134,6 +1135,20 @@
 
     .modern-slot-payline-arrow-right {
         right: -0.45rem;
+    }
+}
+
+@media (max-width: 767px) {
+    #hero-section {
+        height: min(100svh, 46rem);
+        min-height: min(100svh, 46rem);
+        max-height: min(100svh, 46rem);
+    }
+
+    #hero-section .hero-layout,
+    .hero-copy,
+    #hero-section .hero-visual-stage {
+        min-height: 100%;
     }
 }
 
