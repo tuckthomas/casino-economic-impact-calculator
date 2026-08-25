@@ -338,11 +338,16 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             }
 
             frontier = [];
-            foreach (var batch in discovered.Chunk(4))
+            foreach (var batch in discovered.Chunk(2))
             {
                 var results = await Task.WhenAll(batch.Select(url =>
                     CaptureLinkedPageAsync(rootSnapshotId, url, cancellationToken)));
-                frontier.AddRange(results.Where(result => result.HasValue).Select(result => result!.Value));
+                for (var index = 0; index < results.Length; index++)
+                {
+                    var result = results[index] ?? await CaptureLinkedPageAsync(
+                        rootSnapshotId, batch[index], cancellationToken);
+                    if (result.HasValue) frontier.Add(result.Value);
+                }
             }
         }
     }
