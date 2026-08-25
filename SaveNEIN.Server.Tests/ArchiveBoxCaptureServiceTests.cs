@@ -79,7 +79,7 @@ public sealed class ArchiveBoxCaptureServiceTests
             Assert.Contains(handler.PostedJson, json => json.Contains("\"depth\":4", StringComparison.Ordinal));
             Assert.Contains(handler.PostedJson, json =>
                 json.Contains("https://example.com/details", StringComparison.Ordinal) &&
-                json.Contains("\"crawl_id\":\"crawl-1\"", StringComparison.Ordinal));
+                json.Contains("savenein-root-snapshot-1", StringComparison.Ordinal));
             Assert.True(handler.CrawlWasPolled);
         }
         finally { Directory.Delete(root, true); }
@@ -97,7 +97,7 @@ public sealed class ArchiveBoxCaptureServiceTests
         File.WriteAllText(Path.Combine(rootDirectory, "index.jsonl"),
             $$"""{"type":"Snapshot","id":"snapshot-root","crawl_id":"crawl-1","url":"https://example.com/","status":"sealed","depth":0,"created_at":"{{capturedAt:O}}"}""");
         File.WriteAllText(Path.Combine(childDirectory, "index.jsonl"),
-            $$"""{"type":"Snapshot","id":"snapshot-child","crawl_id":"crawl-1","url":"https://example.com/details","status":"sealed","depth":1,"created_at":"{{capturedAt:O}}"}""");
+            $$"""{"type":"Snapshot","id":"snapshot-child","crawl_id":"crawl-child","url":"https://example.com/details","status":"sealed","tags":"savenein-root-snapshot-root","depth":0,"created_at":"{{capturedAt:O}}"}""");
 
         try
         {

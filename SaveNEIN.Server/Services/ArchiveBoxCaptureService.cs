@@ -155,7 +155,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         {
             var storedRoot = await ReadStoredSnapshotAsync(Path.Combine(archiveDirectory, "index.jsonl"), timeout.Token);
             if (storedRoot is not null)
-                await CrawlLinkedPagesAsync(storedRoot.CrawlId, uri, archiveDirectory, crawlDepth, timeout.Token);
+                await CrawlLinkedPagesAsync(storedRoot.Id, uri, archiveDirectory, crawlDepth, timeout.Token);
         }
         return await PersistVerifiedCaptureAsync(
             source,
@@ -222,7 +222,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
 
             var crawlDepth = Math.Clamp(_options.CrawlDepth, 0, 4);
             if (crawlDepth > 0)
-                await CrawlLinkedPagesAsync(storedSnapshot.CrawlId, uri, archiveDirectory, crawlDepth, cancellationToken);
+                await CrawlLinkedPagesAsync(storedSnapshot.Id, uri, archiveDirectory, crawlDepth, cancellationToken);
 
             return await PersistVerifiedCaptureAsync(
                 source,
@@ -304,14 +304,14 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
     }
 
     private async Task CrawlLinkedPagesAsync(
-        string crawlId,
+        string rootSnapshotId,
         Uri rootUri,
         string rootDirectory,
         int maxDepth,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(crawlId))
-            throw new InvalidOperationException("ArchiveBox did not associate the seed page with a crawl.");
+        if (string.IsNullOrWhiteSpace(rootSnapshotId))
+            throw new InvalidOperationException("ArchiveBox did not return a seed snapshot identifier.");
 
         var maxUrls = Math.Clamp(_options.CrawlMaxUrls, 1, 1000);
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { CanonicalUrl(rootUri) };
@@ -341,26 +341,25 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             foreach (var batch in discovered.Chunk(4))
             {
                 var results = await Task.WhenAll(batch.Select(url =>
-                    CaptureLinkedPageAsync(crawlId, url, depth, cancellationToken)));
+                    CaptureLinkedPageAsync(rootSnapshotId, url, cancellationToken)));
                 frontier.AddRange(results.Where(result => result.HasValue).Select(result => result!.Value));
             }
         }
     }
 
     private async Task<(string Directory, Uri Url)?> CaptureLinkedPageAsync(
-        string crawlId,
+        string rootSnapshotId,
         Uri uri,
-        int depth,
         CancellationToken cancellationToken)
     {
-        var existing = await FindCrawlSnapshotAsync(crawlId, uri, cancellationToken);
+        var existing = await FindAssociatedSnapshotAsync(rootSnapshotId, string.Empty, uri, cancellationToken);
         if (existing is not null) return existing;
 
         try
         {
             using var response = await _http.PostAsJsonAsync(
                 "api/v1/core/snapshots",
-                new { url = uri.AbsoluteUri, crawl_id = crawlId, depth, status = "queued" },
+                new { url = uri.AbsoluteUri, depth = 0, tags = new[] { AssociationTag(rootSnapshotId) } },
                 JsonOptions,
                 cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -452,7 +451,8 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             }
 
             requestedUri = WithoutFragment(requestedUri);
-            var matchingSnapshot = await FindCrawlSnapshotAsync(rootSnapshot.CrawlId, requestedUri, cancellationToken);
+            var matchingSnapshot = await FindAssociatedSnapshotAsync(
+                rootSnapshot.Id, rootSnapshot.CrawlId, requestedUri, cancellationToken);
             if (matchingSnapshot is null) return null;
             directory = matchingSnapshot.Value.Directory;
             pageUri = matchingSnapshot.Value.Url;
@@ -462,12 +462,14 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         return publicArtifactPath is not null ? new ArchivedPage(publicArtifactPath, capture, pageUri) : null;
     }
 
-    private async Task<(string Directory, Uri Url)?> FindCrawlSnapshotAsync(
+    private async Task<(string Directory, Uri Url)?> FindAssociatedSnapshotAsync(
+        string rootSnapshotId,
         string crawlId,
         Uri requestedUri,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(crawlId)) return null;
+        if (string.IsNullOrWhiteSpace(rootSnapshotId)) return null;
+        var associationTag = AssociationTag(rootSnapshotId);
         var snapshotRoot = Path.Combine(_options.DataPath, "archive", "users", _options.ArchiveUserName, "snapshots");
         if (!Directory.Exists(snapshotRoot)) return null;
 
@@ -476,7 +478,8 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             cancellationToken.ThrowIfCancellationRequested();
             var snapshot = await ReadStoredSnapshotAsync(indexPath, cancellationToken);
             if (snapshot is null ||
-                !string.Equals(snapshot.CrawlId, crawlId, StringComparison.OrdinalIgnoreCase) ||
+                (!string.Equals(snapshot.CrawlId, crawlId, StringComparison.OrdinalIgnoreCase) &&
+                 !HasTag(snapshot.Tags, associationTag)) ||
                 !string.Equals(snapshot.Status, "sealed", StringComparison.OrdinalIgnoreCase) ||
                 !Uri.TryCreate(snapshot.Url, UriKind.Absolute, out var snapshotUri) ||
                 Uri.Compare(
@@ -525,6 +528,12 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         var builder = new UriBuilder(uri) { Fragment = string.Empty };
         return builder.Uri;
     }
+
+    private static string AssociationTag(string rootSnapshotId) => $"savenein-root-{rootSnapshotId}";
+
+    private static bool HasTag(string tags, string expected) => tags
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Contains(expected, StringComparer.OrdinalIgnoreCase);
 
     private string ResolveArchiveDirectory(string archivePath)
     {
@@ -635,6 +644,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         public string CrawlId { get; init; } = string.Empty;
         public string Url { get; init; } = string.Empty;
         public string Status { get; init; } = string.Empty;
+        public string Tags { get; init; } = string.Empty;
         public int Depth { get; init; }
         [JsonPropertyName("created_at")]
         public DateTimeOffset CreatedAt { get; init; }
