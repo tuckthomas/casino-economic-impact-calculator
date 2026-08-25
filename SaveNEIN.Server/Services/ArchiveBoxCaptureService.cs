@@ -247,7 +247,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         CancellationToken cancellationToken)
     {
         var textPath = Path.Combine(archiveDirectory, "htmltotext", "htmltotext.txt");
-        var publicArtifactPath = FindPublicArtifact(archiveDirectory)
+        var publicArtifactPath = FindPublicArtifact(archiveDirectory, uri)
             ?? throw new InvalidOperationException("ArchiveBox capture did not produce a browser-viewable artifact.");
         var wgetDirectory = Path.Combine(archiveDirectory, "wget");
         if (!Directory.Exists(wgetDirectory) ||
@@ -463,7 +463,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             pageUri = matchingSnapshot.Value.Url;
         }
 
-        var publicArtifactPath = FindPublicArtifact(directory);
+        var publicArtifactPath = FindPublicArtifact(directory, pageUri);
         return publicArtifactPath is not null ? new ArchivedPage(publicArtifactPath, capture, pageUri) : null;
     }
 
@@ -565,8 +565,16 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         return path;
     }
 
-    private static string? FindPublicArtifact(string archiveDirectory)
+    private static string? FindPublicArtifact(string archiveDirectory, Uri? pageUri = null)
     {
+        if (pageUri?.AbsolutePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            var archivedPdf = Directory.Exists(archiveDirectory)
+                ? Directory.EnumerateFiles(archiveDirectory, "*.pdf", SearchOption.AllDirectories).FirstOrDefault()
+                : null;
+            if (archivedPdf is not null) return archivedPdf;
+        }
+
         var singleFile = Path.Combine(archiveDirectory, "singlefile", "singlefile.html");
         if (File.Exists(singleFile)) return singleFile;
 
