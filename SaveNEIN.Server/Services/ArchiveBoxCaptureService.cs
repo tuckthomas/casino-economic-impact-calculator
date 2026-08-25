@@ -323,7 +323,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             foreach (var page in frontier)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var artifact = FindPublicArtifact(page.Directory);
+                var artifact = FindLinkDiscoveryArtifact(page.Directory);
                 if (artifact is null || !artifact.EndsWith(".html", StringComparison.OrdinalIgnoreCase)) continue;
                 var html = await File.ReadAllTextAsync(artifact, cancellationToken);
                 foreach (var link in ArchiveHtmlRewriter.ExtractHttpLinks(html, page.Url))
@@ -562,6 +562,15 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         return Directory.Exists(archiveDirectory)
             ? Directory.EnumerateFiles(archiveDirectory, "*.pdf", SearchOption.AllDirectories).FirstOrDefault()
             : null;
+    }
+
+    private static string? FindLinkDiscoveryArtifact(string archiveDirectory)
+    {
+        var renderedDom = Path.Combine(archiveDirectory, "dom", "output.html");
+        if (File.Exists(renderedDom)) return renderedDom;
+
+        var singleFile = Path.Combine(archiveDirectory, "singlefile", "singlefile.html");
+        return File.Exists(singleFile) ? singleFile : null;
     }
 
     private static bool IsEvidenceArtifact(string path)

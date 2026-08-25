@@ -65,6 +65,8 @@ public sealed class ArchiveBoxCaptureServiceTests
         var archiveDirectory = GetArchiveDirectory(root, "snapshot-1");
         File.WriteAllText(Path.Combine(archiveDirectory, "singlefile", "singlefile.html"),
             "<html><body><a href=\"/details\">Details</a></body></html>");
+        File.WriteAllText(Path.Combine(archiveDirectory, "dom", "output.html"),
+            "<html><body><a href=\"/details\">Details</a></body></html>");
         try
         {
             await using var db = CreateDb();
