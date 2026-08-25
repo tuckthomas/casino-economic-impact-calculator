@@ -47,6 +47,7 @@ public sealed class ArchiveBoxCaptureServiceTests
             var result = await service.CaptureAsync("test-source", CancellationToken.None);
 
             Assert.Equal(capturedAt, result.CapturedAtUtc);
+            Assert.Equal(DateTimeKind.Utc, result.CapturedAtUtc.Kind);
             Assert.NotEqual(result.ObservedAtUtc, result.CapturedAtUtc);
             var stored = await db.ArchivedWebSources.SingleAsync();
             Assert.Equal("Verified", stored.VerificationStatus);

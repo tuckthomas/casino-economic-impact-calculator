@@ -155,7 +155,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             source,
             uri,
             snapshot.Id,
-            snapshot.DownloadedAt.Value,
+            snapshot.DownloadedAt.Value.UtcDateTime,
             snapshot.Status,
             archiveDirectory,
             timeout.Token);
@@ -484,7 +484,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         public string CrawlId { get; init; } = string.Empty;
         public string Status { get; init; } = string.Empty;
         [JsonPropertyName("downloaded_at")]
-        public DateTime? DownloadedAt { get; init; }
+        public DateTimeOffset? DownloadedAt { get; init; }
         [JsonPropertyName("archive_path")]
         public string ArchivePath { get; init; } = string.Empty;
     }
