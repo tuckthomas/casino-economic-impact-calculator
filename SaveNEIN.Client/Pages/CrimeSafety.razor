@@ -1,3 +1,6 @@
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
 <section class="bg-slate-900 py-24 relative overflow-hidden" id="casino-public-safety">
     <!-- Background Pattern -->
     <div class="absolute inset-0 opacity-5"
@@ -6,18 +9,25 @@
 
     <div class="mx-auto max-w-7xl px-0 sm:px-6 lg:px-8 relative z-10">
         <div class="section-heading-block crime-safety-section-heading mb-12 text-center max-w-4xl mx-auto">
-            <span class="text-red-500 font-bold tracking-wider uppercase text-sm">Hidden Cost</span>
-            <h2 class="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">
-                CRIME & <span class="text-red-500">PUBLIC SAFETY</span>
-            </h2>
-            <p class="section-heading-description mt-4 text-xl italic text-slate-400 leading-relaxed font-medium w-full max-w-none md:max-w-2xl md:mx-auto">
-                While fiscal benefits are immediate, the social costs are diffused, delayed, and often borne by
-                the
-                most
-                vulnerable segments of the population. An adequate analysis must weigh these "hidden" costs
-                against
-                the projected revenues.
-            </p>
+            <div id="crime-police-driveby" class="crime-police-driveby" aria-hidden="true">
+                <div class="crime-police-driveby__vehicle"
+                     data-svg-src="/assets/crime/fort-wayne-police-suv-layered.svg"></div>
+            </div>
+
+            <div class="crime-safety-section-heading__content">
+                <span class="text-red-500 font-bold tracking-wider uppercase text-sm">Hidden Cost</span>
+                <h2 class="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">
+                    CRIME & <span class="text-red-500">PUBLIC SAFETY</span>
+                </h2>
+                <p class="section-heading-description mt-4 text-xl italic text-slate-400 leading-relaxed font-medium w-full max-w-none md:max-w-2xl md:mx-auto">
+                    While fiscal benefits are immediate, the social costs are diffused, delayed, and often borne by
+                    the
+                    most
+                    vulnerable segments of the population. An adequate analysis must weigh these "hidden" costs
+                    against
+                    the projected revenues.
+                </p>
+            </div>
         </div>
 
         <!-- Infographic 1: The Lag Effect -->
@@ -226,3 +236,38 @@
 
     </div>
 </section>
+
+@code {
+    private const string DriveById = "crime-police-driveby";
+    private IJSObjectReference? _driveByModule;
+    private bool _driveByInitialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _driveByModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import",
+            "./js/components/crime-safety-driveby.js");
+        await _driveByModule.InvokeVoidAsync("init", DriveById);
+        _driveByInitialized = true;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_driveByInitialized && _driveByModule is not null)
+        {
+            await _driveByModule.InvokeVoidAsync("dispose", DriveById);
+        }
+
+        if (_driveByModule is not null)
+        {
+            await _driveByModule.DisposeAsync();
+        }
+
+        GC.SuppressFinalize(this);
+    }
+}

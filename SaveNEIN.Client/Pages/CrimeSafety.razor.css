@@ -1,9 +1,88 @@
 .crime-safety-section-heading {
+    position: relative;
+    isolation: isolate;
     padding: 0;
+}
+
+.crime-safety-section-heading__content {
+    position: relative;
+    z-index: 2;
+}
+
+.crime-police-driveby {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: clamp(13rem, 27vw, 24rem);
+    overflow: hidden;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    contain: layout paint;
+}
+
+.crime-police-driveby__vehicle {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    display: block;
+    width: auto;
+    height: 100%;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(-105%, -50%, 0);
+    will-change: transform, opacity;
+}
+
+.crime-police-driveby.is-driving .crime-police-driveby__vehicle {
+    animation: crimePoliceDriveAcross 6.5s cubic-bezier(0.22, 0.64, 0.38, 1) forwards;
+}
+
+.crime-police-driveby.is-complete .crime-police-driveby__vehicle {
+    opacity: 0;
+    transform: translate3d(calc(100vw + 5%), -50%, 0);
+}
+
+.crime-police-driveby.is-reduced-motion .crime-police-driveby__vehicle {
+    left: 50%;
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0);
+}
+
+@keyframes crimePoliceDriveAcross {
+    0% {
+        opacity: 0;
+        transform: translate3d(-105%, -50%, 0);
+    }
+
+    4% {
+        opacity: 1;
+    }
+
+    92% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate3d(calc(100vw + 5%), -50%, 0);
+    }
 }
 
 @media (max-width: 767px) {
     .crime-safety-section-heading {
         padding: 1rem 1.1rem;
+    }
+
+    .crime-police-driveby {
+        height: clamp(11rem, 52vw, 15rem);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .crime-police-driveby.is-driving .crime-police-driveby__vehicle {
+        animation: none;
     }
 }
