@@ -129,7 +129,7 @@ services:
       PUBLIC_ADD_VIEW: "False"
       PUBLIC_INDEX: "False"
       CRAWL_MAX_URLS: ${ARCHIVEBOX_CRAWL_MAX_URLS:-250}
-      CRAWL_MAX_SIZE: ${ARCHIVEBOX_CRAWL_MAX_SIZE:-512MB}
+      CRAWL_MAX_SIZE: ${ARCHIVEBOX_CRAWL_MAX_SIZE:-536870912}
       CRAWL_TIMEOUT: ${ARCHIVEBOX_CRAWL_TIMEOUT:-3600}
       URL_ALLOWLIST: ${ARCHIVEBOX_URL_ALLOWLIST:-^https?://([a-z0-9-]+\.)*(yesforallen\.org|steubenfunwins\.com|insideindianabusiness\.com|bea\.gov|in\.gov|nigc\.gov|ecfr\.gov|bia\.gov|doi\.org|springer\.com|stlouisfed\.org)/}
       ADMIN_USERNAME: ${ARCHIVEBOX_ADMIN_USERNAME:-savenein}
