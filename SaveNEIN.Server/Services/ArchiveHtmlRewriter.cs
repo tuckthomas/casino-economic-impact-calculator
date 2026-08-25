@@ -33,6 +33,15 @@ internal static partial class ArchiveHtmlRewriter
         return TargetAttributeRegex().Replace(rewritten, string.Empty);
     }
 
+    public static IReadOnlyList<Uri> ExtractHttpLinks(string html, Uri pageUrl) => AnchorHrefRegex()
+        .Matches(html)
+        .Select(match => WebUtility.HtmlDecode(match.Groups["url"].Value).Trim())
+        .Where(href => href.Length > 0 && !href.StartsWith('#'))
+        .Select(href => Uri.TryCreate(pageUrl, href, out var resolved) ? resolved : null)
+        .Where(uri => uri is not null && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+        .Select(uri => uri!)
+        .ToArray();
+
     public static string MissingLinkedPage(string targetUrl) => $$"""
         <!doctype html>
         <html lang="en">

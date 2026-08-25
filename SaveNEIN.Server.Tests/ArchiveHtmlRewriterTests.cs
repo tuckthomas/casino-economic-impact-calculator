@@ -33,4 +33,20 @@ public sealed class ArchiveHtmlRewriterTests
         Assert.Contains("prevented from opening the mutable live website", html);
         Assert.DoesNotContain("href=", html, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void LinkExtractionResolvesRelativeHttpLinksAndSkipsNonWebSchemes()
+    {
+        const string html = """
+            <a href="/details">Details</a>
+            <a href="https://example.com/report.pdf#page=2">Report</a>
+            <a href="mailto:test@example.com">Email</a>
+            <a href="#local">Local</a>
+            """;
+
+        var links = ArchiveHtmlRewriter.ExtractHttpLinks(html, new Uri("https://example.com/facts/"));
+
+        Assert.Equal(["https://example.com/details", "https://example.com/report.pdf#page=2"],
+            links.Select(link => link.AbsoluteUri));
+    }
 }

@@ -151,6 +151,12 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
 
         if (snapshot.DownloadedAt is null) throw new InvalidOperationException("Sealed ArchiveBox snapshot has no capture timestamp.");
         var archiveDirectory = ResolveArchiveDirectory(snapshot.ArchivePath);
+        if (crawlDepth > 0)
+        {
+            var storedRoot = await ReadStoredSnapshotAsync(Path.Combine(archiveDirectory, "index.jsonl"), timeout.Token);
+            if (storedRoot is not null)
+                await CrawlLinkedPagesAsync(storedRoot.CrawlId, uri, archiveDirectory, crawlDepth, timeout.Token);
+        }
         return await PersistVerifiedCaptureAsync(
             source,
             uri,
@@ -213,6 +219,10 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
 
             var archiveDirectory = Path.GetDirectoryName(indexPath)!;
             if (!HasRequiredArtifacts(archiveDirectory)) continue;
+
+            var crawlDepth = Math.Clamp(_options.CrawlDepth, 0, 4);
+            if (crawlDepth > 0)
+                await CrawlLinkedPagesAsync(storedSnapshot.CrawlId, uri, archiveDirectory, crawlDepth, cancellationToken);
 
             return await PersistVerifiedCaptureAsync(
                 source,
@@ -292,6 +302,109 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         _ = publicArtifactPath;
         return ToMetadata(record);
     }
+
+    private async Task CrawlLinkedPagesAsync(
+        string crawlId,
+        Uri rootUri,
+        string rootDirectory,
+        int maxDepth,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(crawlId))
+            throw new InvalidOperationException("ArchiveBox did not associate the seed page with a crawl.");
+
+        var maxUrls = Math.Clamp(_options.CrawlMaxUrls, 1, 1000);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { CanonicalUrl(rootUri) };
+        var frontier = new List<(string Directory, Uri Url)> { (rootDirectory, rootUri) };
+
+        for (var depth = 1; depth <= maxDepth && frontier.Count > 0 && seen.Count < maxUrls; depth++)
+        {
+            var discovered = new List<Uri>();
+            foreach (var page in frontier)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var artifact = FindPublicArtifact(page.Directory);
+                if (artifact is null || !artifact.EndsWith(".html", StringComparison.OrdinalIgnoreCase)) continue;
+                var html = await File.ReadAllTextAsync(artifact, cancellationToken);
+                foreach (var link in ArchiveHtmlRewriter.ExtractHttpLinks(html, page.Url))
+                {
+                    var normalized = WithoutFragment(link);
+                    var canonical = CanonicalUrl(normalized);
+                    if (!IsSameSite(rootUri, normalized) || !seen.Add(canonical)) continue;
+                    discovered.Add(normalized);
+                    if (seen.Count >= maxUrls) break;
+                }
+                if (seen.Count >= maxUrls) break;
+            }
+
+            frontier = [];
+            foreach (var batch in discovered.Chunk(4))
+            {
+                var results = await Task.WhenAll(batch.Select(url =>
+                    CaptureLinkedPageAsync(crawlId, url, depth, cancellationToken)));
+                frontier.AddRange(results.Where(result => result.HasValue).Select(result => result!.Value));
+            }
+        }
+    }
+
+    private async Task<(string Directory, Uri Url)?> CaptureLinkedPageAsync(
+        string crawlId,
+        Uri uri,
+        int depth,
+        CancellationToken cancellationToken)
+    {
+        var existing = await FindCrawlSnapshotAsync(crawlId, uri, cancellationToken);
+        if (existing is not null) return existing;
+
+        try
+        {
+            using var response = await _http.PostAsJsonAsync(
+                "api/v1/core/snapshots",
+                new { url = uri.AbsoluteUri, crawl_id = crawlId, depth, status = "queued" },
+                JsonOptions,
+                cancellationToken);
+            response.EnsureSuccessStatusCode();
+            var snapshot = await response.Content.ReadFromJsonAsync<ArchiveBoxSnapshot>(JsonOptions, cancellationToken)
+                ?? throw new InvalidOperationException("ArchiveBox returned an empty linked-page response.");
+            snapshot = await WaitForSnapshotAsync(snapshot, cancellationToken);
+            var directory = ResolveArchiveDirectory(snapshot.ArchivePath);
+            return FindPublicArtifact(directory) is not null ? (directory, uri) : null;
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<ArchiveBoxSnapshot> WaitForSnapshotAsync(
+        ArchiveBoxSnapshot snapshot,
+        CancellationToken cancellationToken)
+    {
+        while (!string.Equals(snapshot.Status, "sealed", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.Equals(snapshot.Status, "failed", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"ArchiveBox capture {snapshot.Id} failed.");
+            await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+            snapshot = await _http.GetFromJsonAsync<ArchiveBoxSnapshot>(
+                $"api/v1/core/snapshot/{snapshot.Id}", JsonOptions, cancellationToken)
+                ?? throw new InvalidOperationException("ArchiveBox snapshot disappeared while capture was running.");
+        }
+
+        return snapshot;
+    }
+
+    private static bool IsSameSite(Uri root, Uri candidate) =>
+        string.Equals(NormalizeHost(root.IdnHost), NormalizeHost(candidate.IdnHost), StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizeHost(string host) =>
+        host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? host[4..] : host;
+
+    private static string CanonicalUrl(Uri uri) =>
+        WithoutFragment(uri).AbsoluteUri.TrimEnd('/');
 
     private static DateTime NormalizeUtc(DateTime value) => value.Kind switch
     {

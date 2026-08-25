@@ -62,16 +62,22 @@ public sealed class ArchiveBoxCaptureServiceTests
     public async Task CaptureSubmitsConfiguredRecursiveDepthAndWaitsForCrawl()
     {
         var root = CreateArchive("snapshot-1", "Claim text preserved");
+        var archiveDirectory = GetArchiveDirectory(root, "snapshot-1");
+        File.WriteAllText(Path.Combine(archiveDirectory, "singlefile", "singlefile.html"),
+            "<html><body><a href=\"/details\">Details</a></body></html>");
         try
         {
             await using var db = CreateDb();
             var capturedAt = new DateTime(2026, 8, 25, 1, 30, 0, DateTimeKind.Utc);
-            var handler = new SnapshotHandler(capturedAt, "sealed");
+            var handler = new SnapshotHandler(capturedAt, "sealed", archiveDirectory);
             var service = CreateService(db, root, capturedAt, "Claim text preserved", crawlDepth: 7, handler: handler);
 
             await service.CaptureAsync("test-source", CancellationToken.None);
 
-            Assert.Contains("\"depth\":4", handler.PostedJson);
+            Assert.Contains(handler.PostedJson, json => json.Contains("\"depth\":4", StringComparison.Ordinal));
+            Assert.Contains(handler.PostedJson, json =>
+                json.Contains("https://example.com/details", StringComparison.Ordinal) &&
+                json.Contains("\"crawl_id\":\"crawl-1\"", StringComparison.Ordinal));
             Assert.True(handler.CrawlWasPolled);
         }
         finally { Directory.Delete(root, true); }
@@ -267,23 +273,28 @@ public sealed class ArchiveBoxCaptureServiceTests
         public Task ValidateAsync(Uri uri, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
-    private sealed class SnapshotHandler(DateTime capturedAt, string finalStatus) : HttpMessageHandler
+    private sealed class SnapshotHandler(DateTime capturedAt, string finalStatus, string? archiveDirectory = null) : HttpMessageHandler
     {
         private int _requests;
-        public string? PostedJson { get; private set; }
+        public List<string> PostedJson { get; } = [];
         public bool CrawlWasPolled { get; private set; }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             _requests++;
             if (request.Method == HttpMethod.Post)
-                PostedJson = await request.Content!.ReadAsStringAsync(cancellationToken);
+                PostedJson.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
             var isCrawl = request.RequestUri!.AbsolutePath.Contains("/any/", StringComparison.Ordinal);
             CrawlWasPolled |= isCrawl;
             var status = _requests == 1 ? "queued" : finalStatus;
             if (isCrawl) status = finalStatus;
             var downloadedAt = status == "sealed" ? $",\"downloaded_at\":\"{capturedAt:O}\"" : string.Empty;
             var id = isCrawl ? "crawl-1" : "snapshot-1";
+            if (!isCrawl && status == "sealed" && archiveDirectory is not null)
+            {
+                File.WriteAllText(Path.Combine(archiveDirectory, "index.jsonl"),
+                    $"{{\"type\":\"Snapshot\",\"id\":\"snapshot-1\",\"crawl_id\":\"crawl-1\",\"url\":\"https://example.com/\",\"status\":\"sealed\",\"depth\":4,\"created_at\":\"{capturedAt:O}\"}}");
+            }
             var json = $"{{\"id\":\"{id}\",\"crawl_id\":\"crawl-1\",\"status\":\"{status}\",\"archive_path\":\"savenein/20260822/example.com/snapshot-1\"{downloadedAt}}}";
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
