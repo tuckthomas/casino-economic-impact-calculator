@@ -83,6 +83,7 @@ public sealed class ArchiveBoxCaptureServiceTests
 
             Assert.Equal("snapshot-recovered", result.ArchiveBoxSnapshotId);
             Assert.Equal(capturedAt, result.CapturedAtUtc);
+            Assert.Equal(DateTimeKind.Utc, result.CapturedAtUtc.Kind);
             Assert.Equal("Verified", result.VerificationStatus);
             Assert.Single(await db.ArchivedWebSources.ToListAsync());
         }

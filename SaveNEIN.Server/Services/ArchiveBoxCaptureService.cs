@@ -196,7 +196,7 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
                 source,
                 uri,
                 storedSnapshot.Id,
-                storedSnapshot.CreatedAtUtc,
+                storedSnapshot.CreatedAt.UtcDateTime,
                 storedSnapshot.Status,
                 archiveDirectory,
                 cancellationToken);
@@ -387,6 +387,6 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         public string Url { get; init; } = string.Empty;
         public string Status { get; init; } = string.Empty;
         [JsonPropertyName("created_at")]
-        public DateTime CreatedAtUtc { get; init; }
+        public DateTimeOffset CreatedAt { get; init; }
     }
 }
