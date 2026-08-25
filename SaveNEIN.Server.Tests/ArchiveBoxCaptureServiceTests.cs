@@ -57,6 +57,39 @@ public sealed class ArchiveBoxCaptureServiceTests
     }
 
     [Fact]
+    public async Task CompletedInterruptedCaptureIsRecoveredFromArchiveStorage()
+    {
+        var capturedAt = new DateTime(2026, 8, 24, 23, 20, 2, DateTimeKind.Utc);
+        var root = CreateArchive("snapshot-recovered", "Claim text preserved");
+        var archiveDirectory = Path.Combine(
+            root,
+            "archive",
+            "users",
+            "savenein",
+            "snapshots",
+            "20260822",
+            "example.com",
+            "snapshot-recovered");
+        File.WriteAllText(
+            Path.Combine(archiveDirectory, "index.jsonl"),
+            $$"""{"type":"Snapshot","id":"snapshot-recovered","url":"https://example.com/","status":"sealed","created_at":"{{capturedAt:O}}"}""");
+
+        try
+        {
+            await using var db = CreateDb();
+            var service = CreateService(db, root, DateTime.UtcNow, "Claim text preserved", "failed");
+
+            var result = await service.CaptureAsync("test-source", CancellationToken.None);
+
+            Assert.Equal("snapshot-recovered", result.ArchiveBoxSnapshotId);
+            Assert.Equal(capturedAt, result.CapturedAtUtc);
+            Assert.Equal("Verified", result.VerificationStatus);
+            Assert.Single(await db.ArchivedWebSources.ToListAsync());
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task MissingRequiredTextDoesNotPublishManifest()
     {
         var root = CreateArchive("snapshot-1", "Different captured text");

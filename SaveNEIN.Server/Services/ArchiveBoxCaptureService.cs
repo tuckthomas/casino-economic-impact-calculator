@@ -107,6 +107,10 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         var uri = new Uri(source.Url, UriKind.Absolute);
         await _urlValidator.ValidateAsync(uri, cancellationToken);
 
+        var recoveredCapture = await TryRecoverCompletedCaptureAsync(source, uri, cancellationToken);
+        if (recoveredCapture is not null)
+            return recoveredCapture;
+
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(Math.Clamp(_options.CaptureTimeoutSeconds, 30, 3600)));
 
@@ -126,6 +130,90 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
 
         if (snapshot.DownloadedAt is null) throw new InvalidOperationException("Sealed ArchiveBox snapshot has no capture timestamp.");
         var archiveDirectory = ResolveArchiveDirectory(snapshot.ArchivePath);
+        return await PersistVerifiedCaptureAsync(
+            source,
+            uri,
+            snapshot.Id,
+            snapshot.DownloadedAt.Value,
+            snapshot.Status,
+            archiveDirectory,
+            timeout.Token);
+    }
+
+    private async Task<WebArchiveMetadata?> TryRecoverCompletedCaptureAsync(
+        ArchiveSourceOptions source,
+        Uri uri,
+        CancellationToken cancellationToken)
+    {
+        var snapshotRoot = Path.Combine(
+            _options.DataPath,
+            "archive",
+            "users",
+            _options.ArchiveUserName,
+            "snapshots");
+        if (!Directory.Exists(snapshotRoot)) return null;
+
+        foreach (var indexPath in Directory
+                     .EnumerateFiles(snapshotRoot, "index.jsonl", SearchOption.AllDirectories)
+                     .OrderByDescending(File.GetLastWriteTimeUtc))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            StoredArchiveBoxSnapshot? storedSnapshot;
+            try
+            {
+                using var reader = new StreamReader(indexPath);
+                var firstLine = await reader.ReadLineAsync(cancellationToken);
+                storedSnapshot = string.IsNullOrWhiteSpace(firstLine)
+                    ? null
+                    : JsonSerializer.Deserialize<StoredArchiveBoxSnapshot>(firstLine, JsonOptions);
+            }
+            catch (IOException)
+            {
+                continue;
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            if (storedSnapshot is null ||
+                !string.Equals(storedSnapshot.Type, "Snapshot", StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(storedSnapshot.Status, "sealed", StringComparison.OrdinalIgnoreCase) ||
+                !Uri.TryCreate(storedSnapshot.Url, UriKind.Absolute, out var storedUri) ||
+                !Uri.Compare(uri, storedUri, UriComponents.AbsoluteUri, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase).Equals(0))
+            {
+                continue;
+            }
+
+            var alreadyRegistered = await _db.ArchivedWebSources.AsNoTracking()
+                .AnyAsync(capture => capture.ArchiveBoxSnapshotId == storedSnapshot.Id, cancellationToken);
+            if (alreadyRegistered) continue;
+
+            var archiveDirectory = Path.GetDirectoryName(indexPath)!;
+            if (!HasRequiredArtifacts(archiveDirectory)) continue;
+
+            return await PersistVerifiedCaptureAsync(
+                source,
+                uri,
+                storedSnapshot.Id,
+                storedSnapshot.CreatedAtUtc,
+                storedSnapshot.Status,
+                archiveDirectory,
+                cancellationToken);
+        }
+
+        return null;
+    }
+
+    private async Task<WebArchiveMetadata> PersistVerifiedCaptureAsync(
+        ArchiveSourceOptions source,
+        Uri uri,
+        string snapshotId,
+        DateTime capturedAtUtc,
+        string captureStatus,
+        string archiveDirectory,
+        CancellationToken cancellationToken)
+    {
         var textPath = Path.Combine(archiveDirectory, "htmltotext", "htmltotext.txt");
         var publicArtifactPath = FindPublicArtifact(archiveDirectory)
             ?? throw new InvalidOperationException("ArchiveBox capture did not produce a browser-viewable artifact.");
@@ -135,10 +223,10 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             throw new InvalidOperationException("ArchiveBox capture did not produce a WARC artifact.");
 
         var normalizedText = File.Exists(textPath)
-            ? await File.ReadAllTextAsync(textPath, timeout.Token)
+            ? await File.ReadAllTextAsync(textPath, cancellationToken)
             : string.Empty;
         var headersPath = RequireFile(archiveDirectory, "headers", "headers.json");
-        var httpStatus = await ReadHttpStatusAsync(headersPath, timeout.Token);
+        var httpStatus = await ReadHttpStatusAsync(headersPath, cancellationToken);
         if (source.RequiredTexts.Length > 0 && string.IsNullOrEmpty(normalizedText))
             throw new InvalidOperationException("Capture verification requires extracted text, but ArchiveBox did not produce it.");
         var missingTexts = source.RequiredTexts.Where(required => !normalizedText.Contains(required, StringComparison.OrdinalIgnoreCase)).ToArray();
@@ -161,11 +249,11 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
             OriginalUrl = uri.AbsoluteUri,
             ObservedAtUtc = source.ObservedAtUtc,
             ObservationType = source.ObservationType,
-            ArchiveBoxSnapshotId = snapshot.Id,
-            CapturedAtUtc = snapshot.DownloadedAt.Value,
+            ArchiveBoxSnapshotId = snapshotId,
+            CapturedAtUtc = capturedAtUtc,
             PublicArchivedUrl = string.Empty,
             HttpStatus = httpStatus,
-            CaptureStatus = snapshot.Status,
+            CaptureStatus = captureStatus,
             NormalizedText = normalizedText,
             NormalizedTextSha256 = ComputeSha256(Encoding.UTF8.GetBytes(normalizedText)),
             ArtifactManifestJson = JsonSerializer.Serialize(artifacts, JsonOptions),
@@ -178,10 +266,16 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         record.PublicArchivedUrl = $"/api/web-archives/captures/{record.Id}/singlefile";
 
         _db.ArchivedWebSources.Add(record);
-        await _db.SaveChangesAsync(timeout.Token);
+        await _db.SaveChangesAsync(cancellationToken);
         _ = publicArtifactPath;
         return ToMetadata(record);
     }
+
+    private static bool HasRequiredArtifacts(string archiveDirectory) =>
+        FindPublicArtifact(archiveDirectory) is not null &&
+        File.Exists(Path.Combine(archiveDirectory, "headers", "headers.json")) &&
+        Directory.Exists(Path.Combine(archiveDirectory, "wget")) &&
+        Directory.EnumerateFiles(Path.Combine(archiveDirectory, "wget"), "*.warc.gz", SearchOption.AllDirectories).Any();
 
     public async Task<WebArchiveMetadata?> GetLatestAsync(string sourceKey, CancellationToken cancellationToken)
     {
@@ -284,5 +378,15 @@ public sealed class ArchiveBoxCaptureService : IArchiveBoxCaptureService
         public DateTime? DownloadedAt { get; init; }
         [JsonPropertyName("archive_path")]
         public string ArchivePath { get; init; } = string.Empty;
+    }
+
+    private sealed class StoredArchiveBoxSnapshot
+    {
+        public string Type { get; init; } = string.Empty;
+        public string Id { get; init; } = string.Empty;
+        public string Url { get; init; } = string.Empty;
+        public string Status { get; init; } = string.Empty;
+        [JsonPropertyName("created_at")]
+        public DateTime CreatedAtUtc { get; init; }
     }
 }
