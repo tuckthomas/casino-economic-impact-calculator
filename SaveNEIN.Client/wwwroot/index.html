@@ -247,12 +247,28 @@
     <script src="js/components/home-header.js" defer></script>
     <script src="js/components/fact-check-layout.js" defer></script>
     <script src="js/components/charts.js" defer></script>
-    <script src="js/economics/calculator.js" defer></script>
     <script src="js/economics/substitution.js" defer></script>
 
     <script>
         // Route navigation can occur after the initial document shell has loaded.
         // Keep the map module available before Blazor invokes it through JS interop.
+        window.ensureEconomicCalculator = function () {
+            if (window.EconomicCalculator) return Promise.resolve(true);
+            if (window.__economicCalculatorLoad) return window.__economicCalculatorLoad;
+            window.__economicCalculatorLoad = new Promise(function (resolve, reject) {
+                const script = document.createElement('script');
+                script.src = '/js/economics/calculator.js?v=20261008-route-loading';
+                script.onload = function () { resolve(!!window.EconomicCalculator); };
+                script.onerror = function () { reject(new Error('Calculator script could not load')); };
+                document.head.appendChild(script);
+            }).catch(function (error) {
+                console.error('Calculator assets failed to load:', error);
+                window.__economicCalculatorLoad = null;
+                return false;
+            });
+            return window.__economicCalculatorLoad;
+        };
+
         window.ensureMapLibreImpactMap = function () {
             if (window.MapLibreImpactMap) return Promise.resolve(true);
             if (window.__mapLibreImpactMapLoad) return window.__mapLibreImpactMapLoad;
