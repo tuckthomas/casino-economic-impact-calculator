@@ -343,10 +343,26 @@
     <script src="js/lib/chart.js" asp-append-version="true" defer></script>
     <link rel="stylesheet" href="css/maplibre-gl.css" asp-append-version="true" />
     <script src="js/components/charts.js" asp-append-version="true" defer></script>
-    <script src="js/economics/calculator.js" asp-append-version="true" defer></script>
     <script src="js/economics/substitution.js" asp-append-version="true" defer></script>
 
     <script>
+        window.ensureEconomicCalculator = function () {
+            if (window.EconomicCalculator) return Promise.resolve(true);
+            if (window.__economicCalculatorLoad) return window.__economicCalculatorLoad;
+            window.__economicCalculatorLoad = new Promise(function (resolve, reject) {
+                const script = document.createElement('script');
+                script.src = '/js/economics/calculator.js?v=20261008-route-loading';
+                script.onload = function () { resolve(!!window.EconomicCalculator); };
+                script.onerror = function () { reject(new Error('Calculator script could not load')); };
+                document.head.appendChild(script);
+            }).catch(function (error) {
+                console.error('Calculator assets failed to load:', error);
+                window.__economicCalculatorLoad = null;
+                return false;
+            });
+            return window.__economicCalculatorLoad;
+        };
+
         window.ensureMapLibreImpactMap = function () {
             if (window.MapLibreImpactMap) return Promise.resolve(true);
             if (window.__mapLibreImpactMapLoad) return window.__mapLibreImpactMapLoad;
