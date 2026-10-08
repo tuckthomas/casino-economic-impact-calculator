@@ -1074,8 +1074,11 @@
     {
         if (firstRender)
         {
-            await Task.Delay(500); // Wait for DOM
-            try { await JSRuntime.InvokeVoidAsync("window.EconomicCalculator.init"); } catch (Exception e) { Console.WriteLine($"Calc Init: {e.Message}"); }
+            // OnAfterRenderAsync runs after the markup exists. No artificial timer needed.
+            if (await JSRuntime.InvokeAsync<bool>("window.ensureEconomicCalculator"))
+            {
+                try { await JSRuntime.InvokeVoidAsync("window.EconomicCalculator.init"); } catch (Exception e) { Console.WriteLine($"Calc Init: {e.Message}"); }
+            }
             try { await JSRuntime.InvokeVoidAsync("window.initSubstitutionCharts"); } catch (Exception e) { Console.WriteLine($"Chart Init: {e.Message}"); }
         }
     }
