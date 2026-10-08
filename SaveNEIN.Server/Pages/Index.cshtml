@@ -123,6 +123,67 @@
                 radial-gradient(ellipse 18% 11% at 9% 82%, rgba(185, 28, 28, 0.36) 0%, rgba(120, 10, 20, 0.18) 38%, transparent 72%);
         }
 
+
+        /* Meaningful, immediately usable content before the WebAssembly runtime starts. */
+        .startup-hero-content {
+            position: relative;
+            z-index: 1;
+            box-sizing: border-box;
+            min-height: 100svh;
+            max-width: 96rem;
+            margin: auto;
+            padding: clamp(1rem, 3vw, 2.5rem);
+            color: #fff;
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+        .startup-hero-content img {
+            display: block;
+            width: min(74vw, 17.5rem);
+            height: auto;
+            margin-bottom: 1.5rem;
+        }
+        .startup-hero-content h1 {
+            font-size: clamp(2rem, 8.7vw, 4.25rem);
+            line-height: 1.04;
+            font-weight: 900;
+            letter-spacing: -0.035em;
+            margin: 0 0 1rem;
+        }
+        .startup-hero-content h1 span,
+        .startup-hero-content p {
+            color: #f43f5e;
+        }
+        .startup-hero-content p {
+            margin: 0 0 1.75rem;
+            font-size: clamp(1.1rem, 5vw, 1.6rem);
+            font-weight: 750;
+            text-transform: uppercase;
+            letter-spacing: 0.035em;
+        }
+        .startup-hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .startup-hero-actions a {
+            display: inline-block;
+            padding: 0.8rem 1.2rem;
+            border: 1px solid rgba(255,255,255,.35);
+            border-radius: 0.6rem;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            text-decoration: none;
+            background: rgba(15,23,42,.85);
+        }
+        .startup-hero-actions a:first-child {
+            background: #be123c;
+            border-color: #be123c;
+        }
+        @media (min-width: 1024px) {
+            .startup-hero-content { padding-top: clamp(3.5rem, 11vh, 8rem); }
+        }
+
         html {
             overflow-y: scroll;
         }
@@ -211,7 +272,16 @@
 
 <body class="text-slate-300 antialiased font-display overflow-x-hidden">
     <div id="app">
-        <div class="startup-hero-backdrop"></div>
+        <div class="startup-hero-backdrop" aria-hidden="true"></div>
+        <div class="startup-hero-content">
+            <img src="assets/SaveNEIN_SVG_Dark_Mode_Small.svg" alt="Save Northeast Indiana" width="280" height="125" />
+            <h1>DON'T LET THEM<br /><span>GAMBLE AWAY</span><br />OUR REGION'S<br />FUTURE.</h1>
+            <p>Northeast Indiana Deserves Better.</p>
+            <div class="startup-hero-actions">
+                <a href="/get-involved">Get Involved</a>
+                <a href="/fact-checks">Fact Checks</a>
+            </div>
+        </div>
     </div>
 
     <div id="blazor-error-ui">
@@ -252,62 +322,79 @@
     </script>
 
     @* Report-viewer libraries load after first paint. *@
-    <script src="js/lib/pdf.min.js" asp-append-version="true"></script>
-    <script src="js/lib/page-flip.browser.js" asp-append-version="true"></script>
+    <script src="js/lib/pdf.min.js" asp-append-version="true" defer></script>
+    <script src="js/lib/page-flip.browser.js" asp-append-version="true" defer></script>
 
-    <script src="js/components/slot-machine.js" asp-append-version="true"></script>
-    <script src="js/components/adaptive-toast.js" asp-append-version="true"></script>
-    <script src="js/components/legislators.js" asp-append-version="true"></script>
-    <script src="js/components/image-modal.js" asp-append-version="true"></script>
-    <script src="js/components/modals.js" asp-append-version="true"></script>
-    <script src="js/components/flipbook.js" asp-append-version="true"></script>
-    <script src="js/components/toc.js" asp-append-version="true"></script>
-    <script src="js/components/reveal.js" asp-append-version="true"></script>
-    <script src="js/components/tooltip-portal.js" asp-append-version="true"></script>
-    <script src="js/components/slider-input-logic.js" asp-append-version="true"></script>
-    <script src="js/components/home-header.js" asp-append-version="true"></script>
-    <script src="js/components/fact-check-layout.js" asp-append-version="true"></script>
-    <script src="js/components/app-button-depth.js" asp-append-version="true"></script>
-    <script src="js/components/fact-check-share.js" asp-append-version="true"></script>
+    <script src="js/components/slot-machine.js" asp-append-version="true" defer></script>
+    <script src="js/components/adaptive-toast.js" asp-append-version="true" defer></script>
+    <script src="js/components/legislators.js" asp-append-version="true" defer></script>
+    <script src="js/components/image-modal.js" asp-append-version="true" defer></script>
+    <script src="js/components/modals.js" asp-append-version="true" defer></script>
+    <script src="js/components/flipbook.js" asp-append-version="true" defer></script>
+    <script src="js/components/toc.js" asp-append-version="true" defer></script>
+    <script src="js/components/reveal.js" asp-append-version="true" defer></script>
+    <script src="js/components/tooltip-portal.js" asp-append-version="true" defer></script>
+    <script src="js/components/slider-input-logic.js" asp-append-version="true" defer></script>
+    <script src="js/components/home-header.js" asp-append-version="true" defer></script>
+    <script src="js/components/fact-check-layout.js" asp-append-version="true" defer></script>
+    <script src="js/components/app-button-depth.js" asp-append-version="true" defer></script>
+    <script src="js/components/fact-check-share.js" asp-append-version="true" defer></script>
 
-    <script src="js/lib/maplibre-gl.js" asp-append-version="true"></script>
-    <script src="js/lib/pmtiles.js" asp-append-version="true"></script>
-    <script src="js/lib/turf.min.js" asp-append-version="true"></script>
-    <script src="js/lib/chart.js" asp-append-version="true"></script>
-    <script src="js/lib/terra-draw.umd.js" asp-append-version="true"></script>
+    <script src="js/lib/chart.js" asp-append-version="true" defer></script>
     <link rel="stylesheet" href="css/maplibre-gl.css" asp-append-version="true" />
-    <script src="js/components/maplibre-map.js" asp-append-version="true"></script>
-    <script src="js/components/charts.js" asp-append-version="true"></script>
-    <script src="js/economics/calculator.js" asp-append-version="true"></script>
-    <script src="js/economics/substitution.js" asp-append-version="true"></script>
+    <script src="js/components/charts.js" asp-append-version="true" defer></script>
+    <script src="js/economics/calculator.js" asp-append-version="true" defer></script>
+    <script src="js/economics/substitution.js" asp-append-version="true" defer></script>
 
     <script>
         window.ensureMapLibreImpactMap = function () {
             if (window.MapLibreImpactMap) return Promise.resolve(true);
             if (window.__mapLibreImpactMapLoad) return window.__mapLibreImpactMapLoad;
 
-            window.__mapLibreImpactMapLoad = new Promise(function (resolve) {
-                var script = document.createElement('script');
-                script.src = '/js/components/maplibre-map.js';
-                script.onload = function () { resolve(!!window.MapLibreImpactMap); };
-                script.onerror = function () { resolve(false); };
-                document.head.appendChild(script);
-            });
+            // Maps are only needed on the economic-impact location page. Do not
+            // make every homepage visitor download and evaluate these large files.
+            const scripts = [
+                '/js/lib/maplibre-gl.js',
+                '/js/lib/pmtiles.js',
+                '/js/lib/turf.min.js',
+                '/js/lib/terra-draw.umd.js',
+                '/js/components/maplibre-map.js'
+            ];
+            const loadScript = function (url) {
+                return new Promise(function (resolve, reject) {
+                    const script = document.createElement('script');
+                    script.src = url + '?v=20261008-route-loading';
+                    script.onload = resolve;
+                    script.onerror = function () { reject(new Error('Could not load ' + url)); };
+                    document.head.appendChild(script);
+                });
+            };
 
+            window.__mapLibreImpactMapLoad = (async function () {
+                for (const path of scripts) await loadScript(path);
+                if (!window.MapLibreImpactMap) throw new Error('Map initialization module unavailable');
+                return true;
+            })().catch(function (error) {
+                console.error('Map assets failed to load:', error);
+                window.__mapLibreImpactMapLoad = null; // Allow a future retry.
+                return false;
+            });
             return window.__mapLibreImpactMapLoad;
         };
     </script>
 
     @* Start Blazor only after every JS interop module is available. Version every boot resource
        with the compiled client MVID so a deployment cannot reuse an older boot manifest. *@
-    <script src="_framework/blazor.webassembly.js" asp-append-version="true" autostart="false"></script>
+    <script src="_framework/blazor.webassembly.js" asp-append-version="true" autostart="false" defer></script>
     <script>
-        Blazor.start({
+        document.addEventListener('DOMContentLoaded', function () {
+            Blazor.start({
             loadBootResource: (_, __, defaultUri) => {
                 const resourceUrl = new URL(defaultUri, document.baseURI);
                 resourceUrl.searchParams.set("build", "@clientBuildVersion");
                 return resourceUrl.toString();
             }
+            }).catch(function (error) { console.error('Blazor startup failed:', error); });
         });
     </script>
 </body>
