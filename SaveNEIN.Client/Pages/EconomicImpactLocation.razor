@@ -452,7 +452,14 @@
     {
         if (firstRender && !IsRenovationGateEnabled)
         {
-            await JSRuntime.InvokeVoidAsync("window.MapLibreImpactMap.init", "impact-map");
+            if (await JSRuntime.InvokeAsync<bool>("window.ensureMapLibreImpactMap"))
+            {
+                await JSRuntime.InvokeVoidAsync("window.MapLibreImpactMap.init", "impact-map");
+            }
+            else
+            {
+                Console.Error.WriteLine("Map assets could not be loaded. See browser console.");
+            }
         }
     }
 }
