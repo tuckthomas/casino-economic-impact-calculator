@@ -97,3 +97,13 @@
         transform: translateX(-50%) !important;
     }
 }
+
+/* Do not hide the real hero again when Blazor replaces the visible startup shell. */
+@media (max-width: 1023px) {
+    #app #hero-section .hero-mobile-intro::before {
+        opacity: 1 !important;
+        animation: none !important;
+        -webkit-mask-image: none !important;
+        mask-image: none !important;
+    }
+}
