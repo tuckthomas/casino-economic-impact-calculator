@@ -110,7 +110,6 @@
 
 /* The server and client render the same hero. Keep entrance hints visible across
    that handoff instead of replaying their hide/reveal animations. */
-#app #hero-section .hero-desktop-learn-more,
 #app #hero-section .hero-mobile-swipe-hint {
     animation: none !important;
     opacity: 1;
@@ -121,4 +120,12 @@
     animation: none !important;
     opacity: 1;
     transform: translateX(-50%);
+}
+
+@media (min-width: 1024px) {
+    #app #hero-section .hero-desktop-learn-more {
+        animation: none !important;
+        opacity: 1;
+        transform: none;
+    }
 }
