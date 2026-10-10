@@ -107,3 +107,18 @@
         mask-image: none !important;
     }
 }
+
+/* The server and client render the same hero. Keep entrance hints visible across
+   that handoff instead of replaying their hide/reveal animations. */
+#app #hero-section .hero-desktop-learn-more,
+#app #hero-section .hero-mobile-swipe-hint {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+}
+
+#app #hero-section .hero-mobile-scroll-hint {
+    animation: none !important;
+    opacity: 1;
+    transform: translateX(-50%);
+}

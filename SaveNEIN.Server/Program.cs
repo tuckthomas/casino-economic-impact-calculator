@@ -18,6 +18,8 @@ builder.WebHost.UseStaticWebAssets();
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddRazorPages();
+// Render the shared homepage hero before the WebAssembly runtime downloads.
+builder.Services.AddRazorComponents();
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<SaveNEIN.Server.Services.IFactCheckShareImageService, SaveNEIN.Server.Services.FactCheckShareImageService>();
 builder.Services.Configure<TaxAllocationOptions>(builder.Configuration.GetSection("TaxAllocation"));

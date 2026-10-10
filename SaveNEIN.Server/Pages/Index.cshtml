@@ -124,66 +124,6 @@
         }
 
 
-        /* Meaningful, immediately usable content before the WebAssembly runtime starts. */
-        .startup-hero-content {
-            position: relative;
-            z-index: 1;
-            box-sizing: border-box;
-            min-height: 100svh;
-            max-width: 96rem;
-            margin: auto;
-            padding: clamp(1rem, 3vw, 2.5rem);
-            color: #fff;
-            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-        }
-        .startup-hero-content img {
-            display: block;
-            width: min(74vw, 17.5rem);
-            height: auto;
-            margin-bottom: 1.5rem;
-        }
-        .startup-hero-content h1 {
-            font-size: clamp(2rem, 8.7vw, 4.25rem);
-            line-height: 1.04;
-            font-weight: 900;
-            letter-spacing: -0.035em;
-            margin: 0 0 1rem;
-        }
-        .startup-hero-content h1 span,
-        .startup-hero-content p {
-            color: #f43f5e;
-        }
-        .startup-hero-content p {
-            margin: 0 0 1.75rem;
-            font-size: clamp(1.1rem, 5vw, 1.6rem);
-            font-weight: 750;
-            text-transform: uppercase;
-            letter-spacing: 0.035em;
-        }
-        .startup-hero-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-        .startup-hero-actions a {
-            display: inline-block;
-            padding: 0.8rem 1.2rem;
-            border: 1px solid rgba(255,255,255,.35);
-            border-radius: 0.6rem;
-            color: #fff;
-            font-size: 1rem;
-            font-weight: 700;
-            text-decoration: none;
-            background: rgba(15,23,42,.85);
-        }
-        .startup-hero-actions a:first-child {
-            background: #be123c;
-            border-color: #be123c;
-        }
-        @@media (min-width: 1024px) {
-            .startup-hero-content { padding-top: clamp(3.5rem, 11vh, 8rem); }
-        }
-
         html {
             overflow-y: scroll;
         }
@@ -259,6 +199,7 @@
     </style>
 
     <link rel="preload" href="assets/SaveNEIN_SVG_Dark_Mode_Small.svg" as="image" type="image/svg+xml" />
+    <link rel="preload" href="lib/public-sans/files/public-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link href="lib/public-sans/index.css" rel="stylesheet" asp-append-version="true" />
     <link href="lib/material-symbols-outlined/index.css" rel="stylesheet" asp-append-version="true" />
     <link href="css/app.css" rel="stylesheet" asp-append-version="true" />
@@ -272,16 +213,15 @@
 
 <body class="text-slate-300 antialiased font-display overflow-x-hidden">
     <div id="app">
-        <div class="startup-hero-backdrop" aria-hidden="true"></div>
-        <div class="startup-hero-content">
-            <img src="assets/SaveNEIN_SVG_Dark_Mode_Small.svg" alt="Save Northeast Indiana" width="280" height="125" />
-            <h1>DON'T LET THEM<br /><span>GAMBLE AWAY</span><br />OUR REGION'S<br />FUTURE.</h1>
-            <p>Northeast Indiana Deserves Better.</p>
-            <div class="startup-hero-actions">
-                <a href="/get-involved">Get Involved</a>
-                <a href="/fact-checks">Fact Checks</a>
-            </div>
-        </div>
+        @if (request.Path == "/")
+        {
+            <component type="typeof(SaveNEIN.Client.Pages.HomeHero)" render-mode="Static" />
+        }
+        else
+        {
+            <div class="startup-hero-backdrop" aria-hidden="true"></div>
+            <p role="status" class="relative p-6 text-base text-white">Loading Save Northeast Indiana...</p>
+        }
     </div>
 
     <div id="blazor-error-ui">
