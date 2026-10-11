@@ -162,7 +162,7 @@
     <!-- Report-viewer libraries are loaded after first paint. -->
     <script src="js/components/app-button-depth.js" defer></script>
     <script src="js/components/fact-check-share.js" defer></script>
-    <script src="js/economics/scenario-visualization.js?v=20261011-exposure-assumptions" defer></script>
+    <script src="js/economics/scenario-visualization.js?v=20261011-projection-consistency" defer></script>
     <script src="js/lib/chart.js" defer></script>
     <script src="js/lib/pdf.min.js" defer></script>
     <script src="js/lib/page-flip.browser.js" defer></script>
@@ -191,7 +191,7 @@
             if (window.__economicCalculatorLoad) return window.__economicCalculatorLoad;
             window.__economicCalculatorLoad = new Promise(function (resolve, reject) {
                 const script = document.createElement('script');
-                script.src = '/js/economics/calculator.js?v=20261011-exposure-assumptions';
+                script.src = '/js/economics/calculator.js?v=20261011-projection-consistency';
                 script.onload = function () { resolve(!!window.EconomicCalculator); };
                 script.onerror = function () { reject(new Error('Calculator script could not load')); };
                 document.head.appendChild(script);
@@ -220,7 +220,7 @@
             const loadScript = function (url) {
                 return new Promise(function (resolve, reject) {
                     const script = document.createElement('script');
-                    script.src = url + '?v=20261011-exposure-assumptions';
+                    script.src = url + '?v=20261011-projection-consistency';
                     script.onload = resolve;
                     script.onerror = function () { reject(new Error('Could not load ' + url)); };
                     document.head.appendChild(script);

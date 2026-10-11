@@ -80,7 +80,9 @@ for validation_pass in 1 2; do
     022_employment_assumption_provenance.sql \
     023_capacity_productivity_benchmark_provenance.sql \
     024_reported_casino_employment.sql \
-    025_validation_geographic_residual_patterns.sql
+    025_validation_geographic_residual_patterns.sql \
+    026_other_gaming_revenue_charges.sql \
+    027_persisted_origin_eligible_population.sql
   do
     echo "  $validation_file"
     "${validation_compose[@]}" exec -T -e VALIDATION_DB="$validation_db" db \

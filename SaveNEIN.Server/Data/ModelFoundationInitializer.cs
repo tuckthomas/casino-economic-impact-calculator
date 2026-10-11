@@ -37,7 +37,8 @@ public static class ModelFoundationInitializer
         "023_capacity_productivity_benchmark_provenance.sql",
         "024_reported_casino_employment.sql",
         "025_validation_geographic_residual_patterns.sql",
-        "026_other_gaming_revenue_charges.sql"
+        "026_other_gaming_revenue_charges.sql",
+        "027_persisted_origin_eligible_population.sql"
     ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

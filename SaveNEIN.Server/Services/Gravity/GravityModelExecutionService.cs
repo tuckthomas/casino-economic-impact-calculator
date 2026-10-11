@@ -5,6 +5,8 @@
 
 using System.Data;
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SaveNEIN.Server.Data;
@@ -78,7 +80,8 @@ public sealed record GravityModelRunRequest(
     ImpactGeographyDefinition? ImpactGeography = null,
     IReadOnlyCollection<int>? ExcludedCompetitorIds = null,
     Guid? LocalEconomicInventorySnapshotId = null,
-    string MissingRoutePolicy = MissingRoutePolicies.RejectOrigin);
+    string MissingRoutePolicy = MissingRoutePolicies.RejectOrigin,
+    int? PopulationScenarioYear = null);
 
 public sealed record GravityModelRunResult(
     Guid ModelRunId,
@@ -148,6 +151,7 @@ public sealed class GravityModelExecutionService(
     {
         ValidateRequest(request);
         var stopwatch = Stopwatch.StartNew();
+        _ = SaveNEIN.Shared.Modeling.PopulationProjectionArithmetic.ResolveScenarioYear(request.PopulationScenarioYear, request.EffectiveOn.Year);
         var context = await LoadContextAsync(request, cancellationToken);
         var modelRun = await CreateDraftRunAsync(request, context, cancellationToken);
 
@@ -363,6 +367,14 @@ public sealed class GravityModelExecutionService(
         ExecutionContext context,
         CancellationToken cancellationToken)
     {
+        var effectiveRules = await new JurisdictionProfileService(db).GetEffectiveProfileRulesAsync(
+            request.JurisdictionCode, request.EffectiveOn, cancellationToken);
+        var ruleSnapshot = effectiveRules.OrderBy(rule => rule.JurisdictionId).ThenBy(rule => rule.Id)
+            .Select(rule => new { rule.Id, rule.JurisdictionId, rule.RuleType, rule.RuleValueJson,
+                rule.ValidationState, rule.EffectiveFrom, rule.EffectiveTo, rule.SourceUrl }).ToArray();
+        var ruleJson = JsonSerializer.Serialize(ruleSnapshot);
+        var ruleHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+            $"{request.JurisdictionCode}|{request.EffectiveOn:yyyy-MM-dd}|{ruleJson}"))).ToLowerInvariant();
         var resolvedInput = JsonSerializer.Serialize(new
         {
             request.ScenarioName,
@@ -370,8 +382,11 @@ public sealed class GravityModelExecutionService(
             request.StableOriginIds,
             request.CompetitorIds,
             request.PopulationObservationYear,
+            request.PopulationScenarioYear,
             request.IncomeTaxYear,
             request.EffectiveOn,
+            jurisdictionProfileVersion = $"captured-rules@{request.EffectiveOn:yyyy-MM-dd}#{ruleHash[..16]}",
+            effectiveJurisdictionRules = ruleSnapshot,
             request.FacilityRegime,
             request.DemandSpecification,
             request.AttractionSpecification,
@@ -743,7 +758,7 @@ public sealed class GravityModelExecutionService(
                 return PopulationProjectionCalculator.Calculate(new PopulationProjectionInput(
                     observedEligiblePopulation,
                     request.PopulationObservationYear,
-                    request.EffectiveOn.Year,
+                    SaveNEIN.Shared.Modeling.PopulationProjectionArithmetic.ResolveScenarioYear(request.PopulationScenarioYear, request.EffectiveOn.Year),
                     RequireParameter(parameters, "demographics.population_annual_growth_rate"))).ProjectedPopulation;
             });
 
@@ -1695,7 +1710,7 @@ public sealed class GravityModelExecutionService(
                 prevalenceSelection.JurisdictionAssumption,
                 exposureResponse = RequireParameter(parameters, "social_cost.exposure_response"),
                 populationObservationYear = request.PopulationObservationYear,
-                scenarioYear = request.EffectiveOn.Year,
+                scenarioYear = SaveNEIN.Shared.Modeling.PopulationProjectionArithmetic.ResolveScenarioYear(request.PopulationScenarioYear, request.EffectiveOn.Year),
                 note = "Per-case domain values and scaling remain in the immutable model-run parameter snapshot; zero values mean the domain was not activated."
             })
         }));
@@ -1928,6 +1943,7 @@ public sealed class GravityModelExecutionService(
                 OriginZoneId = demand.Origin.Id,
                 DemandSpecification = request.DemandSpecification,
                 ResidentDemand = ToMoney(demand.Demand.Demand),
+                EligiblePopulation = demand.EligiblePopulation,
                 BaselineLogAccessibility = expansion.BaselineLogAccessibility,
                 WithProjectLogAccessibility = expansion.WithProjectLogAccessibility,
                 InducedResidentDemand = inducedResidentDemand,

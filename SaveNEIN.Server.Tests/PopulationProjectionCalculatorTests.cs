@@ -5,6 +5,28 @@ namespace SaveNEIN.Server.Tests;
 public sealed class PopulationProjectionCalculatorTests
 {
     [Fact]
+    public void PopulationScenarioYearIsIndependentOfFiscalYearAndKeepsLegacyFallback()
+    {
+        Assert.Equal(2030, SaveNEIN.Shared.Modeling.PopulationProjectionArithmetic.ResolveScenarioYear(2030, 2026));
+        Assert.Equal(2026, SaveNEIN.Shared.Modeling.PopulationProjectionArithmetic.ResolveScenarioYear(null, 2026));
+        Assert.Throws<ArgumentOutOfRangeException>(() => SaveNEIN.Shared.Modeling.PopulationProjectionArithmetic.ResolveScenarioYear(2201, 2026));
+    }
+
+    [Theory]
+    [InlineData(2020, 2026, 0.01)]
+    [InlineData(2020, 2030, 0)]
+    [InlineData(2026, 2020, -0.01)]
+    public void ServerAndWebAssemblyShareProjectionAndConserveOriginTotals(int baselineYear, int targetYear, double growth)
+    {
+        var server = PopulationProjectionCalculator.Calculate(new(5, baselineYear, targetYear, growth));
+        var browser = SaveNEIN.Client.Services.EconomicModelInterop.ProjectPopulation(new(5, baselineYear, targetYear, growth));
+        var multiplier = SaveNEIN.Client.Services.EconomicModelInterop.ProjectPopulation(new(1, baselineYear, targetYear, growth)).ProjectedPopulation;
+        Assert.Equal(server.ProjectedPopulation, browser.ProjectedPopulation);
+        Assert.Equal(server.MethodKey, browser.MethodKey);
+        Assert.Equal(server.ProjectedPopulation, Enumerable.Repeat(multiplier, 5).Sum(), 12);
+    }
+
+    [Fact]
     public void Calculate_CompoundsObservedPopulationToScenarioYear()
     {
         var result = PopulationProjectionCalculator.Calculate(new PopulationProjectionInput(

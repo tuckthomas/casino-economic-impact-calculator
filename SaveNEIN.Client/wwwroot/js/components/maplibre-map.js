@@ -317,8 +317,13 @@ window.MapLibreImpactMap = (function ()
         const annualGrowthRate = Number.isFinite(rawAnnualGrowthRate) ? rawAnnualGrowthRate : 0;
         const yearsFromBase = Math.max(0, targetYear - ADULT_POPULATION_BASE_YEAR);
 
-        let multiplier = Math.pow(1 + (annualGrowthRate / 100), yearsFromBase);
-        if (!Number.isFinite(multiplier) || multiplier <= 0) multiplier = 1;
+        const projection = DotNet.invokeMethod('SaveNEIN.Client', 'ProjectPopulation', {
+            observedPopulation: 1,
+            observationYear: ADULT_POPULATION_BASE_YEAR,
+            scenarioYear: targetYear,
+            annualGrowthRate: annualGrowthRate / 100
+        });
+        const multiplier = projection.projectedPopulation;
 
         return {
             baseYear: ADULT_POPULATION_BASE_YEAR,
@@ -326,7 +331,7 @@ window.MapLibreImpactMap = (function ()
             annualGrowthRate,
             yearsFromBase,
             multiplier,
-            usesProjectedAdults: yearsFromBase > 0 && Math.abs(annualGrowthRate) > 0.0001
+            usesProjectedAdults: yearsFromBase > 0 && annualGrowthRate !== 0
         };
     }
 
@@ -334,7 +339,7 @@ window.MapLibreImpactMap = (function ()
     {
         const numericValue = Number(value || 0);
         if (!Number.isFinite(numericValue) || numericValue <= 0) return 0;
-        return Math.max(0, Math.round(numericValue * multiplier));
+        return window.EconomicScenarioVisualization.scalePopulation(numericValue, multiplier);
     }
 
     function updateAdultPopulationProjectionDisplay(settings)

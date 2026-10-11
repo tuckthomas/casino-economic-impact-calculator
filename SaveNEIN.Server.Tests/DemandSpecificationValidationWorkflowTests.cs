@@ -21,7 +21,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
     {
         var fake = new CapturingGravityModelExecutionService();
         var service = new DemandSpecificationRunPairService(fake);
-        var request = BaseRequest();
+        var request = BaseRequest() with { PopulationScenarioYear = 2030 };
 
         var result = await service.ExecuteAsync(request);
 
@@ -34,6 +34,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
         Assert.Equal(request.OriginGeographySnapshotId, fake.Requests[1].OriginGeographySnapshotId);
         Assert.Equal(request.CompetitorSnapshotId, fake.Requests[0].CompetitorSnapshotId);
         Assert.Equal(request.CompetitorSnapshotId, fake.Requests[1].CompetitorSnapshotId);
+        Assert.All(fake.Requests, item => Assert.Equal(2030, item.PopulationScenarioYear));
         Assert.NotEqual(result.AgiShare.ModelRunId, result.EligibleAdultPerCapita.ModelRunId);
     }
 
@@ -162,8 +163,19 @@ public sealed class DemandSpecificationValidationWorkflowTests
         Assert.Contains("eligible-adult-per-capita", stored.SelectedParametersJson);
     }
 
+    [Fact]
+    public async Task EvaluationRejectsPairsWithDifferentPopulationProjectionYears()
+    {
+        await using var db = CreateDb();
+        var pairs = await SeedPairedEvaluationFixtureAsync(db, 2030);
+        var service = new DemandSpecificationValidationEvaluationService(db,
+            new ValidationMetricsService(), new ThrowingParameterSetService());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.FinalizeAsync(new(
+            "different-projection-years", "1", ValidationObjectiveFunctions.Mape, pairs)));
+    }
+
     private static async Task<IReadOnlyCollection<DemandSpecificationValidationCasePair>>
-        SeedPairedEvaluationFixtureAsync(AppDbContext db)
+        SeedPairedEvaluationFixtureAsync(AppDbContext db, int? perCapitaPopulationScenarioYear = null)
     {
         var pairs = new List<DemandSpecificationValidationCasePair>();
         var snapshotIds = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
@@ -209,7 +221,8 @@ public sealed class DemandSpecificationValidationWorkflowTests
                 candidateLatitude,
                 candidateLongitude,
                 origin.StableOriginId,
-                incumbentId);
+                incumbentId,
+                perCapitaPopulationScenarioYear);
             db.ModelRuns.AddRange(agiRun, perCapitaRun);
             AddRunEvidence(db, agiRun, origin, snapshotIds[index], incumbentId, agiPredictions[index], 100 + index * 20, 40);
             AddRunEvidence(db, perCapitaRun, origin, snapshotIds[index], incumbentId, perCapitaPredictions[index], 120 + index * 20, 40);
@@ -322,7 +335,8 @@ public sealed class DemandSpecificationValidationWorkflowTests
         double candidateLatitude,
         double candidateLongitude,
         string originId,
-        int incumbentId)
+        int incumbentId,
+        int? populationScenarioYear = null)
     {
         var inputJson = JsonSerializer.Serialize(new
         {
@@ -331,6 +345,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
             StableOriginIds = new[] { originId },
             CompetitorIds = new[] { incumbentId },
             PopulationObservationYear = 2024,
+            PopulationScenarioYear = populationScenarioYear,
             IncomeTaxYear = 2022,
             EffectiveOn = new DateOnly(2026, 1, 1),
             FacilityRegime = "commercial-casino",

@@ -7,6 +7,25 @@ namespace SaveNEIN.Server.Tests;
 public sealed class ReportRendererTests
 {
     [Fact]
+    public void ReportsDisclosePopulationYearSeparatelyFromFiscalEffectiveDate()
+    {
+        var template = CreateModel();
+        var model = template with { Scenario = template.Scenario with
+            { EffectiveOn = new DateOnly(2026, 1, 1), PopulationScenarioYear = 2030 } };
+        var html = new HtmlReportRenderer().Render(model, new());
+        var csv = new CsvReportRenderer().Render(model);
+        Assert.Contains("Fiscal rule effective date: 2026-01-01", html, StringComparison.Ordinal);
+        Assert.Contains("Population scenario year: 2030", html, StringComparison.Ordinal);
+        Assert.Contains("scenario,population,population_scenario_year,2030,year", csv, StringComparison.Ordinal);
+        Assert.Contains("scenario,fiscal,effective_on,2026-01-01,ISO 8601 date", csv, StringComparison.Ordinal);
+        using var pdf = UglyToad.PdfPig.PdfDocument.Open(new PdfReportRenderer().Render(model, new()));
+        var text = string.Join(" ", pdf.GetPages().Select(page => page.Text));
+        Assert.Contains("Population scenario year", text, StringComparison.Ordinal);
+        Assert.Contains("2030", text, StringComparison.Ordinal);
+        Assert.Contains("2026-01-01", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void HtmlRenderer_IsDeterministicAndEncodesPresentationText()
     {
         var model = CreateModel();

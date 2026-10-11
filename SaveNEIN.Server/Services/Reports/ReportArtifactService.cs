@@ -130,7 +130,7 @@ public sealed class ReportArtifactService(
     IPdfReportRenderer pdfRenderer,
     ICsvReportRenderer csvRenderer) : IReportArtifactService
 {
-    public const string TemplateVersion = "professional-v5";
+    public const string TemplateVersion = "professional-v6";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true
@@ -949,6 +949,8 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             .Append("Run created/finalized: ").Append(model.Identity.RunCreatedAtUtc.ToString("O", CultureInfo.InvariantCulture)).Append(" / ")
             .Append(model.Identity.RunFinalizedAtUtc.ToString("O", CultureInfo.InvariantCulture)).Append("<br>")
             .Append("Jurisdiction profile/version: ").Append(E($"{model.Identity.JurisdictionCode} / {model.Identity.JurisdictionProfileVersion}")).Append("<br>")
+            .Append("Fiscal rule effective date: ").Append(model.Scenario.EffectiveOn?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "Not recorded").Append("<br>")
+            .Append("Population scenario year: ").Append(model.Scenario.PopulationScenarioYear?.ToString(CultureInfo.InvariantCulture) ?? "Not recorded").Append("<br>")
             .Append("Parameter-set version(s): ").Append(E(ReportDisclosure.ParameterSets(model))).Append("<br>")
             .Append("User overrides: ").Append(E(ReportDisclosure.UserOverrides(model))).Append("<br>")
             .Append("Source data vintages: ").Append(E(ReportDisclosure.SourceVintages(model))).Append("<br>")
@@ -1539,6 +1541,8 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         ("Generated timestamp", model.Identity.GeneratedAtUtc.ToString("O", CultureInfo.InvariantCulture)),
                         ("Run created / finalized", $"{model.Identity.RunCreatedAtUtc:O} / {model.Identity.RunFinalizedAtUtc:O}"),
                         ("Jurisdiction profile/version", $"{model.Identity.JurisdictionCode} / {model.Identity.JurisdictionProfileVersion}"),
+                        ("Fiscal rule effective date", model.Scenario.EffectiveOn?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "Not recorded"),
+                        ("Population scenario year", model.Scenario.PopulationScenarioYear?.ToString(CultureInfo.InvariantCulture) ?? "Not recorded"),
                         ("Parameter-set version(s)", ReportDisclosure.ParameterSets(model)),
                         ("User overrides", ReportDisclosure.UserOverrides(model)),
                         ("Source data vintages", ReportDisclosure.SourceVintages(model)),
@@ -1798,6 +1802,8 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
         Row(csv, "identity", "run", "template_version", model.Identity.TemplateVersion, "");
         Row(csv, "scenario", "site", "candidate_latitude", model.Scenario.CandidateLatitude, "degrees");
         Row(csv, "scenario", "site", "candidate_longitude", model.Scenario.CandidateLongitude, "degrees");
+        Row(csv, "scenario", "population", "population_scenario_year", model.Scenario.PopulationScenarioYear, "year");
+        Row(csv, "scenario", "fiscal", "effective_on", model.Scenario.EffectiveOn?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), "ISO 8601 date");
         Row(csv, "revenue", "stabilized", "redistributed_resident_ggr", model.Revenue.RedistributedResidentGgr, "USD");
         Row(csv, "revenue", "stabilized", "induced_resident_ggr", model.Revenue.InducedResidentGgr, "USD");
         Row(csv, "revenue", "stabilized", "resident_ggr", model.Revenue.TotalResidentGgr, "USD");
@@ -1824,6 +1830,7 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
         }
         foreach (var origin in model.Origins)
         {
+            Row(csv, "origin", origin.StableOriginId, "eligible_population", origin.EligiblePopulation, "people; blank means not recorded");
             Row(csv, "origin", origin.StableOriginId, "state_code", origin.StateCode, origin.OriginType);
             Row(csv, "origin", origin.StableOriginId, "latitude", origin.Latitude, "degrees");
             Row(csv, "origin", origin.StableOriginId, "longitude", origin.Longitude, "degrees");

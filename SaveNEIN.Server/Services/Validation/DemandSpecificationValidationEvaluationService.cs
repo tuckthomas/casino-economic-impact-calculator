@@ -4,6 +4,7 @@
 // Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
 
 using System.Text.Json;
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Data.Entities;
@@ -682,7 +683,9 @@ public sealed class DemandSpecificationValidationEvaluationService(
             ReadString(root, "ObservedPeriodEnd"),
             ReadString(root, "CostingProfile"),
             ReadString(root, "EffectiveOn"),
+            ReadString(root, "jurisdictionProfileVersion"),
             ReadString(root, "PopulationObservationYear"),
+            ReadPopulationScenarioYear(root),
             ReadString(root, "IncomeTaxYear"),
             ReadString(root, "computationalOriginType"));
     }
@@ -699,6 +702,14 @@ public sealed class DemandSpecificationValidationEvaluationService(
             }
         }
         return string.Empty;
+    }
+
+    private static string ReadPopulationScenarioYear(JsonElement root)
+    {
+        var value = ReadString(root, "PopulationScenarioYear");
+        if (value.Length > 0 && value != "null") return value;
+        return DateOnly.TryParseExact(ReadString(root, "EffectiveOn"), "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var effectiveDate) ? effectiveDate.Year.ToString(CultureInfo.InvariantCulture) : string.Empty;
     }
 
     private static void RequireSpecification(ModelRun run, string expected)
@@ -822,7 +833,9 @@ public sealed class DemandSpecificationValidationEvaluationService(
         string ObservedPeriodEnd,
         string CostingProfile,
         string EffectiveOn,
+        string JurisdictionProfileVersion,
         string PopulationObservationYear,
+        string PopulationScenarioYear,
         string IncomeTaxYear,
         string ComputationalOriginType);
 }

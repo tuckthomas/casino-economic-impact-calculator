@@ -1,6 +1,6 @@
 // Restores the map's calculation context without inventing populations from DOM placeholders.
 window.EconomicScenarioVisualization = (() => {
-    const version = 'economic-impact-visualization-v2';
+    const version = 'economic-impact-visualization-v3';
     const number = (value, label) => {
         if (!Number.isFinite(value) || value < 0) throw new Error(`Invalid saved ${label}.`);
     };
@@ -8,6 +8,31 @@ window.EconomicScenarioVisualization = (() => {
         if (Math.abs(actual - expected) > Math.max(1e-6, Math.abs(expected) * 1e-9))
             throw new Error(`Saved ${label} does not reconcile.`);
     };
+
+    function scalePopulation(population, multiplier) {
+        number(population, 'population');
+        if (!Number.isFinite(multiplier) || multiplier <= 0) throw new Error('Invalid population projection multiplier.');
+        const projected = population * multiplier;
+        number(projected, 'projected population');
+        return projected;
+    }
+
+    function validateProjection(detail) {
+        const projection = detail.populationProjection;
+        if (!projection || !Number.isInteger(projection.baseYear) || !Number.isInteger(projection.targetYear) ||
+            projection.baseYear < 1900 || projection.targetYear > 2200 || projection.targetYear < projection.baseYear ||
+            projection.targetYear - projection.baseYear > 100 || !Number.isFinite(projection.annualGrowthRate) ||
+            projection.annualGrowthRate <= -100 || projection.annualGrowthRate > 100)
+            throw new Error('Invalid saved population projection assumptions.');
+        const years = projection.targetYear - projection.baseYear;
+        if (projection.yearsFromBase !== years || projection.usesProjectedAdults !== (years > 0 && projection.annualGrowthRate !== 0))
+            throw new Error('Saved population projection metadata does not reconcile.');
+        number(projection.multiplier, 'projection multiplier');
+        sameTotal(projection.multiplier, Math.pow(1 + projection.annualGrowthRate / 100, years), 'projection multiplier');
+        sameTotal(detail.county.adults, scalePopulation(detail.county.baseAdults, projection.multiplier), 'projected county population');
+        number(detail.regional.baseAdultsWithin50, 'regional baseline population');
+        sameTotal(detail.regional.adultsWithin50, scalePopulation(detail.regional.baseAdultsWithin50, projection.multiplier), 'projected regional population');
+    }
 
     // Percentage-point inputs match the location controls; outputs retain fractional expected cases.
     function calculateExposure(populations, baselineRate, baselineIncrease) {
@@ -68,6 +93,9 @@ window.EconomicScenarioVisualization = (() => {
                 if (population[`t${tier}Adults`] !== 0) throw new Error('Disabled impact zones contain saved population.');
         }
         for (const key of ['adults', 'baseAdults', 'total']) number(detail.county[key], `county ${key}`);
+        validateProjection(detail);
+        if (detail.county.adultsWithin50 > detail.county.adults + Math.max(1e-6, detail.county.adults * 1e-9))
+            throw new Error('Saved impact-zone population exceeds the host county adult population.');
         number(detail.baselineRate, 'baseline rate');
         number(detail.baselineIncrease, 'baseline increase');
         for (const key of ['t1', 't2', 't3', 'total']) number(detail.county.victims?.[key], `county victims ${key}`);
@@ -100,5 +128,5 @@ window.EconomicScenarioVisualization = (() => {
         return detail;
     }
 
-    return { version, restore, describeZones, calculateExposure };
+    return { version, restore, describeZones, calculateExposure, scalePopulation };
 })();

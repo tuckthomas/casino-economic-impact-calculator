@@ -29,6 +29,8 @@ test('malformed zone settings are rejected before describing a saved result', ()
 
 function scenario() {
     const zoneConfiguration = { count: 3, tiers: [5, 12, 40], unit: 'miles', mode: 'radius' };
+    const populationProjection = { baseYear: 2020, targetYear: 2026,
+        annualGrowthRate: (Math.pow(1.2, 1 / 6) - 1) * 100, yearsFromBase: 6, multiplier: 1.2, usesProjectedAdults: true };
     return {
         version: 'economic-impact-client-v1', stateFips: '18', countyFips: '18003',
         markerLatitude: 41.0793, markerLongitude: -85.1394, zoneConfiguration,
@@ -36,10 +38,10 @@ function scenario() {
             version: visualization.version,
             impactBreakdown: {
                 stateFips: '18', countyFips: '18003', markerLat: 41.0793, markerLng: -85.1394,
-                countyName: 'Allen', baselineRate: 1.5, baselineIncrease: 0.25, zoneConfiguration,
+                countyName: 'Allen', baselineRate: 1.5, baselineIncrease: 0.25, zoneConfiguration, populationProjection,
                 county: { adults: 1200, baseAdults: 1000, total: 1500, t1Adults: 100, t2Adults: 200, t3Adults: 300,
                     adultsWithin50: 600, victims: { t1: 1.75, t2: 2, t3: 0.75, total: 4.5 } },
-                regional: { t1Adults: 120, t2Adults: 230, t3Adults: 350, adultsWithin50: 700, victimsWithin50: 5.275 },
+                regional: { t1Adults: 120, t2Adults: 230, t3Adults: 350, adultsWithin50: 700, baseAdultsWithin50: 700 / 1.2, victimsWithin50: 5.275 },
                 byCounty: [
                     { fips: '18003', t1Pop: 100, t2Pop: 200, t3Pop: 300 },
                     { fips: '18033', t1Pop: 20, t2Pop: 30, t3Pop: 50 }
@@ -118,6 +120,7 @@ test('disabled zones cannot retain victims when their populations are zero', () 
     detail.county.adultsWithin50 = 300;
     detail.regional.t3Adults = 0;
     detail.regional.adultsWithin50 = 350;
+    detail.regional.baseAdultsWithin50 = 350 / 1.2;
     detail.byCounty.forEach(county => { county.t3Pop = 0; });
     assert.throws(() => visualization.restore(snapshot), /Disabled impact zones contain saved victims/);
     detail.county.victims.t3 = 0;
@@ -177,4 +180,29 @@ test('invalid prevalence, increase, and population values are rejected', () => {
         [[1, 2], 1.5, 0], [[1, -2, 3], 1.5, 0], [[1, 2, Infinity], 1.5, 0],
         [[1, 2, 3], 1.5, -1], [[1, 2, 3], NaN, 0], [[1, 2, 3], 51, 0]
     ]) assert.throws(() => visualization.calculateExposure(population, baseline, increase));
+});
+
+test('projected population is conserved across small origin groups without per-point rounding', () => {
+    const origins = [1, 1, 1, 1, 1];
+    const total = origins.map(value => visualization.scalePopulation(value, 1.2)).reduce((sum, value) => sum + value, 0);
+    assert.equal(total, visualization.scalePopulation(5, 1.2));
+    assert.equal(total, 6);
+    assert.equal(visualization.scalePopulation(0, 1.2), 0);
+});
+
+test('saved projection assumptions and county/regional controls must reconcile', () => {
+    for (const mutate of [
+        detail => { delete detail.populationProjection; },
+        detail => { detail.populationProjection.multiplier = 1.1; },
+        detail => { detail.populationProjection.annualGrowthRate = -100; },
+        detail => { detail.populationProjection.targetYear = 2025.5; },
+        detail => { detail.populationProjection.yearsFromBase = 7; },
+        detail => { detail.populationProjection.usesProjectedAdults = false; },
+        detail => { detail.county.adults = 1201; },
+        detail => { detail.regional.baseAdultsWithin50 += 1; }
+    ]) {
+        const snapshot = scenario();
+        mutate(snapshot.visualizationContext.impactBreakdown);
+        assert.throws(() => visualization.restore(snapshot));
+    }
 });

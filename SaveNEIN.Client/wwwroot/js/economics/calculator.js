@@ -2207,31 +2207,31 @@ window.EconomicCalculator = (function ()
 
         setTxt('calc-break-health-victims', fmtVictims);
         setTxt('calc-break-health-per', fmt(costHealthPer));
-        setTxt('calc-break-health-total', fmtM(totalCostHealth));
+        setTxt('calc-break-health-total', fmt(totalCostHealth));
 
         setTxt('calc-break-social-victims', fmtVictims);
         setTxt('calc-break-social-per', fmt(costSocialPer));
-        setTxt('calc-break-social-total', fmtM(totalCostSocial));
+        setTxt('calc-break-social-total', fmt(totalCostSocial));
 
         setTxt('calc-break-crime-victims', fmtVictims);
         setTxt('calc-break-crime-per', fmt(costCrimePer));
-        setTxt('calc-break-crime-total', fmtM(totalCostCrime));
+        setTxt('calc-break-crime-total', fmt(totalCostCrime));
 
         setTxt('calc-break-legal-victims', fmtVictims);
         setTxt('calc-break-legal-per', fmt(costLegalPer));
-        setTxt('calc-break-legal-total', fmtM(totalCostLegal));
+        setTxt('calc-break-legal-total', fmt(totalCostLegal));
 
         setTxt('calc-break-abused-victims', fmtVictims);
         setTxt('calc-break-abused-per', fmt(costAbusedPer));
-        setTxt('calc-break-abused-total', fmtM(totalCostAbused));
+        setTxt('calc-break-abused-total', fmt(totalCostAbused));
 
         setTxt('calc-break-employment-victims', fmtVictims);
         setTxt('calc-break-employment-per', fmt(costEmploymentPer));
-        setTxt('calc-break-employment-total', fmtM(totalCostEmployment));
+        setTxt('calc-break-employment-total', fmt(totalCostEmployment));
 
         setTxt('calc-break-total-victims', fmtVictims);
         setTxt('calc-total-cost-per', fmt(costPer));
-        setTxt('calc-total-cost-combined', fmtM(totalCost));
+        setTxt('calc-total-cost-combined', fmt(totalCost));
 
         const netImpactRows = [
             {
@@ -2474,7 +2474,7 @@ window.EconomicCalculator = (function ()
         const otherVictimsDisplay = hasImpact ? formatCases(otherVictimsRaw) : '-';
 
         const otherPerDisplay = (v) => hasImpact ? fmt(v) : '-';
-        const otherCostDisplay = (v) => hasImpact ? fmtM(v) : '-';
+        const otherCostDisplay = (v) => hasImpact ? fmt(v) : '-';
 
         setTxt('calc-break-health-victims-other', otherVictimsDisplay);
         setTxt('calc-break-health-per-other', otherPerDisplay(costHealthPer));
@@ -2740,7 +2740,7 @@ window.EconomicCalculator = (function ()
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
             analysisHTML += `<li><strong>Data Source:</strong> Baseline social cost valuations are derived from peer-reviewed research by <a href="https://www.senate.ga.gov/committees/Documents/HiddenCostsofGam.pdf" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">Grinols</a> (2011), with values adjusted for 2025 inflation to reflect current economic conditions.</li>`;
             analysisHTML += `<li><strong>${formattedCountyName} Cost Stack:</strong> ${formattedCountyName} carries ${fmtM(subjectTotalCost)} in modeled social costs, split between ${fmtM(subjectPublicCost)} in General Taxpayer Services Costs and ${fmtM(subjectPrivateCost)} in Private Sector Costs.</li>`;
-            analysisHTML += `<li><strong>${formattedCountyName} Cost Breakout:</strong> Within ${formattedCountyName}, Public Health / Treatment accounts for ${fmtM(totalCostHealth)}, Law Enforcement ${fmtM(totalCostCrime)}, Social Services ${fmtM(totalCostSocial)}, Civil Legal ${fmtM(totalCostLegal)}, Abused Dollars ${fmtM(totalCostAbused)}, and Lost Employment ${fmtM(totalCostEmployment)}.</li>`;
+            analysisHTML += `<li><strong>${formattedCountyName} Cost Breakout:</strong> Within ${formattedCountyName}, Public Health / Treatment accounts for ${fmt(totalCostHealth)}, Law Enforcement ${fmt(totalCostCrime)}, Social Services ${fmt(totalCostSocial)}, Civil Legal ${fmt(totalCostLegal)}, Abused Dollars ${fmt(totalCostAbused)}, and Lost Employment ${fmt(totalCostEmployment)}.</li>`;
             analysisHTML += otherCountiesCount > 0
                 ? `<li><strong>Regional Spillover Costs:</strong> A total of ${otherCountiesCount} additional same-state counties inside the ${zoneDescription.footprint} carry a combined ${fmtM(otherTotalCost)} in spillover social costs, split between ${fmtM(otherTotals.public)} in General Taxpayer Services Costs and ${fmtM(otherTotals.private)} in Private Sector Costs. Those detailed breakouts appear in the regional statement.</li>`
                 : `<li><strong>Regional Spillover Costs:</strong> No additional same-state counties currently register modeled spillover costs inside the ${zoneDescription.footprint}, so the regional statement has no spillover burden to offset.</li>`;

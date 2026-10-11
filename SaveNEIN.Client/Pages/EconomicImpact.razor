@@ -101,6 +101,11 @@
                             <input type="date" @bind="_form.EffectiveOn" />
                             <small>Use the date when the proposed facility's tax rules should apply.</small>
                         </label>
+                        <label class="model-field">
+                            <span>Population scenario year</span>
+                            <input type="number" min="1900" max="2200" step="1" @bind="_form.PopulationScenarioYear" placeholder="Fiscal date year when blank" />
+                            <small>Projects eligible population to this year while keeping the fiscal rule date above.</small>
+                        </label>
                     </div>
 
                     @if (_showProgramEditor)
@@ -866,6 +871,11 @@
         _form.JurisdictionCode = jurisdiction.Code;
         _form.OriginStateCode = stateCode;
         ApplyJurisdictionParameterSet();
+        var projection = scenario.ReadPopulationProjection();
+        var growthDefinition = FindParameter("demographics.population_annual_growth_rate")
+            ?? throw new InvalidDataException("The model catalog does not support the selected population-growth assumption.");
+        _form.PopulationScenarioYear = projection.ScenarioYear;
+        _overrides[growthDefinition.Key] = projection.AnnualGrowthRate;
     }
 
     private static string StateCodeFromFips(string? stateFips) => stateFips switch
@@ -1098,6 +1108,7 @@
                 StableOriginIds = _origins.Select(origin => origin.StableOriginId).ToArray(),
                 CompetitorIds = [],
                 PopulationObservationYear = FindSnapshot(_form.AgePopulationSnapshotId!.Value)?.PeriodEnd.Year ?? observedSnapshot.PeriodEnd.Year,
+                PopulationScenarioYear = _form.PopulationScenarioYear,
                 IncomeTaxYear = FindSnapshot(_form.IncomeSnapshotId!.Value)?.PeriodEnd.Year ?? observedSnapshot.PeriodEnd.Year,
                 EffectiveOn = _form.EffectiveOn,
                 FacilityRegime = _form.FacilityRegime,
@@ -1417,6 +1428,7 @@
             CandidateLatitude = _form.CandidateLatitude,
             CandidateLongitude = _form.CandidateLongitude,
             EffectiveOn = _form.EffectiveOn,
+            PopulationScenarioYear = _form.PopulationScenarioYear,
             OriginGeographySnapshotId = _form.OriginGeographySnapshotId,
             AgePopulationSnapshotId = _form.AgePopulationSnapshotId,
             IncomeSnapshotId = _form.IncomeSnapshotId,
@@ -1461,6 +1473,7 @@
             _form.CandidateLatitude = document.CandidateLatitude;
             _form.CandidateLongitude = document.CandidateLongitude;
             _form.EffectiveOn = document.EffectiveOn;
+            _form.PopulationScenarioYear = document.PopulationScenarioYear;
             _form.OriginGeographySnapshotId = document.OriginGeographySnapshotId;
             _form.AgePopulationSnapshotId = document.AgePopulationSnapshotId;
             _form.IncomeSnapshotId = document.IncomeSnapshotId;
@@ -1503,7 +1516,8 @@
         ScenarioDefinitionDocument document,
         ModelConfiguration configuration)
     {
-        if (!string.Equals(document.SchemaVersion, ScenarioDefinitionDocument.CurrentSchemaVersion, StringComparison.Ordinal))
+        if (!string.Equals(document.SchemaVersion, ScenarioDefinitionDocument.CurrentSchemaVersion, StringComparison.Ordinal) &&
+            !string.Equals(document.SchemaVersion, "savenein.gravity-scenario.v2", StringComparison.Ordinal))
         {
             throw new InvalidDataException($"Unsupported scenario schema '{document.SchemaVersion}'. Expected '{ScenarioDefinitionDocument.CurrentSchemaVersion}'.");
         }
@@ -1529,6 +1543,9 @@
         {
             throw new InvalidDataException("The fiscal rule effective date must be between 1900 and 2200.");
         }
+        if (document.PopulationScenarioYear is < 1900 or > 2200 ||
+            (document.SchemaVersion == "savenein.gravity-scenario.v2" && document.PopulationScenarioYear is not null))
+            throw new InvalidDataException("An explicit population scenario year must be between 1900 and 2200 and use scenario schema v3.");
         if (document.UserOverrides is null)
         {
             throw new InvalidDataException("Imported userOverrides must be a JSON object.");
@@ -1859,6 +1876,7 @@
         _form.DevelopmentProgramId.HasValue &&
         _form.CandidateLatitude is >= -90 and <= 90 &&
         _form.CandidateLongitude is >= -180 and <= 180 &&
+        _form.PopulationScenarioYear is null or (>= 1900 and <= 2200) &&
         _form.OriginGeographySnapshotId.HasValue &&
         _form.AgePopulationSnapshotId.HasValue &&
         _form.IncomeSnapshotId.HasValue &&
@@ -1929,6 +1947,7 @@
         public double? CandidateLatitude { get; set; }
         public double? CandidateLongitude { get; set; }
         public DateOnly EffectiveOn { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+        public int? PopulationScenarioYear { get; set; }
         public Guid? OriginGeographySnapshotId { get; set; }
         public Guid? AgePopulationSnapshotId { get; set; }
         public Guid? IncomeSnapshotId { get; set; }
@@ -2047,7 +2066,7 @@
 
     private sealed class ScenarioDefinitionDocument
     {
-        public const string CurrentSchemaVersion = "savenein.gravity-scenario.v2";
+        public const string CurrentSchemaVersion = "savenein.gravity-scenario.v3";
 
         public string SchemaVersion { get; set; } = CurrentSchemaVersion;
         public string ModelVersion { get; set; } = string.Empty;
@@ -2058,6 +2077,7 @@
         public double? CandidateLatitude { get; set; }
         public double? CandidateLongitude { get; set; }
         public DateOnly EffectiveOn { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+        public int? PopulationScenarioYear { get; set; }
         public Guid? OriginGeographySnapshotId { get; set; }
         public Guid? AgePopulationSnapshotId { get; set; }
         public Guid? IncomeSnapshotId { get; set; }
@@ -2173,6 +2193,7 @@
         public IReadOnlyCollection<string> StableOriginIds { get; set; } = [];
         public IReadOnlyCollection<int> CompetitorIds { get; set; } = [];
         public int PopulationObservationYear { get; set; }
+        public int? PopulationScenarioYear { get; set; }
         public int IncomeTaxYear { get; set; }
         public DateOnly EffectiveOn { get; set; }
         public string FacilityRegime { get; set; } = string.Empty;

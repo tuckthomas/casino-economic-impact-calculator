@@ -86,6 +86,37 @@ public sealed class EconomicScenarioControllerTests
         Assert.IsType<NotFoundObjectResult>(new EconomicScenarioController(cache).Get(token));
     }
 
+    [Fact]
+    public void SavedProjectionConvertsPercentagePointsToModelGrowthShare()
+    {
+        using var empty = JsonDocument.Parse("{}");
+        using var context = JsonSerializer.SerializeToDocument(new
+        {
+            version = "economic-impact-visualization-v3",
+            impactBreakdown = new { populationProjection = new
+            {
+                baseYear = 2020, targetYear = 2030, annualGrowthRate = 1.0, yearsFromBase = 10,
+                multiplier = Math.Pow(1.01, 10), usesProjectedAdults = true
+            } }
+        });
+        var selection = (Valid(empty.RootElement, empty.RootElement) with { VisualizationContext = context.RootElement }).ReadPopulationProjection();
+        Assert.Equal(2030, selection.ScenarioYear);
+        Assert.Equal(2020, selection.ObservationYear);
+        Assert.Equal(0.01, selection.AnnualGrowthRate);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"version\":\"economic-impact-visualization-v2\"}")]
+    [InlineData("{\"version\":\"economic-impact-visualization-v3\",\"impactBreakdown\":{\"populationProjection\":{}}}")]
+    public void MissingOrOldProjectionContextCannotSupplyModelAssumptions(string json)
+    {
+        using var empty = JsonDocument.Parse("{}");
+        using var context = JsonDocument.Parse(json);
+        var snapshot = Valid(empty.RootElement, empty.RootElement) with { VisualizationContext = context.RootElement };
+        Assert.Throws<InvalidDataException>(() => snapshot.ReadPopulationProjection());
+    }
+
     private static EconomicScenarioSnapshot Valid(JsonElement zones, JsonElement outputs) =>
         new(EconomicScenarioSnapshot.CurrentVersion, "18", "18003", 41.0793, -85.1394, zones, outputs);
 }

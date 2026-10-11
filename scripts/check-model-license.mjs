@@ -68,7 +68,7 @@ function getMigrationFiles() {
   if (!existsSync(migrationsDir)) return [];
   const entries = readdirSync(migrationsDir);
   return entries
-    .filter(name => /^0(0[6-9]|1[0-7])_.*\.sql$/.test(name))
+    .filter(name => /^0(0[6-9]|[1-9][0-9])_.*\.sql$/.test(name))
     .map(name => path.join('docs/migrations', name));
 }
 

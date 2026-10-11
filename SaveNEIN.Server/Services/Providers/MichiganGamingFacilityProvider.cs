@@ -297,7 +297,9 @@ internal static class MichiganTribalCasinoCatalog
         new("Four Winds Casino Dowagiac", "Dowagiac", "Pokagon Band of Potawatomi Indians", "58700 M-51 S, Dowagiac, MI 49047"),
         new("Four Winds Casino Hartford", "Hartford", "Pokagon Band of Potawatomi Indians", "68600 Red Arrow Hwy, Hartford, MI 49057"),
         new("Four Winds Casino New Buffalo", "New Buffalo", "Pokagon Band of Potawatomi Indians", "11111 Wilson Rd, New Buffalo, MI 49117"),
-        new("Saganing Eagles Landing Casino & Hotel", "Standish", "Saginaw Chippewa Indian Tribe"),
+        // Operator-published address: https://soaringeaglecasino.com/saganing-eagles-landing/saganing-eagles-landing-contact-us/
+        // The geocoder no longer resolves the full property name as a casino POI.
+        new("Saganing Eagles Landing Casino & Hotel", "Standish", "Saginaw Chippewa Indian Tribe", "2690 Worth Road, Standish, MI 48658"),
         new("Soaring Eagle Casino & Resort", "Mount Pleasant", "Saginaw Chippewa Indian Tribe"),
         new("Soaring Eagle Slot Palace", "Mount Pleasant", "Saginaw Chippewa Indian Tribe"),
         new("Kewadin Casino Christmas", "Christmas", "Sault Ste. Marie Tribe of Chippewa Indians", "N7761 Candy Cane Ln, Christmas, MI 49862"),

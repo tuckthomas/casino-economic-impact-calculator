@@ -127,6 +127,7 @@ public sealed class ModelRunOriginResult
     public string DemandSpecification { get; set; } = string.Empty;
 
     public decimal ResidentDemand { get; set; }
+    public double? EligiblePopulation { get; set; }
     public double BaselineLogAccessibility { get; set; }
     public double WithProjectLogAccessibility { get; set; }
     public decimal InducedResidentDemand { get; set; }

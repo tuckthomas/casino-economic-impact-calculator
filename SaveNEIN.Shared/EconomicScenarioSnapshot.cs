@@ -16,6 +16,33 @@ public sealed record EconomicScenarioSnapshot(
     public const string CurrentVersion = "economic-impact-client-v1";
     public const int MaximumPayloadBytes = 131_072;
 
+    /// <summary>Reads the selected projection without treating it as the fiscal effective date.</summary>
+    public Modeling.PopulationProjectionRequest ReadPopulationProjection()
+    {
+        try
+        {
+            if (VisualizationContext is not { } context ||
+                context.GetProperty("version").GetString() != "economic-impact-visualization-v3")
+                throw new InvalidDataException("The saved population projection is unavailable. Return to location selection and save it again.");
+            var projection = context.GetProperty("impactBreakdown").GetProperty("populationProjection");
+            var request = new Modeling.PopulationProjectionRequest(1,
+                projection.GetProperty("baseYear").GetInt32(), projection.GetProperty("targetYear").GetInt32(),
+                projection.GetProperty("annualGrowthRate").GetDouble() / 100);
+            var result = Modeling.PopulationProjectionArithmetic.Calculate(request);
+            var multiplier = projection.GetProperty("multiplier").GetDouble();
+            if (result.ProjectionYears < 0 || projection.GetProperty("yearsFromBase").GetInt32() != result.ProjectionYears ||
+                !double.IsFinite(multiplier) || multiplier <= 0 ||
+                Math.Abs(multiplier - result.ProjectedPopulation) > Math.Max(1e-6, result.ProjectedPopulation * 1e-9) ||
+                projection.GetProperty("usesProjectedAdults").GetBoolean() != (result.ProjectionYears > 0 && request.AnnualGrowthRate != 0))
+                throw new InvalidDataException("The saved population projection assumptions do not reconcile.");
+            return request;
+        }
+        catch (Exception exception) when (exception is KeyNotFoundException or InvalidOperationException or ArgumentException or FormatException)
+        {
+            throw new InvalidDataException("The saved population projection is incomplete or invalid. Return to location selection and save it again.", exception);
+        }
+    }
+
     public void Validate()
     {
         if (Version != CurrentVersion)

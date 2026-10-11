@@ -14,4 +14,8 @@ public static class EconomicModelInterop
     [JSInvokable("CalculateSocialCosts")]
     public static SocialCostTotals CalculateSocialCosts(SocialCostCalculationRequest request) =>
         SocialCostArithmetic.Calculate(request);
+
+    [JSInvokable("ProjectPopulation")]
+    public static PopulationProjectionOutput ProjectPopulation(PopulationProjectionRequest request) =>
+        PopulationProjectionArithmetic.Calculate(request);
 }
