@@ -33,7 +33,7 @@ jobs:
           npm run check:ui-text
           npm run check:tooltips
           npm run check:model-license
-          node --test scripts/validation/economic-zones.test.mjs
+          node --test scripts/validation/economic-zones.test.mjs scripts/validation/scenario-visualization.test.mjs
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4

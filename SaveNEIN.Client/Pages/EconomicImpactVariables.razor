@@ -1103,7 +1103,14 @@ else
             // OnAfterRenderAsync runs after the markup exists. No artificial timer needed.
             if (await JSRuntime.InvokeAsync<bool>("window.ensureEconomicCalculator"))
             {
-                try { await JSRuntime.InvokeVoidAsync("window.EconomicCalculator.init"); } catch (Exception e) { Console.WriteLine($"Calc Init: {e.Message}"); }
+                try { await JSRuntime.InvokeVoidAsync("window.EconomicCalculator.init", _scenario); }
+                catch (Exception exception)
+                {
+                    var detail = exception.Message.Split('\n', 2)[0];
+                    _scenarioError = $"The saved visualization could not be restored: {detail}";
+                    StateHasChanged();
+                    return;
+                }
             }
             try { await JSRuntime.InvokeVoidAsync("window.initSubstitutionCharts"); } catch (Exception e) { Console.WriteLine($"Chart Init: {e.Message}"); }
         }

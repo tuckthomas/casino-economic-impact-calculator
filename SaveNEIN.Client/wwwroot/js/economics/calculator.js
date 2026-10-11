@@ -3,6 +3,9 @@ window.EconomicCalculator = (function ()
     // Track initialization state
     let isInitialized = false;
     let isSyncing = false;
+    let restoredScenarioContext = false;
+    let listenerController = null;
+    let initializationGeneration = 0;
 
     const getCountyData = () => window.CurrentCountyList || [];
 
@@ -1946,7 +1949,7 @@ window.EconomicCalculator = (function ()
         });
 
         // NOTE: revenueM is already calculated above
-        const rate = parseFloat(els.inRate.value);
+        const rate = lastImpactBreakdown?.baselineRate ?? parseFloat(els.inRate?.value ?? 0);
 
         // Get costs
         const cCrime = parseInt(els.inCostCrime.value);
@@ -1974,7 +1977,11 @@ window.EconomicCalculator = (function ()
 
         // Logic
         const totalPopEl = document.getElementById('disp-pop-impact-zones');
-        if (totalPopEl)
+        if (lastImpactBreakdown?.county)
+        {
+            currentPop = lastImpactBreakdown.county.total;
+        }
+        else if (totalPopEl)
         {
             const val = parseInt(totalPopEl.textContent.replace(/,/g, ''));
             currentPop = !isNaN(val) && val > 0 ? val : 0;
@@ -1984,9 +1991,9 @@ window.EconomicCalculator = (function ()
         }
 
         // Retrieve Adult Population from Map DOM (populated by map.js)
-        let adultPop = currentPop; // Fallback
+        let adultPop = lastImpactBreakdown?.county?.adults ?? currentPop; // Saved/event context takes precedence.
         const adultPopEl = document.getElementById('disp-pop-adults');
-        if (adultPopEl)
+        if (!lastImpactBreakdown?.county && adultPopEl)
         {
             const val = parseInt(adultPopEl.textContent.replace(/,/g, ''));
             if (!isNaN(val) && val > 0) adultPop = val;
@@ -2518,7 +2525,7 @@ window.EconomicCalculator = (function ()
             const taxEffRate = agrM > 0 ? (totalRevenue / (agrM * 1000000)) * 100 : 0;
 
             const countyInfo = getCountyData().find(c => c.pop === currentPop) || { name: subjectCountyName, pop: currentPop };
-            const baselineRateVal = parseFloat(els.inRate.value);
+            const baselineRateVal = lastImpactBreakdown?.baselineRate ?? parseFloat(els.inRate?.value ?? 0);
 
             function readInt(id)
             {
@@ -3319,6 +3326,9 @@ window.EconomicCalculator = (function ()
 
     function initListeners()
     {
+        listenerController?.abort();
+        listenerController = new AbortController();
+        const signal = listenerController.signal;
         const inputs = [
             els.inRevenue, els.inAGR, els.inAllocation,
             els.inCostCrime, els.inCostBusiness, els.inCostBankruptcy,
@@ -3328,7 +3338,7 @@ window.EconomicCalculator = (function ()
 
         inputs.forEach(input =>
         {
-            if (input) input.addEventListener('input', scheduleCalculate);
+            if (input) input.addEventListener('input', scheduleCalculate, { signal });
         });
 
         const scenarioSelect = document.getElementById('tax-allocation-scenario-select');
@@ -3364,7 +3374,7 @@ window.EconomicCalculator = (function ()
                 setTaxScenarioMenuOpen(false);
                 scenarioTrigger.focus();
             };
-            document.addEventListener('click', () => setTaxScenarioMenuOpen(false));
+            document.addEventListener('click', () => setTaxScenarioMenuOpen(false), { signal });
         }
 
         document.querySelectorAll('[data-net-chart-mode]').forEach(button =>
@@ -3404,10 +3414,11 @@ window.EconomicCalculator = (function ()
         // Listen for map updates (replaces old county select logic)
         window.addEventListener('impact-breakdown-updated', async (e) =>
         {
-            if (e.detail)
+            if (e.detail && !restoredScenarioContext)
             {
                 console.log('[Calculator] Received impact-breakdown-updated event, victims:', e.detail.county?.victims?.total);
                 await hydrateMunicipalityContext(e.detail);
+                if (restoredScenarioContext || signal.aborted) return;
                 lastImpactBreakdown = e.detail;
 
                 // Update local state if needed
@@ -3418,34 +3429,41 @@ window.EconomicCalculator = (function ()
 
                 calculate();
             }
-        });
+        }, { signal });
 
         // Global listener for custom events from SliderInput
         window.addEventListener('slider-input-sync', (e) =>
         {
             scheduleCalculate(e);
-        });
+        }, { signal });
     }
 
     // Main init function - called by Blazor after component renders
-    async function init()
+    async function init(snapshot = null)
     {
+        const generation = ++initializationGeneration;
+        const restored = snapshot ? window.EconomicScenarioVisualization.restore(snapshot) : null;
+        restoredScenarioContext = !!restored;
         if (isInitialized && els.inAGR && document.body.contains(els.inAGR))
         {
-            console.log('EconomicCalculator already initialized, skipping');
+            lastImpactBreakdown = restored;
+            if (restored) await hydrateMunicipalityContext(restored);
+            if (generation !== initializationGeneration) return;
+            calculate();
             return;
         }
 
         console.log('Initializing EconomicCalculator...');
 
         // Reset stale data from previous navigation
-        lastImpactBreakdown = null;
+        lastImpactBreakdown = restored;
         lastCalculationResult = null;
         currentPop = 0;
 
         // Populate DOM references
         initElements();
         await ensureTaxAllocationScenariosLoaded();
+        if (generation !== initializationGeneration) return;
         syncNetImpactModeButtons();
         syncSensitivitySeriesButtons();
         renderTaxAllocationScenarioControls();
@@ -3453,7 +3471,9 @@ window.EconomicCalculator = (function ()
         // Set up event listeners
         initListeners();
 
-        // Run initial calculation
+        // Restore before the first calculation; Part 2 has no live map DOM/event.
+        if (restored) await hydrateMunicipalityContext(restored);
+        if (generation !== initializationGeneration) return;
         calculate();
 
         isInitialized = true;

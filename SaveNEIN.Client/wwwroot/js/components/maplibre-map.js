@@ -105,6 +105,7 @@ window.MapLibreImpactMap = (function ()
     // Radius mode keeps public previews fully client-side after cached population data loads.
     let riskZoneMode = 'radius';
     let zoneCount = 3;
+    let lastVisualizationBreakdown = null;
     let drawingOverlaysSuppressed = false;
 
     // In-map guidance card state
@@ -1094,9 +1095,8 @@ window.MapLibreImpactMap = (function ()
             t3Pop: data.t3Pop
         })).filter(c => c.t1Pop + c.t2Pop + c.t3Pop > 0);
 
-        // Dispatch events
-        window.dispatchEvent(new CustomEvent('impact-breakdown-updated', {
-            detail: {
+        lastVisualizationBreakdown = {
+                zoneConfiguration: window.EconomicZones.snapshot(riskZoneMode, zoneCount, CIRCLE_RADII),
                 countyFips: currentCountyFips,
                 stateFips,
                 stateName,
@@ -1125,8 +1125,8 @@ window.MapLibreImpactMap = (function ()
                     victimsWithin50: totalNetNewRegional
                 },
                 byCounty: byCountyArray
-            }
-        }));
+            };
+        window.dispatchEvent(new CustomEvent('impact-breakdown-updated', { detail: lastVisualizationBreakdown }));
 
         const triggerInput = document.getElementById('input-revenue');
         if (triggerInput) triggerInput.dispatchEvent(new Event('input'));
@@ -4917,8 +4917,12 @@ window.MapLibreImpactMap = (function ()
         },
         getScenarioSnapshot: () =>
         {
-            const read = id => document.getElementById(id)?.value ?? null;
+            if (!lastVisualizationBreakdown || lastVisualizationBreakdown.markerLat !== markerPosition?.lat ||
+                lastVisualizationBreakdown.markerLng !== markerPosition?.lng || lastVisualizationBreakdown.countyFips !== currentCountyFips ||
+                JSON.stringify(lastVisualizationBreakdown.zoneConfiguration) !== JSON.stringify(window.EconomicZones.snapshot(riskZoneMode, zoneCount, CIRCLE_RADII)))
+                throw new Error('Wait for the selected location population to finish calculating before continuing.');
             return {
+                visualizationContext: { version: window.EconomicScenarioVisualization.version, impactBreakdown: lastVisualizationBreakdown },
                 version: 'economic-impact-client-v1',
                 stateFips: currentStateFips,
                 countyFips: currentCountyFips,

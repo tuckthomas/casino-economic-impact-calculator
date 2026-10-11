@@ -16,8 +16,12 @@ public sealed class EconomicScenarioControllerTests
         string token;
         using (var zones = JsonDocument.Parse("{\"count\":3,\"tiers\":[15,30,60],\"mode\":\"isochrone\"}"))
         using (var outputs = JsonDocument.Parse("{\"tier1Adults\":123,\"countyBreakdown\":{\"18003\":123}}"))
+        using (var visualization = JsonDocument.Parse("{\"version\":\"economic-impact-visualization-v1\",\"impactBreakdown\":{\"county\":{\"adults\":123}}}"))
         {
-            var saved = Assert.IsType<OkObjectResult>(controller.Save(Valid(zones.RootElement, outputs.RootElement)));
+            var saved = Assert.IsType<OkObjectResult>(controller.Save(Valid(zones.RootElement, outputs.RootElement) with
+            {
+                VisualizationContext = visualization.RootElement
+            }));
             using var result = JsonSerializer.SerializeToDocument(saved.Value);
             token = result.RootElement.GetProperty("token").GetString()!;
             Assert.Equal(7200, result.RootElement.GetProperty("expiresInSeconds").GetInt32());
@@ -28,6 +32,7 @@ public sealed class EconomicScenarioControllerTests
         Assert.Equal("18003", retrieved.CountyFips);
         Assert.Equal(60, retrieved.ZoneConfiguration.GetProperty("tiers")[2].GetInt32());
         Assert.Equal(123, retrieved.PreviewOutputs.GetProperty("countyBreakdown").GetProperty("18003").GetInt32());
+        Assert.Equal(123, retrieved.VisualizationContext!.Value.GetProperty("impactBreakdown").GetProperty("county").GetProperty("adults").GetInt32());
     }
 
     [Theory]

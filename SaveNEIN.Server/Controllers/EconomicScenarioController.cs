@@ -31,7 +31,8 @@ public sealed class EconomicScenarioController(IMemoryCache cache) : ControllerB
         snapshot = snapshot with
         {
             ZoneConfiguration = snapshot.ZoneConfiguration.Clone(),
-            PreviewOutputs = snapshot.PreviewOutputs.Clone()
+            PreviewOutputs = snapshot.PreviewOutputs.Clone(),
+            VisualizationContext = snapshot.VisualizationContext?.Clone()
         };
 
         var token = Guid.NewGuid().ToString("N");

@@ -10,7 +10,8 @@ public sealed record EconomicScenarioSnapshot(
     double? MarkerLatitude,
     double? MarkerLongitude,
     JsonElement ZoneConfiguration,
-    JsonElement PreviewOutputs)
+    JsonElement PreviewOutputs,
+    JsonElement? VisualizationContext = null)
 {
     public const string CurrentVersion = "economic-impact-client-v1";
     public const int MaximumPayloadBytes = 131_072;
@@ -28,6 +29,8 @@ public sealed record EconomicScenarioSnapshot(
             throw new InvalidDataException("A valid candidate latitude and longitude are required.");
         if (ZoneConfiguration.ValueKind != JsonValueKind.Object || PreviewOutputs.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("Zone configuration and visualization outputs must be JSON objects.");
+        if (VisualizationContext is { } context && context.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("Visualization context must be a JSON object.");
     }
 
     private static bool IsDigits(string? value, int length) =>
