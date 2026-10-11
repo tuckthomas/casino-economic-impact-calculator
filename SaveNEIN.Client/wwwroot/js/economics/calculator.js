@@ -1718,6 +1718,11 @@ window.EconomicCalculator = (function ()
 
     function calculate(e)
     {
+        const zoneDescription = lastImpactBreakdown?.zoneConfiguration
+            ? window.EconomicScenarioVisualization.describeZones(lastImpactBreakdown.zoneConfiguration)
+            : { bands: [], footprint: 'selected impact zones' };
+        const footprintLabel = document.getElementById('other-counties-zone-footprint');
+        if (footprintLabel) footprintLabel.textContent = zoneDescription.footprint;
         if (isSyncing) return;
 
         const fmtInput = (v, dec = 0) => v.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec });
@@ -2678,32 +2683,28 @@ window.EconomicCalculator = (function ()
             if (projectionUsesProjectedAdults)
             {
                 analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${formattedCountyName}, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) used in this run is ${adultPopStr}, projected from the ${Math.round(countyBaseAdults).toLocaleString()} baseline to ${populationProjection.targetYear}.</li>`;
-                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 60-minute drive-time footprint, representing a projected regional adult population of ${regionalAdults.toLocaleString()} (up from a ${Math.round(regionalBaseAdults).toLocaleString()} baseline).</li>`;
+                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the ${zoneDescription.footprint}, representing a projected regional adult population of ${regionalAdults.toLocaleString()} (up from a ${Math.round(regionalBaseAdults).toLocaleString()} baseline).</li>`;
             } else if (projectionHasFutureYear)
             {
                 analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${formattedCountyName}, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area remains ${adultPopStr} because the selected projection settings do not change the baseline adult count.</li>`;
-                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 60-minute drive-time footprint, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
+                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the ${zoneDescription.footprint}, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
             } else
             {
                 analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${formattedCountyName}, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area is ${adultPopStr}.</li>`;
-                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 60-minute drive-time footprint, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
+                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the ${zoneDescription.footprint}, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
             }
 
             analysisHTML += `<li><strong>Impact Distribution:</strong> This distribution models the increased statistical likelihood of residents developing problem gambling behaviors (Gambling Disorder) based on their geographic proximity to the casino site.
-                                            <ul class="list-[circle] pl-8 mt-2 space-y-2">
-                                                <li><strong>High Risk Zone (0-15 minutes):</strong> A total of ${t1Pop} ${formattedCountyName} residents are subject to a ${t1Rate} prevalence rate due to immediate proximity.</li>
-                                                <li><strong>Elevated Risk Zone (15-30 minutes):</strong> A total of ${t2Pop} ${formattedCountyName} residents are subject to a ${t2Rate} prevalence rate.</li>`;
-
-            if (Math.round(t3AdultsCounty) <= 0)
-            {
-                analysisHTML += `<li><strong>Baseline Risk Zone (30-60 minutes):</strong> ${formattedCountyName} has effectively zero residents in the baseline band under the 60-minute model cutoff.</li>`;
-            } else
-            {
-                analysisHTML += `<li><strong>Baseline Risk Zone (30-60 minutes):</strong> A total of ${t3Pop} ${formattedCountyName} residents are subject to the baseline ${t3Rate} rate.</li>`;
-            }
+                                            <ul class="list-[circle] pl-8 mt-2 space-y-2">`;
+            const riskNames = ['High Risk', 'Elevated Risk', 'Baseline Risk'];
+            const zonePopulations = [t1Pop, t2Pop, t3Pop];
+            const zoneRates = [t1Rate, t2Rate, t3Rate];
+            zoneDescription.bands.forEach((band, index) => {
+                analysisHTML += `<li><strong>${riskNames[index]} Zone (${band}):</strong> A total of ${zonePopulations[index]} ${formattedCountyName} residents are subject to a ${zoneRates[index]} prevalence rate.</li>`;
+            });
             analysisHTML += `</ul></li>`;
             // Updated conclusion to be clearer
-            analysisHTML += `<li><strong>Prevalence Outcome:</strong> The resulting net effective problem gambler growth rate for ${formattedCountyName} is ${effRateDisplay} (of the adult population), projecting ${victims.toLocaleString()} new problem gamblers within ${formattedCountyName} (within the 60-minute drive-time footprint). Regionally, an additional ${Math.round(otherVictims).toLocaleString()} new problem gamblers are projected across the ${otherCountiesCount} adjacent counties.</li>`;
+            analysisHTML += `<li><strong>Prevalence Outcome:</strong> The resulting net effective problem gambler growth rate for ${formattedCountyName} is ${effRateDisplay} (of the adult population), projecting ${victims.toLocaleString()} new problem gamblers within ${formattedCountyName} (within the ${zoneDescription.footprint}). Regionally, an additional ${Math.round(otherVictims).toLocaleString()} new problem gamblers are projected across the ${otherCountiesCount} adjacent counties.</li>`;
             analysisHTML += `</ul>`;
 
             // 4. Analysis (Split into sections)
@@ -2729,8 +2730,8 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<li><strong>${formattedCountyName} Cost Stack:</strong> ${formattedCountyName} carries ${fmtM(subjectTotalCost)} in modeled social costs, split between ${fmtM(subjectPublicCost)} in General Taxpayer Services Costs and ${fmtM(subjectPrivateCost)} in Private Sector Costs.</li>`;
             analysisHTML += `<li><strong>${formattedCountyName} Cost Breakout:</strong> Within ${formattedCountyName}, Public Health / Treatment accounts for ${fmtM(totalCostHealth)}, Law Enforcement ${fmtM(totalCostCrime)}, Social Services ${fmtM(totalCostSocial)}, Civil Legal ${fmtM(totalCostLegal)}, Abused Dollars ${fmtM(totalCostAbused)}, and Lost Employment ${fmtM(totalCostEmployment)}.</li>`;
             analysisHTML += otherCountiesCount > 0
-                ? `<li><strong>Regional Spillover Costs:</strong> A total of ${otherCountiesCount} additional same-state counties inside the 50-mile footprint carry a combined ${fmtM(otherTotalCost)} in spillover social costs, split between ${fmtM(otherTotals.public)} in General Taxpayer Services Costs and ${fmtM(otherTotals.private)} in Private Sector Costs. Those detailed breakouts appear in the regional statement.</li>`
-                : `<li><strong>Regional Spillover Costs:</strong> No additional same-state counties currently register modeled spillover costs inside the 50-mile footprint, so the regional statement has no spillover burden to offset.</li>`;
+                ? `<li><strong>Regional Spillover Costs:</strong> A total of ${otherCountiesCount} additional same-state counties inside the ${zoneDescription.footprint} carry a combined ${fmtM(otherTotalCost)} in spillover social costs, split between ${fmtM(otherTotals.public)} in General Taxpayer Services Costs and ${fmtM(otherTotals.private)} in Private Sector Costs. Those detailed breakouts appear in the regional statement.</li>`
+                : `<li><strong>Regional Spillover Costs:</strong> No additional same-state counties currently register modeled spillover costs inside the ${zoneDescription.footprint}, so the regional statement has no spillover burden to offset.</li>`;
             analysisHTML += `<li><strong>Consolidated Social Cost Total:</strong> Combining ${formattedCountyName} with all ${otherCountiesCount} same-state spillover counties produces ${fmtM(stateWideSocialCost)} in total modeled social costs.</li>`;
 
             analysisHTML += '</ul>';

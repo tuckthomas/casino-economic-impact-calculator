@@ -7,6 +7,26 @@ const context = vm.createContext({ window: {} });
 vm.runInContext(readFileSync(new URL('../../SaveNEIN.Client/wwwroot/js/economics/scenario-visualization.js', import.meta.url), 'utf8'), context);
 const visualization = context.window.EconomicScenarioVisualization;
 
+test('zone descriptions use custom radii, drive-time units, and only active bands', () => {
+    const radius = visualization.describeZones({ count: 2, tiers: [5, 12.25], unit: 'miles', mode: 'radius' });
+    assert.equal(JSON.stringify(radius.bands), '["0–5 miles","5–12.25 miles"]');
+    assert.equal(radius.footprint, '12.25-mile radius');
+    for (const mode of ['grid', 'isochrone']) {
+        const routed = visualization.describeZones({ count: 3, tiers: [15, 30, 60], unit: 'minutes-drive-time', mode });
+        assert.equal(routed.bands[2], '30–60 minutes drive time');
+        assert.equal(routed.footprint, '60-minute drive-time footprint');
+    }
+});
+
+test('malformed zone settings are rejected before describing a saved result', () => {
+    for (const configuration of [null,
+        { count: 2, tiers: [5], unit: 'miles', mode: 'radius' },
+        { count: 2, tiers: [5, 4], unit: 'miles', mode: 'radius' },
+        { count: 1, tiers: [Infinity], unit: 'miles', mode: 'radius' },
+        { count: 1, tiers: [5], unit: 'minutes-drive-time', mode: 'radius' }])
+        assert.throws(() => visualization.describeZones(configuration));
+});
+
 function scenario() {
     const zoneConfiguration = { count: 3, tiers: [5, 12, 40], unit: 'miles', mode: 'radius' };
     return {
@@ -80,4 +100,33 @@ test('population reconciliation, finite values, and duplicate counties are enfor
         mutate(snapshot.visualizationContext.impactBreakdown);
         assert.throws(() => visualization.restore(snapshot));
     }
+});
+
+test('disabled zones cannot retain population in a saved visualization', () => {
+    const snapshot = scenario();
+    snapshot.zoneConfiguration.count = 1;
+    snapshot.zoneConfiguration.tiers = [5];
+    assert.throws(() => visualization.restore(snapshot), /Disabled impact zones/);
+});
+
+test('disabled zones cannot retain victims when their populations are zero', () => {
+    const snapshot = scenario();
+    snapshot.zoneConfiguration.count = 2;
+    snapshot.zoneConfiguration.tiers = [5, 12];
+    const detail = snapshot.visualizationContext.impactBreakdown;
+    detail.county.t3Adults = 0;
+    detail.county.adultsWithin50 = 300;
+    detail.regional.t3Adults = 0;
+    detail.regional.adultsWithin50 = 350;
+    detail.byCounty.forEach(county => { county.t3Pop = 0; });
+    assert.throws(() => visualization.restore(snapshot), /Disabled impact zones contain saved victims/);
+    detail.county.victims.t3 = 0;
+    detail.county.victims.total = 3;
+    assert.equal(visualization.restore(snapshot).county.victims.total, 3);
+});
+
+test('equivalent zone JSON restores regardless of property order', () => {
+    const snapshot = scenario();
+    snapshot.zoneConfiguration = { unit: 'miles', tiers: [5, 12, 40], mode: 'radius', count: 3 };
+    assert.equal(visualization.restore(snapshot).county.adults, 1200);
 });
