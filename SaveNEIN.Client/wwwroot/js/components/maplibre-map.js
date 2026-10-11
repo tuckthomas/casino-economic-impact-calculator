@@ -416,7 +416,7 @@ window.MapLibreImpactMap = (function ()
                 { ...createCircleGeoJSON([lngLat.lng, lngLat.lat], CIRCLE_RADII.tier3), properties: { tier: 3 } },
                 { ...createCircleGeoJSON([lngLat.lng, lngLat.lat], CIRCLE_RADII.tier2), properties: { tier: 2 } },
                 { ...createCircleGeoJSON([lngLat.lng, lngLat.lat], CIRCLE_RADII.tier1), properties: { tier: 1 } }
-            ]
+            ].filter(feature => feature.properties.tier <= zoneCount)
         };
         const source = map.getSource('impact-circles');
         if (source) source.setData(circles);
@@ -852,6 +852,7 @@ window.MapLibreImpactMap = (function ()
         // Only run radius summation if NOT in grid mode
         if (riskZoneMode === 'radius')
         {
+            const zones = window.EconomicZones.radiusConfiguration(zoneCount, CIRCLE_RADII);
             byCounty = {}; // Reset global for Radius calculation
             for (const entry of currentCalcFeatures)
             {
@@ -869,19 +870,20 @@ window.MapLibreImpactMap = (function ()
                 const dist = distanceMiles(centerLng, centerLat, entry.lng, entry.lat);
                 const bucket = byCounty[effectiveCountyFips] || (byCounty[effectiveCountyFips] = { fips: effectiveCountyFips, t1Pop: 0, t2Pop: 0, t3Pop: 0 });
 
-                if (dist <= 10)
+                const tier = window.EconomicZones.tierForDistance(dist, zones);
+                if (tier === 1)
                 {
                     baseAdultsWithin50 += basePopAdult;
                     t1PopRegional += popAdult;
                     if (isSameCounty) t1PopCounty += popAdult;
                     bucket.t1Pop += popAdult;
-                } else if (dist <= 20)
+                } else if (tier === 2)
                 {
                     baseAdultsWithin50 += basePopAdult;
                     t2PopRegional += popAdult;
                     if (isSameCounty) t2PopCounty += popAdult;
                     bucket.t2Pop += popAdult;
-                } else if (dist <= 50)
+                } else if (tier === 3)
                 {
                     baseAdultsWithin50 += basePopAdult;
                     t3PopRegional += popAdult;
@@ -4922,12 +4924,7 @@ window.MapLibreImpactMap = (function ()
                 countyFips: currentCountyFips,
                 markerLatitude: markerPosition?.lat ?? null,
                 markerLongitude: markerPosition?.lng ?? null,
-                zoneConfiguration: {
-                    count: 3,
-                    tiers: [15, 30, 60],
-                    unit: 'minutes-drive-time',
-                    mode: riskZoneMode
-                },
+                zoneConfiguration: window.EconomicZones.snapshot(riskZoneMode, zoneCount, CIRCLE_RADII),
                 previewOutputs: {
                     tier1Adults: t1PopRegional,
                     tier2Adults: t2PopRegional,

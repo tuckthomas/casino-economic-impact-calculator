@@ -213,12 +213,13 @@
                 '/js/lib/pmtiles.js',
                 '/js/lib/turf.min.js',
                 '/js/lib/terra-draw.umd.js',
+                '/js/economics/zones.js',
                 '/js/components/maplibre-map.js'
             ];
             const loadScript = function (url) {
                 return new Promise(function (resolve, reject) {
                     const script = document.createElement('script');
-                    script.src = url + '?v=20261008-route-loading';
+                    script.src = url + '?v=20261011-zone-handoff';
                     script.onload = resolve;
                     script.onerror = function () { reject(new Error('Could not load ' + url)); };
                     document.head.appendChild(script);

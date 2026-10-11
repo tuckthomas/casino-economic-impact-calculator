@@ -832,46 +832,40 @@
 
     private async Task ApplyClientScenarioAsync()
     {
-        if (_configuration is null || string.IsNullOrWhiteSpace(ScenarioToken))
+        if (_configuration is null || ScenarioToken is null)
         {
             return;
         }
 
-        try
+        if (string.IsNullOrWhiteSpace(ScenarioToken))
+            throw new InvalidDataException("The saved Part 1 scenario token is empty. Return to location selection and save it again.");
+
+        using var response = await Http.GetAsync(
+            $"api/economic-scenarios/{Uri.EscapeDataString(ScenarioToken)}");
+        if (!response.IsSuccessStatusCode)
         {
-            using var response = await Http.GetAsync(
-                $"api/economic-scenarios/{Uri.EscapeDataString(ScenarioToken)}");
-            if (!response.IsSuccessStatusCode)
-            {
-                return;
-            }
-
-            var scenario = await response.Content.ReadFromJsonAsync<ClientScenarioSnapshot>();
-            if (scenario is null)
-            {
-                return;
-            }
-
-            _form.CandidateLatitude = scenario.MarkerLatitude;
-            _form.CandidateLongitude = scenario.MarkerLongitude;
-            _form.ScenarioName = string.IsNullOrWhiteSpace(scenario.CountyFips)
-                ? "Economic impact scenario"
-                : $"Economic impact scenario — county {scenario.CountyFips}";
-
-            var stateCode = StateCodeFromFips(scenario.StateFips);
-            var jurisdiction = _configuration.Jurisdictions.FirstOrDefault(item =>
-                StateCode(item.Code).Equals(stateCode, StringComparison.OrdinalIgnoreCase));
-            if (jurisdiction is not null)
-            {
-                _form.JurisdictionCode = jurisdiction.Code;
-                _form.OriginStateCode = stateCode;
-                ApplyJurisdictionParameterSet();
-            }
+            throw new InvalidOperationException("The saved Part 1 scenario is unavailable or expired. Return to location selection and save it again.");
         }
-        catch (Exception exception)
+
+        var scenario = await response.Content.ReadFromJsonAsync<EconomicScenarioSnapshot>()
+            ?? throw new InvalidDataException("The saved Part 1 scenario response was empty.");
+        scenario.Validate();
+        var stateCode = StateCodeFromFips(scenario.StateFips);
+        var jurisdiction = _configuration.Jurisdictions.FirstOrDefault(item =>
+            StateCode(item.Code).Equals(stateCode, StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrEmpty(stateCode) || jurisdiction is null)
         {
-            _error = $"The saved Part 1 location could not be loaded: {exception.Message}";
+            throw new InvalidDataException("The selected location has no supported model jurisdiction. Select a supported location before running the model.");
         }
+
+        _form.CandidateLatitude = scenario.MarkerLatitude;
+        _form.CandidateLongitude = scenario.MarkerLongitude;
+        _form.ScenarioName = string.IsNullOrWhiteSpace(scenario.CountyFips)
+            ? "Economic impact scenario"
+            : $"Economic impact scenario — county {scenario.CountyFips}";
+        _form.JurisdictionCode = jurisdiction.Code;
+        _form.OriginStateCode = stateCode;
+        ApplyJurisdictionParameterSet();
     }
 
     private static string StateCodeFromFips(string? stateFips) => stateFips switch
@@ -1951,14 +1945,6 @@
         public string AttractionSpecification { get; set; } = "observed-ggr";
         public string FrictionForm { get; set; } = "inverse-power";
         public string ObservedMetricKey { get; set; } = "casino-win";
-    }
-
-    private sealed class ClientScenarioSnapshot
-    {
-        public string? StateFips { get; set; }
-        public string? CountyFips { get; set; }
-        public double? MarkerLatitude { get; set; }
-        public double? MarkerLongitude { get; set; }
     }
 
     private sealed class DevelopmentProgramForm

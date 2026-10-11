@@ -7,6 +7,15 @@
 @using SaveNEIN.Client.Pages
 @using System.Text.Json
 
+@if (_scenarioError is not null)
+{
+    <div role="alert" class="mx-auto max-w-4xl p-6 text-base text-white">
+        <p>@_scenarioError</p>
+        <a href="/economic-impact/location" class="mt-4 inline-block underline">Return to location selection</a>
+    </div>
+}
+else
+{
     <section class="bg-[#0f172a] relative overflow-hidden" id="economic-analysis">
         <div class="economic-analysis-body mx-auto max-w-7xl px-0 pt-24 pb-24 sm:pt-28 sm:pb-28 lg:px-8">
             <div class="economic-analysis-section-content">
@@ -1033,47 +1042,64 @@
 
 	    </section>
 
-<EconomicImpact Embedded="true" ScenarioToken="@_scenarioToken" />
+<EconomicImpact @key="_scenarioToken" Embedded="true" ScenarioToken="@_scenarioToken" />
 
 <EconomicModals />
+}
 @code {
-    private ClientScenarioSnapshot? _scenario;
+    private EconomicScenarioSnapshot? _scenario;
     private string? _scenarioToken;
 
-    protected override async Task OnInitializedAsync()
+    [SupplyParameterFromQuery(Name = "scenario")]
+    public string? ScenarioToken { get; set; }
+
+    private string? _scenarioError;
+    private string? _loadedScenarioToken;
+    private bool _scenarioLoaded;
+    private bool _initializeVisualization;
+
+    protected override async Task OnParametersSetAsync()
     {
-        var marker = "?scenario=";
-        var queryIndex = NavigationManager.Uri.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-        if (queryIndex < 0)
+        if (_scenarioLoaded && _loadedScenarioToken == ScenarioToken) return;
+        _scenarioLoaded = true;
+        _loadedScenarioToken = ScenarioToken;
+        _scenario = null;
+        _scenarioError = null;
+        _initializeVisualization = false;
+        _scenarioToken = ScenarioToken;
+        var requestedToken = ScenarioToken;
+        if (ScenarioToken is null)
         {
+            _initializeVisualization = true;
             return;
         }
-
-        var token = NavigationManager.Uri[(queryIndex + marker.Length)..].Split('&', 2)[0];
-        if (!string.IsNullOrWhiteSpace(token))
+        try
         {
-            _scenarioToken = token;
-            using var response = await Http.GetAsync($"api/economic-scenarios/{Uri.EscapeDataString(token)}");
-            if (response.IsSuccessStatusCode)
-            {
-                _scenario = await response.Content.ReadFromJsonAsync<ClientScenarioSnapshot>();
-            }
+            if (string.IsNullOrWhiteSpace(ScenarioToken))
+                throw new InvalidDataException("The saved location token is empty. Return to location selection and save it again.");
+            using var response = await Http.GetAsync($"api/economic-scenarios/{Uri.EscapeDataString(ScenarioToken)}");
+            if (!response.IsSuccessStatusCode)
+                throw new InvalidOperationException("The saved location is unavailable or expired. Return to location selection and save it again.");
+            var snapshot = await response.Content.ReadFromJsonAsync<EconomicScenarioSnapshot>()
+                ?? throw new InvalidDataException("The saved location response was empty.");
+            snapshot.Validate();
+            if (_loadedScenarioToken != requestedToken) return;
+            _scenario = snapshot;
+            _initializeVisualization = true;
         }
-    }
-
-    private sealed class ClientScenarioSnapshot
-    {
-        public string? StateFips { get; set; }
-        public string? CountyFips { get; set; }
-        public double? MarkerLatitude { get; set; }
-        public double? MarkerLongitude { get; set; }
-        public JsonElement ZoneConfiguration { get; set; }
+        catch (Exception exception)
+        {
+            if (_loadedScenarioToken != requestedToken) return;
+            _scenario = null;
+            _scenarioError = exception.Message;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (_initializeVisualization && _scenarioError is null)
         {
+            _initializeVisualization = false;
             // OnAfterRenderAsync runs after the markup exists. No artificial timer needed.
             if (await JSRuntime.InvokeAsync<bool>("window.ensureEconomicCalculator"))
             {
