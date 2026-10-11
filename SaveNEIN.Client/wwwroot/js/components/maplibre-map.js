@@ -940,33 +940,25 @@ window.MapLibreImpactMap = (function ()
 
         const preRate = baselineRate;
         const baselineIncrease = parseFloat(els.inputBaselineIncrease ? els.inputBaselineIncrease.value : 0);
-        const r1 = preRate * 2.0, r2 = preRate * 1.5, r3 = preRate * 1.0;
-        // Delta rates
-        const d1 = Math.max(0, r1 - preRate) + baselineIncrease;
-        const d2 = Math.max(0, r2 - preRate) + baselineIncrease;
-        const d3 = baselineIncrease;
+        const exposure = window.EconomicScenarioVisualization;
+        const countyExposure = exposure.calculateExposure([t1PopCounty, t2PopCounty, t3PopCounty], preRate, baselineIncrease);
+        const regionalExposure = exposure.calculateExposure([t1PopRegional, t2PopRegional, t3PopRegional], preRate, baselineIncrease);
+        const [r1, r2, r3] = countyExposure.prevalenceRates;
+        const [d1, d2, d3] = countyExposure.incrementalRates;
 
         const t1PopOther = Math.max(0, t1PopRegional - t1PopCounty);
         const t2PopOther = Math.max(0, t2PopRegional - t2PopCounty);
         const t3PopOther = Math.max(0, t3PopRegional - t3PopCounty);
 
-        const v1Total = t1PopRegional * (r1 / 100);
-        const v2Total = t2PopRegional * (r2 / 100);
-        const v3Total = t3PopRegional * (r3 / 100);
-        const v1County = t1PopCounty * (r1 / 100);
-        const v2County = t2PopCounty * (r2 / 100);
-        const v3County = t3PopCounty * (r3 / 100);
-        const totalEstimatedCounty = v1County + v2County + v3County;
-        const totalEstimatedRegional = v1Total + v2Total + v3Total;
+        const [v1Total, v2Total, v3Total] = regionalExposure.estimatedCases;
+        const [v1County, v2County, v3County] = countyExposure.estimatedCases;
+        const totalEstimatedCounty = countyExposure.totalEstimatedCases;
+        const totalEstimatedRegional = regionalExposure.totalEstimatedCases;
 
-        const n1Total = t1PopRegional * (d1 / 100);
-        const n2Total = t2PopRegional * (d2 / 100);
-        const n3Total = t3PopRegional * (d3 / 100);
-        const n1County = t1PopCounty * (d1 / 100);
-        const n2County = t2PopCounty * (d2 / 100);
-        const n3County = t3PopCounty * (d3 / 100);
-        const totalNetNewCounty = n1County + n2County + n3County;
-        const totalNetNewRegional = n1Total + n2Total + n3Total;
+        const [n1Total, n2Total, n3Total] = regionalExposure.incrementalCases;
+        const [n1County, n2County, n3County] = countyExposure.incrementalCases;
+        const totalNetNewCounty = countyExposure.totalIncrementalCases;
+        const totalNetNewRegional = regionalExposure.totalIncrementalCases;
 
         // Update UI
         animateValue(els.t1, t1PopRegional);
@@ -1104,6 +1096,7 @@ window.MapLibreImpactMap = (function ()
                 markerLat: centerLat,
                 markerLng: centerLng,
                 baselineRate,
+                baselineIncrease,
                 populationProjection: adultPopulationProjection,
                 county: {
                     adults: countyAdults,

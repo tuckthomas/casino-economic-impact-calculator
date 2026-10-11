@@ -36,10 +36,10 @@ function scenario() {
             version: visualization.version,
             impactBreakdown: {
                 stateFips: '18', countyFips: '18003', markerLat: 41.0793, markerLng: -85.1394,
-                countyName: 'Allen', baselineRate: 1.5, zoneConfiguration,
+                countyName: 'Allen', baselineRate: 1.5, baselineIncrease: 0.25, zoneConfiguration,
                 county: { adults: 1200, baseAdults: 1000, total: 1500, t1Adults: 100, t2Adults: 200, t3Adults: 300,
-                    adultsWithin50: 600, victims: { t1: 1, t2: 2, t3: 3, total: 6 } },
-                regional: { t1Adults: 120, t2Adults: 230, t3Adults: 350, adultsWithin50: 700 },
+                    adultsWithin50: 600, victims: { t1: 1.75, t2: 2, t3: 0.75, total: 4.5 } },
+                regional: { t1Adults: 120, t2Adults: 230, t3Adults: 350, adultsWithin50: 700, victimsWithin50: 5.275 },
                 byCounty: [
                     { fips: '18003', t1Pop: 100, t2Pop: 200, t3Pop: 300 },
                     { fips: '18033', t1Pop: 20, t2Pop: 30, t3Pop: 50 }
@@ -121,12 +121,60 @@ test('disabled zones cannot retain victims when their populations are zero', () 
     detail.byCounty.forEach(county => { county.t3Pop = 0; });
     assert.throws(() => visualization.restore(snapshot), /Disabled impact zones contain saved victims/);
     detail.county.victims.t3 = 0;
-    detail.county.victims.total = 3;
-    assert.equal(visualization.restore(snapshot).county.victims.total, 3);
+    detail.county.victims.total = 3.75;
+    detail.regional.victimsWithin50 = 4.4;
+    assert.equal(visualization.restore(snapshot).county.victims.total, 3.75);
 });
 
 test('equivalent zone JSON restores regardless of property order', () => {
     const snapshot = scenario();
     snapshot.zoneConfiguration = { unit: 'miles', tiers: [5, 12, 40], mode: 'radius', count: 3 };
     assert.equal(visualization.restore(snapshot).county.adults, 1200);
+});
+
+test('nonzero baseline increase survives restoration and county cases conserve the regional result', () => {
+    const restored = visualization.restore(scenario());
+    const countyCases = restored.byCounty.map(county => visualization.calculateExposure(
+        [county.t1Pop, county.t2Pop, county.t3Pop], restored.baselineRate, restored.baselineIncrease).totalIncrementalCases);
+    assert.equal(restored.baselineIncrease, 0.25);
+    assert.equal(countyCases[0], 4.5);
+    assert.ok(Math.abs(countyCases[1] - 0.775) < 1e-12);
+    assert.ok(Math.abs(countyCases.reduce((sum, value) => sum + value, 0) - restored.regional.victimsWithin50) < 1e-12);
+    // Expected cases remain fractional for costing; rounding is only presentation.
+    assert.equal(countyCases[0] * 13203, 59413.5);
+    assert.notEqual(Math.round(countyCases[0]) * 13203, 59413.5);
+});
+
+test('explicit zero prevalence and increase produce no invented cases', () => {
+    const result = visualization.calculateExposure([100, 200, 300], 0, 0);
+    assert.equal(result.totalIncrementalCases, 0);
+    assert.equal(result.totalEstimatedCases, 0);
+});
+
+test('total prevalence includes baseline increase and differs from incremental cases by baseline cases', () => {
+    const result = visualization.calculateExposure([100, 200, 300], 1.5, 0.25);
+    assert.equal(result.totalEstimatedCases, 13.5);
+    assert.equal(result.totalEstimatedCases - result.totalIncrementalCases, 600 * 0.015);
+});
+
+test('missing assumptions, tampered cases, host attribution and out-of-state counties fail restoration', () => {
+    for (const mutate of [
+        detail => { delete detail.baselineIncrease; },
+        detail => { detail.baselineIncrease = 0; },
+        detail => { detail.county.victims.t1 += 1; detail.county.victims.total += 1; },
+        detail => { detail.regional.victimsWithin50 += 1; },
+        detail => { detail.byCounty[0].t1Pop -= 1; detail.byCounty[1].t1Pop += 1; },
+        detail => { detail.byCounty[1].fips = '39001'; }
+    ]) {
+        const snapshot = scenario();
+        mutate(snapshot.visualizationContext.impactBreakdown);
+        assert.throws(() => visualization.restore(snapshot));
+    }
+});
+
+test('invalid prevalence, increase, and population values are rejected', () => {
+    for (const [population, baseline, increase] of [
+        [[1, 2], 1.5, 0], [[1, -2, 3], 1.5, 0], [[1, 2, Infinity], 1.5, 0],
+        [[1, 2, 3], 1.5, -1], [[1, 2, 3], NaN, 0], [[1, 2, 3], 51, 0]
+    ]) assert.throws(() => visualization.calculateExposure(population, baseline, increase));
 });

@@ -1716,6 +1716,20 @@ window.EconomicCalculator = (function ()
         });
     }
 
+    function calculateSocialCosts(incrementalCases, perCaseCosts)
+    {
+        const result = DotNet.invokeMethod('SaveNEIN.Client', 'CalculateSocialCosts', {
+            incrementalCases,
+            domains: Object.entries(perCaseCosts).map(([domainKey, perCaseCost]) => ({ domainKey, perCaseCost, scale: 1 })),
+            lowCaseMultiplier: 1,
+            highCaseMultiplier: 1
+        });
+        return {
+            total: result.annualCost,
+            domains: Object.fromEntries(result.domains.map(domain => [domain.domainKey, domain.annualCost]))
+        };
+    }
+
     function calculate(e)
     {
         const zoneDescription = lastImpactBreakdown?.zoneConfiguration
@@ -2013,7 +2027,7 @@ window.EconomicCalculator = (function ()
         if (lastImpactBreakdown && lastImpactBreakdown.county && lastImpactBreakdown.county.victims && typeof lastImpactBreakdown.county.victims.total === 'number')
         {
             // Use the event data - this is the source of truth from the map's calculation
-            victims = Math.round(lastImpactBreakdown.county.victims.total) || 0;
+            victims = lastImpactBreakdown.county.victims.total;
         }
         else
         {
@@ -2036,32 +2050,28 @@ window.EconomicCalculator = (function ()
         // --- 5-GROUP COST CALCULATIONS ---
         // 1. Public Health / Treatment
         const costHealthPer = cIllness;
-        const totalCostHealth = victims * costHealthPer;
 
         // 2. Social Services (General)
         const costSocialPer = cServices;
-        const totalCostSocial = victims * costSocialPer;
 
         // 3. Law Enforcement
         const costCrimePer = cCrime;
-        const totalCostCrime = victims * costCrimePer;
 
         // 4. Civil Legal
         const costLegalPer = cBankruptcy;
-        const totalCostLegal = victims * costLegalPer;
 
         // 5. Private Economy (Split)
         const costAbusedPer = cAbused;
-        const totalCostAbused = victims * costAbusedPer;
 
         const costEmploymentPer = cBusiness;
-        const totalCostEmployment = victims * costEmploymentPer;
+        const hostCosts = calculateSocialCosts(victims, {
+            health: costHealthPer, social: costSocialPer, crime: costCrimePer,
+            legal: costLegalPer, abused: costAbusedPer, employment: costEmploymentPer
+        });
+        const { health: totalCostHealth, social: totalCostSocial, crime: totalCostCrime,
+            legal: totalCostLegal, abused: totalCostAbused, employment: totalCostEmployment } = hostCosts.domains;
 
-        // Aggregate for Total Cost
-        const totalCostEcon = totalCostAbused + totalCostEmployment; // Kept for backward compat with breakdown if needed
-        const costEconPer = costAbusedPer + costEmploymentPer;
-
-        const totalCost = totalCostHealth + totalCostSocial + totalCostCrime + totalCostLegal + totalCostEcon;
+        const totalCost = hostCosts.total;
         // --- REVENUE SPLIT ---
         const totalRevenue = revenueM * 1000000;
         const agrTotal = agrM * 1000000;
@@ -2147,7 +2157,8 @@ window.EconomicCalculator = (function ()
 
         // Get the baseline increase from the slider
         const baselineIncreaseEl = document.getElementById('input-baseline-increase');
-        const baselineIncrease = baselineIncreaseEl ? parseFloat(baselineIncreaseEl.value) || 0 : 0;
+        const baselineIncrease = lastImpactBreakdown?.baselineIncrease ??
+            (baselineIncreaseEl ? parseFloat(baselineIncreaseEl.value) || 0 : 0);
 
         const otherCosts = computeOtherCountyCosts({
             impactBreakdown: lastImpactBreakdown,
@@ -2182,14 +2193,15 @@ window.EconomicCalculator = (function ()
             total: Number(o.total || 0)
         };
         const otherAdults = Math.round(Number(o.adults || 0));
-        const otherVictims = Math.round(Number(o.victims || 0));
+        const otherVictims = Number(o.victims || 0);
         const otherRate = otherAdults > 0 ? (otherVictims / otherAdults) * 100 : 0;
         const spilloverTotalCost = Number(otherTotals.total || 0);
         const regionalNetAfterSpillover = revenueRda - spilloverTotalCost;
         const consolidatedTotalCost = totalCost + spilloverTotalCost;
         const statewideNet = totalRevenue - consolidatedTotalCost;
-        const fmtVictims = Math.round(victims).toLocaleString();
-        setTxt('calc-pop', Math.round(currentPop).toLocaleString());
+        const formatCases = value => value.toLocaleString(undefined, { maximumFractionDigits: 3 });
+        const fmtVictims = formatCases(victims);
+        setTxt('calc-pop', Math.round(adultPop).toLocaleString());
         setTxt('calc-rate', gamblerGrowthRate.toFixed(2) + '%');
         setTxt('calc-result', fmtVictims);
 
@@ -2459,7 +2471,7 @@ window.EconomicCalculator = (function ()
         const otherVictimsRaw = otherCosts && Array.isArray(otherCosts.counties)
             ? otherCosts.counties.reduce((sum, c) => sum + (Number(c && c.victimsWithin50) || 0), 0)
             : 0;
-        const otherVictimsDisplay = hasImpact ? Math.round(otherVictimsRaw).toLocaleString() : '-';
+        const otherVictimsDisplay = hasImpact ? formatCases(otherVictimsRaw) : '-';
 
         const otherPerDisplay = (v) => hasImpact ? fmt(v) : '-';
         const otherCostDisplay = (v) => hasImpact ? fmtM(v) : '-';
@@ -2547,9 +2559,9 @@ window.EconomicCalculator = (function ()
             const t1Pop = Math.round(t1AdultsCounty).toLocaleString();
             const t2Pop = Math.round(t2AdultsCounty).toLocaleString();
             const t3Pop = Math.round(t3AdultsCounty).toLocaleString();
-            const t1Rate = `${(rate * 2 + baselineIncrease).toFixed(2)}%`;
-            const t2Rate = `${(rate * 1.5 + baselineIncrease).toFixed(2)}%`;
-            const t3Rate = `${(rate + baselineIncrease).toFixed(2)}%`;
+            const prevalenceRates = window.EconomicScenarioVisualization.calculateExposure(
+                [t1AdultsCounty, t2AdultsCounty, t3AdultsCounty], rate, baselineIncrease).prevalenceRates;
+            const [t1Rate, t2Rate, t3Rate] = prevalenceRates.map(value => `${value.toFixed(2)}%`);
             const effRateDisplay = `${gamblerGrowthRate.toFixed(2)}%`;
 
             const regionalImpact = lastImpactBreakdown && lastImpactBreakdown.regional ? lastImpactBreakdown.regional : {};
@@ -2704,7 +2716,7 @@ window.EconomicCalculator = (function ()
             });
             analysisHTML += `</ul></li>`;
             // Updated conclusion to be clearer
-            analysisHTML += `<li><strong>Prevalence Outcome:</strong> The resulting net effective problem gambler growth rate for ${formattedCountyName} is ${effRateDisplay} (of the adult population), projecting ${victims.toLocaleString()} new problem gamblers within ${formattedCountyName} (within the ${zoneDescription.footprint}). Regionally, an additional ${Math.round(otherVictims).toLocaleString()} new problem gamblers are projected across the ${otherCountiesCount} adjacent counties.</li>`;
+            analysisHTML += `<li><strong>Prevalence Outcome:</strong> The resulting net effective problem gambler growth rate for ${formattedCountyName} is ${effRateDisplay} (of the adult population), projecting ${Math.round(victims).toLocaleString()} new problem gamblers within ${formattedCountyName} (within the ${zoneDescription.footprint}). Regionally, an additional ${Math.round(otherVictims).toLocaleString()} new problem gamblers are projected across the ${otherCountiesCount} adjacent counties.</li>`;
             analysisHTML += `</ul>`;
 
             // 4. Analysis (Split into sections)
@@ -2801,18 +2813,10 @@ window.EconomicCalculator = (function ()
         const impacted = impact && Array.isArray(impact.byCounty) ? impact.byCounty : [];
         const subjectCountyFips = String((impact && impact.countyFips) || "");
 
-        const baselineRateCandidate = Number((impact && impact.baselineRate) || (options && options.baselineRate) || 2.3);
+        const baselineRateCandidate = Number(impact?.baselineRate ?? options?.baselineRate ?? 2.3);
         const baselineRate = Number.isFinite(baselineRateCandidate) ? baselineRateCandidate : 2.3;
 
-        // Delta rates for NET NEW calculation (increase above baseline)
-        // The baselineIncrease (Expected Baseline Increase slider) adds to ALL tiers
-        // T1 (≤10mi): 2x baseline rate → delta = baseline + baselineIncrease
-        // T2 (10-20mi): 1.5x baseline rate → delta = 0.5x baseline + baselineIncrease  
-        // T3 (20-50mi): 1x baseline rate → delta = baselineIncrease only
-        const baselineIncrease = Number(options.baselineIncrease || 0);
-        const d1 = (baselineRate + baselineIncrease) / 100;        // proximity premium + baseline increase
-        const d2 = ((baselineRate * 0.5) + baselineIncrease) / 100; // reduced proximity premium + baseline increase
-        const d3 = baselineIncrease / 100;                          // baseline increase only (no proximity premium)
+        const baselineIncrease = Number(impact?.baselineIncrease ?? options?.baselineIncrease ?? 0);
 
         const perVictimCosts = (options && options.perVictimCosts) ? options.perVictimCosts : {};
         const costsPerVictim = {
@@ -2850,21 +2854,18 @@ window.EconomicCalculator = (function ()
             const t2Adults = Number(c.t2Pop || 0);
             const t3Adults = Number(c.t3Pop || 0);
             const adultsWithin50 = t1Adults + t2Adults + t3Adults;
-            const victimsWithin50 = (t1Adults * d1) + (t2Adults * d2) + (t3Adults * d3);
+            const victimsWithin50 = window.EconomicScenarioVisualization.calculateExposure(
+                [t1Adults, t2Adults, t3Adults], baselineRate, baselineIncrease).totalIncrementalCases;
             if (!Number.isFinite(victimsWithin50) || victimsWithin50 <= 0) continue;
 
             // Use name from byCountyArray if provided, otherwise lookup, fallback to FIPS
             const name = c.name || countyIndex.get(fips) || fips;
 
-            const health = victimsWithin50 * costsPerVictim.health;
-            const crime = victimsWithin50 * costsPerVictim.crime;
-            const social = victimsWithin50 * costsPerVictim.social;
-            const legal = victimsWithin50 * costsPerVictim.legal;
-            const abused = victimsWithin50 * costsPerVictim.abused;
-            const employment = victimsWithin50 * costsPerVictim.employment;
+            const countyCosts = calculateSocialCosts(victimsWithin50, costsPerVictim);
+            const { health, crime, social, legal, abused, employment } = countyCosts.domains;
             const publicTotal = health + crime + social + legal;
             const privateTotal = abused + employment;
-            const total = publicTotal + privateTotal;
+            const total = countyCosts.total;
 
             counties.push({
                 fips,
@@ -3421,6 +3422,7 @@ window.EconomicCalculator = (function ()
                 await hydrateMunicipalityContext(e.detail);
                 if (restoredScenarioContext || signal.aborted) return;
                 lastImpactBreakdown = e.detail;
+                renderTaxAllocationScenarioControls();
 
                 // Update local state if needed
                 if (lastImpactBreakdown.county && lastImpactBreakdown.county.total)
@@ -3450,6 +3452,7 @@ window.EconomicCalculator = (function ()
             lastImpactBreakdown = restored;
             if (restored) await hydrateMunicipalityContext(restored);
             if (generation !== initializationGeneration) return;
+            renderTaxAllocationScenarioControls();
             calculate();
             return;
         }
@@ -3475,6 +3478,7 @@ window.EconomicCalculator = (function ()
         // Restore before the first calculation; Part 2 has no live map DOM/event.
         if (restored) await hydrateMunicipalityContext(restored);
         if (generation !== initializationGeneration) return;
+        renderTaxAllocationScenarioControls();
         calculate();
 
         isInitialized = true;

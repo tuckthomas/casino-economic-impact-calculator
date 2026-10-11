@@ -5,6 +5,7 @@ import path from 'node:path';
 const requiredHeaderPattern = /SPDX-License-Identifier:\s*PolyForm-Noncommercial-1\.0\.0/;
 
 const designatedFiles = [
+  'SaveNEIN.Client/Services/EconomicModelInterop.cs',
   'SaveNEIN.Server/Services/DataFoundationServices.cs',
   'SaveNEIN.Server/Services/DataProviderContracts.cs',
   'SaveNEIN.Server/Services/JurisdictionProfileService.cs',
@@ -41,6 +42,7 @@ const designatedFiles = [
 ];
 
 const designatedDirectories = [
+  'SaveNEIN.Shared/Modeling',
   'SaveNEIN.Server/Services/Gravity',
   'SaveNEIN.Server/Services/Validation',
   'SaveNEIN.Server/Services/Reports'

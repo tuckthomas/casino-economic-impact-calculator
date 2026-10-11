@@ -1,6 +1,6 @@
 // Restores the map's calculation context without inventing populations from DOM placeholders.
 window.EconomicScenarioVisualization = (() => {
-    const version = 'economic-impact-visualization-v1';
+    const version = 'economic-impact-visualization-v2';
     const number = (value, label) => {
         if (!Number.isFinite(value) || value < 0) throw new Error(`Invalid saved ${label}.`);
     };
@@ -8,6 +8,25 @@ window.EconomicScenarioVisualization = (() => {
         if (Math.abs(actual - expected) > Math.max(1e-6, Math.abs(expected) * 1e-9))
             throw new Error(`Saved ${label} does not reconcile.`);
     };
+
+    // Percentage-point inputs match the location controls; outputs retain fractional expected cases.
+    function calculateExposure(populations, baselineRate, baselineIncrease) {
+        number(baselineRate, 'baseline rate');
+        number(baselineIncrease, 'baseline increase');
+        if (!Array.isArray(populations) || populations.length !== 3)
+            throw new Error('Three impact-zone populations are required.');
+        populations.forEach(value => number(value, 'zone population'));
+        const prevalenceRates = [2, 1.5, 1].map(multiplier => baselineRate * multiplier + baselineIncrease);
+        if (prevalenceRates.some(rate => rate > 100)) throw new Error('Impact-zone prevalence cannot exceed 100 percent.');
+        const incrementalRates = [baselineRate + baselineIncrease, baselineRate * 0.5 + baselineIncrease, baselineIncrease];
+        const incrementalCases = populations.map((population, index) => population * incrementalRates[index] / 100);
+        const estimatedCases = populations.map((population, index) => population * prevalenceRates[index] / 100);
+        return {
+            prevalenceRates, incrementalRates, incrementalCases, estimatedCases,
+            totalIncrementalCases: incrementalCases.reduce((sum, value) => sum + value, 0),
+            totalEstimatedCases: estimatedCases.reduce((sum, value) => sum + value, 0)
+        };
+    }
 
     function describeZones(configuration) {
         const { count, tiers, unit, mode } = configuration || {};
@@ -50,15 +69,24 @@ window.EconomicScenarioVisualization = (() => {
         }
         for (const key of ['adults', 'baseAdults', 'total']) number(detail.county[key], `county ${key}`);
         number(detail.baselineRate, 'baseline rate');
+        number(detail.baselineIncrease, 'baseline increase');
         for (const key of ['t1', 't2', 't3', 'total']) number(detail.county.victims?.[key], `county victims ${key}`);
         sameTotal(detail.county.victims.total, detail.county.victims.t1 + detail.county.victims.t2 + detail.county.victims.t3, 'county victims');
         for (let tier = detailZones.count + 1; tier <= 3; tier++)
             if (detail.county.victims[`t${tier}`] !== 0) throw new Error('Disabled impact zones contain saved victims.');
+        const countyExposure = calculateExposure(
+            [detail.county.t1Adults, detail.county.t2Adults, detail.county.t3Adults], detail.baselineRate, detail.baselineIncrease);
+        ['t1', 't2', 't3'].forEach((key, index) => sameTotal(detail.county.victims[key], countyExposure.incrementalCases[index], `county ${key} cases`));
+        number(detail.regional.victimsWithin50, 'regional cases');
+        const regionalExposure = calculateExposure(
+            [detail.regional.t1Adults, detail.regional.t2Adults, detail.regional.t3Adults], detail.baselineRate, detail.baselineIncrease);
+        sameTotal(detail.regional.victimsWithin50, regionalExposure.totalIncrementalCases, 'regional cases');
         if (!Array.isArray(detail.byCounty)) throw new Error('Missing saved county population breakdown.');
         const seen = new Set();
         const totals = [0, 0, 0];
         for (const county of detail.byCounty) {
             if (!/^\d{5}$/.test(county.fips) || seen.has(county.fips)) throw new Error('Invalid or duplicate saved county.');
+            if (!county.fips.startsWith(detail.stateFips)) throw new Error('Saved county is outside the selected state.');
             seen.add(county.fips);
             ['t1Pop', 't2Pop', 't3Pop'].forEach((key, index) => {
                 number(county[key], `${county.fips} ${key}`);
@@ -66,8 +94,11 @@ window.EconomicScenarioVisualization = (() => {
             });
         }
         ['t1Adults', 't2Adults', 't3Adults'].forEach((key, index) => sameTotal(totals[index], detail.regional[key], `regional ${key}`));
+        const hostCounty = detail.byCounty.find(county => county.fips === detail.countyFips);
+        ['t1Adults', 't2Adults', 't3Adults'].forEach((key, index) =>
+            sameTotal(hostCounty?.[`t${index + 1}Pop`] ?? 0, detail.county[key], `host county ${key}`));
         return detail;
     }
 
-    return { version, restore, describeZones };
+    return { version, restore, describeZones, calculateExposure };
 })();
