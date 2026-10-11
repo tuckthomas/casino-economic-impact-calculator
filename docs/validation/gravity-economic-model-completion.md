@@ -42,7 +42,8 @@ Live ingestion exposed and repaired an Indiana annual-report URL move and a Mich
 - [ ] Use authoritative stored-run reports throughout the public workflow, replacing the independent legacy revenue/tax/PDF calculation path.
 - [ ] Complete origin, age and income inputs for real paired runs; finish block-group mode, versioned crosswalks, fractional boundary allocation and population control checks. Coordinate cross-border coverage with #32.
 - [ ] Complete market-specific tourism/traffic, facility attributes, fiscal/employment/displacement inputs and defensible causal social-cost evidence. Preserve explicit missing-data warnings and zero-safe unsupported assumptions.
-- [ ] Establish numerical release criteria for error, bias, property/market residuals and holdout coverage before further optimization. A user clarification is pending.
+- [x] Establish numerical release criteria for error, bias, property/market residuals and holdout coverage before further optimization. The user authorized recommended thresholds on 2026-10-11; [acceptance policy v1](gravity-economic-model-acceptance-v1.md) records the limits, metric definitions and required evidence.
+- [ ] Implement versioned acceptance-policy enforcement in the existing evaluation workflow, including WAPE, normalized bias, untouched holdout coverage and input-completeness checks. Persist pass/fail reasons before publishing defaults.
 - [ ] Complete leakage-safe training, specification selection and untouched final holdout validation; accept calibrated defaults only after the declared criteria pass.
 - [ ] Reconcile canonical task state and counters with verified evidence while preserving exact requirements.
 
