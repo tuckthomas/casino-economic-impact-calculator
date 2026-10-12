@@ -255,10 +255,11 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var facilityById = facilities.ToDictionary(row => row.Id);
         var oldRows = await (from route in db.OriginFacilityTravel.AsNoTracking()
                              join origin in db.OriginZones.AsNoTracking() on route.OriginZoneId equals origin.Id
+                             join facility in db.CasinoCompetitors.AsNoTracking() on route.CasinoCompetitorId equals facility.Id
                              where route.RoutingGraphHash == graph.GraphHash && route.CostingProfile == "auto" && route.CasinoCompetitorId.HasValue
-                             select new { Route = route, origin.StableOriginId, Longitude = origin.RepresentativePoint.X, Latitude = origin.RepresentativePoint.Y })
+                             select new { Route = route, origin.StableOriginId, facility.StableVenueId, Longitude = origin.RepresentativePoint.X, Latitude = origin.RepresentativePoint.Y })
             .ToListAsync(cancellationToken);
-        var cached = oldRows.GroupBy(row => (row.StableOriginId, row.Route.CasinoCompetitorId!.Value))
+        var cached = oldRows.GroupBy(row => (row.StableOriginId, row.StableVenueId))
             .ToDictionary(group => group.Key, group => group.OrderByDescending(row => row.Route.CalculatedAtUtc).First());
         var result = new ConcurrentDictionary<(long, int), OriginFacilityTravel>();
         using var writer = new SemaphoreSlim(1, 1);
@@ -268,7 +269,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         {
             var origin = originById[pair.Item1];
             var facility = facilityById[pair.Item2];
-            if (cached.TryGetValue((origin.StableOriginId, facility.Id), out var old) && old.Latitude == origin.RepresentativePoint.Y && old.Longitude == origin.RepresentativePoint.X &&
+            if (cached.TryGetValue((origin.StableOriginId, facility.StableVenueId), out var old) && old.Latitude == origin.RepresentativePoint.Y && old.Longitude == origin.RepresentativePoint.X &&
                 old.Route.FacilityCoordinateHash == TravelMatrixService.CandidateCoordinateHash(facility.Latitude, facility.Longitude))
             {
                 result[pair] = old.Route;

@@ -215,7 +215,7 @@ public sealed class ProviderSnapshotIngestionService(
         ArgumentNullException.ThrowIfNull(provider);
         var dataset = await provider.FetchAsync(request, cancellationToken);
         RequireDatasetKind(dataset, DatasetSnapshotKinds.AgePopulation, provider.ProviderKey);
-        var snapshot = await BeginAsync(dataset, cancellationToken);
+        var snapshot = await BeginAsync(dataset, cancellationToken, originGeographySnapshotId);
         foreach (var batch in CompleteAgeBatches(dataset.Rows))
         {
             await ingestion.AppendAgeBinsAsync(
@@ -236,7 +236,7 @@ public sealed class ProviderSnapshotIngestionService(
         ArgumentNullException.ThrowIfNull(provider);
         var dataset = await provider.FetchAsync(request, cancellationToken);
         RequireDatasetKind(dataset, DatasetSnapshotKinds.Income, provider.ProviderKey);
-        var snapshot = await BeginAsync(dataset, cancellationToken);
+        var snapshot = await BeginAsync(dataset, cancellationToken, originGeographySnapshotId);
         foreach (var batch in dataset.Rows.Chunk(IngestionBatchSize))
         {
             await ingestion.AppendIncomeAsync(
@@ -274,7 +274,7 @@ public sealed class ProviderSnapshotIngestionService(
         ArgumentNullException.ThrowIfNull(provider);
         var dataset = await provider.FetchAsync(request, cancellationToken);
         RequireDatasetKind(dataset, DatasetSnapshotKinds.CompetitorHistory, provider.ProviderKey);
-        var snapshot = await BeginAsync(dataset, cancellationToken);
+        var snapshot = await BeginAsync(dataset, cancellationToken, competitorSnapshotId);
         foreach (var batch in dataset.Rows.Chunk(IngestionBatchSize))
         {
             await ingestion.AppendCompetitorHistoryAsync(
@@ -295,7 +295,7 @@ public sealed class ProviderSnapshotIngestionService(
         ArgumentNullException.ThrowIfNull(provider);
         var dataset = await provider.FetchAsync(request, cancellationToken);
         RequireDatasetKind(dataset, DatasetSnapshotKinds.ObservedPerformance, provider.ProviderKey);
-        var snapshot = await BeginAsync(dataset, cancellationToken);
+        var snapshot = await BeginAsync(dataset, cancellationToken, competitorSnapshotId);
         foreach (var batch in dataset.Rows.Chunk(IngestionBatchSize))
         {
             await ingestion.AppendGamingRevenueAsync(
@@ -360,7 +360,8 @@ public sealed class ProviderSnapshotIngestionService(
 
     private async Task<Data.Entities.DatasetSnapshot> BeginAsync<T>(
         ProviderDataset<T> dataset,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? referenceSnapshotId = null)
     {
         if (dataset.Rows.Count == 0)
         {
@@ -374,8 +375,18 @@ public sealed class ProviderSnapshotIngestionService(
             dataset.PeriodStart,
             dataset.PeriodEnd,
             dataset.Rows.Count,
-            dataset.ContentChecksum,
-            dataset.TransformVersion), cancellationToken);
+            referenceSnapshotId.HasValue ? ReferenceBoundChecksum(dataset.ContentChecksum, dataset.TransformVersion, referenceSnapshotId.Value) : dataset.ContentChecksum,
+            referenceSnapshotId.HasValue ? $"{dataset.TransformVersion}|reference-bound-v1" : dataset.TransformVersion), cancellationToken);
+    }
+
+    // Source bytes retain their original DataSource content hash. Imported rows
+    // contain snapshot-specific foreign keys, so their identity also includes
+    // the immutable geography/facility snapshot to which those keys are bound.
+    internal static string ReferenceBoundChecksum(string sourceChecksum, string transformVersion, Guid referenceSnapshotId)
+    {
+        if (referenceSnapshotId == Guid.Empty) throw new ArgumentException("A reference snapshot identity is required.", nameof(referenceSnapshotId));
+        var manifest = $"reference-bound-v1\nsource={sourceChecksum}\ntransform={transformVersion}\nreference={referenceSnapshotId:D}";
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(manifest))).ToLowerInvariant();
     }
 
     private Task<Data.Entities.DatasetSnapshot> SealAsync(

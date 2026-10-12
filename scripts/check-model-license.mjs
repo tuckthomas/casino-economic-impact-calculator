@@ -13,6 +13,7 @@ const designatedFiles = [
   'SaveNEIN.Server/Services/ModelParameterService.cs',
   'SaveNEIN.Server/Services/ModelRunService.cs',
   'SaveNEIN.Server/Services/Providers/OhioCasinoControlCommissionProviders.cs',
+  'SaveNEIN.Server/Services/Providers/MissouriGamingCommissionProviders.cs',
   'SaveNEIN.Server/Services/Providers/OhioLotteryVideoLotteryProviders.cs',
   'SaveNEIN.Server/Services/Providers/CompositeGamingProviders.cs',
   'SaveNEIN.Server/Controllers/GravityModelRunsController.cs',

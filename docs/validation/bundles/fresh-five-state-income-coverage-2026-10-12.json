@@ -1,0 +1,8104 @@
+{
+  "Scope": "Input coverage diagnostic only; no model-accuracy or county/state control acceptance.",
+  "StudyLatitude": "40.1",
+  "StudyLongitude": "-88.9",
+  "RadiusMiles": "500",
+  "AgeObservationYear": 2022,
+  "FiscalEffectiveOn": "2026-10-11",
+  "MinimumGamingAge": 21,
+  "IncomeSnapshotId": "0c237148-a4ef-40ea-b22f-87e508bb0460",
+  "IncomeChecksum": "aae97434c289be540880d021a4910beb2b74506029738e2634526feadb15a3ad",
+  "SnapshotSelection": "explicit immutable snapshot",
+  "GeographyChecksum": "ae25f8d49a455f56c327c85811b4a8bbb4f8ea9d3bd1ac0d828e647a73e5ca99",
+  "AgeChecksum": "db3a5b160e373f189ec3c1fe03187923ec4fe7a43646e38cbd6e344becc57f9a",
+  "FullOriginCount": 12975,
+  "CoveredOriginCount": 10985,
+  "ExpectedEligiblePopulation": 70508017,
+  "CoveredEligiblePopulation": 70060721,
+  "CoveragePercent": 99.36560972917448,
+  "PopulationCoverageGatePassed": true,
+  "ByState": [
+    {
+      "State": "AL",
+      "Expected": 2151649,
+      "Covered": 2148090
+    },
+    {
+      "State": "AR",
+      "Expected": 2052980,
+      "Covered": 2007928
+    },
+    {
+      "State": "GA",
+      "Expected": 2737785,
+      "Covered": 2735867
+    },
+    {
+      "State": "IA",
+      "Expected": 2311662,
+      "Covered": 2291498
+    },
+    {
+      "State": "IL",
+      "Expected": 9429272,
+      "Covered": 9386778
+    },
+    {
+      "State": "IN",
+      "Expected": 4910750,
+      "Covered": 4890814
+    },
+    {
+      "State": "KS",
+      "Expected": 1814402,
+      "Covered": 1805287
+    },
+    {
+      "State": "KY",
+      "Expected": 3301071,
+      "Covered": 3279821
+    },
+    {
+      "State": "MI",
+      "Expected": 7488031,
+      "Covered": 7444894
+    },
+    {
+      "State": "MN",
+      "Expected": 3630822,
+      "Covered": 3624377
+    },
+    {
+      "State": "MO",
+      "Expected": 4528593,
+      "Covered": 4510201
+    },
+    {
+      "State": "MS",
+      "Expected": 804843,
+      "Covered": 795753
+    },
+    {
+      "State": "NC",
+      "Expected": 793983,
+      "Covered": 791423
+    },
+    {
+      "State": "NE",
+      "Expected": 1140595,
+      "Covered": 1133604
+    },
+    {
+      "State": "NY",
+      "Expected": 1853,
+      "Covered": 1853
+    },
+    {
+      "State": "OH",
+      "Expected": 8699378,
+      "Covered": 8648432
+    },
+    {
+      "State": "OK",
+      "Expected": 1042797,
+      "Covered": 1034485
+    },
+    {
+      "State": "PA",
+      "Expected": 2263258,
+      "Covered": 2225088
+    },
+    {
+      "State": "SC",
+      "Expected": 127287,
+      "Covered": 126755
+    },
+    {
+      "State": "SD",
+      "Expected": 263201,
+      "Covered": 262721
+    },
+    {
+      "State": "TN",
+      "Expected": 5128733,
+      "Covered": 5123047
+    },
+    {
+      "State": "VA",
+      "Expected": 371666,
+      "Covered": 366905
+    },
+    {
+      "State": "WI",
+      "Expected": 4367541,
+      "Covered": 4354472
+    },
+    {
+      "State": "WV",
+      "Expected": 1145865,
+      "Covered": 1070628
+    }
+  ],
+  "MissingOrigins": [
+    {
+      "StableOriginId": "USA-ZCTA-15004",
+      "EligiblePopulation": 279
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15006",
+      "EligiblePopulation": 160
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15020",
+      "EligiblePopulation": 567
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15028",
+      "EligiblePopulation": 149
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15038",
+      "EligiblePopulation": 200
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15047",
+      "EligiblePopulation": 182
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15054",
+      "EligiblePopulation": 353
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15060",
+      "EligiblePopulation": 708
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15072",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15075",
+      "EligiblePopulation": 30
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15077",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15081",
+      "EligiblePopulation": 298
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15082",
+      "EligiblePopulation": 183
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15087",
+      "EligiblePopulation": 58
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15088",
+      "EligiblePopulation": 337
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15123",
+      "EligiblePopulation": 1
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15260",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15275",
+      "EligiblePopulation": 2
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15282",
+      "EligiblePopulation": 2919
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15290",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15310",
+      "EligiblePopulation": 206
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15313",
+      "EligiblePopulation": 326
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15315",
+      "EligiblePopulation": 480
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15324",
+      "EligiblePopulation": 592
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15325",
+      "EligiblePopulation": 222
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15331",
+      "EligiblePopulation": 547
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15334",
+      "EligiblePopulation": 156
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15346",
+      "EligiblePopulation": 408
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15347",
+      "EligiblePopulation": 70
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15348",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15350",
+      "EligiblePopulation": 456
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15351",
+      "EligiblePopulation": 654
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15353",
+      "EligiblePopulation": 56
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15358",
+      "EligiblePopulation": 818
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15361",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15365",
+      "EligiblePopulation": 121
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15366",
+      "EligiblePopulation": 480
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15368",
+      "EligiblePopulation": 303
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15378",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15379",
+      "EligiblePopulation": 51
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15412",
+      "EligiblePopulation": 182
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15416",
+      "EligiblePopulation": 459
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15420",
+      "EligiblePopulation": 94
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15421",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15422",
+      "EligiblePopulation": 287
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15429",
+      "EligiblePopulation": 301
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15430",
+      "EligiblePopulation": 237
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15432",
+      "EligiblePopulation": 303
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15434",
+      "EligiblePopulation": 230
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15435",
+      "EligiblePopulation": 112
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15443",
+      "EligiblePopulation": 148
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15447",
+      "EligiblePopulation": 91
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15448",
+      "EligiblePopulation": 195
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15449",
+      "EligiblePopulation": 505
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15454",
+      "EligiblePopulation": 124
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15455",
+      "EligiblePopulation": 408
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15460",
+      "EligiblePopulation": 115
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15463",
+      "EligiblePopulation": 258
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15465",
+      "EligiblePopulation": 312
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15466",
+      "EligiblePopulation": 275
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15467",
+      "EligiblePopulation": 101
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15472",
+      "EligiblePopulation": 145
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15475",
+      "EligiblePopulation": 842
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15476",
+      "EligiblePopulation": 39
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15477",
+      "EligiblePopulation": 638
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15482",
+      "EligiblePopulation": 282
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15483",
+      "EligiblePopulation": 224
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15484",
+      "EligiblePopulation": 599
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15488",
+      "EligiblePopulation": 81
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15489",
+      "EligiblePopulation": 223
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15492",
+      "EligiblePopulation": 57
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15616",
+      "EligiblePopulation": 355
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15617",
+      "EligiblePopulation": 219
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15619",
+      "EligiblePopulation": 263
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15624",
+      "EligiblePopulation": 356
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15625",
+      "EligiblePopulation": 97
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15629",
+      "EligiblePopulation": 515
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15633",
+      "EligiblePopulation": 431
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15635",
+      "EligiblePopulation": 79
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15640",
+      "EligiblePopulation": 362
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15662",
+      "EligiblePopulation": 864
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15663",
+      "EligiblePopulation": 343
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15673",
+      "EligiblePopulation": 1012
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15674",
+      "EligiblePopulation": 233
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15676",
+      "EligiblePopulation": 467
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15680",
+      "EligiblePopulation": 179
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15682",
+      "EligiblePopulation": 154
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15689",
+      "EligiblePopulation": 71
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15691",
+      "EligiblePopulation": 219
+    },
+    {
+      "StableOriginId": "USA-ZCTA-15695",
+      "EligiblePopulation": 238
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16022",
+      "EligiblePopulation": 230
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16024",
+      "EligiblePopulation": 247
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16027",
+      "EligiblePopulation": 237
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16029",
+      "EligiblePopulation": 623
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16030",
+      "EligiblePopulation": 239
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16035",
+      "EligiblePopulation": 121
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16036",
+      "EligiblePopulation": 232
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16048",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16054",
+      "EligiblePopulation": 334
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16113",
+      "EligiblePopulation": 284
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16132",
+      "EligiblePopulation": 239
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16136",
+      "EligiblePopulation": 574
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16140",
+      "EligiblePopulation": 233
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16151",
+      "EligiblePopulation": 46
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16155",
+      "EligiblePopulation": 83
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16160",
+      "EligiblePopulation": 722
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16161",
+      "EligiblePopulation": 440
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16172",
+      "EligiblePopulation": 325
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16212",
+      "EligiblePopulation": 216
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16213",
+      "EligiblePopulation": 118
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16236",
+      "EligiblePopulation": 176
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16238",
+      "EligiblePopulation": 337
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16328",
+      "EligiblePopulation": 201
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16331",
+      "EligiblePopulation": 138
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16343",
+      "EligiblePopulation": 385
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16344",
+      "EligiblePopulation": 349
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16372",
+      "EligiblePopulation": 390
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16422",
+      "EligiblePopulation": 112
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16427",
+      "EligiblePopulation": 162
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16430",
+      "EligiblePopulation": 136
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16444",
+      "EligiblePopulation": 251
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16475",
+      "EligiblePopulation": 2154
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16546",
+      "EligiblePopulation": 240
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16550",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-16563",
+      "EligiblePopulation": 244
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24058",
+      "EligiblePopulation": 226
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24061",
+      "EligiblePopulation": 1002
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24086",
+      "EligiblePopulation": 114
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24093",
+      "EligiblePopulation": 91
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24129",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24131",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24132",
+      "EligiblePopulation": 261
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24142",
+      "EligiblePopulation": 349
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24239",
+      "EligiblePopulation": 100
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24246",
+      "EligiblePopulation": 266
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24269",
+      "EligiblePopulation": 293
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24316",
+      "EligiblePopulation": 30
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24322",
+      "EligiblePopulation": 10
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24327",
+      "EligiblePopulation": 174
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24601",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24604",
+      "EligiblePopulation": 225
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24606",
+      "EligiblePopulation": 147
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24607",
+      "EligiblePopulation": 272
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24612",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24635",
+      "EligiblePopulation": 719
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24657",
+      "EligiblePopulation": 169
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24714",
+      "EligiblePopulation": 275
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24716",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24719",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24724",
+      "EligiblePopulation": 82
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24729",
+      "EligiblePopulation": 30
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24737",
+      "EligiblePopulation": 852
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24738",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24739",
+      "EligiblePopulation": 9766
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24811",
+      "EligiblePopulation": 393
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24813",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24816",
+      "EligiblePopulation": 16
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24817",
+      "EligiblePopulation": 732
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24823",
+      "EligiblePopulation": 345
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24826",
+      "EligiblePopulation": 50
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24830",
+      "EligiblePopulation": 29
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24831",
+      "EligiblePopulation": 394
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24834",
+      "EligiblePopulation": 795
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24836",
+      "EligiblePopulation": 606
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24843",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24845",
+      "EligiblePopulation": 366
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24846",
+      "EligiblePopulation": 271
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24847",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24848",
+      "EligiblePopulation": 102
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24851",
+      "EligiblePopulation": 274
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24853",
+      "EligiblePopulation": 484
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24854",
+      "EligiblePopulation": 590
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24855",
+      "EligiblePopulation": 60
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24857",
+      "EligiblePopulation": 635
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24861",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24862",
+      "EligiblePopulation": 295
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24866",
+      "EligiblePopulation": 363
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24867",
+      "EligiblePopulation": 80
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24869",
+      "EligiblePopulation": 219
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24871",
+      "EligiblePopulation": 402
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24878",
+      "EligiblePopulation": 95
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24880",
+      "EligiblePopulation": 404
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24881",
+      "EligiblePopulation": 95
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24884",
+      "EligiblePopulation": 128
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24887",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24888",
+      "EligiblePopulation": 19
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24894",
+      "EligiblePopulation": 181
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24895",
+      "EligiblePopulation": 17
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24898",
+      "EligiblePopulation": 164
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24943",
+      "EligiblePopulation": 73
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24962",
+      "EligiblePopulation": 55
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24974",
+      "EligiblePopulation": 212
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24984",
+      "EligiblePopulation": 129
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24985",
+      "EligiblePopulation": 273
+    },
+    {
+      "StableOriginId": "USA-ZCTA-24993",
+      "EligiblePopulation": 27
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25002",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25008",
+      "EligiblePopulation": 150
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25011",
+      "EligiblePopulation": 456
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25021",
+      "EligiblePopulation": 270
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25022",
+      "EligiblePopulation": 106
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25025",
+      "EligiblePopulation": 65
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25028",
+      "EligiblePopulation": 256
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25031",
+      "EligiblePopulation": 468
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25036",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25040",
+      "EligiblePopulation": 354
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25047",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25048",
+      "EligiblePopulation": 144
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25051",
+      "EligiblePopulation": 162
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25054",
+      "EligiblePopulation": 198
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25057",
+      "EligiblePopulation": 154
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25061",
+      "EligiblePopulation": 415
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25062",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25070",
+      "EligiblePopulation": 1420
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25076",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25086",
+      "EligiblePopulation": 681
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25088",
+      "EligiblePopulation": 165
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25090",
+      "EligiblePopulation": 149
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25093",
+      "EligiblePopulation": 207
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25102",
+      "EligiblePopulation": 353
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25109",
+      "EligiblePopulation": 730
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25110",
+      "EligiblePopulation": 362
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25112",
+      "EligiblePopulation": 5
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25115",
+      "EligiblePopulation": 68
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25126",
+      "EligiblePopulation": 345
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25132",
+      "EligiblePopulation": 246
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25134",
+      "EligiblePopulation": 253
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25141",
+      "EligiblePopulation": 185
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25149",
+      "EligiblePopulation": 83
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25152",
+      "EligiblePopulation": 442
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25156",
+      "EligiblePopulation": 14
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25160",
+      "EligiblePopulation": 362
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25162",
+      "EligiblePopulation": 297
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25180",
+      "EligiblePopulation": 231
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25183",
+      "EligiblePopulation": 123
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25185",
+      "EligiblePopulation": 883
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25186",
+      "EligiblePopulation": 764
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25193",
+      "EligiblePopulation": 249
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25201",
+      "EligiblePopulation": 89
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25203",
+      "EligiblePopulation": 192
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25204",
+      "EligiblePopulation": 81
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25205",
+      "EligiblePopulation": 171
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25211",
+      "EligiblePopulation": 129
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25231",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25247",
+      "EligiblePopulation": 402
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25265",
+      "EligiblePopulation": 1406
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25305",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25387",
+      "EligiblePopulation": 3820
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25507",
+      "EligiblePopulation": 769
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25534",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25544",
+      "EligiblePopulation": 54
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25606",
+      "EligiblePopulation": 507
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25611",
+      "EligiblePopulation": 566
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25612",
+      "EligiblePopulation": 317
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25624",
+      "EligiblePopulation": 293
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25628",
+      "EligiblePopulation": 304
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25630",
+      "EligiblePopulation": 345
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25634",
+      "EligiblePopulation": 935
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25637",
+      "EligiblePopulation": 1099
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25639",
+      "EligiblePopulation": 373
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25644",
+      "EligiblePopulation": 454
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25646",
+      "EligiblePopulation": 761
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25647",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25649",
+      "EligiblePopulation": 983
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25650",
+      "EligiblePopulation": 82
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25652",
+      "EligiblePopulation": 951
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25653",
+      "EligiblePopulation": 123
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25654",
+      "EligiblePopulation": 263
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25666",
+      "EligiblePopulation": 170
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25667",
+      "EligiblePopulation": 378
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25672",
+      "EligiblePopulation": 307
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25685",
+      "EligiblePopulation": 411
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25688",
+      "EligiblePopulation": 162
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25690",
+      "EligiblePopulation": 676
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25692",
+      "EligiblePopulation": 1143
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25696",
+      "EligiblePopulation": 1033
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25699",
+      "EligiblePopulation": 33
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25755",
+      "EligiblePopulation": 223
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25810",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25811",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25818",
+      "EligiblePopulation": 227
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25826",
+      "EligiblePopulation": 262
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25836",
+      "EligiblePopulation": 947
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25848",
+      "EligiblePopulation": 220
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25849",
+      "EligiblePopulation": 194
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25851",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25853",
+      "EligiblePopulation": 75
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25855",
+      "EligiblePopulation": 335
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25857",
+      "EligiblePopulation": 27
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25864",
+      "EligiblePopulation": 83
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25866",
+      "EligiblePopulation": 186
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25870",
+      "EligiblePopulation": 63
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25871",
+      "EligiblePopulation": 736
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25873",
+      "EligiblePopulation": 590
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25875",
+      "EligiblePopulation": 526
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25876",
+      "EligiblePopulation": 52
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25878",
+      "EligiblePopulation": 716
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25879",
+      "EligiblePopulation": 228
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25904",
+      "EligiblePopulation": 367
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25907",
+      "EligiblePopulation": 81
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25909",
+      "EligiblePopulation": 633
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25911",
+      "EligiblePopulation": 186
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25913",
+      "EligiblePopulation": 188
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25915",
+      "EligiblePopulation": 199
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25916",
+      "EligiblePopulation": 122
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25920",
+      "EligiblePopulation": 351
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25921",
+      "EligiblePopulation": 2381
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25936",
+      "EligiblePopulation": 4
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25942",
+      "EligiblePopulation": 42
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25943",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25966",
+      "EligiblePopulation": 51
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25972",
+      "EligiblePopulation": 120
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25977",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-25986",
+      "EligiblePopulation": 278
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26030",
+      "EligiblePopulation": 466
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26056",
+      "EligiblePopulation": 257
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26058",
+      "EligiblePopulation": 151
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26075",
+      "EligiblePopulation": 517
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26138",
+      "EligiblePopulation": 102
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26148",
+      "EligiblePopulation": 214
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26152",
+      "EligiblePopulation": 12
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26162",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26203",
+      "EligiblePopulation": 382
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26209",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26210",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26215",
+      "EligiblePopulation": 117
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26224",
+      "EligiblePopulation": 117
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26228",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26230",
+      "EligiblePopulation": 78
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26236",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26259",
+      "EligiblePopulation": 73
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26268",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26275",
+      "EligiblePopulation": 363
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26282",
+      "EligiblePopulation": 211
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26298",
+      "EligiblePopulation": 72
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26323",
+      "EligiblePopulation": 367
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26325",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26327",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26339",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26348",
+      "EligiblePopulation": 236
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26349",
+      "EligiblePopulation": 127
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26361",
+      "EligiblePopulation": 23
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26366",
+      "EligiblePopulation": 82
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26369",
+      "EligiblePopulation": 411
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26422",
+      "EligiblePopulation": 238
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26424",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26435",
+      "EligiblePopulation": 48
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26436",
+      "EligiblePopulation": 67
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26438",
+      "EligiblePopulation": 79
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26443",
+      "EligiblePopulation": 271
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26463",
+      "EligiblePopulation": 198
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26506",
+      "EligiblePopulation": 89
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26520",
+      "EligiblePopulation": 486
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26524",
+      "EligiblePopulation": 148
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26534",
+      "EligiblePopulation": 715
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26543",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26544",
+      "EligiblePopulation": 21
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26546",
+      "EligiblePopulation": 175
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26559",
+      "EligiblePopulation": 1101
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26560",
+      "EligiblePopulation": 89
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26563",
+      "EligiblePopulation": 147
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26572",
+      "EligiblePopulation": 273
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26574",
+      "EligiblePopulation": 328
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26576",
+      "EligiblePopulation": 671
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26586",
+      "EligiblePopulation": 53
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26611",
+      "EligiblePopulation": 126
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26615",
+      "EligiblePopulation": 61
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26617",
+      "EligiblePopulation": 98
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26631",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26638",
+      "EligiblePopulation": 229
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26667",
+      "EligiblePopulation": 28
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26671",
+      "EligiblePopulation": 257
+    },
+    {
+      "StableOriginId": "USA-ZCTA-26684",
+      "EligiblePopulation": 272
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28616",
+      "EligiblePopulation": 61
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28619",
+      "EligiblePopulation": 434
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28628",
+      "EligiblePopulation": 27
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28629",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28641",
+      "EligiblePopulation": 56
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28646",
+      "EligiblePopulation": 461
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28652",
+      "EligiblePopulation": 50
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28653",
+      "EligiblePopulation": 25
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28662",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28664",
+      "EligiblePopulation": 159
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28672",
+      "EligiblePopulation": 186
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28707",
+      "EligiblePopulation": 476
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28710",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28720",
+      "EligiblePopulation": 135
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28725",
+      "EligiblePopulation": 77
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28733",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28749",
+      "EligiblePopulation": 85
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28755",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28757",
+      "EligiblePopulation": 176
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28758",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28770",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-28788",
+      "EligiblePopulation": 103
+    },
+    {
+      "StableOriginId": "USA-ZCTA-29665",
+      "EligiblePopulation": 277
+    },
+    {
+      "StableOriginId": "USA-ZCTA-29683",
+      "EligiblePopulation": 255
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30090",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30111",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30118",
+      "EligiblePopulation": 246
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30149",
+      "EligiblePopulation": 400
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30539",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30562",
+      "EligiblePopulation": 579
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30573",
+      "EligiblePopulation": 114
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30581",
+      "EligiblePopulation": 103
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30597",
+      "EligiblePopulation": 255
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30598",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30724",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30726",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30751",
+      "EligiblePopulation": 35
+    },
+    {
+      "StableOriginId": "USA-ZCTA-30756",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35013",
+      "EligiblePopulation": 94
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35032",
+      "EligiblePopulation": 26
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35036",
+      "EligiblePopulation": 69
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35052",
+      "EligiblePopulation": 257
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35060",
+      "EligiblePopulation": 220
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35070",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35074",
+      "EligiblePopulation": 112
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35112",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35119",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35149",
+      "EligiblePopulation": 77
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35181",
+      "EligiblePopulation": 35
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35185",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35229",
+      "EligiblePopulation": 506
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35249",
+      "EligiblePopulation": 42
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35254",
+      "EligiblePopulation": 376
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35457",
+      "EligiblePopulation": 51
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35477",
+      "EligiblePopulation": 47
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35487",
+      "EligiblePopulation": 131
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35491",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35545",
+      "EligiblePopulation": 100
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35559",
+      "EligiblePopulation": 72
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35573",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35577",
+      "EligiblePopulation": 4
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35584",
+      "EligiblePopulation": 201
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35615",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35632",
+      "EligiblePopulation": 219
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35649",
+      "EligiblePopulation": 74
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35745",
+      "EligiblePopulation": 99
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35751",
+      "EligiblePopulation": 168
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35766",
+      "EligiblePopulation": 206
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35774",
+      "EligiblePopulation": 112
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35896",
+      "EligiblePopulation": 135
+    },
+    {
+      "StableOriginId": "USA-ZCTA-35990",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37132",
+      "EligiblePopulation": 540
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37165",
+      "EligiblePopulation": 30
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37213",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37232",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37238",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37315",
+      "EligiblePopulation": 389
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37316",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37326",
+      "EligiblePopulation": 427
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37383",
+      "EligiblePopulation": 184
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37394",
+      "EligiblePopulation": 78
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37450",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37614",
+      "EligiblePopulation": 403
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37682",
+      "EligiblePopulation": 204
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37719",
+      "EligiblePopulation": 10
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37730",
+      "EligiblePopulation": 29
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37732",
+      "EligiblePopulation": 32
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37733",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37828",
+      "EligiblePopulation": 1275
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37845",
+      "EligiblePopulation": 251
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37851",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-37929",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38007",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38021",
+      "EligiblePopulation": 10
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38029",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38036",
+      "EligiblePopulation": 204
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38046",
+      "EligiblePopulation": 10
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38047",
+      "EligiblePopulation": 103
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38050",
+      "EligiblePopulation": 415
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38054",
+      "EligiblePopulation": 106
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38070",
+      "EligiblePopulation": 67
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38077",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38113",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38131",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38132",
+      "EligiblePopulation": 57
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38152",
+      "EligiblePopulation": 139
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38235",
+      "EligiblePopulation": 137
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38254",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38338",
+      "EligiblePopulation": 57
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38365",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38389",
+      "EligiblePopulation": 39
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38455",
+      "EligiblePopulation": 105
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38503",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38505",
+      "EligiblePopulation": 138
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38542",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38550",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38578",
+      "EligiblePopulation": 184
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38622",
+      "EligiblePopulation": 447
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38623",
+      "EligiblePopulation": 140
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38631",
+      "EligiblePopulation": 821
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38639",
+      "EligiblePopulation": 389
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38644",
+      "EligiblePopulation": 71
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38677",
+      "EligiblePopulation": 344
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38722",
+      "EligiblePopulation": 179
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38723",
+      "EligiblePopulation": 41
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38731",
+      "EligiblePopulation": 20
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38733",
+      "EligiblePopulation": 10
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38738",
+      "EligiblePopulation": 3010
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38760",
+      "EligiblePopulation": 571
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38764",
+      "EligiblePopulation": 224
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38765",
+      "EligiblePopulation": 63
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38767",
+      "EligiblePopulation": 80
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38768",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38772",
+      "EligiblePopulation": 82
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38776",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38781",
+      "EligiblePopulation": 114
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38839",
+      "EligiblePopulation": 22
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38844",
+      "EligiblePopulation": 191
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38869",
+      "EligiblePopulation": 246
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38879",
+      "EligiblePopulation": 56
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38946",
+      "EligiblePopulation": 119
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38947",
+      "EligiblePopulation": 22
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38957",
+      "EligiblePopulation": 450
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38962",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38964",
+      "EligiblePopulation": 42
+    },
+    {
+      "StableOriginId": "USA-ZCTA-38966",
+      "EligiblePopulation": 337
+    },
+    {
+      "StableOriginId": "USA-ZCTA-39061",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-39115",
+      "EligiblePopulation": 58
+    },
+    {
+      "StableOriginId": "USA-ZCTA-39736",
+      "EligiblePopulation": 249
+    },
+    {
+      "StableOriginId": "USA-ZCTA-39753",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-39762",
+      "EligiblePopulation": 537
+    },
+    {
+      "StableOriginId": "USA-ZCTA-39771",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40020",
+      "EligiblePopulation": 195
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40025",
+      "EligiblePopulation": 412
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40036",
+      "EligiblePopulation": 194
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40049",
+      "EligiblePopulation": 114
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40058",
+      "EligiblePopulation": 40
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40061",
+      "EligiblePopulation": 141
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40063",
+      "EligiblePopulation": 601
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40110",
+      "EligiblePopulation": 441
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40161",
+      "EligiblePopulation": 129
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40221",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40231",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40280",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40310",
+      "EligiblePopulation": 441
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40334",
+      "EligiblePopulation": 50
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40339",
+      "EligiblePopulation": 243
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40348",
+      "EligiblePopulation": 456
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40350",
+      "EligiblePopulation": 79
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40355",
+      "EligiblePopulation": 190
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40357",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40363",
+      "EligiblePopulation": 16
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40376",
+      "EligiblePopulation": 41
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40404",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40434",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40448",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40526",
+      "EligiblePopulation": 234
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40536",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40801",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40803",
+      "EligiblePopulation": 95
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40807",
+      "EligiblePopulation": 411
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40808",
+      "EligiblePopulation": 24
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40816",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40818",
+      "EligiblePopulation": 123
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40824",
+      "EligiblePopulation": 524
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40829",
+      "EligiblePopulation": 24
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40830",
+      "EligiblePopulation": 168
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40843",
+      "EligiblePopulation": 64
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40844",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40847",
+      "EligiblePopulation": 74
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40849",
+      "EligiblePopulation": 17
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40854",
+      "EligiblePopulation": 789
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40855",
+      "EligiblePopulation": 655
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40858",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40874",
+      "EligiblePopulation": 89
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40913",
+      "EligiblePopulation": 331
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40921",
+      "EligiblePopulation": 116
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40927",
+      "EligiblePopulation": 555
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40941",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40946",
+      "EligiblePopulation": 55
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40964",
+      "EligiblePopulation": 23
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40979",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40981",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40982",
+      "EligiblePopulation": 256
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40983",
+      "EligiblePopulation": 210
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40995",
+      "EligiblePopulation": 40
+    },
+    {
+      "StableOriginId": "USA-ZCTA-40997",
+      "EligiblePopulation": 193
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41085",
+      "EligiblePopulation": 669
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41135",
+      "EligiblePopulation": 262
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41142",
+      "EligiblePopulation": 123
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41181",
+      "EligiblePopulation": 58
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41201",
+      "EligiblePopulation": 184
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41226",
+      "EligiblePopulation": 216
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41271",
+      "EligiblePopulation": 131
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41310",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41351",
+      "EligiblePopulation": 10
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41364",
+      "EligiblePopulation": 56
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41366",
+      "EligiblePopulation": 34
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41367",
+      "EligiblePopulation": 256
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41386",
+      "EligiblePopulation": 7
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41390",
+      "EligiblePopulation": 76
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41397",
+      "EligiblePopulation": 146
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41517",
+      "EligiblePopulation": 53
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41524",
+      "EligiblePopulation": 269
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41526",
+      "EligiblePopulation": 50
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41534",
+      "EligiblePopulation": 159
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41538",
+      "EligiblePopulation": 285
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41547",
+      "EligiblePopulation": 404
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41563",
+      "EligiblePopulation": 240
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41566",
+      "EligiblePopulation": 305
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41567",
+      "EligiblePopulation": 54
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41612",
+      "EligiblePopulation": 162
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41619",
+      "EligiblePopulation": 294
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41621",
+      "EligiblePopulation": 77
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41643",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41651",
+      "EligiblePopulation": 75
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41663",
+      "EligiblePopulation": 141
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41712",
+      "EligiblePopulation": 454
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41713",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41725",
+      "EligiblePopulation": 340
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41729",
+      "EligiblePopulation": 34
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41735",
+      "EligiblePopulation": 121
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41739",
+      "EligiblePopulation": 21
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41745",
+      "EligiblePopulation": 315
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41760",
+      "EligiblePopulation": 280
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41762",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41766",
+      "EligiblePopulation": 353
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41772",
+      "EligiblePopulation": 258
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41775",
+      "EligiblePopulation": 232
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41778",
+      "EligiblePopulation": 95
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41810",
+      "EligiblePopulation": 261
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41812",
+      "EligiblePopulation": 184
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41819",
+      "EligiblePopulation": 198
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41845",
+      "EligiblePopulation": 244
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41848",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41849",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41859",
+      "EligiblePopulation": 200
+    },
+    {
+      "StableOriginId": "USA-ZCTA-41861",
+      "EligiblePopulation": 312
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42022",
+      "EligiblePopulation": 73
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42032",
+      "EligiblePopulation": 203
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42037",
+      "EligiblePopulation": 14
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42047",
+      "EligiblePopulation": 80
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42060",
+      "EligiblePopulation": 8
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42061",
+      "EligiblePopulation": 86
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42124",
+      "EligiblePopulation": 52
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42130",
+      "EligiblePopulation": 144
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42131",
+      "EligiblePopulation": 116
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42151",
+      "EligiblePopulation": 161
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42153",
+      "EligiblePopulation": 65
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42163",
+      "EligiblePopulation": 40
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42252",
+      "EligiblePopulation": 131
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42322",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42332",
+      "EligiblePopulation": 86
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42338",
+      "EligiblePopulation": 22
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42356",
+      "EligiblePopulation": 231
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42370",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42374",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42440",
+      "EligiblePopulation": 759
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42444",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42463",
+      "EligiblePopulation": 114
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42631",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42638",
+      "EligiblePopulation": 143
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42742",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42758",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-42759",
+      "EligiblePopulation": 32
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43002",
+      "EligiblePopulation": 719
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43005",
+      "EligiblePopulation": 184
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43007",
+      "EligiblePopulation": 43
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43008",
+      "EligiblePopulation": 2057
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43010",
+      "EligiblePopulation": 216
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43018",
+      "EligiblePopulation": 45
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43027",
+      "EligiblePopulation": 78
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43030",
+      "EligiblePopulation": 176
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43032",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43033",
+      "EligiblePopulation": 354
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43036",
+      "EligiblePopulation": 242
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43047",
+      "EligiblePopulation": 11
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43070",
+      "EligiblePopulation": 33
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43077",
+      "EligiblePopulation": 174
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43101",
+      "EligiblePopulation": 262
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43109",
+      "EligiblePopulation": 106
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43111",
+      "EligiblePopulation": 84
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43117",
+      "EligiblePopulation": 8
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43126",
+      "EligiblePopulation": 317
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43127",
+      "EligiblePopulation": 206
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43142",
+      "EligiblePopulation": 62
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43144",
+      "EligiblePopulation": 311
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43151",
+      "EligiblePopulation": 182
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43156",
+      "EligiblePopulation": 154
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43157",
+      "EligiblePopulation": 358
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43158",
+      "EligiblePopulation": 223
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43218",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43317",
+      "EligiblePopulation": 143
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43322",
+      "EligiblePopulation": 312
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43325",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43330",
+      "EligiblePopulation": 43
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43336",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43346",
+      "EligiblePopulation": 84
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43350",
+      "EligiblePopulation": 141
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43403",
+      "EligiblePopulation": 187
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43408",
+      "EligiblePopulation": 283
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43414",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43433",
+      "EligiblePopulation": 23
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43434",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43436",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43437",
+      "EligiblePopulation": 326
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43438",
+      "EligiblePopulation": 217
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43439",
+      "EligiblePopulation": 39
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43446",
+      "EligiblePopulation": 58
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43456",
+      "EligiblePopulation": 389
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43458",
+      "EligiblePopulation": 257
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43463",
+      "EligiblePopulation": 436
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43467",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43468",
+      "EligiblePopulation": 456
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43505",
+      "EligiblePopulation": 57
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43510",
+      "EligiblePopulation": 66
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43519",
+      "EligiblePopulation": 233
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43520",
+      "EligiblePopulation": 17
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43523",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43529",
+      "EligiblePopulation": 250
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43530",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43531",
+      "EligiblePopulation": 137
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43541",
+      "EligiblePopulation": 117
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43547",
+      "EligiblePopulation": 377
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43553",
+      "EligiblePopulation": 328
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43555",
+      "EligiblePopulation": 262
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43565",
+      "EligiblePopulation": 278
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43711",
+      "EligiblePopulation": 36
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43717",
+      "EligiblePopulation": 101
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43721",
+      "EligiblePopulation": 215
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43722",
+      "EligiblePopulation": 375
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43733",
+      "EligiblePopulation": 68
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43735",
+      "EligiblePopulation": 206
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43736",
+      "EligiblePopulation": 8
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43738",
+      "EligiblePopulation": 79
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43740",
+      "EligiblePopulation": 166
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43750",
+      "EligiblePopulation": 87
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43759",
+      "EligiblePopulation": 203
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43761",
+      "EligiblePopulation": 46
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43768",
+      "EligiblePopulation": 337
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43786",
+      "EligiblePopulation": 53
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43791",
+      "EligiblePopulation": 50
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43805",
+      "EligiblePopulation": 179
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43836",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43842",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43902",
+      "EligiblePopulation": 61
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43905",
+      "EligiblePopulation": 487
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43909",
+      "EligiblePopulation": 61
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43914",
+      "EligiblePopulation": 17
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43925",
+      "EligiblePopulation": 86
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43926",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43928",
+      "EligiblePopulation": 71
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43931",
+      "EligiblePopulation": 157
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43934",
+      "EligiblePopulation": 78
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43939",
+      "EligiblePopulation": 253
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43940",
+      "EligiblePopulation": 244
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43948",
+      "EligiblePopulation": 569
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43951",
+      "EligiblePopulation": 55
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43961",
+      "EligiblePopulation": 195
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43962",
+      "EligiblePopulation": 62
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43967",
+      "EligiblePopulation": 207
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43972",
+      "EligiblePopulation": 119
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43974",
+      "EligiblePopulation": 69
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43981",
+      "EligiblePopulation": 172
+    },
+    {
+      "StableOriginId": "USA-ZCTA-43985",
+      "EligiblePopulation": 151
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44045",
+      "EligiblePopulation": 562
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44049",
+      "EligiblePopulation": 138
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44068",
+      "EligiblePopulation": 120
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44080",
+      "EligiblePopulation": 99
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44101",
+      "EligiblePopulation": 528
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44232",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44243",
+      "EligiblePopulation": 738
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44250",
+      "EligiblePopulation": 1279
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44251",
+      "EligiblePopulation": 806
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44274",
+      "EligiblePopulation": 220
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44285",
+      "EligiblePopulation": 83
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44325",
+      "EligiblePopulation": 99
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44415",
+      "EligiblePopulation": 412
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44424",
+      "EligiblePopulation": 83
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44439",
+      "EligiblePopulation": 310
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44493",
+      "EligiblePopulation": 80
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44555",
+      "EligiblePopulation": 40
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44607",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44610",
+      "EligiblePopulation": 224
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44619",
+      "EligiblePopulation": 121
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44630",
+      "EligiblePopulation": 141
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44639",
+      "EligiblePopulation": 209
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44640",
+      "EligiblePopulation": 123
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44652",
+      "EligiblePopulation": 349
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44653",
+      "EligiblePopulation": 522
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44659",
+      "EligiblePopulation": 82
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44660",
+      "EligiblePopulation": 118
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44661",
+      "EligiblePopulation": 242
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44665",
+      "EligiblePopulation": 163
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44670",
+      "EligiblePopulation": 139
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44671",
+      "EligiblePopulation": 39
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44678",
+      "EligiblePopulation": 152
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44682",
+      "EligiblePopulation": 813
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44687",
+      "EligiblePopulation": 405
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44690",
+      "EligiblePopulation": 85
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44693",
+      "EligiblePopulation": 36
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44697",
+      "EligiblePopulation": 216
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44809",
+      "EligiblePopulation": 86
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44815",
+      "EligiblePopulation": 570
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44825",
+      "EligiblePopulation": 143
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44828",
+      "EligiblePopulation": 132
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44838",
+      "EligiblePopulation": 164
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44850",
+      "EligiblePopulation": 150
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44856",
+      "EligiblePopulation": 127
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44861",
+      "EligiblePopulation": 100
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44874",
+      "EligiblePopulation": 220
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44881",
+      "EligiblePopulation": 124
+    },
+    {
+      "StableOriginId": "USA-ZCTA-44901",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45001",
+      "EligiblePopulation": 577
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45032",
+      "EligiblePopulation": 469
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45041",
+      "EligiblePopulation": 136
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45051",
+      "EligiblePopulation": 300
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45055",
+      "EligiblePopulation": 148
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45062",
+      "EligiblePopulation": 585
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45070",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45105",
+      "EligiblePopulation": 63
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45112",
+      "EligiblePopulation": 15
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45115",
+      "EligiblePopulation": 172
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45119",
+      "EligiblePopulation": 28
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45131",
+      "EligiblePopulation": 218
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45132",
+      "EligiblePopulation": 94
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45147",
+      "EligiblePopulation": 73
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45155",
+      "EligiblePopulation": 299
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45156",
+      "EligiblePopulation": 39
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45158",
+      "EligiblePopulation": 651
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45164",
+      "EligiblePopulation": 187
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45166",
+      "EligiblePopulation": 33
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45172",
+      "EligiblePopulation": 138
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45267",
+      "EligiblePopulation": 4
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45301",
+      "EligiblePopulation": 182
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45307",
+      "EligiblePopulation": 228
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45310",
+      "EligiblePopulation": 193
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45316",
+      "EligiblePopulation": 124
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45319",
+      "EligiblePopulation": 257
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45328",
+      "EligiblePopulation": 354
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45330",
+      "EligiblePopulation": 491
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45336",
+      "EligiblePopulation": 64
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45349",
+      "EligiblePopulation": 201
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45350",
+      "EligiblePopulation": 41
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45351",
+      "EligiblePopulation": 232
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45352",
+      "EligiblePopulation": 157
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45353",
+      "EligiblePopulation": 85
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45354",
+      "EligiblePopulation": 487
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45358",
+      "EligiblePopulation": 204
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45360",
+      "EligiblePopulation": 312
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45361",
+      "EligiblePopulation": 222
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45372",
+      "EligiblePopulation": 216
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45378",
+      "EligiblePopulation": 401
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45384",
+      "EligiblePopulation": 804
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45389",
+      "EligiblePopulation": 389
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45423",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45428",
+      "EligiblePopulation": 286
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45435",
+      "EligiblePopulation": 26
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45469",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45501",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45617",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45618",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45621",
+      "EligiblePopulation": 292
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45624",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45630",
+      "EligiblePopulation": 247
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45636",
+      "EligiblePopulation": 133
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45642",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45674",
+      "EligiblePopulation": 380
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45677",
+      "EligiblePopulation": 51
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45698",
+      "EligiblePopulation": 457
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45699",
+      "EligiblePopulation": 1230
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45716",
+      "EligiblePopulation": 288
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45719",
+      "EligiblePopulation": 723
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45720",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45721",
+      "EligiblePopulation": 23
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45739",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45740",
+      "EligiblePopulation": 296
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45779",
+      "EligiblePopulation": 498
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45782",
+      "EligiblePopulation": 308
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45783",
+      "EligiblePopulation": 188
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45789",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45809",
+      "EligiblePopulation": 61
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45815",
+      "EligiblePopulation": 68
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45816",
+      "EligiblePopulation": 312
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45820",
+      "EligiblePopulation": 512
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45826",
+      "EligiblePopulation": 203
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45838",
+      "EligiblePopulation": 74
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45848",
+      "EligiblePopulation": 86
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45853",
+      "EligiblePopulation": 1204
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45854",
+      "EligiblePopulation": 253
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45855",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45859",
+      "EligiblePopulation": 301
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45861",
+      "EligiblePopulation": 270
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45864",
+      "EligiblePopulation": 117
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45866",
+      "EligiblePopulation": 100
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45870",
+      "EligiblePopulation": 258
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45876",
+      "EligiblePopulation": 728
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45884",
+      "EligiblePopulation": 146
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45888",
+      "EligiblePopulation": 274
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45893",
+      "EligiblePopulation": 159
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45897",
+      "EligiblePopulation": 43
+    },
+    {
+      "StableOriginId": "USA-ZCTA-45899",
+      "EligiblePopulation": 148
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46045",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46047",
+      "EligiblePopulation": 38
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46063",
+      "EligiblePopulation": 252
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46102",
+      "EligiblePopulation": 300
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46103",
+      "EligiblePopulation": 278
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46111",
+      "EligiblePopulation": 303
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46125",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46144",
+      "EligiblePopulation": 245
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46146",
+      "EligiblePopulation": 127
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46154",
+      "EligiblePopulation": 42
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46155",
+      "EligiblePopulation": 9
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46170",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46183",
+      "EligiblePopulation": 39
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46206",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46301",
+      "EligiblePopulation": 520
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46302",
+      "EligiblePopulation": 51
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46345",
+      "EligiblePopulation": 74
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46346",
+      "EligiblePopulation": 967
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46376",
+      "EligiblePopulation": 133
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46377",
+      "EligiblePopulation": 66
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46379",
+      "EligiblePopulation": 305
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46502",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46508",
+      "EligiblePopulation": 175
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46513",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46537",
+      "EligiblePopulation": 414
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46572",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46595",
+      "EligiblePopulation": 38
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46624",
+      "EligiblePopulation": 48
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46704",
+      "EligiblePopulation": 40
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46771",
+      "EligiblePopulation": 106
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46778",
+      "EligiblePopulation": 81
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46786",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46789",
+      "EligiblePopulation": 108
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46796",
+      "EligiblePopulation": 109
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46799",
+      "EligiblePopulation": 293
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46922",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46930",
+      "EligiblePopulation": 147
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46931",
+      "EligiblePopulation": 186
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46937",
+      "EligiblePopulation": 18
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46945",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46946",
+      "EligiblePopulation": 65
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46957",
+      "EligiblePopulation": 334
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46958",
+      "EligiblePopulation": 518
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46959",
+      "EligiblePopulation": 290
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46961",
+      "EligiblePopulation": 48
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46965",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46967",
+      "EligiblePopulation": 98
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46968",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46971",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46980",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46984",
+      "EligiblePopulation": 11
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46987",
+      "EligiblePopulation": 784
+    },
+    {
+      "StableOriginId": "USA-ZCTA-46998",
+      "EligiblePopulation": 116
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47021",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47033",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47034",
+      "EligiblePopulation": 115
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47035",
+      "EligiblePopulation": 180
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47104",
+      "EligiblePopulation": 8
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47123",
+      "EligiblePopulation": 87
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47160",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47174",
+      "EligiblePopulation": 43
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47225",
+      "EligiblePopulation": 19
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47226",
+      "EligiblePopulation": 208
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47236",
+      "EligiblePopulation": 141
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47247",
+      "EligiblePopulation": 159
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47263",
+      "EligiblePopulation": 144
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47280",
+      "EligiblePopulation": 547
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47282",
+      "EligiblePopulation": 182
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47306",
+      "EligiblePopulation": 442
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47324",
+      "EligiblePopulation": 147
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47335",
+      "EligiblePopulation": 529
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47337",
+      "EligiblePopulation": 143
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47344",
+      "EligiblePopulation": 140
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47351",
+      "EligiblePopulation": 336
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47361",
+      "EligiblePopulation": 154
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47366",
+      "EligiblePopulation": 34
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47367",
+      "EligiblePopulation": 85
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47370",
+      "EligiblePopulation": 115
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47381",
+      "EligiblePopulation": 118
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47382",
+      "EligiblePopulation": 108
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47388",
+      "EligiblePopulation": 306
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47392",
+      "EligiblePopulation": 143
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47405",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47420",
+      "EligiblePopulation": 51
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47434",
+      "EligiblePopulation": 12
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47435",
+      "EligiblePopulation": 119
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47437",
+      "EligiblePopulation": 87
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47445",
+      "EligiblePopulation": 73
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47455",
+      "EligiblePopulation": 35
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47457",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47458",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47464",
+      "EligiblePopulation": 294
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47467",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47535",
+      "EligiblePopulation": 491
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47552",
+      "EligiblePopulation": 197
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47573",
+      "EligiblePopulation": 19
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47574",
+      "EligiblePopulation": 117
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47584",
+      "EligiblePopulation": 108
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47596",
+      "EligiblePopulation": 94
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47654",
+      "EligiblePopulation": 11
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47683",
+      "EligiblePopulation": 33
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47809",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47831",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47836",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47845",
+      "EligiblePopulation": 22
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47851",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47853",
+      "EligiblePopulation": 112
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47855",
+      "EligiblePopulation": 653
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47857",
+      "EligiblePopulation": 304
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47860",
+      "EligiblePopulation": 415
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47863",
+      "EligiblePopulation": 191
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47865",
+      "EligiblePopulation": 4
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47869",
+      "EligiblePopulation": 34
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47870",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47871",
+      "EligiblePopulation": 360
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47875",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47876",
+      "EligiblePopulation": 199
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47880",
+      "EligiblePopulation": 28
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47881",
+      "EligiblePopulation": 159
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47884",
+      "EligiblePopulation": 192
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47907",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47916",
+      "EligiblePopulation": 33
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47924",
+      "EligiblePopulation": 90
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47925",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47941",
+      "EligiblePopulation": 820
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47958",
+      "EligiblePopulation": 112
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47964",
+      "EligiblePopulation": 65
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47965",
+      "EligiblePopulation": 403
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47966",
+      "EligiblePopulation": 259
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47969",
+      "EligiblePopulation": 189
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47982",
+      "EligiblePopulation": 110
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47983",
+      "EligiblePopulation": 97
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47986",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-47997",
+      "EligiblePopulation": 105
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48139",
+      "EligiblePopulation": 89
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48143",
+      "EligiblePopulation": 169
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48177",
+      "EligiblePopulation": 187
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48190",
+      "EligiblePopulation": 175
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48233",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48242",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48243",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48410",
+      "EligiblePopulation": 86
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48411",
+      "EligiblePopulation": 30
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48434",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48437",
+      "EligiblePopulation": 324
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48440",
+      "EligiblePopulation": 103
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48476",
+      "EligiblePopulation": 467
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48620",
+      "EligiblePopulation": 110
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48627",
+      "EligiblePopulation": 99
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48630",
+      "EligiblePopulation": 70
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48633",
+      "EligiblePopulation": 129
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48710",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48724",
+      "EligiblePopulation": 443
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48743",
+      "EligiblePopulation": 38
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48816",
+      "EligiblePopulation": 341
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48824",
+      "EligiblePopulation": 125
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48825",
+      "EligiblePopulation": 1549
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48852",
+      "EligiblePopulation": 136
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48853",
+      "EligiblePopulation": 533
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48859",
+      "EligiblePopulation": 306
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48862",
+      "EligiblePopulation": 17
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48870",
+      "EligiblePopulation": 142
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48874",
+      "EligiblePopulation": 151
+    },
+    {
+      "StableOriginId": "USA-ZCTA-48896",
+      "EligiblePopulation": 237
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49027",
+      "EligiblePopulation": 146
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49063",
+      "EligiblePopulation": 120
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49074",
+      "EligiblePopulation": 213
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49075",
+      "EligiblePopulation": 157
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49084",
+      "EligiblePopulation": 12
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49104",
+      "EligiblePopulation": 117
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49115",
+      "EligiblePopulation": 110
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49119",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49258",
+      "EligiblePopulation": 7
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49261",
+      "EligiblePopulation": 169
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49263",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49289",
+      "EligiblePopulation": 62
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49320",
+      "EligiblePopulation": 209
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49335",
+      "EligiblePopulation": 61
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49406",
+      "EligiblePopulation": 686
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49409",
+      "EligiblePopulation": 42
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49430",
+      "EligiblePopulation": 50
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49434",
+      "EligiblePopulation": 14
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49443",
+      "EligiblePopulation": 67
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49458",
+      "EligiblePopulation": 91
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49611",
+      "EligiblePopulation": 297
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49626",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49627",
+      "EligiblePopulation": 241
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49628",
+      "EligiblePopulation": 191
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49634",
+      "EligiblePopulation": 141
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49674",
+      "EligiblePopulation": 183
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49685",
+      "EligiblePopulation": 15788
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49696",
+      "EligiblePopulation": 7810
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49717",
+      "EligiblePopulation": 43
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49722",
+      "EligiblePopulation": 45
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49748",
+      "EligiblePopulation": 144
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49757",
+      "EligiblePopulation": 689
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49764",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49775",
+      "EligiblePopulation": 35
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49784",
+      "EligiblePopulation": 1310
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49791",
+      "EligiblePopulation": 174
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49793",
+      "EligiblePopulation": 124
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49796",
+      "EligiblePopulation": 304
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49808",
+      "EligiblePopulation": 350
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49825",
+      "EligiblePopulation": 202
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49826",
+      "EligiblePopulation": 126
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49833",
+      "EligiblePopulation": 119
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49839",
+      "EligiblePopulation": 289
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49848",
+      "EligiblePopulation": 80
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49852",
+      "EligiblePopulation": 94
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49863",
+      "EligiblePopulation": 143
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49864",
+      "EligiblePopulation": 32
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49871",
+      "EligiblePopulation": 402
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49872",
+      "EligiblePopulation": 202
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49873",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49877",
+      "EligiblePopulation": 10
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49883",
+      "EligiblePopulation": 126
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49901",
+      "EligiblePopulation": 221
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49902",
+      "EligiblePopulation": 179
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49903",
+      "EligiblePopulation": 173
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49915",
+      "EligiblePopulation": 451
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49917",
+      "EligiblePopulation": 186
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49922",
+      "EligiblePopulation": 564
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49929",
+      "EligiblePopulation": 147
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49934",
+      "EligiblePopulation": 643
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49942",
+      "EligiblePopulation": 63
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49952",
+      "EligiblePopulation": 98
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49955",
+      "EligiblePopulation": 291
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49959",
+      "EligiblePopulation": 259
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49960",
+      "EligiblePopulation": 138
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49961",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49963",
+      "EligiblePopulation": 436
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49970",
+      "EligiblePopulation": 247
+    },
+    {
+      "StableOriginId": "USA-ZCTA-49971",
+      "EligiblePopulation": 359
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50012",
+      "EligiblePopulation": 193
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50013",
+      "EligiblePopulation": 347
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50031",
+      "EligiblePopulation": 27
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50032",
+      "EligiblePopulation": 379
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50033",
+      "EligiblePopulation": 12
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50038",
+      "EligiblePopulation": 165
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50040",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50041",
+      "EligiblePopulation": 82
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50052",
+      "EligiblePopulation": 71
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50057",
+      "EligiblePopulation": 199
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50064",
+      "EligiblePopulation": 121
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50078",
+      "EligiblePopulation": 90
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50101",
+      "EligiblePopulation": 43
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50102",
+      "EligiblePopulation": 99
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50104",
+      "EligiblePopulation": 84
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50110",
+      "EligiblePopulation": 28
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50117",
+      "EligiblePopulation": 110
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50127",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50137",
+      "EligiblePopulation": 61
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50142",
+      "EligiblePopulation": 628
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50145",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50152",
+      "EligiblePopulation": 115
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50160",
+      "EligiblePopulation": 419
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50163",
+      "EligiblePopulation": 535
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50165",
+      "EligiblePopulation": 25
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50218",
+      "EligiblePopulation": 228
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50227",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50231",
+      "EligiblePopulation": 114
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50239",
+      "EligiblePopulation": 89
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50241",
+      "EligiblePopulation": 118
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50243",
+      "EligiblePopulation": 258
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50255",
+      "EligiblePopulation": 47
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50269",
+      "EligiblePopulation": 102
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50272",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50319",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50426",
+      "EligiblePopulation": 62
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50427",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50431",
+      "EligiblePopulation": 132
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50432",
+      "EligiblePopulation": 194
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50433",
+      "EligiblePopulation": 100
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50454",
+      "EligiblePopulation": 63
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50465",
+      "EligiblePopulation": 136
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50467",
+      "EligiblePopulation": 81
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50470",
+      "EligiblePopulation": 169
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50520",
+      "EligiblePopulation": 135
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50521",
+      "EligiblePopulation": 17
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50527",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50545",
+      "EligiblePopulation": 115
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50551",
+      "EligiblePopulation": 42
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50552",
+      "EligiblePopulation": 55
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50567",
+      "EligiblePopulation": 160
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50573",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50592",
+      "EligiblePopulation": 67
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50593",
+      "EligiblePopulation": 29
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50605",
+      "EligiblePopulation": 129
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50608",
+      "EligiblePopulation": 43
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50620",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50623",
+      "EligiblePopulation": 141
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50631",
+      "EligiblePopulation": 174
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50634",
+      "EligiblePopulation": 591
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50649",
+      "EligiblePopulation": 16
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50652",
+      "EligiblePopulation": 91
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50657",
+      "EligiblePopulation": 97
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50664",
+      "EligiblePopulation": 127
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50673",
+      "EligiblePopulation": 165
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50831",
+      "EligiblePopulation": 22
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50835",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50839",
+      "EligiblePopulation": 45
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50842",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50847",
+      "EligiblePopulation": 54
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50862",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-50863",
+      "EligiblePopulation": 141
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51008",
+      "EligiblePopulation": 112
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51009",
+      "EligiblePopulation": 97
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51011",
+      "EligiblePopulation": 55
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51015",
+      "EligiblePopulation": 71
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51044",
+      "EligiblePopulation": 201
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51045",
+      "EligiblePopulation": 79
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51051",
+      "EligiblePopulation": 39
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51111",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51242",
+      "EligiblePopulation": 247
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51244",
+      "EligiblePopulation": 115
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51340",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51341",
+      "EligiblePopulation": 31
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51363",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51432",
+      "EligiblePopulation": 32
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51444",
+      "EligiblePopulation": 207
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51447",
+      "EligiblePopulation": 147
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51451",
+      "EligiblePopulation": 53
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51452",
+      "EligiblePopulation": 128
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51459",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51460",
+      "EligiblePopulation": 53
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51520",
+      "EligiblePopulation": 154
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51550",
+      "EligiblePopulation": 102
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51554",
+      "EligiblePopulation": 58
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51578",
+      "EligiblePopulation": 118
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51630",
+      "EligiblePopulation": 136
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51637",
+      "EligiblePopulation": 163
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51647",
+      "EligiblePopulation": 180
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51648",
+      "EligiblePopulation": 203
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51651",
+      "EligiblePopulation": 105
+    },
+    {
+      "StableOriginId": "USA-ZCTA-51656",
+      "EligiblePopulation": 26
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52030",
+      "EligiblePopulation": 300
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52036",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52044",
+      "EligiblePopulation": 201
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52056",
+      "EligiblePopulation": 153
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52066",
+      "EligiblePopulation": 73
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52071",
+      "EligiblePopulation": 122
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52075",
+      "EligiblePopulation": 100
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52158",
+      "EligiblePopulation": 256
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52163",
+      "EligiblePopulation": 225
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52164",
+      "EligiblePopulation": 227
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52166",
+      "EligiblePopulation": 83
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52168",
+      "EligiblePopulation": 257
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52219",
+      "EligiblePopulation": 123
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52220",
+      "EligiblePopulation": 119
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52235",
+      "EligiblePopulation": 732
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52242",
+      "EligiblePopulation": 339
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52252",
+      "EligiblePopulation": 87
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52307",
+      "EligiblePopulation": 48
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52308",
+      "EligiblePopulation": 127
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52312",
+      "EligiblePopulation": 41
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52344",
+      "EligiblePopulation": 90
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52348",
+      "EligiblePopulation": 68
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52548",
+      "EligiblePopulation": 63
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52557",
+      "EligiblePopulation": 495
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52562",
+      "EligiblePopulation": 64
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52566",
+      "EligiblePopulation": 189
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52568",
+      "EligiblePopulation": 73
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52573",
+      "EligiblePopulation": 169
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52588",
+      "EligiblePopulation": 58
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52593",
+      "EligiblePopulation": 118
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52595",
+      "EligiblePopulation": 334
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52624",
+      "EligiblePopulation": 427
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52631",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52647",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52652",
+      "EligiblePopulation": 52
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52657",
+      "EligiblePopulation": 53
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52701",
+      "EligiblePopulation": 67
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52728",
+      "EligiblePopulation": 625
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52752",
+      "EligiblePopulation": 264
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52757",
+      "EligiblePopulation": 188
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52758",
+      "EligiblePopulation": 192
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52759",
+      "EligiblePopulation": 101
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52767",
+      "EligiblePopulation": 253
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52771",
+      "EligiblePopulation": 35
+    },
+    {
+      "StableOriginId": "USA-ZCTA-52774",
+      "EligiblePopulation": 93
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53003",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53016",
+      "EligiblePopulation": 298
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53031",
+      "EligiblePopulation": 57
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53047",
+      "EligiblePopulation": 112
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53088",
+      "EligiblePopulation": 187
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53099",
+      "EligiblePopulation": 3
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53127",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53157",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53167",
+      "EligiblePopulation": 266
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53176",
+      "EligiblePopulation": 98
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53192",
+      "EligiblePopulation": 129
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53195",
+      "EligiblePopulation": 101
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53295",
+      "EligiblePopulation": 157
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53501",
+      "EligiblePopulation": 249
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53537",
+      "EligiblePopulation": 681
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53540",
+      "EligiblePopulation": 98
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53571",
+      "EligiblePopulation": 68
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53584",
+      "EligiblePopulation": 10
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53599",
+      "EligiblePopulation": 89
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53792",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53802",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53808",
+      "EligiblePopulation": 715
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53812",
+      "EligiblePopulation": 211
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53817",
+      "EligiblePopulation": 180
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53928",
+      "EligiblePopulation": 76
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53931",
+      "EligiblePopulation": 221
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53935",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53939",
+      "EligiblePopulation": 259
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53940",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53942",
+      "EligiblePopulation": 97
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53947",
+      "EligiblePopulation": 204
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53953",
+      "EligiblePopulation": 143
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53962",
+      "EligiblePopulation": 23
+    },
+    {
+      "StableOriginId": "USA-ZCTA-53969",
+      "EligiblePopulation": 280
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54127",
+      "EligiblePopulation": 51
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54152",
+      "EligiblePopulation": 150
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54160",
+      "EligiblePopulation": 174
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54207",
+      "EligiblePopulation": 134
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54211",
+      "EligiblePopulation": 275
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54214",
+      "EligiblePopulation": 389
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54215",
+      "EligiblePopulation": 147
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54232",
+      "EligiblePopulation": 748
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54307",
+      "EligiblePopulation": 1111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54413",
+      "EligiblePopulation": 153
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54417",
+      "EligiblePopulation": 6
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54430",
+      "EligiblePopulation": 82
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54450",
+      "EligiblePopulation": 344
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54458",
+      "EligiblePopulation": 83
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54464",
+      "EligiblePopulation": 54
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54517",
+      "EligiblePopulation": 158
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54536",
+      "EligiblePopulation": 156
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54561",
+      "EligiblePopulation": 24
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54565",
+      "EligiblePopulation": 39
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54637",
+      "EligiblePopulation": 132
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54643",
+      "EligiblePopulation": 4
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54645",
+      "EligiblePopulation": 84
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54654",
+      "EligiblePopulation": 105
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54760",
+      "EligiblePopulation": 148
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54842",
+      "EligiblePopulation": 147
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54845",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54850",
+      "EligiblePopulation": 284
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54857",
+      "EligiblePopulation": 15
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54861",
+      "EligiblePopulation": 149
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54926",
+      "EligiblePopulation": 133
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54927",
+      "EligiblePopulation": 263
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54931",
+      "EligiblePopulation": 290
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54933",
+      "EligiblePopulation": 173
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54946",
+      "EligiblePopulation": 480
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54978",
+      "EligiblePopulation": 65
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54980",
+      "EligiblePopulation": 208
+    },
+    {
+      "StableOriginId": "USA-ZCTA-54985",
+      "EligiblePopulation": 521
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55029",
+      "EligiblePopulation": 26
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55036",
+      "EligiblePopulation": 36
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55085",
+      "EligiblePopulation": 336
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55090",
+      "EligiblePopulation": 322
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55111",
+      "EligiblePopulation": 100
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55150",
+      "EligiblePopulation": 109
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55155",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55366",
+      "EligiblePopulation": 347
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55450",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55609",
+      "EligiblePopulation": 135
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55814",
+      "EligiblePopulation": 380
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55903",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55905",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55950",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55968",
+      "EligiblePopulation": 110
+    },
+    {
+      "StableOriginId": "USA-ZCTA-55977",
+      "EligiblePopulation": 128
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56020",
+      "EligiblePopulation": 55
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56022",
+      "EligiblePopulation": 57
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56030",
+      "EligiblePopulation": 8
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56032",
+      "EligiblePopulation": 227
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56035",
+      "EligiblePopulation": 287
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56046",
+      "EligiblePopulation": 98
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56056",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56075",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56080",
+      "EligiblePopulation": 511
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56089",
+      "EligiblePopulation": 180
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56113",
+      "EligiblePopulation": 171
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56125",
+      "EligiblePopulation": 45
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56140",
+      "EligiblePopulation": 50
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56146",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56147",
+      "EligiblePopulation": 85
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56153",
+      "EligiblePopulation": 100
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56166",
+      "EligiblePopulation": 159
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56287",
+      "EligiblePopulation": 51
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56294",
+      "EligiblePopulation": 79
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56313",
+      "EligiblePopulation": 40
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56321",
+      "EligiblePopulation": 440
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56325",
+      "EligiblePopulation": 144
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56328",
+      "EligiblePopulation": 138
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56335",
+      "EligiblePopulation": 163
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56356",
+      "EligiblePopulation": 188
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56363",
+      "EligiblePopulation": 180
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56369",
+      "EligiblePopulation": 339
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56371",
+      "EligiblePopulation": 70
+    },
+    {
+      "StableOriginId": "USA-ZCTA-56376",
+      "EligiblePopulation": 235
+    },
+    {
+      "StableOriginId": "USA-ZCTA-57007",
+      "EligiblePopulation": 35
+    },
+    {
+      "StableOriginId": "USA-ZCTA-57027",
+      "EligiblePopulation": 136
+    },
+    {
+      "StableOriginId": "USA-ZCTA-57041",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-57057",
+      "EligiblePopulation": 124
+    },
+    {
+      "StableOriginId": "USA-ZCTA-57117",
+      "EligiblePopulation": 17
+    },
+    {
+      "StableOriginId": "USA-ZCTA-57197",
+      "EligiblePopulation": 57
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60029",
+      "EligiblePopulation": 395
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60075",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60109",
+      "EligiblePopulation": 306
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60113",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60141",
+      "EligiblePopulation": 280
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60144",
+      "EligiblePopulation": 55
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60183",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60208",
+      "EligiblePopulation": 61
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60418",
+      "EligiblePopulation": 9004
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60437",
+      "EligiblePopulation": 70
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60474",
+      "EligiblePopulation": 534
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60519",
+      "EligiblePopulation": 62
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60536",
+      "EligiblePopulation": 60
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60537",
+      "EligiblePopulation": 406
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60539",
+      "EligiblePopulation": 197
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60557",
+      "EligiblePopulation": 218
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60910",
+      "EligiblePopulation": 467
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60920",
+      "EligiblePopulation": 152
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60926",
+      "EligiblePopulation": 69
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60932",
+      "EligiblePopulation": 198
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60933",
+      "EligiblePopulation": 216
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60939",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60945",
+      "EligiblePopulation": 166
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60956",
+      "EligiblePopulation": 99
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60967",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60969",
+      "EligiblePopulation": 42
+    },
+    {
+      "StableOriginId": "USA-ZCTA-60974",
+      "EligiblePopulation": 217
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61013",
+      "EligiblePopulation": 493
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61027",
+      "EligiblePopulation": 62
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61037",
+      "EligiblePopulation": 84
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61043",
+      "EligiblePopulation": 112
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61044",
+      "EligiblePopulation": 164
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61057",
+      "EligiblePopulation": 40
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61059",
+      "EligiblePopulation": 145
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61077",
+      "EligiblePopulation": 118
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61079",
+      "EligiblePopulation": 164
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61091",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61112",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61233",
+      "EligiblePopulation": 195
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61236",
+      "EligiblePopulation": 42
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61237",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61258",
+      "EligiblePopulation": 136
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61263",
+      "EligiblePopulation": 522
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61276",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61278",
+      "EligiblePopulation": 478
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61315",
+      "EligiblePopulation": 193
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61316",
+      "EligiblePopulation": 151
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61317",
+      "EligiblePopulation": 359
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61322",
+      "EligiblePopulation": 1053
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61323",
+      "EligiblePopulation": 93
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61324",
+      "EligiblePopulation": 72
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61328",
+      "EligiblePopulation": 61
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61331",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61332",
+      "EligiblePopulation": 99
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61338",
+      "EligiblePopulation": 196
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61340",
+      "EligiblePopulation": 353
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61346",
+      "EligiblePopulation": 42
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61359",
+      "EligiblePopulation": 324
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61363",
+      "EligiblePopulation": 228
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61371",
+      "EligiblePopulation": 85
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61372",
+      "EligiblePopulation": 171
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61374",
+      "EligiblePopulation": 41
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61402",
+      "EligiblePopulation": 1719
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61416",
+      "EligiblePopulation": 192
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61419",
+      "EligiblePopulation": 134
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61424",
+      "EligiblePopulation": 30
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61426",
+      "EligiblePopulation": 82
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61433",
+      "EligiblePopulation": 22
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61435",
+      "EligiblePopulation": 106
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61439",
+      "EligiblePopulation": 152
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61468",
+      "EligiblePopulation": 135
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61471",
+      "EligiblePopulation": 100
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61479",
+      "EligiblePopulation": 24
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61519",
+      "EligiblePopulation": 179
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61524",
+      "EligiblePopulation": 316
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61539",
+      "EligiblePopulation": 111
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61541",
+      "EligiblePopulation": 86
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61543",
+      "EligiblePopulation": 91
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61552",
+      "EligiblePopulation": 137
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61553",
+      "EligiblePopulation": 156
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61562",
+      "EligiblePopulation": 84
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61563",
+      "EligiblePopulation": 445
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61564",
+      "EligiblePopulation": 727
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61625",
+      "EligiblePopulation": 91
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61750",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61751",
+      "EligiblePopulation": 55
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61831",
+      "EligiblePopulation": 120
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61848",
+      "EligiblePopulation": 189
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61855",
+      "EligiblePopulation": 85
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61857",
+      "EligiblePopulation": 120
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61871",
+      "EligiblePopulation": 265
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61936",
+      "EligiblePopulation": 163
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61940",
+      "EligiblePopulation": 239
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61941",
+      "EligiblePopulation": 134
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61949",
+      "EligiblePopulation": 130
+    },
+    {
+      "StableOriginId": "USA-ZCTA-61955",
+      "EligiblePopulation": 121
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62023",
+      "EligiblePopulation": 80
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62026",
+      "EligiblePopulation": 192
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62030",
+      "EligiblePopulation": 45
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62046",
+      "EligiblePopulation": 585
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62058",
+      "EligiblePopulation": 605
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62059",
+      "EligiblePopulation": 444
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62076",
+      "EligiblePopulation": 67
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62077",
+      "EligiblePopulation": 252
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62078",
+      "EligiblePopulation": 80
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62085",
+      "EligiblePopulation": 143
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62089",
+      "EligiblePopulation": 453
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62093",
+      "EligiblePopulation": 393
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62098",
+      "EligiblePopulation": 32
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62219",
+      "EligiblePopulation": 808
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62248",
+      "EligiblePopulation": 381
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62256",
+      "EligiblePopulation": 23
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62261",
+      "EligiblePopulation": 12
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62266",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62273",
+      "EligiblePopulation": 204
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62279",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62282",
+      "EligiblePopulation": 523
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62289",
+      "EligiblePopulation": 346
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62292",
+      "EligiblePopulation": 637
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62319",
+      "EligiblePopulation": 199
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62334",
+      "EligiblePopulation": 121
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62336",
+      "EligiblePopulation": 78
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62344",
+      "EligiblePopulation": 20
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62348",
+      "EligiblePopulation": 163
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62352",
+      "EligiblePopulation": 162
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62357",
+      "EligiblePopulation": 197
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62359",
+      "EligiblePopulation": 62
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62362",
+      "EligiblePopulation": 272
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62459",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62464",
+      "EligiblePopulation": 112
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62514",
+      "EligiblePopulation": 273
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62517",
+      "EligiblePopulation": 179
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62519",
+      "EligiblePopulation": 46
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62532",
+      "EligiblePopulation": 43
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62537",
+      "EligiblePopulation": 216
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62540",
+      "EligiblePopulation": 1007
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62541",
+      "EligiblePopulation": 46
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62570",
+      "EligiblePopulation": 427
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62610",
+      "EligiblePopulation": 108
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62622",
+      "EligiblePopulation": 50
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62663",
+      "EligiblePopulation": 141
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62672",
+      "EligiblePopulation": 129
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62689",
+      "EligiblePopulation": 406
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62695",
+      "EligiblePopulation": 403
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62706",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62811",
+      "EligiblePopulation": 169
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62820",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62825",
+      "EligiblePopulation": 210
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62829",
+      "EligiblePopulation": 76
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62841",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62843",
+      "EligiblePopulation": 76
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62848",
+      "EligiblePopulation": 406
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62852",
+      "EligiblePopulation": 120
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62856",
+      "EligiblePopulation": 267
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62861",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62876",
+      "EligiblePopulation": 114
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62879",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62891",
+      "EligiblePopulation": 491
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62915",
+      "EligiblePopulation": 323
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62921",
+      "EligiblePopulation": 167
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62927",
+      "EligiblePopulation": 246
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62949",
+      "EligiblePopulation": 567
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62950",
+      "EligiblePopulation": 129
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62953",
+      "EligiblePopulation": 194
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62961",
+      "EligiblePopulation": 35
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62962",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62965",
+      "EligiblePopulation": 38
+    },
+    {
+      "StableOriginId": "USA-ZCTA-62997",
+      "EligiblePopulation": 449
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63045",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63047",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63053",
+      "EligiblePopulation": 56
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63073",
+      "EligiblePopulation": 1097
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63079",
+      "EligiblePopulation": 150
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63155",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63330",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63365",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63380",
+      "EligiblePopulation": 556
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63387",
+      "EligiblePopulation": 87
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63433",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63439",
+      "EligiblePopulation": 144
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63450",
+      "EligiblePopulation": 158
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63458",
+      "EligiblePopulation": 62
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63466",
+      "EligiblePopulation": 19
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63467",
+      "EligiblePopulation": 53
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63535",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63538",
+      "EligiblePopulation": 153
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63539",
+      "EligiblePopulation": 156
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63540",
+      "EligiblePopulation": 155
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63560",
+      "EligiblePopulation": 51
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63566",
+      "EligiblePopulation": 58
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63567",
+      "EligiblePopulation": 82
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63663",
+      "EligiblePopulation": 565
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63665",
+      "EligiblePopulation": 223
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63674",
+      "EligiblePopulation": 24
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63675",
+      "EligiblePopulation": 12
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63738",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63742",
+      "EligiblePopulation": 102
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63743",
+      "EligiblePopulation": 45
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63744",
+      "EligiblePopulation": 124
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63745",
+      "EligiblePopulation": 142
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63746",
+      "EligiblePopulation": 9
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63750",
+      "EligiblePopulation": 24
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63758",
+      "EligiblePopulation": 363
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63763",
+      "EligiblePopulation": 81
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63767",
+      "EligiblePopulation": 453
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63770",
+      "EligiblePopulation": 138
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63774",
+      "EligiblePopulation": 125
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63782",
+      "EligiblePopulation": 146
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63783",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63784",
+      "EligiblePopulation": 151
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63820",
+      "EligiblePopulation": 168
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63824",
+      "EligiblePopulation": 123
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63826",
+      "EligiblePopulation": 89
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63828",
+      "EligiblePopulation": 122
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63833",
+      "EligiblePopulation": 123
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63839",
+      "EligiblePopulation": 209
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63840",
+      "EligiblePopulation": 47
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63847",
+      "EligiblePopulation": 52
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63849",
+      "EligiblePopulation": 217
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63850",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63853",
+      "EligiblePopulation": 87
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63860",
+      "EligiblePopulation": 168
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63866",
+      "EligiblePopulation": 294
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63874",
+      "EligiblePopulation": 132
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63878",
+      "EligiblePopulation": 60
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63880",
+      "EligiblePopulation": 24
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63882",
+      "EligiblePopulation": 222
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63934",
+      "EligiblePopulation": 18
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63950",
+      "EligiblePopulation": 34
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63951",
+      "EligiblePopulation": 163
+    },
+    {
+      "StableOriginId": "USA-ZCTA-63962",
+      "EligiblePopulation": 150
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64022",
+      "EligiblePopulation": 97
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64028",
+      "EligiblePopulation": 173
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64065",
+      "EligiblePopulation": 26
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64066",
+      "EligiblePopulation": 36
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64072",
+      "EligiblePopulation": 261
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64090",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64092",
+      "EligiblePopulation": 28
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64102",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64420",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64432",
+      "EligiblePopulation": 123
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64433",
+      "EligiblePopulation": 141
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64438",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64441",
+      "EligiblePopulation": 74
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64453",
+      "EligiblePopulation": 125
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64458",
+      "EligiblePopulation": 198
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64467",
+      "EligiblePopulation": 116
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64496",
+      "EligiblePopulation": 160
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64499",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64639",
+      "EligiblePopulation": 108
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64654",
+      "EligiblePopulation": 26
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64655",
+      "EligiblePopulation": 86
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64656",
+      "EligiblePopulation": 171
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64672",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64676",
+      "EligiblePopulation": 97
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64681",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64686",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64743",
+      "EligiblePopulation": 159
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64745",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64765",
+      "EligiblePopulation": 6
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64781",
+      "EligiblePopulation": 84
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64830",
+      "EligiblePopulation": 528
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64833",
+      "EligiblePopulation": 36
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64841",
+      "EligiblePopulation": 816
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64849",
+      "EligiblePopulation": 152
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64857",
+      "EligiblePopulation": 287
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64858",
+      "EligiblePopulation": 334
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64868",
+      "EligiblePopulation": 71
+    },
+    {
+      "StableOriginId": "USA-ZCTA-64874",
+      "EligiblePopulation": 440
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65062",
+      "EligiblePopulation": 26
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65215",
+      "EligiblePopulation": 63
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65216",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65246",
+      "EligiblePopulation": 76
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65278",
+      "EligiblePopulation": 70
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65280",
+      "EligiblePopulation": 235
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65282",
+      "EligiblePopulation": 136
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65286",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65320",
+      "EligiblePopulation": 37
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65327",
+      "EligiblePopulation": 189
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65409",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65436",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65439",
+      "EligiblePopulation": 29
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65443",
+      "EligiblePopulation": 83
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65461",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65468",
+      "EligiblePopulation": 38
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65484",
+      "EligiblePopulation": 54
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65501",
+      "EligiblePopulation": 179
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65529",
+      "EligiblePopulation": 213
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65541",
+      "EligiblePopulation": 135
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65564",
+      "EligiblePopulation": 114
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65586",
+      "EligiblePopulation": 34
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65589",
+      "EligiblePopulation": 70
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65603",
+      "EligiblePopulation": 161
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65618",
+      "EligiblePopulation": 198
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65623",
+      "EligiblePopulation": 17
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65654",
+      "EligiblePopulation": 186
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65657",
+      "EligiblePopulation": 201
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65660",
+      "EligiblePopulation": 170
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65664",
+      "EligiblePopulation": 38
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65666",
+      "EligiblePopulation": 40
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65675",
+      "EligiblePopulation": 24
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65688",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65715",
+      "EligiblePopulation": 50
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65726",
+      "EligiblePopulation": 172
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65727",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65728",
+      "EligiblePopulation": 30
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65730",
+      "EligiblePopulation": 10
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65735",
+      "EligiblePopulation": 39
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65741",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65744",
+      "EligiblePopulation": 79
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65766",
+      "EligiblePopulation": 47
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65783",
+      "EligiblePopulation": 124
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65784",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65801",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-65897",
+      "EligiblePopulation": 359
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66024",
+      "EligiblePopulation": 452
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66031",
+      "EligiblePopulation": 580
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66045",
+      "EligiblePopulation": 237
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66115",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66118",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66160",
+      "EligiblePopulation": 39
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66251",
+      "EligiblePopulation": 5
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66501",
+      "EligiblePopulation": 264
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66506",
+      "EligiblePopulation": 222
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66518",
+      "EligiblePopulation": 189
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66522",
+      "EligiblePopulation": 101
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66527",
+      "EligiblePopulation": 118
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66541",
+      "EligiblePopulation": 219
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66621",
+      "EligiblePopulation": 82
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66622",
+      "EligiblePopulation": 98
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66714",
+      "EligiblePopulation": 105
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66741",
+      "EligiblePopulation": 158
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66742",
+      "EligiblePopulation": 29
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66758",
+      "EligiblePopulation": 151
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66760",
+      "EligiblePopulation": 11
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66761",
+      "EligiblePopulation": 191
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66775",
+      "EligiblePopulation": 126
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66778",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66782",
+      "EligiblePopulation": 129
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66838",
+      "EligiblePopulation": 106
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66843",
+      "EligiblePopulation": 121
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66850",
+      "EligiblePopulation": 168
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66859",
+      "EligiblePopulation": 191
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66862",
+      "EligiblePopulation": 78
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66863",
+      "EligiblePopulation": 29
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66870",
+      "EligiblePopulation": 120
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66930",
+      "EligiblePopulation": 102
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66942",
+      "EligiblePopulation": 214
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66944",
+      "EligiblePopulation": 241
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66946",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66955",
+      "EligiblePopulation": 45
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66959",
+      "EligiblePopulation": 152
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66960",
+      "EligiblePopulation": 62
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66961",
+      "EligiblePopulation": 9
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66963",
+      "EligiblePopulation": 189
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66964",
+      "EligiblePopulation": 125
+    },
+    {
+      "StableOriginId": "USA-ZCTA-66970",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67012",
+      "EligiblePopulation": 40
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67016",
+      "EligiblePopulation": 339
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67023",
+      "EligiblePopulation": 114
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67041",
+      "EligiblePopulation": 183
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67053",
+      "EligiblePopulation": 368
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67055",
+      "EligiblePopulation": 70
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67072",
+      "EligiblePopulation": 218
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67102",
+      "EligiblePopulation": 71
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67122",
+      "EligiblePopulation": 225
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67221",
+      "EligiblePopulation": 230
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67260",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67332",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67334",
+      "EligiblePopulation": 60
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67340",
+      "EligiblePopulation": 270
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67345",
+      "EligiblePopulation": 98
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67355",
+      "EligiblePopulation": 175
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67363",
+      "EligiblePopulation": 101
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67364",
+      "EligiblePopulation": 144
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67417",
+      "EligiblePopulation": 108
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67418",
+      "EligiblePopulation": 160
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67442",
+      "EligiblePopulation": 167
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67475",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67476",
+      "EligiblePopulation": 7
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67478",
+      "EligiblePopulation": 67
+    },
+    {
+      "StableOriginId": "USA-ZCTA-67482",
+      "EligiblePopulation": 71
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68001",
+      "EligiblePopulation": 43
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68010",
+      "EligiblePopulation": 222
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68016",
+      "EligiblePopulation": 312
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68042",
+      "EligiblePopulation": 69
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68056",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68063",
+      "EligiblePopulation": 196
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68068",
+      "EligiblePopulation": 151
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68072",
+      "EligiblePopulation": 95
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68178",
+      "EligiblePopulation": 568
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68182",
+      "EligiblePopulation": 189
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68183",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68303",
+      "EligiblePopulation": 226
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68309",
+      "EligiblePopulation": 119
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68315",
+      "EligiblePopulation": 78
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68324",
+      "EligiblePopulation": 46
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68325",
+      "EligiblePopulation": 81
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68330",
+      "EligiblePopulation": 31
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68332",
+      "EligiblePopulation": 75
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68350",
+      "EligiblePopulation": 217
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68362",
+      "EligiblePopulation": 16
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68364",
+      "EligiblePopulation": 216
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68375",
+      "EligiblePopulation": 102
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68379",
+      "EligiblePopulation": 48
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68380",
+      "EligiblePopulation": 36
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68381",
+      "EligiblePopulation": 98
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68382",
+      "EligiblePopulation": 54
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68403",
+      "EligiblePopulation": 195
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68419",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68429",
+      "EligiblePopulation": 74
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68433",
+      "EligiblePopulation": 120
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68438",
+      "EligiblePopulation": 74
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68440",
+      "EligiblePopulation": 105
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68441",
+      "EligiblePopulation": 139
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68444",
+      "EligiblePopulation": 22
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68445",
+      "EligiblePopulation": 125
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68452",
+      "EligiblePopulation": 80
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68458",
+      "EligiblePopulation": 155
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68531",
+      "EligiblePopulation": 171
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68588",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68634",
+      "EligiblePopulation": 447
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68655",
+      "EligiblePopulation": 92
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68659",
+      "EligiblePopulation": 168
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68664",
+      "EligiblePopulation": 226
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68667",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68717",
+      "EligiblePopulation": 160
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68724",
+      "EligiblePopulation": 187
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68732",
+      "EligiblePopulation": 109
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68747",
+      "EligiblePopulation": 137
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68749",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68751",
+      "EligiblePopulation": 46
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68816",
+      "EligiblePopulation": 80
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68934",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68954",
+      "EligiblePopulation": 20
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68964",
+      "EligiblePopulation": 68
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68974",
+      "EligiblePopulation": 224
+    },
+    {
+      "StableOriginId": "USA-ZCTA-68975",
+      "EligiblePopulation": 78
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71630",
+      "EligiblePopulation": 403
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71659",
+      "EligiblePopulation": 10
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71662",
+      "EligiblePopulation": 50
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71666",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71677",
+      "EligiblePopulation": 91
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71678",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71721",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71722",
+      "EligiblePopulation": 40
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71728",
+      "EligiblePopulation": 20
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71745",
+      "EligiblePopulation": 107
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71748",
+      "EligiblePopulation": 51
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71772",
+      "EligiblePopulation": 15
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71922",
+      "EligiblePopulation": 101
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71942",
+      "EligiblePopulation": 95
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71952",
+      "EligiblePopulation": 36
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71969",
+      "EligiblePopulation": 188
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71998",
+      "EligiblePopulation": 195
+    },
+    {
+      "StableOriginId": "USA-ZCTA-71999",
+      "EligiblePopulation": 125
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72005",
+      "EligiblePopulation": 54
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72014",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72028",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72035",
+      "EligiblePopulation": 262
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72038",
+      "EligiblePopulation": 87
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72048",
+      "EligiblePopulation": 120
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72052",
+      "EligiblePopulation": 99
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72053",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72059",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72066",
+      "EligiblePopulation": 237
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72074",
+      "EligiblePopulation": 106
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72075",
+      "EligiblePopulation": 12
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72083",
+      "EligiblePopulation": 175
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72085",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72099",
+      "EligiblePopulation": 440
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72107",
+      "EligiblePopulation": 70
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72108",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72119",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72123",
+      "EligiblePopulation": 187
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72133",
+      "EligiblePopulation": 16
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72139",
+      "EligiblePopulation": 210
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72140",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72165",
+      "EligiblePopulation": 110
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72166",
+      "EligiblePopulation": 171
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72169",
+      "EligiblePopulation": 74
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72170",
+      "EligiblePopulation": 179
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72178",
+      "EligiblePopulation": 26
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72180",
+      "EligiblePopulation": 95
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72181",
+      "EligiblePopulation": 5
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72182",
+      "EligiblePopulation": 29
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72183",
+      "EligiblePopulation": 765
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72199",
+      "EligiblePopulation": 16
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72311",
+      "EligiblePopulation": 52
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72313",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72320",
+      "EligiblePopulation": 1426
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72322",
+      "EligiblePopulation": 58
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72325",
+      "EligiblePopulation": 8
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72328",
+      "EligiblePopulation": 62
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72329",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72332",
+      "EligiblePopulation": 59
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72338",
+      "EligiblePopulation": 13
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72339",
+      "EligiblePopulation": 106
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72340",
+      "EligiblePopulation": 88
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72341",
+      "EligiblePopulation": 161
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72351",
+      "EligiblePopulation": 591
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72352",
+      "EligiblePopulation": 7
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72353",
+      "EligiblePopulation": 49
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72359",
+      "EligiblePopulation": 269
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72367",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72369",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72377",
+      "EligiblePopulation": 31
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72379",
+      "EligiblePopulation": 14
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72383",
+      "EligiblePopulation": 54
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72387",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72389",
+      "EligiblePopulation": 339
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72391",
+      "EligiblePopulation": 38
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72405",
+      "EligiblePopulation": 11885
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72424",
+      "EligiblePopulation": 53
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72426",
+      "EligiblePopulation": 151
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72427",
+      "EligiblePopulation": 46
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72428",
+      "EligiblePopulation": 94
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72431",
+      "EligiblePopulation": 346
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72441",
+      "EligiblePopulation": 24
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72445",
+      "EligiblePopulation": 33
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72449",
+      "EligiblePopulation": 130
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72453",
+      "EligiblePopulation": 123
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72457",
+      "EligiblePopulation": 168
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72462",
+      "EligiblePopulation": 307
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72464",
+      "EligiblePopulation": 5
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72467",
+      "EligiblePopulation": 199
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72478",
+      "EligiblePopulation": 101
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72515",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72520",
+      "EligiblePopulation": 310
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72526",
+      "EligiblePopulation": 97
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72528",
+      "EligiblePopulation": 219
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72540",
+      "EligiblePopulation": 119
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72546",
+      "EligiblePopulation": 26
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72553",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72555",
+      "EligiblePopulation": 229
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72572",
+      "EligiblePopulation": 294
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72578",
+      "EligiblePopulation": 143
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72585",
+      "EligiblePopulation": 264
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72587",
+      "EligiblePopulation": 9
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72615",
+      "EligiblePopulation": 23
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72617",
+      "EligiblePopulation": 254
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72630",
+      "EligiblePopulation": 76
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72636",
+      "EligiblePopulation": 4
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72663",
+      "EligiblePopulation": 250
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72669",
+      "EligiblePopulation": 109
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72670",
+      "EligiblePopulation": 145
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72672",
+      "EligiblePopulation": 204
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72677",
+      "EligiblePopulation": 511
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72679",
+      "EligiblePopulation": 85
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72686",
+      "EligiblePopulation": 188
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72713",
+      "EligiblePopulation": 16870
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72729",
+      "EligiblePopulation": 99
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72747",
+      "EligiblePopulation": 119
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72749",
+      "EligiblePopulation": 138
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72826",
+      "EligiblePopulation": 4
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72827",
+      "EligiblePopulation": 113
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72828",
+      "EligiblePopulation": 70
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72829",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72838",
+      "EligiblePopulation": 178
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72839",
+      "EligiblePopulation": 443
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72841",
+      "EligiblePopulation": 211
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72905",
+      "EligiblePopulation": 0
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72935",
+      "EligiblePopulation": 387
+    },
+    {
+      "StableOriginId": "USA-ZCTA-72945",
+      "EligiblePopulation": 257
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74001",
+      "EligiblePopulation": 209
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74034",
+      "EligiblePopulation": 79
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74050",
+      "EligiblePopulation": 333
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74082",
+      "EligiblePopulation": 207
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74117",
+      "EligiblePopulation": 25
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74171",
+      "EligiblePopulation": 519
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74340",
+      "EligiblePopulation": 146
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74349",
+      "EligiblePopulation": 682
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74350",
+      "EligiblePopulation": 600
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74358",
+      "EligiblePopulation": 163
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74360",
+      "EligiblePopulation": 11
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74368",
+      "EligiblePopulation": 56
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74438",
+      "EligiblePopulation": 269
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74446",
+      "EligiblePopulation": 372
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74456",
+      "EligiblePopulation": 75
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74458",
+      "EligiblePopulation": 95
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74459",
+      "EligiblePopulation": 55
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74460",
+      "EligiblePopulation": 316
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74463",
+      "EligiblePopulation": 2063
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74468",
+      "EligiblePopulation": 227
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74477",
+      "EligiblePopulation": 9
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74577",
+      "EligiblePopulation": 185
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74935",
+      "EligiblePopulation": 104
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74942",
+      "EligiblePopulation": 96
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74943",
+      "EligiblePopulation": 76
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74945",
+      "EligiblePopulation": 115
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74946",
+      "EligiblePopulation": 44
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74947",
+      "EligiblePopulation": 67
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74949",
+      "EligiblePopulation": 177
+    },
+    {
+      "StableOriginId": "USA-ZCTA-74951",
+      "EligiblePopulation": 937
+    }
+  ]
+}
