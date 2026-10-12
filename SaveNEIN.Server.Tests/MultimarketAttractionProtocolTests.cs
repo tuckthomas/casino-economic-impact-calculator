@@ -34,6 +34,8 @@ public class MultimarketAttractionProtocolTests
     [InlineData("{\"minimumDemandScale\":0}")]
     [InlineData("{\"minimumDemandScale\":1,\"maximumDemandScale\":0.1}")]
     [InlineData("{\"fitDemandScaleByJurisdiction\":true}")]
+    [InlineData("{\"travelTimeRegularizationMinutes\":[0]}")]
+    [InlineData("{\"travelTimeRegularizationMinutes\":[]}")]
     [InlineData("{\"selectionPolicyVersion\":\"gravity-development-selection-v1\",\"training\":[\"t1\",\"t2\"],\"selection\":[\"s1\"]}")]
     public void RejectsInvalidSpecificationBeforeAnyDatabaseOrRoutingWork(string json)
     {
