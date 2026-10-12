@@ -22,6 +22,15 @@ using QuestPDF.Infrastructure;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
+if (args is ["--capture-illinois-video-gaming-2025", var videoRawPath, var videoOutputPath])
+{
+    if (File.Exists(videoOutputPath)) throw new ArgumentException("Video-gaming capture output already exists.");
+    var videoCapture = IllinoisVideoGamingProvider.ParseCapture(await File.ReadAllBytesAsync(videoRawPath), 2025, DateTime.UtcNow);
+    await File.WriteAllTextAsync(videoOutputPath, JsonSerializer.Serialize(videoCapture, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine($"Captured {videoCapture.Rows.Count} observations for {videoCapture.Rows.Where(row => row.StableLicenseId is not null).Select(row => row.StableLicenseId).Distinct().Count()} distinct licenses, {videoCapture.Rows.Sum(row => row.NetTerminalIncome)} reported NTI. Annual rows are not distinct physical supply; historical geocodes are not yet reconciled.");
+    return;
+}
+
 if (args is ["--inspect-mgc-source", var mgcInspectPdf, var mgcInspectOutput])
 {
     await File.WriteAllTextAsync(mgcInspectOutput, JsonSerializer.Serialize(

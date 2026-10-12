@@ -10,8 +10,10 @@ namespace SaveNEIN.Server.Tests;
 
 public sealed class IncumbentCalibrationAcceptanceTests
 {
-    [Fact]
-    public async Task CalibrationRunsHoldoutOnceAfterSelectionAndBlocksUnqualifiedPublication()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CalibrationRejectsBadDevelopmentFitBeforeHoldoutAndBlocksUnqualifiedPublication(bool rejectEveryCandidate)
     {
         await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase($"calibration-acceptance-{Guid.NewGuid():N}").Options);
@@ -42,7 +44,7 @@ public sealed class IncumbentCalibrationAcceptanceTests
             });
         }
         await db.SaveChangesAsync();
-        var executor = new CapturingExecutor(db);
+        var executor = new CapturingExecutor(db, rejectEveryCandidate);
         var metrics = new ValidationMetricsService();
         var parameterService = new ThrowingParameterService();
         var evaluator = new ValidationEvaluationService(db, metrics, new ComparableMarketModelService(), parameterService);
@@ -51,13 +53,24 @@ public sealed class IncumbentCalibrationAcceptanceTests
             snapshot.Id, snapshot.Id, snapshot.Id, snapshot.Id, snapshot.Id, ["origin"], [1, 2, 3, 4],
             2025, 2025, end, "commercial-casino", GravityDemandSpecifications.AgiShare,
             FacilityAttractionSpecifications.HybridObservedGgr, "inverse-power", "ggr", start, end, 1, null, null, []);
-        var result = await calibration.CalibrateAsync(new IncumbentBacktestCalibrationRequest(
+        var request = new IncumbentBacktestCalibrationRequest(
             "fixture", "1", ValidationObjectiveFunctions.Mape, baseRequest,
             [new(1, "training-1", ValidationPartitions.Training, "development"), new(2, "training-2", ValidationPartitions.Training, "development"), new(4, "selection", DemandValidationPartitions.Selection, "selection"), new(3, "holdout", ValidationPartitions.Holdout, "reserved")],
             [new("good", new Dictionary<string, double> { ["gravity.beta"] = 1 }), new("bad", new Dictionary<string, double> { ["gravity.beta"] = 2 })],
-            ["gaming-positions"], "{}", 1, "blocked"));
+            ["gaming-positions"], "{}", 1, "blocked");
 
-        Assert.Equal("bad", result.SelectedCandidateKey);
+        if (rejectEveryCandidate)
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => calibration.CalibrateAsync(request));
+            Assert.Equal(6, executor.Requests.Count);
+            Assert.DoesNotContain(executor.Requests, item => item.ExcludedCompetitorIds!.Contains(3));
+            Assert.Empty(await db.ValidationEvaluations.ToArrayAsync());
+            return;
+        }
+        var result = await calibration.CalibrateAsync(request);
+
+        Assert.Equal("good", result.SelectedCandidateKey);
+        Assert.False(result.CandidateResults.Single(candidate => candidate.CandidateKey == "bad").DevelopmentAdmission!.Admitted);
         Assert.Equal(7, executor.Requests.Count);
         Assert.Equal(3, executor.Requests.Last().ExcludedCompetitorIds!.Single());
         Assert.Equal("US-OH", executor.Requests.Last().JurisdictionCode);
@@ -73,7 +86,7 @@ public sealed class IncumbentCalibrationAcceptanceTests
         Assert.Equal("US-OH", (await db.ValidationCases.SingleAsync(item => item.CaseKey == "holdout")).JurisdictionCode);
     }
 
-    private sealed class CapturingExecutor(AppDbContext db) : IGravityModelExecutionService
+    private sealed class CapturingExecutor(AppDbContext db, bool rejectEveryCandidate) : IGravityModelExecutionService
     {
         public List<GravityModelRunRequest> Requests { get; } = [];
         public async Task<GravityModelRunResult> ExecuteAsync(GravityModelRunRequest request, CancellationToken cancellationToken = default)
@@ -81,7 +94,8 @@ public sealed class IncumbentCalibrationAcceptanceTests
             Requests.Add(request);
             var target = request.ExcludedCompetitorIds!.Single();
             var beta = (decimal)request.UserOverrides!.Single(item => item.Key == "gravity.beta").Value;
-            var amount = (target == 4 ? 3 - beta : beta) * target * 100;
+            var selectionFactor = beta == 1 ? (rejectEveryCandidate ? 2m : 1.04m) : 1m;
+            var amount = (target == 4 ? selectionFactor : beta) * target * 100;
             var run = new ModelRun { Status = ModelRunStatuses.Finalized, ResolvedInputJson = "{}" };
             db.ModelRuns.Add(run);
             db.ModelRunFacilityResults.Add(new ModelRunFacilityResult { ModelRunId = run.Id, FacilityKey = "proposed", IsProposedFacility = true, StabilizedTotalGgr = amount });

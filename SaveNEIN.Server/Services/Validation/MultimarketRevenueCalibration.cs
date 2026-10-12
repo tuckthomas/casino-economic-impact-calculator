@@ -25,7 +25,16 @@ public sealed record MultimarketCalibrationProtocol(
     double[] ComparableScale, double[] OutsideWeight,
     string[] Training, string[] Selection, Dictionary<string, string[]> Holdout,
     double[]? GamingPositionsOffset = null,
-    string AttractionSpecification = FacilityAttractionSpecifications.HybridObservedGgr);
+    string AttractionSpecification = FacilityAttractionSpecifications.HybridObservedGgr,
+    string SelectionPolicyVersion = "legacy-selection-wape-v1",
+    Dictionary<string, string[]>? DevelopmentMarkets = null,
+    double[]? GamingFloorCoefficient = null,
+    bool FitDemandScaleByJurisdiction = false,
+    string DemandSpecification = GravityDemandSpecifications.AgiShare,
+    Guid? AgePopulationSnapshotId = null,
+    int EligibleAge = 21,
+    double MinimumDemandScale = 0.001,
+    double MaximumDemandScale = 0.03);
 
 /// <summary>
 /// Revenue-component backtests use the same demand, facility feature and gravity
@@ -46,17 +55,26 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             ?? throw new InvalidDataException("Calibration protocol is missing.");
         ValidateAttractionProtocol(protocol);
         var useObservedPeers = protocol.AttractionSpecification == FacilityAttractionSpecifications.HybridObservedGgr;
+        var guardedSelection = protocol.SelectionPolicyVersion == CalibrationDevelopmentSelection.PolicyVersion;
         var allTargetKeys = protocol.Training.Concat(protocol.Selection).Concat(protocol.Holdout.Values.SelectMany(value => value)).ToArray();
         if (allTargetKeys.Distinct(StringComparer.Ordinal).Count() != allTargetKeys.Length || protocol.Training.Length < 2 || protocol.Selection.Length == 0)
             throw new InvalidDataException("Protocol partitions overlap or lack training/selection properties.");
-        var snapshots = await db.DatasetSnapshots.AsNoTracking().Where(row => new[]
-            { protocol.OriginSnapshotId, protocol.IncomeSnapshotId, protocol.FacilitySnapshotId, protocol.PerformanceSnapshotId }.Contains(row.Id))
+        var snapshotIds = new List<Guid> { protocol.OriginSnapshotId, protocol.IncomeSnapshotId, protocol.FacilitySnapshotId, protocol.PerformanceSnapshotId };
+        if (protocol.DemandSpecification == GravityDemandSpecifications.EligibleAdultPerCapita) snapshotIds.Add(protocol.AgePopulationSnapshotId!.Value);
+        var snapshots = await db.DatasetSnapshots.AsNoTracking().Where(row => snapshotIds.Contains(row.Id))
             .ToListAsync(cancellationToken);
-        if (snapshots.Count != 4 || snapshots.Any(row => !row.IsSealed)) throw new InvalidDataException("All four inputs must be sealed.");
+        if (snapshots.Count != snapshotIds.Count || snapshots.Any(row => !row.IsSealed)) throw new InvalidDataException("All declared inputs must be sealed.");
         var facilities = await db.CasinoCompetitors.AsNoTracking().Where(row => row.DatasetSnapshotId == protocol.FacilitySnapshotId)
             .OrderBy(row => row.StableVenueId).ToArrayAsync(cancellationToken);
         var facilityByKey = facilities.ToDictionary(row => row.StableVenueId, StringComparer.Ordinal);
         if (allTargetKeys.Any(key => !facilityByKey.ContainsKey(key))) throw new InvalidDataException("A target is absent from the sealed inventory.");
+        if (protocol.FitDemandScaleByJurisdiction)
+        {
+            var trainingCounts = protocol.Training.GroupBy(key => facilityByKey[key].State, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+            if (allTargetKeys.Any(key => !trainingCounts.TryGetValue(facilityByKey[key].State, out var count) || count < 3))
+                throw new InvalidDataException("Every evaluated jurisdiction requires at least three training properties before fitting regional shares.");
+        }
         if (evaluateFinalHoldout && !diagnosticReplay)
         {
             var inspectedIds = await ModelReleaseAcceptance.PreviouslyEvaluatedPropertyIdsAsync(db, cancellationToken);
@@ -70,6 +88,26 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             .ToArrayAsync(cancellationToken);
         var incomeById = incomeRows.ToDictionary(row => row.OriginZoneId, row => Convert.ToDouble(row.InflationAdjustedAdjustedGrossIncome ?? row.AdjustedGrossIncome));
         if (origins.Any(row => !incomeById.ContainsKey(row.Id))) throw new InvalidDataException("Origins lack sealed income.");
+        var demandUnitsById = incomeById;
+        if (protocol.DemandSpecification == GravityDemandSpecifications.EligibleAdultPerCapita)
+        {
+            var ageSnapshot = snapshots.Single(row => row.Id == protocol.AgePopulationSnapshotId);
+            if (ageSnapshot.DatasetKey != DatasetSnapshotKinds.AgePopulation) throw new InvalidDataException("The declared age snapshot has a different data kind.");
+            var ageRows = await db.OriginZoneAgeBins.AsNoTracking().Where(row => row.DatasetSnapshotId == ageSnapshot.Id).ToArrayAsync(cancellationToken);
+            var bins = ageRows.GroupBy(row => row.OriginZoneId).ToDictionary(group => group.Key, group => group.ToArray());
+            if (origins.Any(origin => !bins.ContainsKey(origin.Id))) throw new InvalidDataException("Per-capita demand requires age bins for every selected origin.");
+            if (ageRows.Select(row => row.ObservationYear).Distinct().Count() != 1) throw new InvalidDataException("Age observations must use one declared vintage.");
+            var populationYear = ageRows[0].ObservationYear;
+            var demandService = new OriginDemandService();
+            demandUnitsById = origins.ToDictionary(origin => origin.Id, origin =>
+            {
+                var eligible = EligiblePopulationCalculator.Calculate(bins[origin.Id].Select(bin => new AgeBinValue(bin.MinimumAge, bin.MaximumAge, bin.Population)).ToArray(), protocol.EligibleAge).Population;
+                var projected = PopulationProjectionCalculator.Calculate(new PopulationProjectionInput(eligible, populationYear, protocol.ObservedYear, 0)).ProjectedPopulation;
+                // Flat income elasticity and zero growth are predeclared diagnostics;
+                // use the same per-capita demand arithmetic as server execution.
+                return demandService.CalculatePerCapita(new(origin.StableOriginId, projected, 1, 1, 1, 0, 1, 1)).Demand;
+            });
+        }
         var start = new DateOnly(protocol.ObservedYear, 1, 1);
         var end = new DateOnly(protocol.ObservedYear, 12, 31);
         var periods = await db.CasinoGamingRevenuePeriods.AsNoTracking().Where(row => row.DatasetSnapshotId == protocol.PerformanceSnapshotId &&
@@ -99,7 +137,8 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
                 peer.Latitude, peer.Longitude, facility.Latitude, facility.Longitude, protocol.CompetitorRadiusMiles)).ToArray();
             if (caseOrigins.Length == 0 || casePeers.Length == 0) throw new InvalidDataException($"Empty market for {key}.");
             var partition = protocol.Training.Contains(key) ? "training" : protocol.Selection.Contains(key) ? "selection" : "holdout";
-            var market = protocol.Holdout.FirstOrDefault(group => group.Value.Contains(key)).Key ?? "development";
+            var market = protocol.Holdout.FirstOrDefault(group => group.Value.Contains(key)).Key
+                ?? protocol.DevelopmentMarkets?.FirstOrDefault(group => group.Value.Contains(key)).Key ?? "development";
             return new PreparedCase(facility, partition, market, observedById[facility.Id], caseOrigins, casePeers);
         }).ToArray();
         Console.WriteLine($"Frozen protocol {protocolHash}: {protocol.Training.Length} training, {protocol.Selection.Length} selection, {protocol.Holdout.Values.Sum(value => value.Length)} final holdout properties.");
@@ -110,9 +149,10 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var featureService = new FacilityAttractivenessService();
         var metrics = new ValidationMetricsService();
         var searchRows = new List<SearchRow>();
-        double[] UnitPredictions(double beta, double alpha, double coefficient, double positionsOffset, double scale, double outside, IEnumerable<PreparedCase> requestedCases)
+        double[] UnitPredictions(double beta, double alpha, double coefficient, double positionsOffset, double floorCoefficient, double scale, double outside, IEnumerable<PreparedCase> requestedCases)
         {
             var parameters = FeatureParameters(coefficient, protocol.TablesCoefficient, positionsOffset);
+            parameters["facility.gaming_floor_coefficient"] = floorCoefficient;
             var structural = facilities.ToDictionary(row => row.Id, row => featureService.CalculateStructural(new(row.StableVenueId,
                 GravityModelExecutionService.FacilityFeatures(row, parameters), MissingFacilityAttributeBehavior.UseReferenceValue)).NormalizedAttraction);
             return requestedCases.Select(item =>
@@ -120,14 +160,9 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
                 var observedPeers = item.Peers.Where(peer => !withheldIds.Contains(peer.Id) && observedById.ContainsKey(peer.Id)).ToArray();
                 if (useObservedPeers && observedPeers.Length == 0) throw new InvalidDataException("No non-held-out observed competitor mass.");
                 var reference = useObservedPeers ? Median(observedPeers.Select(peer => observedById[peer.Id])) : 1d;
-                var program = new DevelopmentProgram
-                {
-                    SlotOrVltPositions = item.Facility.SlotOrVltPositions!.Value, TableGameCount = item.Facility.TableGameCount ?? 0,
-                    HotelRoomCount = item.Facility.HotelRoomCount ?? 250, GamingFloorSquareFeet = item.Facility.GamingFloorSquareFeet ?? 0,
-                    FoodBeverageVenueCount = item.Facility.FoodBeverageVenueCount ?? 0, EventCapacity = item.Facility.EventCapacity ?? 1000
-                };
-                var proposedMass = featureService.CalculateStructural(new(item.Facility.StableVenueId,
-                    GravityModelExecutionService.FacilityFeatures(program, parameters), MissingFacilityAttributeBehavior.UseReferenceValue)).NormalizedAttraction;
+                // Backtest the same sourced facility, retaining missing attributes
+                // and known position definitions instead of constructing a different program.
+                var proposedMass = structural[item.Facility.Id];
                 proposedMass = FacilityAttractivenessService.NormalizeStructuralMass(proposedMass, scale);
                 var peerMasses = item.Peers.ToDictionary(peer => peer.Id, peer => useObservedPeers && !withheldIds.Contains(peer.Id) && observedById.TryGetValue(peer.Id, out var amount)
                     ? featureService.CalculateObservedGgr(new(peer.StableVenueId, amount, reference, false)).NormalizedAttraction : FacilityAttractivenessService.NormalizeStructuralMass(structural[peer.Id], scale));
@@ -136,7 +171,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
                 {
                     var alternatives = item.Peers.Select(peer => Alternative(origin.Id, peer, peerMasses[peer.Id], false, routes))
                         .Append(Alternative(origin.Id, item.Facility, proposedMass, true, routes)).ToArray();
-                    return GravityModelService.AllocateTargetDemand(new(origin.StableOriginId, incomeById[origin.Id], outside, alternatives),
+                    return GravityModelService.AllocateTargetDemand(new(origin.StableOriginId, demandUnitsById[origin.Id], outside, alternatives),
                         gravityParameters, item.Facility.StableVenueId);
                 });
             }).ToArray();
@@ -148,46 +183,80 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         foreach (var alpha in protocol.Alpha)
         foreach (var coefficient in protocol.PositionsCoefficient)
         foreach (var positionsOffset in protocol.GamingPositionsOffset ?? [2000d])
+        foreach (var floorCoefficient in protocol.GamingFloorCoefficient ?? [0d])
         foreach (var scale in protocol.ComparableScale)
         foreach (var outside in protocol.OutsideWeight)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var units = UnitPredictions(beta, alpha, coefficient, positionsOffset, scale, outside, development);
+            var units = UnitPredictions(beta, alpha, coefficient, positionsOffset, floorCoefficient, scale, outside, development);
             if (trainingIndices.Any(index => units[index] <= 0)) continue;
-            var share = Math.Clamp(Median(trainingIndices.Select(index => development[index].Observed / units[index])), 0.001, 0.03);
-            var observations = development.Select((item, index) => new ValidationObservation(item.Facility.StableVenueId, item.Observed, units[index] * share)).ToArray();
+            var share = guardedSelection
+                ? CalibrationDevelopmentSelection.FitTrainingWapeScale(trainingIndices.Select(index => (development[index].Observed, units[index])), protocol.MinimumDemandScale, protocol.MaximumDemandScale)
+                : Math.Clamp(Median(trainingIndices.Select(index => development[index].Observed / units[index])), 0.001, 0.03);
+            Dictionary<string, double>? jurisdictionShares = null;
+            if (protocol.FitDemandScaleByJurisdiction)
+                jurisdictionShares = trainingIndices.GroupBy(index => development[index].Facility.State, StringComparer.Ordinal)
+                    .ToDictionary(group => group.Key, group => CalibrationDevelopmentSelection.FitTrainingWapeScale(
+                        group.Select(index => (development[index].Observed, units[index])), protocol.MinimumDemandScale, protocol.MaximumDemandScale), StringComparer.Ordinal);
+            var observations = development.Select((item, index) => new ValidationObservation(item.Facility.StableVenueId, item.Observed,
+                units[index] * (jurisdictionShares is null ? share : jurisdictionShares[item.Facility.State]))).ToArray();
             var selection = observations.Where((_, index) => development[index].Partition == "selection").ToArray();
             var training = observations.Where((_, index) => development[index].Partition == "training").ToArray();
-            searchRows.Add(new($"beta={beta:R};alpha={alpha:R};positions={coefficient:R};positions-offset={positionsOffset:R};scale={scale:R};outside={outside:R}", beta, alpha,
-                coefficient, positionsOffset, scale, outside, share, metrics.Calculate(training), metrics.Calculate(selection), Wape(selection), observations));
+            var admission = guardedSelection ? CalibrationDevelopmentSelection.Evaluate(development.Select((item, index) =>
+                new DevelopmentRevenueObservation(item.Facility.StableVenueId, item.Partition, item.Market, item.Facility.State,
+                    item.Observed, observations[index].Predicted)).ToArray()) : null;
+            searchRows.Add(new($"beta={beta:R};alpha={alpha:R};positions={coefficient:R};positions-offset={positionsOffset:R};floor={floorCoefficient:R};scale={scale:R};outside={outside:R}", beta, alpha,
+                coefficient, positionsOffset, floorCoefficient, scale, outside, share, jurisdictionShares, metrics.Calculate(training), metrics.Calculate(selection), Wape(selection), observations, admission));
             if (searchRows.Count % 20 == 0) Console.WriteLine($"Scored {searchRows.Count} training/selection candidates in {searchTimer.Elapsed.TotalSeconds:F0}s; final holdout remains unscored.");
         }
-        var selected = searchRows.OrderBy(row => row.SelectionWape).ThenBy(row => row.SelectionMetrics.MeanAbsolutePercentageError).ThenBy(row => row.Key, StringComparer.Ordinal).First();
+        var ranked = searchRows.OrderBy(row => row.SelectionWape).ThenBy(row => row.SelectionMetrics.MeanAbsolutePercentageError).ThenBy(row => row.Key, StringComparer.Ordinal);
+        var selected = ranked.FirstOrDefault(row => !guardedSelection || row.Admission!.Admitted);
+        if (selected is null)
+        {
+            var diagnostic = searchRows.OrderBy(row => Math.Max(Wape(row.Observations.Where((_, index) => development[index].Partition == "training")), row.SelectionWape))
+                .ThenBy(row => row.Key, StringComparer.Ordinal).First();
+            await File.WriteAllTextAsync(outputPath, JsonSerializer.Serialize(new
+            {
+                ProtocolHash = protocolHash, protocol.ProtocolVersion, protocol.SelectionPolicyVersion, protocol.AttractionSpecification, protocol.DemandSpecification,
+                FittedScaleUnits = protocol.DemandSpecification == GravityDemandSpecifications.AgiShare ? "share of AGI" : "USD/eligible-adult/year",
+                Scope = "No candidate passed development admission. Diagnostic candidates are not selected specifications; no final holdout scored.",
+                CandidateCount = searchRows.Count, AdmittedCandidateCount = 0, Selected = (SearchRow?)null, BestDiagnosticCandidate = diagnostic,
+                graph.GraphHash, MatrixCorrelationVersion = ValhallaClient.MatrixCorrelationVersion,
+                FinalHoldoutScored = false, ReleaseAccepted = false,
+                SearchEvidence = searchRows.Select(row => new { row.Key, row.FittedDemandScale, row.FittedDemandScaleByJurisdiction,
+                    row.TrainingMetrics, row.SelectionMetrics, row.SelectionWape, row.Admission })
+            }, JsonOptions), cancellationToken);
+            Console.WriteLine($"NO ADMITTED CANDIDATE: {searchRows.Count} rejected; final holdout remains unscored. Saved {outputPath}.");
+            return;
+        }
         if (!evaluateFinalHoldout)
         {
             await File.WriteAllTextAsync(outputPath, JsonSerializer.Serialize(new
             {
                 ProtocolHash = protocolHash, Scope = "Development-only structural normalization remediation; previously inspected final holdouts remain withheld and are not rescored.",
-                ScalingVersion = "consistent-physical-v2", protocol.AttractionSpecification, CandidateCount = searchRows.Count, SelectedOn = "selection only", Selected = selected,
+                ScalingVersion = "consistent-physical-v2", protocol.AttractionSpecification, protocol.SelectionPolicyVersion, protocol.DemandSpecification,
+                FittedScaleUnits = protocol.DemandSpecification == GravityDemandSpecifications.AgiShare ? "share of AGI" : "USD/eligible-adult/year",
+                CandidateCount = searchRows.Count, AdmittedCandidateCount = searchRows.Count(row => row.Admission?.Admitted ?? true), SelectedOn = guardedSelection ? "selection among admitted development fits" : "legacy selection only", Selected = selected,
                 graph.GraphHash, MatrixCorrelationVersion = ValhallaClient.MatrixCorrelationVersion,
                 ReleaseAccepted = false, FinalHoldoutScored = false,
                 RouteCoverage = development.Select(item => new { item.Facility.StableVenueId, OriginCount = item.Origins.Length,
                     ReachableCandidateRoutes = item.Origins.Count(origin => routes[(origin.Id, item.Facility.Id)].RouteFound) }),
-                SearchEvidence = searchRows.Select(row => new { row.Key, row.IncomeShare, row.TrainingMetrics, row.SelectionMetrics, row.SelectionWape })
+                SearchEvidence = searchRows.Select(row => new { row.Key, row.FittedDemandScale, row.TrainingMetrics, row.SelectionMetrics, row.SelectionWape })
             }, JsonOptions), cancellationToken);
             Console.WriteLine($"DEVELOPMENT ONLY: selection MAPE={selected.SelectionMetrics.MeanAbsolutePercentageError:F4}% WAPE={selected.SelectionWape:F4}%; no final holdout rescored. Saved {outputPath}.");
             return;
         }
         // The final holdout is evaluated exactly once, after every selection decision.
         var holdoutCases = cases.Where(item => item.Partition == "holdout").ToArray();
-        var holdoutUnits = UnitPredictions(selected.Beta, selected.Alpha, selected.PositionsCoefficient, selected.PositionsOffset, selected.Scale, selected.OutsideWeight, holdoutCases);
-        var holdoutRows = holdoutCases.Select((item, index) => new ValidationObservation(item.Facility.StableVenueId, item.Observed, holdoutUnits[index] * selected.IncomeShare)).ToArray();
+        var holdoutUnits = UnitPredictions(selected.Beta, selected.Alpha, selected.PositionsCoefficient, selected.PositionsOffset, selected.FloorCoefficient, selected.Scale, selected.OutsideWeight, holdoutCases);
+        var holdoutRows = holdoutCases.Select((item, index) => new ValidationObservation(item.Facility.StableVenueId, item.Observed,
+            holdoutUnits[index] * (selected.FittedDemandScaleByJurisdiction is null ? selected.FittedDemandScale : selected.FittedDemandScaleByJurisdiction[item.Facility.State]))).ToArray();
         var holdoutMetrics = metrics.Calculate(holdoutRows);
         var holdoutWape = Wape(holdoutRows);
         var holdoutBias = 100 * holdoutRows.Sum(row => row.Predicted - row.Observed) / holdoutRows.Sum(row => row.Observed);
         var output = new
         {
-            ProtocolHash = protocolHash, protocol.ProtocolVersion, protocol.AttractionSpecification,
+            ProtocolHash = protocolHash, protocol.ProtocolVersion, protocol.AttractionSpecification, protocol.DemandSpecification,
             Scope = diagnosticReplay ? "Diagnostic replay of inspected properties after development-only selection; not an untouched acceptance evaluation." : "Resident revenue-component calibration; no downstream acceptance or parameter publication.",
             HoldoutPreviouslyInspected = diagnosticReplay, ScalingVersion = "consistent-physical-v2",
             MatrixCorrelationVersion = ValhallaClient.MatrixCorrelationVersion,
@@ -207,7 +276,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
                 BiasPassed = Math.Abs(holdoutBias) <= 5, MaximumPropertyPassed = holdoutRows.All(row => 100 * Math.Abs(row.Predicted - row.Observed) / row.Observed <= 40) },
             ReleaseAccepted = false,
             ReleaseBlocks = new[] { "Independent required-input/fiscal/reproducibility audits remain incomplete.", "Competitive inventory and nonresident demand coverage remain scoped and incomplete." },
-            SearchEvidence = searchRows.Select(row => new { row.Key, row.IncomeShare, row.TrainingMetrics, row.SelectionMetrics, row.SelectionWape })
+            SearchEvidence = searchRows.Select(row => new { row.Key, row.FittedDemandScale, row.TrainingMetrics, row.SelectionMetrics, row.SelectionWape })
         };
         await File.WriteAllTextAsync(outputPath, JsonSerializer.Serialize(output, JsonOptions), cancellationToken);
         await RegisterInspectionAsync(protocolPath, outputPath, cancellationToken);
@@ -221,6 +290,28 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         if (protocol.GamingPositionsOffset is { } offsets &&
             (offsets.Length == 0 || offsets.Any(value => !double.IsFinite(value) || value <= 0)))
             throw new InvalidDataException("Gaming-position offsets must be finite and positive before routing or calibration.");
+        if (protocol.SelectionPolicyVersion is not ("legacy-selection-wape-v1" or CalibrationDevelopmentSelection.PolicyVersion))
+            throw new InvalidDataException("Unknown development selection policy.");
+        if (protocol.FitDemandScaleByJurisdiction && protocol.SelectionPolicyVersion != CalibrationDevelopmentSelection.PolicyVersion)
+            throw new InvalidDataException("Jurisdiction share fitting requires guarded development selection.");
+        if (protocol.DemandSpecification is not (GravityDemandSpecifications.AgiShare or GravityDemandSpecifications.EligibleAdultPerCapita) ||
+            (protocol.DemandSpecification == GravityDemandSpecifications.EligibleAdultPerCapita &&
+             (protocol.AgePopulationSnapshotId is null || protocol.AgePopulationSnapshotId == Guid.Empty || protocol.EligibleAge is < 18 or > 25 ||
+              protocol.SelectionPolicyVersion != CalibrationDevelopmentSelection.PolicyVersion)))
+            throw new InvalidDataException("Per-capita calibration requires an explicit age snapshot, eligible age and guarded selection.");
+        if (!double.IsFinite(protocol.MinimumDemandScale) || !double.IsFinite(protocol.MaximumDemandScale) ||
+            protocol.MinimumDemandScale <= 0 || protocol.MaximumDemandScale < protocol.MinimumDemandScale)
+            throw new InvalidDataException("Demand scale bounds must be finite, positive and ordered.");
+        if (protocol.GamingFloorCoefficient is { } floors && (floors.Length == 0 || floors.Any(value => !double.IsFinite(value) || value < 0)))
+            throw new InvalidDataException("Gaming-floor coefficients must be finite and nonnegative.");
+        if (protocol.SelectionPolicyVersion == CalibrationDevelopmentSelection.PolicyVersion)
+        {
+            var development = protocol.Training.Concat(protocol.Selection).ToArray();
+            var declared = protocol.DevelopmentMarkets?.Values.SelectMany(value => value).ToArray() ?? [];
+            if (declared.Length != development.Length || declared.Distinct(StringComparer.Ordinal).Count() != declared.Length ||
+                !declared.Order().SequenceEqual(development.Order()))
+                throw new InvalidDataException("Guarded selection requires a complete, nonoverlapping development-market declaration.");
+        }
     }
 
     public async Task RegisterInspectionAsync(string protocolPath, string resultPath, CancellationToken cancellationToken = default)
@@ -383,6 +474,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         return result;
     }
     private sealed record PreparedCase(CasinoCompetitor Facility, string Partition, string Market, double Observed, OriginZone[] Origins, CasinoCompetitor[] Peers);
-    private sealed record SearchRow(string Key, double Beta, double Alpha, double PositionsCoefficient, double PositionsOffset, double Scale, double OutsideWeight,
-        double IncomeShare, ValidationMetrics TrainingMetrics, ValidationMetrics SelectionMetrics, double SelectionWape, ValidationObservation[] Observations);
+    private sealed record SearchRow(string Key, double Beta, double Alpha, double PositionsCoefficient, double PositionsOffset, double FloorCoefficient, double Scale, double OutsideWeight,
+        double FittedDemandScale, Dictionary<string, double>? FittedDemandScaleByJurisdiction, ValidationMetrics TrainingMetrics, ValidationMetrics SelectionMetrics, double SelectionWape,
+        ValidationObservation[] Observations, DevelopmentFitReport? Admission);
 }

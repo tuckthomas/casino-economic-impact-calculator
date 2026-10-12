@@ -42,7 +42,8 @@ public sealed record IncumbentCalibrationCandidateResult(
     ValidationMetrics TrainingMetrics,
     double ObjectiveValue,
     IReadOnlyDictionary<string, Guid> ModelRunIds,
-    ValidationMetrics? SelectionMetrics = null);
+    ValidationMetrics? SelectionMetrics = null,
+    DevelopmentFitReport? DevelopmentAdmission = null);
 
 public sealed record IncumbentBacktestCalibrationResult(
     string SelectedCandidateKey,
@@ -197,19 +198,29 @@ public sealed class IncumbentBacktestCalibrationService(
                 .Where(target => selectionCaseKeys.Contains(target.CaseKey)).Select(target => new ValidationObservation(
                     target.CaseKey, Convert.ToDouble(observed[target.CasinoCompetitorId].Amount),
                     Convert.ToDouble(runResults[(candidate.CandidateKey, target.CaseKey)].StabilizedTotalGgr))).ToArray());
+            var admissionRows = request.Targets.Where(target => trainingCaseKeys.Contains(target.CaseKey) || selectionCaseKeys.Contains(target.CaseKey))
+                .Select(target => new DevelopmentRevenueObservation(target.CaseKey,
+                    trainingCaseKeys.Contains(target.CaseKey) ? "training" : "selection", target.HoldoutGroup,
+                    competitors[target.CasinoCompetitorId].State,
+                    Convert.ToDouble(observed[target.CasinoCompetitorId].Amount),
+                    Convert.ToDouble(runResults[(candidate.CandidateKey, target.CaseKey)].StabilizedTotalGgr))).ToArray();
+            var admission = CalibrationDevelopmentSelection.Evaluate(admissionRows);
             candidateResults.Add(new IncumbentCalibrationCandidateResult(
                 candidate.CandidateKey,
                 candidate.Parameters,
                 trainingMetrics,
                 Objective(request.ObjectiveFunction, selectionMetrics ?? trainingMetrics),
                 modelRunIds,
-                selectionMetrics));
+                selectionMetrics,
+                admission));
         }
 
         var selected = candidateResults
+            .Where(candidate => candidate.DevelopmentAdmission?.Admitted == true)
             .OrderBy(candidate => candidate.ObjectiveValue)
             .ThenBy(candidate => candidate.CandidateKey, StringComparer.Ordinal)
-            .First();
+            .FirstOrDefault()
+            ?? throw new InvalidOperationException("No calibration candidate passed training, selection and geographic admission. Final holdouts were not executed; no defaults were published.");
         var selectedCandidate = request.Candidates.Single(candidate => candidate.CandidateKey == selected.CandidateKey);
         var selectedRunIds = new Dictionary<string, Guid>(selected.ModelRunIds, StringComparer.Ordinal);
         foreach (var target in request.Targets.Where(target => target.DatasetPartition == ValidationPartitions.Holdout).OrderBy(target => target.CaseKey, StringComparer.Ordinal))
@@ -511,9 +522,10 @@ public sealed class IncumbentBacktestCalibrationService(
         }
         if (request.Targets.Count < 3 ||
             request.Targets.Count(target => target.DatasetPartition == ValidationPartitions.Training) < 2 ||
+            !request.Targets.Any(target => target.DatasetPartition == DemandValidationPartitions.Selection) ||
             !request.Targets.Any(target => target.DatasetPartition == ValidationPartitions.Holdout))
         {
-            throw new ArgumentException("Calibration requires at least two training targets and one independent holdout target.", nameof(request));
+            throw new ArgumentException("Calibration requires at least two training targets, a separate selection partition and an independent holdout target.", nameof(request));
         }
         if (request.Targets.Any(target => target.CasinoCompetitorId <= 0 || string.IsNullOrWhiteSpace(target.CaseKey) ||
                                           string.IsNullOrWhiteSpace(target.HoldoutGroup) ||
