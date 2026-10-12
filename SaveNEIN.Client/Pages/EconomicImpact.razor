@@ -580,8 +580,12 @@
                                 <span class="model-count">@SelectedSensitivityRunCount full runs</span>
                             </div>
                             <p class="model-muted">
-                                Test different assumptions to see which factors have the biggest effect on the estimate.
+                                Test up to 12 assumptions from the saved result above to see which factors have the biggest effect on the estimate.
                             </p>
+
+                            <button type="button" class="model-secondary-button" aria-expanded="@(_showAllSensitivity ? "true" : "false")" @onclick="ToggleSensitivityOptions">
+                                @(_showAllSensitivity ? "Show common assumptions" : "Show all available assumptions")
+                            </button>
 
                             <label class="model-field model-sensitivity-metric">
                                 <span>Tornado output metric</span>
@@ -597,7 +601,7 @@
                             </label>
 
                             <div class="model-sensitivity-ranges">
-                                @foreach (var range in _sensitivityRanges)
+                                @foreach (var range in _sensitivityRanges.Where(range => _showAllSensitivity || range.Selected || SensitivityParameterKeys.Contains(range.ParameterKey, StringComparer.Ordinal)))
                                 {
                                     <div class="model-sensitivity-range">
                                         <label class="model-sensitivity-toggle">
@@ -782,6 +786,7 @@
     private readonly List<SensitivityRangeForm> _sensitivityRanges = [];
     private readonly List<RunOriginSummaryRow> _runOrigins = [];
     private readonly List<RunFacilityResult> _runFacilities = [];
+    private readonly Dictionary<string, double> _runParameterValues = new(StringComparer.Ordinal);
     private int _runOriginTotal;
     private RunResult? _latestRun;
     private RunRequest? _lastRunRequest;
@@ -793,6 +798,7 @@
     private bool _comparing;
     private bool _generatingReport;
     private bool _runningSensitivity;
+    private bool _showAllSensitivity;
     private string? _error;
     private string _parameterSearch = string.Empty;
     private string _scenarioJson = string.Empty;
@@ -1057,6 +1063,7 @@
 
     private async Task LoadRunOutputDetailsAsync(Guid modelRunId)
     {
+        _runParameterValues.Clear();
         _runFacilities.Clear();
         _runOrigins.Clear();
         _runOriginTotal = 0;
@@ -1070,6 +1077,7 @@
         if (details is not null)
         {
             _runFacilities.AddRange(details.Facilities);
+            foreach (var parameter in details.Parameters) _runParameterValues.Add(parameter.Key, parameter.Value);
         }
         var origins = await originsTask;
         if (origins is not null)
@@ -1179,7 +1187,7 @@
                 selected.Select(range => new SensitivityParameterRangeRequest(
                     range.ParameterKey,
                     range.LowValue,
-                    range.HighValue)).ToArray());
+                    range.HighValue)).ToArray(), new Dictionary<string, double>(_runParameterValues, StringComparer.Ordinal));
             using var response = await Http.PostAsJsonAsync("api/model-sensitivity", request);
             if (!response.IsSuccessStatusCode)
             {
@@ -1207,14 +1215,11 @@
         {
             return;
         }
-        foreach (var key in SensitivityParameterKeys)
+        foreach (var definition in _configuration.ParameterDefinitions.Where(item => item.IsUserOverridable)
+                     .OrderBy(item => item.Category, StringComparer.Ordinal).ThenBy(item => item.DisplayName, StringComparer.Ordinal))
         {
-            var definition = _configuration.ParameterDefinitions.FirstOrDefault(item => item.Key == key);
-            if (definition is null)
-            {
-                continue;
-            }
-            var baseline = ParameterValue(definition);
+            var key = definition.Key;
+            if (!_runParameterValues.TryGetValue(key, out var baseline)) continue;
             var step = definition.UiStep ?? Math.Max(Math.Abs(baseline) * 0.1, 0.01);
             var low = definition.RecommendedMinimum ?? baseline - step * 2;
             var high = definition.RecommendedMaximum ?? baseline + step * 2;
@@ -1241,13 +1246,15 @@
         }
     }
 
+    private void ToggleSensitivityOptions() => _showAllSensitivity = !_showAllSensitivity;
+
     private async Task GenerateReportAsync()
     {
         if (_latestRun is null)
         {
             return;
         }
-        await GenerateReportForRunAsync(_latestRun.ModelRunId, null, _form.ScenarioName.Trim());
+        await GenerateReportForRunAsync(_latestRun.ModelRunId, null, _lastRunRequest?.ScenarioName ?? _form.ScenarioName.Trim());
     }
 
     private async Task GenerateSensitivityReportAsync()
@@ -1901,6 +1908,7 @@
 
     private bool CanRunSensitivity =>
         _latestRun is not null && _lastRunRequest is not null &&
+        _runParameterValues.Count > 0 && _sensitivityRanges.Count(range => range.Selected) <= 12 &&
         _sensitivityRanges.Any(range => range.Selected) &&
         _sensitivityRanges.Where(range => range.Selected).All(range =>
             double.IsFinite(range.LowValue) && double.IsFinite(range.HighValue) &&
@@ -2140,7 +2148,8 @@
         string Name,
         string OutputMetric,
         RunRequest BaseRunRequest,
-        IReadOnlyCollection<SensitivityParameterRangeRequest> ParameterRanges);
+        IReadOnlyCollection<SensitivityParameterRangeRequest> ParameterRanges,
+        IReadOnlyDictionary<string, double> ExpectedBaselineParameters);
 
     private sealed class SensitivityRangeForm
     {
@@ -2241,7 +2250,10 @@
     private sealed class RunDetails
     {
         public List<RunFacilityResult> Facilities { get; set; } = [];
+        public List<RunParameterValue> Parameters { get; set; } = [];
     }
+
+    private sealed record RunParameterValue(string Key, double Value);
 
     private sealed class RunFacilityResult
     {

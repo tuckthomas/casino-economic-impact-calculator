@@ -161,6 +161,10 @@ public sealed class GravityModelRunsController(
             .AsNoTracking()
             .SingleOrDefaultAsync(result => result.ModelRunId == modelRunId, cancellationToken);
 
+        var parameters = await db.ModelRunParameterValues.AsNoTracking().Where(value => value.ModelRunId == modelRunId)
+            .Join(db.ModelParameterDefinitions.AsNoTracking(), value => value.ParameterDefinitionId, definition => definition.Id,
+                (value, definition) => new { definition.Key, Value = value.FinalValue, value.SourceLayer })
+            .OrderBy(value => value.Key).ToListAsync(cancellationToken);
         return Ok(new
         {
             run.Id,
@@ -176,6 +180,7 @@ public sealed class GravityModelRunsController(
             run.WarningSummary,
             run.ErrorSummary,
             run.ResolvedInputJson,
+            Parameters = parameters,
             OriginSummary = originSummary,
             Facilities = facilities,
             DemandComponents = demandComponents,

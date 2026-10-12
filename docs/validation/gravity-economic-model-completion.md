@@ -108,3 +108,12 @@ Required release work remains: pass the declared metrics on a new untouched samp
 Verification at this checkpoint: **320 .NET tests pass**, the harness builds with zero errors, and repository guards pass. The new Missouri provider is covered by the model-license guard. Coverage now supports selecting an explicit immutable income snapshot; legacy latest-snapshot selection is labeled unsuitable as frozen acceptance evidence.
 
 Primary Missouri sources: [monthly regulator report example](https://www.mgc.dps.mo.gov/Casino_Gaming/rb_financials/FY26_FinReport/01_Jan/detail1225.pdf), [FY2025 annual profiles](https://www.mgc.dps.mo.gov/annual_reports/AR_2025.pdf). Illinois source: [regulator report application](https://igbapps.illinois.gov/CasinoReports_AEM.aspx). No changes merged or deployed.
+
+## Saved-assumption sensitivity consistency
+
+- [x] Return the run's persisted resolved parameter values through the run-details API. The workbench initializes sensitivity ranges from these saved values, including scenarios where catalog defaults or the editable form differ.
+- [x] Expose every supported user-editable assumption for sensitivity, with common assumptions shown initially and additional controls behind an accessible expansion button. Preserve selected additional assumptions when the list is collapsed, and enforce the server's twelve-parameter limit in readiness checks.
+- [x] Send the saved baseline parameter map with sensitivity requests. Reject changed, missing or nonfinite baseline values before execution; reconcile persisted baseline and variation parameter maps after execution so concurrent changes cannot silently alter unvaried assumptions. Existing API clients without a saved map retain their previous request contract.
+- [x] Generate saved-run report titles from the executed scenario name, preserving it after later edits to the form.
+
+Verification: **322 server tests pass**, including persisted-value API and baseline-drift regressions; the Release WebAssembly client builds with zero warnings/errors; repository guards pass. This completes a specific saved-assumption/sensitivity mismatch and broadens supported sensitivity controls. It does not complete the independent browser visualization, all saved-run handoffs or full empirical acceptance.

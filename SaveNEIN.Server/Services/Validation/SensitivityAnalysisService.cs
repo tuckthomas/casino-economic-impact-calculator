@@ -19,7 +19,8 @@ public sealed record SensitivityAnalysisRequest(
     string Name,
     string OutputMetric,
     GravityModelRunRequest BaseRunRequest,
-    IReadOnlyCollection<SensitivityParameterRange> ParameterRanges);
+    IReadOnlyCollection<SensitivityParameterRange> ParameterRanges,
+    IReadOnlyDictionary<string, double>? ExpectedBaselineParameters = null);
 
 public sealed record SensitivityPointResult(
     string ParameterKey,
@@ -101,10 +102,14 @@ public sealed class SensitivityAnalysisService(
                 request.BaseRunRequest.UserOverrides),
             cancellationToken);
         var baseValues = ValidateRanges(request.ParameterRanges, resolved);
+        RequireExpectedBaseline(resolved.ToDictionary(item => item.Definition.Key, item => item.FinalValue, StringComparer.Ordinal),
+            request.ExpectedBaselineParameters);
 
         var baseline = await executionService.ExecuteAsync(
             request.BaseRunRequest with { ScenarioName = $"{request.BaseRunRequest.ScenarioName} — sensitivity baseline" },
             cancellationToken);
+        if (request.ExpectedBaselineParameters is not null)
+            RequireExpectedBaseline(await ReadRunParametersAsync(baseline.ModelRunId, cancellationToken), request.ExpectedBaselineParameters);
         var baselineMetric = SelectMetric(baseline, request.OutputMetric);
         var analysis = new SensitivityAnalysis
         {
@@ -124,8 +129,8 @@ public sealed class SensitivityAnalysisService(
         {
             foreach (var range in request.ParameterRanges.OrderBy(item => item.ParameterKey, StringComparer.Ordinal))
             {
-                await ExecutePointAsync(analysis, request.BaseRunRequest, range.ParameterKey, "low", range.LowValue, baselineMetric, cancellationToken);
-                await ExecutePointAsync(analysis, request.BaseRunRequest, range.ParameterKey, "high", range.HighValue, baselineMetric, cancellationToken);
+                await ExecutePointAsync(analysis, request.BaseRunRequest, range.ParameterKey, "low", range.LowValue, baselineMetric, request.ExpectedBaselineParameters, cancellationToken);
+                await ExecutePointAsync(analysis, request.BaseRunRequest, range.ParameterKey, "high", range.HighValue, baselineMetric, request.ExpectedBaselineParameters, cancellationToken);
             }
 
             analysis.Status = SensitivityAnalysisStatuses.Finalized;
@@ -196,10 +201,16 @@ public sealed class SensitivityAnalysisService(
         string direction,
         double value,
         decimal baselineMetric,
+        IReadOnlyDictionary<string, double>? expectedBaseline,
         CancellationToken cancellationToken)
     {
         var request = SensitivityRunFactory.WithOverride(baseRequest, parameterKey, value, direction);
         var result = await executionService.ExecuteAsync(request, cancellationToken);
+        if (expectedBaseline is not null)
+        {
+            var expectedPoint = new Dictionary<string, double>(expectedBaseline, StringComparer.Ordinal) { [parameterKey] = value };
+            RequireExpectedBaseline(await ReadRunParametersAsync(result.ModelRunId, cancellationToken), expectedPoint);
+        }
         var metricValue = SelectMetric(result, analysis.OutputMetric);
         db.SensitivityAnalysisPoints.Add(new SensitivityAnalysisPoint
         {
@@ -261,6 +272,20 @@ public sealed class SensitivityAnalysisService(
         }
         return baseValues;
     }
+
+    internal static void RequireExpectedBaseline(IReadOnlyDictionary<string, double> actual, IReadOnlyDictionary<string, double>? expected)
+    {
+        if (expected is null) return; // Existing API clients did not supply a saved baseline.
+        if (actual.Count != expected.Count || actual.Any(item => !double.IsFinite(item.Value) || !expected.TryGetValue(item.Key, out var value) || !double.IsFinite(value) ||
+            Math.Abs(value - item.Value) > 1e-9 * Math.Max(1, Math.Max(Math.Abs(value), Math.Abs(item.Value)))))
+            throw new InvalidOperationException("Sensitivity baseline assumptions changed since the saved scenario. Run the scenario again before comparing sensitivity.");
+    }
+
+    private Task<Dictionary<string, double>> ReadRunParametersAsync(Guid runId, CancellationToken cancellationToken) =>
+        db.ModelRunParameterValues.AsNoTracking().Where(value => value.ModelRunId == runId)
+            .Join(db.ModelParameterDefinitions.AsNoTracking(), value => value.ParameterDefinitionId, definition => definition.Id,
+                (value, definition) => new { definition.Key, value.FinalValue })
+            .ToDictionaryAsync(value => value.Key, value => value.FinalValue, StringComparer.Ordinal, cancellationToken);
 
     private static void ValidateRequest(SensitivityAnalysisRequest request)
     {
