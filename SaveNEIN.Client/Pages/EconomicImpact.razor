@@ -97,6 +97,11 @@
                             <input type="number" min="-180" max="180" step="0.000001" @bind="_form.CandidateLongitude" />
                         </label>
                         <label class="model-field">
+                            <span>Host county FIPS (optional)</span>
+                            <input @bind="_form.HostCountyFips" inputmode="numeric" maxlength="5" placeholder="Five-digit county code" />
+                            <small>Uses the county selected on the location map. Leave blank to assess the whole host state.</small>
+                        </label>
+                        <label class="model-field">
                             <span>Fiscal rule effective date</span>
                             <input type="date" @bind="_form.EffectiveOn" />
                             <small>Use the date when the proposed facility's tax rules should apply.</small>
@@ -879,6 +884,7 @@
             : $"Economic impact scenario — county {scenario.CountyFips}";
         _form.JurisdictionCode = jurisdiction.Code;
         _form.OriginStateCode = stateCode;
+        _form.HostCountyFips = scenario.CountyFips;
         ApplyJurisdictionParameterSet();
         var projection = scenario.ReadPopulationProjection();
         var growthDefinition = FindParameter("demographics.population_annual_growth_rate")
@@ -930,6 +936,7 @@
     private async Task OnJurisdictionChangedAsync()
     {
         _form.OriginStateCode = StateCode(_form.JurisdictionCode);
+        _form.HostCountyFips = null;
         ApplyJurisdictionParameterSet();
         await LoadOriginsAsync();
     }
@@ -1141,7 +1148,9 @@
                 TrafficCorridors = _traffic.Count == 0
                     ? null
                     : _traffic.Select(item => new TrafficSelectionRequest(item.StableObservationId, 0.5, 1)).ToArray(),
-                ImpactGeography = new ImpactGeographyRequest("host-state", _form.JurisdictionCode),
+                ImpactGeography = string.IsNullOrWhiteSpace(_form.HostCountyFips)
+                    ? new ImpactGeographyRequest("host-state", _form.JurisdictionCode)
+                    : new ImpactGeographyRequest("host-county", _form.HostCountyFips.Trim()),
                 LocalEconomicInventorySnapshotId = _form.LocalEconomicInventorySnapshotId
             };
             using var response = await Http.PostAsJsonAsync("api/gravity-model-runs", request);
@@ -1435,6 +1444,7 @@
             ScenarioName = _form.ScenarioName,
             JurisdictionCode = _form.JurisdictionCode,
             OriginStateCode = _form.OriginStateCode,
+            HostCountyFips = _form.HostCountyFips,
             DevelopmentProgramId = _form.DevelopmentProgramId,
             CandidateLatitude = _form.CandidateLatitude,
             CandidateLongitude = _form.CandidateLongitude,
@@ -1480,6 +1490,7 @@
             _form.ScenarioName = document.ScenarioName.Trim();
             _form.JurisdictionCode = document.JurisdictionCode;
             _form.OriginStateCode = document.OriginStateCode;
+            _form.HostCountyFips = document.HostCountyFips;
             _form.DevelopmentProgramId = document.DevelopmentProgramId;
             _form.CandidateLatitude = document.CandidateLatitude;
             _form.CandidateLongitude = document.CandidateLongitude;
@@ -1528,6 +1539,7 @@
         ModelConfiguration configuration)
     {
         if (!string.Equals(document.SchemaVersion, ScenarioDefinitionDocument.CurrentSchemaVersion, StringComparison.Ordinal) &&
+            !string.Equals(document.SchemaVersion, "savenein.gravity-scenario.v3", StringComparison.Ordinal) &&
             !string.Equals(document.SchemaVersion, "savenein.gravity-scenario.v2", StringComparison.Ordinal))
         {
             throw new InvalidDataException($"Unsupported scenario schema '{document.SchemaVersion}'. Expected '{ScenarioDefinitionDocument.CurrentSchemaVersion}'.");
@@ -1546,6 +1558,9 @@
         {
             throw new InvalidDataException("The imported development program is not available in the current catalog.");
         }
+        if (!IsValidHostCounty(document.HostCountyFips, document.JurisdictionCode) ||
+            (document.SchemaVersion != ScenarioDefinitionDocument.CurrentSchemaVersion && document.HostCountyFips is not null))
+            throw new InvalidDataException("The host county must be a five-digit FIPS code in the selected state and use scenario schema v4.");
         if (document.CandidateLatitude is not (>= -90 and <= 90) || document.CandidateLongitude is not (>= -180 and <= 180))
         {
             throw new InvalidDataException("Imported candidate coordinates are missing or outside valid latitude/longitude bounds.");
@@ -1884,6 +1899,7 @@
     private bool CanRun =>
         !string.IsNullOrWhiteSpace(_form.ScenarioName) &&
         !string.IsNullOrWhiteSpace(_form.JurisdictionCode) &&
+        IsValidHostCounty(_form.HostCountyFips, _form.JurisdictionCode) &&
         _form.DevelopmentProgramId.HasValue &&
         _form.CandidateLatitude is >= -90 and <= 90 &&
         _form.CandidateLongitude is >= -180 and <= 180 &&
@@ -1922,7 +1938,17 @@
 
     private string RunReadiness => CanRun
         ? "Ready to calculate your estimate."
-        : "Select required snapshots, a program, valid coordinates, and at least one origin.";
+        : !IsValidHostCounty(_form.HostCountyFips, _form.JurisdictionCode)
+            ? "Enter a five-digit host county FIPS code belonging to the selected state, or leave it blank."
+            : "Select required snapshots, a program, valid coordinates, and at least one origin.";
+
+    private static bool IsValidHostCounty(string? county, string jurisdictionCode)
+    {
+        if (string.IsNullOrWhiteSpace(county)) return true;
+        var normalized = county.Trim();
+        return normalized.Length == 5 && normalized.All(character => character is >= '0' and <= '9') &&
+            StateCodeFromFips(normalized[..2]) == StateCode(jurisdictionCode);
+    }
 
     private static string Money(decimal? value) => value.HasValue ? value.Value.ToString("C0", CultureInfo.CurrentCulture) : "—";
     private static string Number(double? value) => value.HasValue ? value.Value.ToString("N1", CultureInfo.CurrentCulture) : "—";
@@ -1952,6 +1978,7 @@
 
     private sealed class ScenarioForm
     {
+        public string? HostCountyFips { get; set; }
         public string ScenarioName { get; set; } = $"Scenario {DateTime.Now:yyyy-MM-dd HH:mm}";
         public string JurisdictionCode { get; set; } = string.Empty;
         public string OriginStateCode { get; set; } = string.Empty;
@@ -2078,13 +2105,14 @@
 
     private sealed class ScenarioDefinitionDocument
     {
-        public const string CurrentSchemaVersion = "savenein.gravity-scenario.v3";
+        public const string CurrentSchemaVersion = "savenein.gravity-scenario.v4";
 
         public string SchemaVersion { get; set; } = CurrentSchemaVersion;
         public string ModelVersion { get; set; } = string.Empty;
         public string ScenarioName { get; set; } = string.Empty;
         public string JurisdictionCode { get; set; } = string.Empty;
         public string OriginStateCode { get; set; } = string.Empty;
+        public string? HostCountyFips { get; set; }
         public Guid? DevelopmentProgramId { get; set; }
         public double? CandidateLatitude { get; set; }
         public double? CandidateLongitude { get; set; }
