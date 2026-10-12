@@ -22,6 +22,32 @@ using QuestPDF.Infrastructure;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
+if (args is ["--supplement-border-competition", var borderBasePath, var borderPaPdfPath, var borderWiPdfPath, var borderOutputPath])
+{
+    if (File.Exists(borderOutputPath)) throw new ArgumentException("Border-supply capture output already exists.");
+    var baseBytes = await File.ReadAllBytesAsync(borderBasePath);
+    var borderBase = JsonSerializer.Deserialize<ProviderValidationBundle>(baseBytes) ?? throw new InvalidDataException("Border-supply base is invalid.");
+    if (borderBase.Facilities.ContentChecksum != "cc29854dcef635ae880558fbe9043538254aafa6adc08ee07879b55e725de8f4")
+        throw new InvalidDataException("Border supplement requires the retained five-state calendar-2025 inventory.");
+    using var borderHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+    var pa = await new PennsylvaniaGamingFacilityProvider(borderHttp).CaptureAsync(await File.ReadAllBytesAsync(borderPaPdfPath));
+    var wi = await new WisconsinBorderFacilityProvider(borderHttp).CaptureAsync(await File.ReadAllBytesAsync(borderWiPdfPath));
+    var facilityRows = borderBase.Facilities.Rows.Concat(pa.Rows).Concat(wi.Rows).ToArray();
+    if (facilityRows.Select(row => row.StableVenueId).Distinct(StringComparer.Ordinal).Count() != facilityRows.Length)
+        throw new InvalidDataException("Border supplement duplicates a stable venue identity.");
+    var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(borderBase.Facilities.ContentChecksum + "|" + pa.ContentChecksum + "|" + wi.ContentChecksum))).ToLowerInvariant();
+    var borderSource = new RegisterDataSourceRequest("Five-state inventory with sourced PA and partial WI border supply", "Gaming regulators and tribal operators",
+        PennsylvaniaGamingFacilityProvider.SourceUrl, "checksum-pinned-multi-source-facility-supplement", "US-IL,US-IN,US-MI,US-MO,US-OH,US-PA,US-WI", "2025 sources; 2026 geocodes",
+        DateTime.UtcNow, hash, true, "Component public-record and geocoder terms apply.",
+        $"Base bundle SHA-256 {Convert.ToHexString(SHA256.HashData(baseBytes)).ToLowerInvariant()}. Base inventory {borderBase.Facilities.ContentChecksum}.\n{pa.Source.Notes}\n{wi.Source.Notes}");
+    var facilities = new ProviderDataset<CasinoCompetitorImportRow>(borderSource, borderBase.Facilities.DatasetKey, "2025", new(2025, 1, 1), new(2025, 12, 31),
+        hash, "known-border-supply-supplement-v1", facilityRows, borderBase.Facilities.Warnings.Concat(pa.Warnings).Concat(wi.Warnings).ToArray());
+    await File.WriteAllTextAsync(borderOutputPath, JsonSerializer.Serialize(new ProviderValidationBundle(facilities, borderBase.Performance), new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { FacilityRows = facilityRows.Length, PennsylvaniaAdded = pa.Rows.Count, WisconsinAdded = wi.Rows.Count,
+        FacilitiesChecksum = hash, PerformanceChecksumUnchanged = borderBase.Performance.ContentChecksum, Scope = "Known physical supply supplement, not complete competitor/fiscal acceptance." }));
+    return;
+}
+
 if (args is ["--capture-illinois-video-gaming-2025", var videoRawPath, var videoOutputPath])
 {
     if (File.Exists(videoOutputPath)) throw new ArgumentException("Video-gaming capture output already exists.");

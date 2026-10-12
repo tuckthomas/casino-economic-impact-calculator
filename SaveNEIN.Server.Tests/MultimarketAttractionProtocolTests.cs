@@ -29,6 +29,12 @@ public class MultimarketAttractionProtocolTests
     [InlineData("{\"gamingPositionsOffset\":[-1]}")]
     [InlineData("{\"gamingPositionsOffset\":[]}")]
     [InlineData("{\"attractionSpecification\":\"observed-ggr\"}")]
+    [InlineData("{\"demandSpecification\":\"eligible-adult-per-capita\"}")]
+    [InlineData("{\"demandSpecification\":\"unknown\"}")]
+    [InlineData("{\"minimumDemandScale\":0}")]
+    [InlineData("{\"minimumDemandScale\":1,\"maximumDemandScale\":0.1}")]
+    [InlineData("{\"fitDemandScaleByJurisdiction\":true}")]
+    [InlineData("{\"selectionPolicyVersion\":\"gravity-development-selection-v1\",\"training\":[\"t1\",\"t2\"],\"selection\":[\"s1\"]}")]
     public void RejectsInvalidSpecificationBeforeAnyDatabaseOrRoutingWork(string json)
     {
         Assert.Throws<InvalidDataException>(() => MultimarketRevenueCalibration.ValidateAttractionProtocol(Read(json)));

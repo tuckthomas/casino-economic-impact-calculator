@@ -16,7 +16,7 @@ public static class CalibrationDevelopmentSelection
     public const string PolicyVersion = "gravity-development-selection-v1";
 
     public static double FitTrainingWapeScale(IEnumerable<(double Observed, double UnitPrediction)> observations,
-        double minimum = 0.001, double maximum = 0.03)
+        double minimum = 0.001, double maximum = 0.03, bool constrainPropertyAndBias = false)
     {
         if (!double.IsFinite(minimum) || !double.IsFinite(maximum) || minimum <= 0 || maximum < minimum)
             throw new ArgumentOutOfRangeException(nameof(minimum));
@@ -28,6 +28,21 @@ public static class CalibrationDevelopmentSelection
             return (Ratio: row.Observed / row.UnitPrediction, Weight: row.UnitPrediction);
         }).OrderBy(row => row.Ratio).ToArray();
         if (rows.Length == 0) throw new ArgumentException("Training observations are required.", nameof(observations));
+        var lower = minimum;
+        var upper = maximum;
+        if (constrainPropertyAndBias)
+        {
+            // Necessary training constraints, using training labels only.
+            // If infeasible, retain an unrestricted diagnostic fit; admission
+            // will reject it rather than fabricating a successful solution.
+            lower = Math.Max(lower, rows.Max(row => row.Ratio * 0.60000000001));
+            upper = Math.Min(upper, rows.Min(row => row.Ratio * 1.39999999999));
+            var normalization = rows.Max(row => Math.Max(row.Ratio * row.Weight, row.Weight));
+            var unbiased = rows.Sum(row => row.Ratio * (row.Weight / normalization)) / rows.Sum(row => row.Weight / normalization);
+            lower = Math.Max(lower, unbiased * 0.90000000001);
+            upper = Math.Min(upper, unbiased * 1.09999999999);
+            if (lower > upper || !double.IsFinite(lower) || !double.IsFinite(upper)) { lower = minimum; upper = maximum; }
+        }
         // Minimizing sum |s*u-y| is the weighted median of y/u with weights u.
         // Scale weights before summation to avoid overflow for large income masses.
         var largest = rows.Max(row => row.Weight);
@@ -36,7 +51,7 @@ public static class CalibrationDevelopmentSelection
         foreach (var row in rows)
         {
             cumulative += row.Weight / largest;
-            if (cumulative >= halfway) return Math.Clamp(row.Ratio, minimum, maximum);
+            if (cumulative >= halfway) return Math.Clamp(row.Ratio, lower, upper);
         }
         throw new InvalidOperationException("Training weighted median could not be resolved.");
     }
@@ -80,8 +95,9 @@ public static class CalibrationDevelopmentSelection
     private static (double Wape, double Bias) Residuals(IEnumerable<DevelopmentRevenueObservation> observations)
     {
         var rows = observations.ToArray();
-        var denominator = rows.Sum(row => row.Observed);
-        return (100 * rows.Sum(row => Math.Abs(row.Predicted - row.Observed)) / denominator,
-            100 * rows.Sum(row => row.Predicted - row.Observed) / denominator);
+        var scale = rows.Max(row => row.Observed);
+        var denominator = rows.Sum(row => row.Observed / scale);
+        return (100 * rows.Sum(row => Math.Abs(row.Predicted / scale - row.Observed / scale)) / denominator,
+            100 * rows.Sum(row => row.Predicted / scale - row.Observed / scale) / denominator);
     }
 }

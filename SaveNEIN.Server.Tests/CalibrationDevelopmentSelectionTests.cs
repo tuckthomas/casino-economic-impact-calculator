@@ -53,4 +53,21 @@ public class CalibrationDevelopmentSelectionTests
             new("t2", "training", "StLouis", "MO", 100, 99),
             new("s1", "selection", "Chicago", "IL", 100, 100)]).Admitted);
     }
+
+    [Fact]
+    public void AggregateOverflowCannotHideSystematicBias()
+    {
+        Assert.False(CalibrationDevelopmentSelection.Evaluate([
+            new("t1", "training", "Chicago", "IL", 1e308, 0.85e308),
+            new("t2", "training", "Chicago", "IL", 1e308, 0.85e308),
+            new("s1", "selection", "Chicago", "IL", 100, 100)]).Admitted);
+    }
+
+    [Fact]
+    public void ConstrainedScaleKeepsASmallTrainingPropertyInsideItsErrorBound()
+    {
+        var scale = CalibrationDevelopmentSelection.FitTrainingWapeScale([(100d, 10_000d), (2d, 300d)], 0.001, 0.03, true);
+        Assert.True(Math.Abs(scale * 300 - 2) / 2 <= 0.4);
+        Assert.True(Math.Abs(scale * 10_000 - 100) / 100 <= 0.4);
+    }
 }
