@@ -17,6 +17,32 @@ namespace SaveNEIN.Server.Tests;
 public sealed class TravelMatrixServiceTests
 {
     [Fact]
+    public async Task RoutingCacheDoesNotAccumulateTrackedRowsOrDetachTheCallerRun()
+    {
+        await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"route-tracking-{Guid.NewGuid():N}").Options);
+        var callerRun = new ModelRun { Status = ModelRunStatuses.Draft };
+        db.ModelRuns.Add(callerRun);
+        await db.SaveChangesAsync();
+        var handler = new ValhallaMatrixHandler();
+        var service = new TravelMatrixService(db, new ValhallaClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://valhalla.test") }, NullLogger<ValhallaClient>.Instance));
+        var origin = new TravelMatrixOrigin(1, "USA-ZCTA-46802", 41.08, -85.14);
+        var first = await service.ResolveAsync([origin],
+            [new TravelMatrixFacility("scenario:first", FacilityKinds.Scenario, null, callerRun.Id, 41.0793, -85.1394)]);
+        var second = await service.ResolveAsync([origin],
+            [new TravelMatrixFacility("scenario:second", FacilityKinds.Scenario, null, Guid.NewGuid(), 41.0793, -85.1394)]);
+        Assert.Empty(db.ChangeTracker.Entries<OriginFacilityTravel>());
+        Assert.Empty(db.ChangeTracker.Entries<CandidateLocationTravelCache>());
+        Assert.Equal(EntityState.Unchanged, db.Entry(callerRun).State);
+        Assert.Equal(1, handler.MatrixRequestCount);
+        Assert.True(first.Routes.Single().Id > 0);
+        Assert.True(second.Routes.Single().Id > 0);
+        Assert.Equal(first.Routes.Single().TravelTimeMinutes, second.Routes.Single().TravelTimeMinutes);
+        Assert.Equal(2, await db.OriginFacilityTravel.CountAsync());
+    }
+
+    [Fact]
     public async Task ExactCandidateCoordinateHash_ReusesValhallaRouteAndMaterializesPerRunEvidence()
     {
         await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
@@ -108,7 +134,8 @@ public sealed class TravelMatrixServiceTests
             [origin],
             [new TravelMatrixFacility("USA-IN-stable", FacilityKinds.Incumbent, 10, null, 41.1, -84.9)]);
         var firstRouteId = first.Routes.Single().Id;
-        first.Routes.Single().FacilityCoordinateHash = $"legacy-{first.Routes.Single().Id}";
+        var legacyRoute = await db.OriginFacilityTravel.SingleAsync(route => route.Id == firstRouteId);
+        legacyRoute.FacilityCoordinateHash = $"legacy-{firstRouteId}";
         await db.SaveChangesAsync();
         var sameCoordinate = await service.ResolveAsync(
             [origin],

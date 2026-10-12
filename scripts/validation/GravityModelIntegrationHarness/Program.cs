@@ -20,6 +20,8 @@ using SaveNEIN.Server.Services.Validation;
 using SaveNEIN.Server.Services.Valhalla;
 using QuestPDF.Infrastructure;
 
+QuestPDF.Settings.License = LicenseType.Community;
+
 if (args is ["--probe-census-cbp"])
 {
     using var providerProbeHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
@@ -814,6 +816,210 @@ if (args is ["--export-ohio-provider-bundle", var ohioBundleOutputPath])
         ComparableTotal = performance.Rows
             .Where(row => row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue)
             .Sum(row => row.ReportedAmount)
+    }));
+    return;
+}
+
+if (args is ["--render-validation-run", var renderDatabase, var renderRunId])
+{
+    if (!renderDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        renderDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe report validation database name.");
+    var renderConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.")) { Database = renderDatabase };
+    await using var renderDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(renderConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    var savedRunId = Guid.Parse(renderRunId);
+    var artifact = await new ReportArtifactService(renderDb, new CasinoImpactReportModelFactory(renderDb),
+        new HtmlReportRenderer(), new PdfReportRenderer(), new CsvReportRenderer()).GetOrCreateAsync(savedRunId,
+        new("Execution verification using real inputs", "Engineering validation"));
+    Console.WriteLine(JsonSerializer.Serialize(new { ModelRunId = savedRunId, artifact.Id, artifact.TemplateVersion, artifact.PdfContentHash }));
+    return;
+}
+
+if (args is ["--measure-validation-income-coverage", var coverageDatabase, var coverageLatitude, var coverageLongitude, var coverageRadius, var coverageOutputPath])
+{
+    if (!coverageDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        coverageDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe coverage validation database name.");
+    var outputPath = Path.GetFullPath(coverageOutputPath);
+    if (File.Exists(outputPath) || !string.Equals(Path.GetExtension(outputPath), ".json", StringComparison.OrdinalIgnoreCase))
+        throw new ArgumentException("Coverage evidence requires a new JSON output file.");
+    var connection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.")) { Database = coverageDatabase };
+    await using var coverageDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(connection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    var incomeSnapshot = await coverageDb.DatasetSnapshots.AsNoTracking()
+        .Where(row => row.DatasetKey == DatasetSnapshotKinds.Income && row.IsSealed)
+        .OrderByDescending(row => row.IngestedAtUtc).FirstAsync();
+    var coveredOriginIds = (await (from coverageIncomeRow in coverageDb.OriginZoneIncomePeriods.AsNoTracking()
+                                  join origin in coverageDb.OriginZones.AsNoTracking() on coverageIncomeRow.OriginZoneId equals origin.Id
+                                  where coverageIncomeRow.DatasetSnapshotId == incomeSnapshot.Id
+                                  select origin.StableOriginId).Distinct().ToArrayAsync()).ToHashSet(StringComparer.Ordinal);
+    using var coverageHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(8) };
+    Console.WriteLine("Reading the complete Census study geography for independent population controls.");
+    var completeOrigins = await new CensusZctaOriginProvider(coverageHttp, Options.Create(new CensusZctaOriginProviderOptions()))
+        .FetchAsync(new("US-ZCTA", new(2020, 1, 1), new(2020, 12, 31), new Dictionary<string, string>
+        {
+            ["center-latitude"] = coverageLatitude, ["center-longitude"] = coverageLongitude, ["radius-miles"] = coverageRadius
+        }));
+    var completeCodes = string.Join(',', completeOrigins.Rows.Select(row => row.GeographyCode).Order(StringComparer.Ordinal));
+    Console.WriteLine($"Reading ACS age controls for all {completeOrigins.Rows.Count} origins, including those missing IRS income.");
+    var ageControls = await new CensusAcsAgePopulationProvider(coverageHttp,
+        Options.Create(new CensusAcsProviderOptions { ApiKey = Environment.GetEnvironmentVariable("CensusAcs__ApiKey") }))
+        .FetchAsync(new("US-ZCTA", new(2022, 1, 1), new(2022, 12, 31), new Dictionary<string, string> { ["zcta-codes"] = completeCodes }));
+    var effectiveOn = new DateOnly(2026, 10, 11);
+    var minimumAge = await new GamingAgeResolver(new JurisdictionProfileService(coverageDb))
+        .ResolveMinimumAgeAsync("US-IN", "commercial-casino", effectiveOn);
+    var populationById = ageControls.Rows.GroupBy(row => row.StableOriginId, StringComparer.Ordinal)
+        .ToDictionary(group => group.Key, group => EligiblePopulationCalculator.Calculate(
+            group.Select(row => new AgeBinValue(row.MinimumAge, row.MaximumAge, row.Population)).ToArray(), minimumAge).Population,
+            StringComparer.Ordinal);
+    if (completeOrigins.Rows.Any(row => !populationById.ContainsKey(row.StableOriginId)))
+        throw new InvalidDataException("Some full-study origins lack ACS controls; coverage cannot be claimed.");
+    var expectedPopulation = completeOrigins.Rows.Sum(row => populationById[row.StableOriginId]);
+    var coveredPopulation = completeOrigins.Rows.Where(row => coveredOriginIds.Contains(row.StableOriginId)).Sum(row => populationById[row.StableOriginId]);
+    var output = new
+    {
+        Scope = "Input coverage diagnostic only; no model-accuracy or county/state control acceptance.",
+        StudyLatitude = coverageLatitude, StudyLongitude = coverageLongitude, RadiusMiles = coverageRadius,
+        AgeObservationYear = 2022, FiscalEffectiveOn = effectiveOn, MinimumGamingAge = minimumAge,
+        IncomeSnapshotId = incomeSnapshot.Id, IncomeChecksum = incomeSnapshot.Checksum,
+        GeographyChecksum = completeOrigins.ContentChecksum, AgeChecksum = ageControls.ContentChecksum,
+        FullOriginCount = completeOrigins.Rows.Count, CoveredOriginCount = completeOrigins.Rows.Count(row => coveredOriginIds.Contains(row.StableOriginId)),
+        ExpectedEligiblePopulation = expectedPopulation, CoveredEligiblePopulation = coveredPopulation,
+        CoveragePercent = expectedPopulation > 0 ? 100 * coveredPopulation / expectedPopulation : (double?)null,
+        PopulationCoverageGatePassed = expectedPopulation > 0 && coveredPopulation >= expectedPopulation * 0.99,
+        ByState = completeOrigins.Rows.GroupBy(row => row.StateOrTerritoryCode).Select(group => new
+        {
+            State = group.Key, Expected = group.Sum(row => populationById[row.StableOriginId]),
+            Covered = group.Where(row => coveredOriginIds.Contains(row.StableOriginId)).Sum(row => populationById[row.StableOriginId])
+        }).OrderBy(row => row.State),
+        MissingOrigins = completeOrigins.Rows.Where(row => !coveredOriginIds.Contains(row.StableOriginId))
+            .Select(row => new { row.StableOriginId, EligiblePopulation = populationById[row.StableOriginId] }).OrderBy(row => row.StableOriginId)
+    };
+    await File.WriteAllTextAsync(outputPath, JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine($"Income coverage: {(expectedPopulation > 0 ? 100 * coveredPopulation / expectedPopulation : 0):F4}%; evidence saved to {outputPath}.");
+    return;
+}
+
+if (args is ["--execute-validation-case", var caseDatabase, var caseRoutingUrl, var caseLatitude, var caseLongitude, var casePopulationYear])
+{
+    if (!caseDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        caseDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe scenario validation database name.");
+    var caseConfiguredConnection = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.");
+    var caseConnection = new NpgsqlConnectionStringBuilder(caseConfiguredConnection) { Database = caseDatabase };
+    var caseOptions = new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(caseConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options;
+    await using var caseDb = new AppDbContext(caseOptions);
+    await ModelFoundationInitializer.ApplySchemaAsync(caseDb);
+    async Task<DatasetSnapshot> CaseSnapshot(string kind) => await caseDb.DatasetSnapshots.AsNoTracking()
+        .Where(snapshot => snapshot.DatasetKey == kind && snapshot.IsSealed).OrderByDescending(snapshot => snapshot.IngestedAtUtc).FirstAsync();
+    var caseOrigins = await CaseSnapshot(DatasetSnapshotKinds.OriginGeography);
+    var caseAges = await CaseSnapshot(DatasetSnapshotKinds.AgePopulation);
+    var caseIncome = await CaseSnapshot(DatasetSnapshotKinds.Income);
+    var caseFacilities = await CaseSnapshot(DatasetSnapshotKinds.Competitors);
+    var casePerformance = await CaseSnapshot(DatasetSnapshotKinds.ObservedPerformance);
+    var caseProgram = await new DevelopmentProgramService(caseDb).CreateAsync(new(
+        "real-input-validation-program", Guid.NewGuid().ToString("N"), "Assumed validation proposal",
+        2000, 50, 0, false, 200, 60000, 5, 0, 0, null, null, null, 3,
+        "Assumed program for execution verification; not a sourced proposal or forecasting acceptance."));
+    var caseOriginIds = await caseDb.OriginZones.AsNoTracking().Where(origin => origin.DatasetSnapshotId == caseOrigins.Id)
+        .OrderBy(origin => origin.StableOriginId).Select(origin => origin.StableOriginId).ToArrayAsync();
+    using var caseHttp = new HttpClient { BaseAddress = new Uri(caseRoutingUrl), Timeout = TimeSpan.FromMinutes(3) };
+    var caseValhalla = new ValhallaClient(caseHttp, NullLogger<ValhallaClient>.Instance);
+    var caseRequest = new GravityModelRunRequest(
+        "Real-input execution verification", "US-IN", caseProgram.Id,
+        double.Parse(caseLatitude, System.Globalization.CultureInfo.InvariantCulture),
+        double.Parse(caseLongitude, System.Globalization.CultureInfo.InvariantCulture),
+        caseOrigins.Id, caseAges.Id, caseIncome.Id, caseFacilities.Id, casePerformance.Id,
+        caseOriginIds, [], caseAges.PeriodEnd!.Value.Year, caseIncome.PeriodEnd!.Value.Year,
+        DateOnly.FromDateTime(DateTime.UtcNow), "commercial-casino", GravityDemandSpecifications.AgiShare,
+        FacilityAttractionSpecifications.HybridObservedGgr, "inverse-power", GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue,
+        casePerformance.PeriodStart!.Value, casePerformance.PeriodEnd!.Value, null, null, null,
+        [new ParameterOverride("demographics.population_annual_growth_rate", 0.01)],
+        CompetitorPrefilterMiles: 300, ImpactGeography: new(ImpactScopeKinds.HostState, "US-IN"),
+        MissingRoutePolicy: MissingRoutePolicies.ExcludeFacility,
+        PopulationScenarioYear: int.Parse(casePopulationYear, System.Globalization.CultureInfo.InvariantCulture));
+    var caseResult = await ValidationExecutionFactory.Create(caseDb, caseValhalla).ExecuteAsync(caseRequest);
+    var casePopulations = await caseDb.ModelRunOriginResults.AsNoTracking().Where(row => row.ModelRunId == caseResult.ModelRunId)
+        .Select(row => row.EligiblePopulation).ToArrayAsync();
+    if (casePopulations.Length != caseOriginIds.Length || casePopulations.Any(population => population is null || !double.IsFinite(population.Value)))
+        throw new InvalidOperationException("The finalized run did not persist all eligible origin populations.");
+    var caseReport = await new ReportArtifactService(caseDb, new CasinoImpactReportModelFactory(caseDb),
+        new HtmlReportRenderer(), new PdfReportRenderer(), new CsvReportRenderer()).GetOrCreateAsync(caseResult.ModelRunId,
+        new("Execution verification using real inputs", "Engineering validation"));
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        caseResult.ModelRunId, caseResult.Status, caseResult.OriginCount, caseResult.IncumbentCount,
+        caseResult.StabilizedTotalGgr, EligiblePopulation = casePopulations.Sum(value => value!.Value),
+        caseReport.Id, caseReport.TemplateVersion, caseReport.PdfContentHash,
+        PopulationYear = caseRequest.PopulationScenarioYear, FiscalDate = caseRequest.EffectiveOn,
+        VerificationScope = "Execution and immutable-input/output validation only; no empirical forecast acceptance."
+    }));
+    return;
+}
+
+if (args is ["--prepare-validation-study-area", var studyDatabase, var studyLatitude, var studyLongitude, var studyRadius])
+{
+    if (!studyDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        studyDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe study-area validation database name.");
+    var studyConfiguredConnection = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.");
+    var studyConnection = new NpgsqlConnectionStringBuilder(studyConfiguredConnection) { Database = studyDatabase };
+    var studyOptions = new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(studyConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options;
+    await using var studyDb = new AppDbContext(studyOptions);
+    await ModelFoundationInitializer.ApplySchemaAsync(studyDb);
+    await ModelFoundationInitializer.SeedAsync(studyDb);
+    using var studyHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(8) };
+    var studyOrigins = await new CensusZctaOriginProvider(studyHttp, Options.Create(new CensusZctaOriginProviderOptions()))
+        .FetchAsync(new("US-ZCTA", new(2020, 1, 1), new(2020, 12, 31), new Dictionary<string, string>
+        {
+            ["center-latitude"] = studyLatitude, ["center-longitude"] = studyLongitude, ["radius-miles"] = studyRadius
+        }));
+    var studyStates = string.Join(',', studyOrigins.Rows.Select(row => row.StateOrTerritoryCode).Distinct().Order(StringComparer.Ordinal));
+    var studyIncomePeriod = new ProviderFetchRequest("US-STATES", new(2022, 1, 1), new(2022, 12, 31),
+        new Dictionary<string, string> { ["state-codes"] = studyStates });
+    var studyIncome = await new IrsSoiExactCodeZctaIncomeProvider(studyHttp, Options.Create(new IrsSoiProviderOptions()))
+        .FetchAsync(studyIncomePeriod);
+    var studyIncomeIds = studyIncome.Rows.Select(row => row.StableOriginId).ToHashSet(StringComparer.Ordinal);
+    var studyMatchedOrigins = studyOrigins.Rows.Where(row => studyIncomeIds.Contains(row.StableOriginId)).ToArray();
+    var studyExcludedOrigins = studyOrigins.Rows.Where(row => !studyIncomeIds.Contains(row.StableOriginId))
+        .Select(row => row.StableOriginId).Order(StringComparer.Ordinal).ToArray();
+    if (studyMatchedOrigins.Length == 0) throw new InvalidDataException("No study-area origins have exact-code IRS income coverage.");
+    var studyIds = studyMatchedOrigins.Select(row => row.StableOriginId).ToHashSet(StringComparer.Ordinal);
+    var studyIdentity = string.Join(',', studyIds.Order(StringComparer.Ordinal));
+    var studyCoverageWarning = $"Verification study excludes {studyExcludedOrigins.Length} Census origin(s) without exact-code IRS income; full population-control acceptance remains pending.";
+    studyOrigins = studyOrigins with
+    {
+        Rows = studyMatchedOrigins,
+        ContentChecksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(studyOrigins.ContentChecksum + "|" + studyIdentity))).ToLowerInvariant(),
+        TransformVersion = studyOrigins.TransformVersion + "+income-coverage-filter-v1",
+        Warnings = studyOrigins.Warnings.Append(studyCoverageWarning).ToArray()
+    };
+    studyIncome = studyIncome with
+    {
+        Rows = studyIncome.Rows.Where(row => studyIds.Contains(row.StableOriginId)).ToArray(),
+        ContentChecksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(studyIncome.ContentChecksum + "|" + studyIdentity))).ToLowerInvariant(),
+        TransformVersion = studyIncome.TransformVersion + "+study-area-filter-v1"
+    };
+    var studyIngestion = new ProviderSnapshotIngestionService(new DataSnapshotService(studyDb), new ModelDataIngestionService(studyDb));
+    var studyOriginSnapshotId = await studyIngestion.IngestOriginsAsync(new FrozenOriginProvider(studyOrigins),
+        new("US-ZCTA", new(2020, 1, 1), new(2020, 12, 31)));
+    var studyIncomeSnapshotId = await studyIngestion.IngestIncomeAsync(new FrozenOriginIncomeProvider(studyIncome), studyIncomePeriod, studyOriginSnapshotId);
+    var studyCodes = string.Join(',', studyIds.Order(StringComparer.Ordinal).Select(id => id["USA-ZCTA-".Length..]));
+    var studyAgeSnapshotId = await studyIngestion.IngestAgePopulationAsync(new CensusAcsAgePopulationProvider(studyHttp,
+        Options.Create(new CensusAcsProviderOptions { ApiKey = Environment.GetEnvironmentVariable("CensusAcs__ApiKey") })),
+        new("US-ZCTA", new(2022, 1, 1), new(2022, 12, 31), new Dictionary<string, string> { ["zcta-codes"] = studyCodes }), studyOriginSnapshotId);
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        studyOriginSnapshotId, studyIncomeSnapshotId, studyAgeSnapshotId,
+        OriginCount = studyMatchedOrigins.Length, ExcludedOrigins = studyExcludedOrigins,
+        studyCoverageWarning, studyOrigins.ContentChecksum, IncomeChecksum = studyIncome.ContentChecksum
     }));
     return;
 }
@@ -1981,9 +2187,11 @@ if (validateProviderIngestion)
             item.CaseKey.StartsWith("live-2025-reference-shift-v3-"));
         var finalizedRunCount = await db.ModelRuns.CountAsync(run =>
             run.Status == ModelRunStatuses.Finalized) - finalizedBeforeCalibration;
+        var developmentTargetCount = targets.Count(target => target.DatasetPartition != ValidationPartitions.Holdout);
+        var holdoutTargetCount = targets.Count(target => target.DatasetPartition == ValidationPartitions.Holdout);
         if (evaluation.Status != ValidationEvaluationStatuses.Finalized || !evaluation.IsImmutable ||
-            calibration.Evaluation.PublishedParameterSetId is null || caseCount != targets.Length ||
-            finalizedRunCount != targets.Length * candidates.Length)
+            calibration.Evaluation.PublishedParameterSetId.HasValue != calibration.Evaluation.ReleaseAcceptance.Accepted || caseCount != targets.Length ||
+            finalizedRunCount != developmentTargetCount * candidates.Length + holdoutTargetCount)
         {
             throw new InvalidOperationException("Live incumbent calibration did not persist complete immutable evidence.");
         }
@@ -2005,6 +2213,7 @@ if (validateProviderIngestion)
                 calibration.Evaluation.HoldoutMetrics,
                 calibration.Evaluation.ComparableTrainingMetrics,
                 calibration.Evaluation.ComparableHoldoutMetrics,
+                calibration.Evaluation.ReleaseAcceptance,
                 caseCount,
                 finalizedRunCount,
                 indianaOriginCount,
@@ -2461,7 +2670,6 @@ var employment = await db.ModelRunEmploymentImpacts.AsNoTracking().SingleAsync(r
 var fiscal = await db.ModelRunFiscalImpacts.AsNoTracking().SingleAsync(row => row.ModelRunId == result.ModelRunId);
 var socialCosts = await db.ModelRunSocialCosts.AsNoTracking().Where(row => row.ModelRunId == result.ModelRunId).ToArrayAsync();
 var netImpact = await db.ModelRunNetImpacts.AsNoTracking().SingleAsync(row => row.ModelRunId == result.ModelRunId);
-QuestPDF.Settings.License = LicenseType.Community;
 var reportArtifacts = new ReportArtifactService(
     db,
     new CasinoImpactReportModelFactory(db),
@@ -2805,6 +3013,29 @@ static JurisdictionRule DisposableDistribution(
     SourceUrl = sourceUrl,
     ProvenanceNotes = "Disposable integration impact-accounting fixture only."
 };
+
+file static class ValidationExecutionFactory
+{
+    public static GravityModelExecutionService Create(AppDbContext db, ValhallaClient valhalla)
+    {
+        var profiles = new JurisdictionProfileService(db);
+        return new(db, new ModelParameterService(db), new GamingAgeResolver(profiles), new CompetitiveUniverseService(db),
+            new OriginDemandService(), new FacilityAttractivenessService(), new TravelMatrixService(db, valhalla),
+            new MarketEquilibriumService(new GravityModelService()), new AccessibilityExpansionService(), new TourismDemandService(),
+            new TrafficInterceptService(), new CapacityDiagnosticService(), new CapacityProductivityBenchmarkService(), new RampScheduleService(),
+            new GamingTaxCalculator(profiles), new GamingFiscalAllocationCalculator(profiles, new CandidateFiscalLocationResolver(db)),
+            new GeneralFiscalRuleResolver(profiles), new ProblemGamblingPrevalenceResolver(profiles), new CannibalizationAccountingService(),
+            new LocalEconomicInventoryWeightService(), new DisplacementModelService(), new EmploymentImpactService(),
+            new EmploymentProductivityBenchmarkService(), new FiscalImpactService(), new SocialCostService(), new NetImpactService());
+    }
+}
+
+file sealed class FrozenOriginProvider(ProviderDataset<OriginZoneImportRow> dataset) : IOriginGeographyProvider
+{
+    public string ProviderKey => "frozen-study-area-origins-validation";
+    public Task<ProviderDataset<OriginZoneImportRow>> FetchAsync(ProviderFetchRequest request,
+        CancellationToken cancellationToken = default) => Task.FromResult(dataset);
+}
 
 file sealed class FrozenOriginIncomeProvider(
     ProviderDataset<OriginIncomeImportRow> dataset) : IOriginIncomeProvider

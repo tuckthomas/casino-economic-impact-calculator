@@ -72,7 +72,8 @@ public sealed class TravelMatrixService(
             facility => facility.FacilityKey,
             facility => CandidateIdentity(facility.Latitude, facility.Longitude),
             StringComparer.OrdinalIgnoreCase);
-        var cachedRows = await db.OriginFacilityTravel
+        var pendingTravelEntities = new List<object>();
+        var cachedRows = await db.OriginFacilityTravel.AsNoTracking()
             .Where(route => originIds.Contains(route.OriginZoneId) &&
                             facilityKeys.Contains(route.FacilityKey) &&
                             route.RoutingGraphHash == graph.GraphHash &&
@@ -99,7 +100,7 @@ public sealed class TravelMatrixService(
         var candidateHashes = candidateIdentities.Values.Select(identity => identity.Hash).Distinct().ToArray();
         var cachedCandidateRoutes = candidateHashes.Length == 0
             ? []
-            : await db.CandidateLocationTravelCache
+            : await db.CandidateLocationTravelCache.AsNoTracking()
                 .Where(route => originIds.Contains(route.OriginZoneId) &&
                                 candidateHashes.Contains(route.CandidateCoordinateHash) &&
                                 route.RoutingGraphHash == graph.GraphHash &&
@@ -109,7 +110,7 @@ public sealed class TravelMatrixService(
             route => (route.OriginZoneId, route.CandidateCoordinateHash));
         var cachedCoordinateRoutes = candidateHashes.Length == 0
             ? []
-            : await db.OriginFacilityTravel
+            : await db.OriginFacilityTravel.AsNoTracking()
                 .Where(route => originIds.Contains(route.OriginZoneId) &&
                                 candidateHashes.Contains(route.FacilityCoordinateHash) &&
                                 route.RoutingGraphHash == graph.GraphHash &&
@@ -158,7 +159,7 @@ public sealed class TravelMatrixService(
                     RouteFailureReason = reuseCandidate ? cachedCandidate!.RouteFailureReason : cachedCoordinate!.RouteFailureReason,
                     CalculatedAtUtc = reuseCandidate ? cachedCandidate!.CalculatedAtUtc : cachedCoordinate!.CalculatedAtUtc
                 };
-                db.OriginFacilityTravel.Add(route);
+                TrackNewRoute(route);
                 routeByKey.Add(routeKey, route);
                 AddCandidateCacheIfNeeded(origin, facility, route);
                 materializedCandidateRoute = true;
@@ -166,7 +167,7 @@ public sealed class TravelMatrixService(
         }
         if (materializedCandidateRoute)
         {
-            await db.SaveChangesAsync(cancellationToken);
+            await PersistNewRoutesAsync();
         }
 
         foreach (var origin in orderedOrigins)
@@ -193,13 +194,13 @@ public sealed class TravelMatrixService(
                     null,
                     false,
                     $"Origin-facility pair exceeded the broad {MaximumMatrixPrefilterMiles:0}-mile Valhalla matrix eligibility prefilter; no routed travel time was assumed.");
-                db.OriginFacilityTravel.Add(route);
+                TrackNewRoute(route);
                 routeByKey.Add((origin.OriginZoneId, facility.FacilityKey), route);
                 AddCandidateCacheIfNeeded(origin, facility, route);
             }
             if (excludedFacilities.Length > 0)
             {
-                await db.SaveChangesAsync(cancellationToken);
+                await PersistNewRoutesAsync();
             }
 
             var eligibleFacilities = missingFacilities
@@ -257,12 +258,12 @@ public sealed class TravelMatrixService(
                         cell.RoutedDistanceMeters,
                         cell.RouteFound,
                         cell.RouteFound ? null : "Valhalla returned the origin-facility pair as unreachable.");
-                    db.OriginFacilityTravel.Add(route);
+                    TrackNewRoute(route);
                     routeByKey.Add(key, route);
                     AddCandidateCacheIfNeeded(origin, facility, route);
                 }
 
-                await db.SaveChangesAsync(cancellationToken);
+                await PersistNewRoutesAsync();
             }
             catch (HttpRequestException exception) when (
                 exception.StatusCode == HttpStatusCode.BadRequest &&
@@ -286,10 +287,10 @@ public sealed class TravelMatrixService(
                     null,
                     false,
                     "Valhalla rejected the exact origin-facility pair as unroutable (HTTP 400); no travel time was assumed.");
-                db.OriginFacilityTravel.Add(route);
+                TrackNewRoute(route);
                 routeByKey.Add((origin.OriginZoneId, facility.FacilityKey), route);
                 AddCandidateCacheIfNeeded(origin, facility, route);
-                await db.SaveChangesAsync(cancellationToken);
+                await PersistNewRoutesAsync();
             }
         }
 
@@ -327,7 +328,24 @@ public sealed class TravelMatrixService(
                 CalculatedAtUtc = route.CalculatedAtUtc
             };
             db.CandidateLocationTravelCache.Add(candidateCache);
+            pendingTravelEntities.Add(candidateCache);
             candidateRouteByKey.Add(candidateKey, candidateCache);
+        }
+
+        void TrackNewRoute(OriginFacilityTravel route)
+        {
+            db.OriginFacilityTravel.Add(route);
+            pendingTravelEntities.Add(route);
+        }
+
+        async Task PersistNewRoutesAsync()
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            // These immutable cache/evidence rows retain their generated IDs in
+            // routeByKey. Detach only rows created here, preserving caller state.
+            foreach (var entity in pendingTravelEntities)
+                db.Entry(entity).State = EntityState.Detached;
+            pendingTravelEntities.Clear();
         }
     }
 

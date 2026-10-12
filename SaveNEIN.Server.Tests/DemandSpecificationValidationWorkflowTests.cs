@@ -102,7 +102,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
             ObjectiveFunction = ValidationObjectiveFunctions.Smape,
             Status = ValidationEvaluationStatuses.Finalized,
             PublishedParameterSetId = parameterSetId,
-            InclusionRulesJson = "{}",
+            InclusionRulesJson = ModelReleaseAcceptance.Persist("{}", ModelReleaseAcceptanceTests.PassingReport(), null),
             SelectedParametersJson = JsonSerializer.Serialize(new
             {
                 evaluationKind = "demand-specification-reconciliation",
@@ -131,6 +131,17 @@ public sealed class DemandSpecificationValidationWorkflowTests
             db,
             published,
             [(parameterSetId, "scenario-preset")]);
+        await using var legacyDb = CreateDb();
+        var currentEvaluation = await db.ValidationEvaluations.SingleAsync();
+        legacyDb.ValidationEvaluations.Add(new ValidationEvaluation
+        {
+            Status = ValidationEvaluationStatuses.Finalized, IsImmutable = true,
+            PublishedParameterSetId = parameterSetId, InclusionRulesJson = "{}",
+            SelectedParametersJson = currentEvaluation.SelectedParametersJson
+        });
+        await legacyDb.SaveChangesAsync();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => DemandEnsembleGovernance.ValidatePublishedParameterResolutionAsync(
+            legacyDb, published, [(parameterSetId, "scenario-preset")]));
     }
 
     [Fact]
@@ -161,6 +172,27 @@ public sealed class DemandSpecificationValidationWorkflowTests
         Assert.Contains("demand-specification-reconciliation", stored.SelectedParametersJson);
         Assert.Contains("largestOriginDifferences", stored.InclusionRulesJson);
         Assert.Contains("eligible-adult-per-capita", stored.SelectedParametersJson);
+        Assert.False(result.ReleaseAcceptance.Accepted);
+        Assert.False(ModelReleaseAcceptance.HasAcceptedReport(stored.InclusionRulesJson));
+        Assert.Contains("releaseAcceptance", stored.InclusionRulesJson);
+    }
+
+    [Fact]
+    public async Task Evaluation_SelectionAcceptedEnsembleCannotPublishWithMissingReleaseEvidence()
+    {
+        await using var db = CreateDb();
+        var pairs = await SeedPairedEvaluationFixtureAsync(db, agiSelectionPrediction: 110);
+        var service = new DemandSpecificationValidationEvaluationService(db, new ValidationMetricsService(), new ThrowingParameterSetService());
+        var result = await service.FinalizeAsync(new DemandSpecificationValidationEvaluationRequest(
+            "release-blocked-ensemble", "1", ValidationObjectiveFunctions.Mape, pairs,
+            new DemandSpecificationEnsembleCandidate(0.5, 0.5, 1, "blocked")));
+        Assert.Null(result.PublishedEnsembleParameterSetId);
+        Assert.True(result.EnsembleAcceptedOnSelection);
+        Assert.Contains("Publication blocked", result.EnsembleDecision);
+        Assert.False(result.ReleaseAcceptance.Accepted);
+        var stored = await db.ValidationEvaluations.SingleAsync(item => item.Id == result.ValidationEvaluationId);
+        Assert.Null(stored.PublishedParameterSetId);
+        Assert.Contains("releaseAcceptance", stored.InclusionRulesJson);
     }
 
     [Fact]
@@ -175,7 +207,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
     }
 
     private static async Task<IReadOnlyCollection<DemandSpecificationValidationCasePair>>
-        SeedPairedEvaluationFixtureAsync(AppDbContext db, int? perCapitaPopulationScenarioYear = null)
+        SeedPairedEvaluationFixtureAsync(AppDbContext db, int? perCapitaPopulationScenarioYear = null, decimal agiSelectionPrediction = 80)
     {
         var pairs = new List<DemandSpecificationValidationCasePair>();
         var snapshotIds = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
@@ -185,7 +217,7 @@ public sealed class DemandSpecificationValidationWorkflowTests
             DemandValidationPartitions.Selection,
             ValidationPartitions.Holdout
         };
-        var agiPredictions = new decimal[] { 80, 80, 60 };
+        var agiPredictions = new decimal[] { 80, agiSelectionPrediction, 60 };
         var perCapitaPredictions = new decimal[] { 90, 95, 90 };
         var programId = Guid.NewGuid();
 

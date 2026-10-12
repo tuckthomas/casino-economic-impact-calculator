@@ -81,7 +81,8 @@ public sealed record GravityModelRunRequest(
     IReadOnlyCollection<int>? ExcludedCompetitorIds = null,
     Guid? LocalEconomicInventorySnapshotId = null,
     string MissingRoutePolicy = MissingRoutePolicies.RejectOrigin,
-    int? PopulationScenarioYear = null);
+    int? PopulationScenarioYear = null,
+    IReadOnlyCollection<int>? ObservedGgrExcludedCompetitorIds = null);
 
 public sealed record GravityModelRunResult(
     Guid ModelRunId,
@@ -394,6 +395,7 @@ public sealed class GravityModelExecutionService(
             request.ObservedMetricKey,
             request.ObservedPeriodStart,
             request.ObservedPeriodEnd,
+            observedGgrExcludedCompetitorIds = (request.ObservedGgrExcludedCompetitorIds ?? []).Order().ToArray(),
             request.CostingProfile,
             request.CompetitorPrefilterMiles,
             request.TourismSnapshotId,
@@ -857,9 +859,11 @@ public sealed class GravityModelExecutionService(
         }
 
         var competitorIds = context.Competitors.Select(competitor => competitor.Id).ToArray();
+        var excludedObservedIds = (request.ObservedGgrExcludedCompetitorIds ?? []).ToArray();
         var periods = await db.CasinoGamingRevenuePeriods
             .AsNoTracking()
             .Where(period => competitorIds.Contains(period.CasinoCompetitorId) &&
+                             !excludedObservedIds.Contains(period.CasinoCompetitorId) &&
                              period.DatasetSnapshotId == request.ObservedPerformanceSnapshotId &&
                              period.ReportedMetricKey == request.ObservedMetricKey &&
                              period.PeriodStart >= request.ObservedPeriodStart &&
@@ -916,6 +920,8 @@ public sealed class GravityModelExecutionService(
         var warnings = structuralFallbackFacilityIds.Count == 0
             ? Array.Empty<string>()
             : [$"Hybrid attraction used structural mass for {structuralFallbackFacilityIds.Count} incumbent facility/facilities without the selected observed metric: {string.Join(", ", structuralFallbackFacilityIds.Order(StringComparer.Ordinal))}."];
+        if (excludedObservedIds.Length > 0)
+            warnings = warnings.Append($"Validation withheld observed GGR for competitor IDs: {string.Join(", ", excludedObservedIds.Order())}; eligible competitors remain in the field with structural attraction.").ToArray();
         return new AttractionResolutionContext(
             attractions,
             observedFacilityIds.Order(StringComparer.Ordinal).ToArray(),
@@ -2349,6 +2355,9 @@ public sealed class GravityModelExecutionService(
         ParseFrictionForm(request.FrictionForm);
         _ = ParseMissingRouteBehavior(request.MissingRoutePolicy);
         var excludedCompetitorIds = request.ExcludedCompetitorIds ?? [];
+        var excludedObservedIds = request.ObservedGgrExcludedCompetitorIds ?? [];
+        if (excludedObservedIds.Any(id => id <= 0) || excludedObservedIds.Distinct().Count() != excludedObservedIds.Count)
+            throw new ArgumentException("Observed-GGR exclusions must contain unique positive competitor IDs.", nameof(request));
         if (excludedCompetitorIds.Any(id => id <= 0) ||
             excludedCompetitorIds.Distinct().Count() != excludedCompetitorIds.Count ||
             excludedCompetitorIds.Intersect(request.CompetitorIds).Any())

@@ -40,9 +40,13 @@ Retain MAE, RMSE, SMAPE, Spearman rank correlation, signed residuals and propert
 ## Implementation status
 
 - [x] Define and record thresholds before a new calibration search.
-- [ ] Add a versioned acceptance policy/manifest to the existing evaluation workflow; calculate WAPE and normalized bias alongside existing metrics.
-- [ ] Enforce sample, completeness, leakage and numerical gates before publishing calibrated defaults; persist every pass/fail reason.
+- [x] Add a versioned acceptance policy/evidence contract to both existing evaluation workflows; calculate WAPE and normalized bias alongside existing metrics and persist the assessment/evidence in immutable inclusion JSON.
+- [x] Enforce numerical limits, sample coverage, stable property identity across snapshots, prior-evaluation freshness, pre-search timestamps and required completeness/leakage/reproducibility evidence before publication. Missing evidence blocks publication; legacy ensemble sets without a passing assessment cannot execute as validated ensembles.
 - [ ] Supply fresh holdouts, run the frozen evaluation, and verify reproducibility and downstream evidence.
+
+The evidence contract records the frozen eligible pool, baseline predictions, independent population controls, competitor coverage, failed-case count and audit checksums. Required-input, target-leakage and reproducibility verification flags must be backed by the referenced independent audits; supplying a flag or a checksum does not perform an audit. The code checks the evidence contract and measured acceptance metrics, while independently verifying those source/audit artifacts remains part of the unchecked evidence task.
+
+Incumbent calibration now scores candidate specifications on a separate selection partition when supplied, executes final holdouts only after choosing a candidate, and excludes selection/holdout target-period GGR from observed competitor mass without removing their structural competition. Historical training-only protocols remain usable for development diagnostics and cannot pass release acceptance.
 
 Historical evaluation `64f4ffc7-0e1f-47d2-80b4-3fb032d7cf80` reports 55.23% holdout MAPE and therefore fails v1. Its other unmeasured gates are pending, not assumed passed. Defining this policy does not change that evaluation or publish defaults.
 
