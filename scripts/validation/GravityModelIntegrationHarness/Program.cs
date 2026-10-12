@@ -820,6 +820,39 @@ if (args is ["--export-ohio-provider-bundle", var ohioBundleOutputPath])
     return;
 }
 
+if (args is ["--validate-michigan-commercial-fiscal", var michiganFiscalDatabase])
+{
+    if (!michiganFiscalDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        michiganFiscalDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe Michigan fiscal validation database name.");
+    var fiscalConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.")) { Database = michiganFiscalDatabase };
+    await using var michiganFiscalDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(fiscalConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    await MichiganCommercialGamingRulesSeeder.SeedAsync(michiganFiscalDb);
+    await MichiganCommercialGamingRulesSeeder.SeedAsync(michiganFiscalDb);
+    var michiganProfiles = new JurisdictionProfileService(michiganFiscalDb);
+    var fiscalDate = new DateOnly(2025, 12, 31);
+    var legalAge = await new GamingAgeResolver(michiganProfiles).ResolveMinimumAgeAsync("US-MI", "commercial-casino", fiscalDate);
+    var reportedTax = await new GamingTaxCalculator(michiganProfiles).CalculateAsync(new GamingTaxRequest(
+        "US-MI", "commercial-casino", fiscalDate, 0m, 100_000_000m));
+    var reportedAllocation = await new GamingFiscalAllocationCalculator(michiganProfiles, new CandidateFiscalLocationResolver(michiganFiscalDb))
+        .CalculateAsync(new GamingFiscalAllocationRequest("US-MI", "commercial-casino", fiscalDate, 100_000_000m,
+            reportedTax.GamingTax, 42.3319, -83.0461));
+    if (legalAge != 21 || reportedTax.GamingTax != 19_000_000m || reportedAllocation.HostMunicipalityShare != 10_900_000m ||
+        reportedAllocation.HostStateShare != 8_100_000m || reportedAllocation.Location.MunicipalityGeoid != "2622000")
+        throw new InvalidOperationException("Michigan reported levy or exact Detroit containment did not reconcile.");
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        MinimumGamingAge = legalAge, TaxableAgr = 100_000_000m, reportedTax.GamingTax,
+        reportedAllocation.HostMunicipalityShare, reportedAllocation.HostStateShare,
+        reportedAllocation.SupplementalGamingTax, reportedAllocation.Location,
+        Source = MichiganCommercialGamingRulesSeeder.TaxSourceUrl,
+        Scope = "Detroit commercial land-based reported levy only; excludes tribal, sports, online and additional fees; no empirical forecast acceptance."
+    }));
+    return;
+}
+
 if (args is ["--render-validation-run", var renderDatabase, var renderRunId])
 {
     if (!renderDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||

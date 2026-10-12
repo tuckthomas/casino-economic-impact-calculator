@@ -99,6 +99,8 @@ public static class ModelFoundationInitializer
             cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
+        await MichiganCommercialGamingRulesSeeder.SeedAsync(db, cancellationToken);
+
         // Remove superseded development-only fiscal fixtures. The application is still in
         // development, so unsupported rules must not remain available to effective-rule selection.
         var obsoleteGamingTaxRules = await db.JurisdictionRules

@@ -51,6 +51,8 @@ Both runs use an explicitly assumed program (2,000 slots, 50 tables, 200 hotel r
 
 ## Remaining implementation and acceptance
 
+Detroit commercial jurisdiction support: **299 .NET tests pass**, with a clean harness build and a live PostGIS containment/allocation check. The [MGCB reported land-based levy](https://www.michigan.gov/mgcb/Detroit-Casinos/resources/revenues-and-wagering-tax-information) is modeled on its combined 19% reporting basis, allocating 10.9% of AGR to Detroit and 8.1% to Michigan school aid. The [MGCB age guidance](https://www.michigan.gov/mgcb/news/2024/10/02/reminder-to-wager-responsibly) supports age 21 for Detroit commercial patrons. Support starts in 2025, requires Wayne County and exact Detroit place GEOID `2622000`, and does not apply to tribal, retail sports, online gaming, additional fees or licensing eligibility. On $100M test AGR the live check returned $19M combined levy, $10.9M municipality, $8.1M state and zero duplicated supplemental levy. Seeding twice did not duplicate the five rules. Broader Michigan and other-state fiscal acceptance remains open.
+
 - [ ] Drive the interactive economic visualization from sealed run inputs and outputs: eligible population, exposure response, nonoverlapping cost domains, gravity-derived GGR and effective-dated fiscal results.
 - [ ] Carry all supported overrides through saving, reset/default behavior, comparison and sensitivity; reconcile the displayed values with immutable runs.
 - [ ] Use authoritative stored-run reports throughout the public workflow, replacing the independent legacy revenue/tax/PDF calculation path.
