@@ -794,6 +794,7 @@
     private readonly List<SensitivityRangeForm> _sensitivityRanges = [];
     private readonly List<RunOriginSummaryRow> _runOrigins = [];
     private readonly List<RunFacilityResult> _runFacilities = [];
+    private int _originLoadVersion;
     private readonly Dictionary<string, double> _runParameterValues = new(StringComparer.Ordinal);
     private int _runOriginTotal;
     private RunResult? _latestRun;
@@ -1014,6 +1015,7 @@
 
     private async Task LoadOriginsAsync()
     {
+        var loadVersion = ++_originLoadVersion;
         _origins.Clear();
         if (_form.OriginGeographySnapshotId is not { } snapshotId)
         {
@@ -1024,10 +1026,22 @@
         {
             url += $"&stateCode={Uri.EscapeDataString(_form.OriginStateCode.Trim().ToUpperInvariant())}";
         }
-        var response = await Http.GetFromJsonAsync<OriginResponse>(url);
-        if (response is not null)
+        try
         {
-            _origins.AddRange(response.Origins);
+            var selected = await SaveNEIN.Shared.Modeling.CompleteOriginSelection.LoadAsync(async (skip, cancellationToken) =>
+            {
+                var response = await Http.GetFromJsonAsync<OriginResponse>($"{url}&skip={skip}", cancellationToken)
+                    ?? throw new InvalidDataException("The origin selection response was empty.");
+                return new SaveNEIN.Shared.Modeling.OriginSelectionPage(response.Total,
+                    response.Origins.Select(origin => origin.StableOriginId).ToArray());
+            });
+            if (loadVersion != _originLoadVersion) return;
+            _origins.AddRange(selected.Select(id => new OriginOption { StableOriginId = id }));
+        }
+        catch (Exception exception)
+        {
+            if (loadVersion != _originLoadVersion) return;
+            _error = $"The complete origin selection could not be loaded: {exception.Message}";
         }
     }
 

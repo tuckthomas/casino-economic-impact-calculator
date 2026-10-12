@@ -84,5 +84,5 @@
       "sha256": "822e104a9782dfa49c0464bb531fecd38e4a3074722b179d892bad6d94765d64"
     }
   ],
-  "image": "ghcr.io/nilsnolde/docker-valhalla/valhalla@sha256:4e7cca5db66e0c8d3a4ab6c3f83a748ef9b805fe227d3d4f496f161ac9b69f"
+  "image": "ghcr.io/nilsnolde/docker-valhalla/valhalla@sha256:4e7cca5db66e0c8d3a4ab6c3f83a748ef9b805fe227d3d4d4f496f161ac9b69f"
 }
