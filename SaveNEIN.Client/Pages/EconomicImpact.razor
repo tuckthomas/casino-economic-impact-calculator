@@ -737,6 +737,9 @@
     [Parameter]
     public string? ScenarioToken { get; set; }
 
+    [Parameter]
+    public EventCallback<(Guid ModelRunId, string? ScenarioToken)> ModelRunCompleted { get; set; }
+
     private static readonly string[] StandardParameterKeys =
     [
         "demand.regional_intensity_multiplier",
@@ -1152,6 +1155,7 @@
             await LoadRunOutputDetailsAsync(_latestRun.ModelRunId);
             _lastRunRequest = request;
             ResetSensitivityRanges();
+            await ModelRunCompleted.InvokeAsync((_latestRun.ModelRunId, ScenarioToken));
             _sensitivityResult = null;
             await LoadRecentRunsAsync();
             _comparisonSelection.Add(_latestRun.ModelRunId);

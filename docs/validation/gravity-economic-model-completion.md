@@ -55,7 +55,7 @@ Detroit commercial jurisdiction support: **299 .NET tests pass**, with a clean h
 
 - [ ] Drive the interactive economic visualization from sealed run inputs and outputs: eligible population, exposure response, nonoverlapping cost domains, gravity-derived GGR and effective-dated fiscal results.
 - [ ] Carry all supported overrides through saving, reset/default behavior, comparison and sensitivity; reconcile the displayed values with immutable runs.
-- [ ] Use authoritative stored-run reports throughout the public workflow, replacing the independent legacy revenue/tax/PDF calculation path.
+- [x] Use stored-run reports for PDF generation throughout the public economic workflow. The variables-page PDF action now waits for a successful saved model run and calls the same report-artifact endpoint as the workbench, replacing DOM scraping. The separate legacy visualization arithmetic remains part of the first unchecked item above.
 - [ ] Complete origin, age and income inputs for real paired runs; finish block-group mode, versioned crosswalks, fractional boundary allocation and population control checks. Coordinate cross-border coverage with #32.
 - [ ] Complete market-specific tourism/traffic, facility attributes, fiscal/employment/displacement inputs and defensible causal social-cost evidence. Preserve explicit missing-data warnings and zero-safe unsupported assumptions.
 - [x] Establish numerical release criteria for error, bias, property/market residuals and holdout coverage before further optimization. The user authorized recommended thresholds on 2026-10-11; [acceptance policy v1](gravity-economic-model-acceptance-v1.md) records the limits, metric definitions and required evidence.
@@ -117,3 +117,9 @@ Primary Missouri sources: [monthly regulator report example](https://www.mgc.dps
 - [x] Generate saved-run report titles from the executed scenario name, preserving it after later edits to the form.
 
 Verification: **322 server tests pass**, including persisted-value API and baseline-drift regressions; the Release WebAssembly client builds with zero warnings/errors; repository guards pass. This completes a specific saved-assumption/sensitivity mismatch and broadens supported sensitivity controls. It does not complete the independent browser visualization, all saved-run handoffs or full empirical acceptance.
+
+## Public report handoff
+
+The embedded workbench signals a successful saved model run with its scenario token. The variables page accepts only a matching token, resets the linked report when the scenario changes, and generates a report through `api/model-runs/{id}/reports`. It validates the returned run identity and exposes the server artifact's PDF link. The previous map/DOM scrape and `api/report/generate` request have been removed from this public flow. Before a saved run exists, the action explains that the model calculation must be saved below. Stale report responses and errors cannot replace the current scenario's report.
+
+Verification: the Release client builds with zero errors (existing analysis warnings remain); UI text-size, tooltip and model-license guards pass. The existing stored-run report service and report tests remain unchanged. Full visualization arithmetic integration is still open; the PDF specifically represents the saved model calculation.
