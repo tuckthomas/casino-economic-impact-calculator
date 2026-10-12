@@ -37,13 +37,20 @@ foreach ($row in $result.holdout) {
 function Measure-Residuals([object[]]$Rows) {
     $totalObserved = 0.0; $absoluteError = 0.0; $signedError = 0.0; $apes = @()
     foreach ($row in $Rows) {
+        if ($null -eq $row.observed -or $null -eq $row.predicted -or $null -eq $row.ape) {
+            throw 'A property observation, prediction or error is missing.'
+        }
         $observed = [double]$row.observed; $predicted = [double]$row.predicted
         if (![double]::IsFinite($observed) -or $observed -le 0 -or ![double]::IsFinite($predicted) -or $predicted -lt 0) {
             throw 'Nonfinite, nonpositive observed or negative predicted revenue.'
         }
         $error = $predicted - $observed
+        $ape = 100 * [Math]::Abs($error) / $observed
+        if (![double]::IsFinite([double]$row.ape) -or [Math]::Abs([double]$row.ape - $ape) -gt 1e-7) {
+            throw 'Reported property error does not reconcile.'
+        }
         $totalObserved += $observed; $absoluteError += [Math]::Abs($error); $signedError += $error
-        $apes += 100 * [Math]::Abs($error) / $observed
+        $apes += $ape
     }
     $mape = [double](($apes | Measure-Object -Average).Average)
     $wape = 100 * $absoluteError / $totalObserved
@@ -61,6 +68,7 @@ foreach ($metric in @(
     @($overall.wape, $result.holdoutWape),
     @($overall.normalizedSignedBias, $result.holdoutNormalizedBias)
 )) {
+    if ($null -eq $metric[1]) { throw 'Reported aggregate metric is missing.' }
     if ([Math]::Abs([double]$metric[0] - [double]$metric[1]) -gt 1e-7) { throw 'Reported aggregate metric does not reconcile.' }
 }
 $markets = @($result.holdout | Group-Object market | ForEach-Object {

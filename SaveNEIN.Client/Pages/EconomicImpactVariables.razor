@@ -1056,7 +1056,7 @@ else
 
 	    </section>
 
-<EconomicImpact @key="_scenarioToken" Embedded="true" ScenarioToken="@_scenarioToken" ModelRunCompleted="OnModelRunCompleted" />
+<EconomicImpact @key="_scenarioToken" Embedded="true" ScenarioToken="@_scenarioToken" ModelRunCompleted="OnModelRunCompleted" ModelRunInvalidated="OnModelRunInvalidated" />
 
 <EconomicModals />
 }
@@ -1149,6 +1149,14 @@ else
     {
         if (result.ScenarioToken != _scenarioToken) return;
         _savedModelRunId = result.ModelRunId;
+        _savedReportPdfUrl = null;
+        _savedReportError = null;
+    }
+
+    private void OnModelRunInvalidated(string? scenarioToken)
+    {
+        if (scenarioToken != _scenarioToken) return;
+        _savedModelRunId = null;
         _savedReportPdfUrl = null;
         _savedReportError = null;
     }

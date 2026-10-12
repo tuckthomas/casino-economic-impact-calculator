@@ -123,6 +123,8 @@ Verification: **322 server tests pass**, including persisted-value API and basel
 
 The embedded workbench signals a successful saved model run with its scenario token. The variables page accepts only a matching token, resets the linked report when the scenario changes, and generates a report through `api/model-runs/{id}/reports`. It validates the returned run identity and exposes the server artifact's PDF link. The previous map/DOM scrape and `api/report/generate` request have been removed from this public flow. Before a saved run exists, the action explains that the model calculation must be saved below. Stale report responses and errors cannot replace the current scenario's report.
 
+Importing a replacement scenario also invalidates the parent page's saved-run/PDF link. A new saved calculation is required before generating that scenario's report; an already pending response for the invalidated run is discarded. The client build passes with zero errors and existing warnings. The diagnostic summary additionally reconciles each reported property error and rejects missing/nonfinite observations or metrics.
+
 Verification: the Release client builds with zero errors (existing analysis warnings remain); UI text-size, tooltip and model-license guards pass. The existing stored-run report service and report tests remain unchanged. Full visualization arithmetic integration is still open; the PDF specifically represents the saved model calculation.
 
 ## County handoff and diagnostic transparency

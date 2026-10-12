@@ -745,6 +745,9 @@
     [Parameter]
     public EventCallback<(Guid ModelRunId, string? ScenarioToken)> ModelRunCompleted { get; set; }
 
+    [Parameter]
+    public EventCallback<string?> ModelRunInvalidated { get; set; }
+
     private static readonly string[] StandardParameterKeys =
     [
         "demand.regional_intensity_multiplier",
@@ -1539,6 +1542,7 @@
             _lastRunRequest = null;
             _sensitivityResult = null;
             _reportArtifact = null;
+            await ModelRunInvalidated.InvokeAsync(ScenarioToken);
             _scenarioJsonMessage = $"Imported {document.UserOverrides.Count} override(s). Run the scenario to create a new immutable result.";
         }
         catch (Exception exception) when (exception is JsonException or InvalidDataException or InvalidOperationException or ArgumentException)
