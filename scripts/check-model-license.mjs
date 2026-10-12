@@ -33,6 +33,7 @@ const designatedFiles = [
   'SaveNEIN.Server/Data/Entities/SensitivityEntities.cs',
   'SaveNEIN.Server/Data/Entities/ValidationEntities.cs',
   'SaveNEIN.Server/Data/ModelFoundationInitializer.cs',
+  'SaveNEIN.Server/Data/MichiganCommercialGamingRulesSeeder.cs',
   'scripts/validation/validate-model-foundation-migrations.sh',
   'scripts/validation/run-gravity-model-integration.sh',
   'scripts/validation/run-incumbent-calibration.sh',
