@@ -1,0 +1,5 @@
+# Validation checksums describe captured bytes, including source line endings.
+# Preserve them across Windows/Linux checkouts instead of applying autocrlf.
+docs/validation/*.json -text
+docs/validation/bundles/*.json -text
+docs/validation/bundles/*.csv -text

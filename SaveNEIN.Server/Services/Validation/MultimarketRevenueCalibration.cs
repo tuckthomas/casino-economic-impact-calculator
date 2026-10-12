@@ -24,7 +24,8 @@ public sealed record MultimarketCalibrationProtocol(
     double[] Beta, double[] Alpha, double[] PositionsCoefficient, double TablesCoefficient,
     double[] ComparableScale, double[] OutsideWeight,
     string[] Training, string[] Selection, Dictionary<string, string[]> Holdout,
-    double[]? GamingPositionsOffset = null);
+    double[]? GamingPositionsOffset = null,
+    string AttractionSpecification = FacilityAttractionSpecifications.HybridObservedGgr);
 
 /// <summary>
 /// Revenue-component backtests use the same demand, facility feature and gravity
@@ -43,6 +44,9 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var protocolHash = Convert.ToHexString(SHA256.HashData(protocolBytes)).ToLowerInvariant();
         var protocol = JsonSerializer.Deserialize<MultimarketCalibrationProtocol>(protocolBytes, JsonOptions)
             ?? throw new InvalidDataException("Calibration protocol is missing.");
+        if (protocol.AttractionSpecification is not (FacilityAttractionSpecifications.Structural or FacilityAttractionSpecifications.HybridObservedGgr))
+            throw new InvalidDataException("Component calibration supports structural or hybrid-observed-ggr attraction.");
+        var useObservedPeers = protocol.AttractionSpecification == FacilityAttractionSpecifications.HybridObservedGgr;
         var allTargetKeys = protocol.Training.Concat(protocol.Selection).Concat(protocol.Holdout.Values.SelectMany(value => value)).ToArray();
         if (allTargetKeys.Distinct(StringComparer.Ordinal).Count() != allTargetKeys.Length || protocol.Training.Length < 2 || protocol.Selection.Length == 0)
             throw new InvalidDataException("Protocol partitions overlap or lack training/selection properties.");
@@ -115,8 +119,8 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             return requestedCases.Select(item =>
             {
                 var observedPeers = item.Peers.Where(peer => !withheldIds.Contains(peer.Id) && observedById.ContainsKey(peer.Id)).ToArray();
-                if (observedPeers.Length == 0) throw new InvalidDataException("No non-held-out observed competitor mass.");
-                var reference = Median(observedPeers.Select(peer => observedById[peer.Id]));
+                if (useObservedPeers && observedPeers.Length == 0) throw new InvalidDataException("No non-held-out observed competitor mass.");
+                var reference = useObservedPeers ? Median(observedPeers.Select(peer => observedById[peer.Id])) : 1d;
                 var program = new DevelopmentProgram
                 {
                     SlotOrVltPositions = item.Facility.SlotOrVltPositions!.Value, TableGameCount = item.Facility.TableGameCount ?? 0,
@@ -126,7 +130,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
                 var proposedMass = featureService.CalculateStructural(new(item.Facility.StableVenueId,
                     GravityModelExecutionService.FacilityFeatures(program, parameters), MissingFacilityAttributeBehavior.UseReferenceValue)).NormalizedAttraction;
                 proposedMass = FacilityAttractivenessService.NormalizeStructuralMass(proposedMass, scale);
-                var peerMasses = item.Peers.ToDictionary(peer => peer.Id, peer => !withheldIds.Contains(peer.Id) && observedById.TryGetValue(peer.Id, out var amount)
+                var peerMasses = item.Peers.ToDictionary(peer => peer.Id, peer => useObservedPeers && !withheldIds.Contains(peer.Id) && observedById.TryGetValue(peer.Id, out var amount)
                     ? featureService.CalculateObservedGgr(new(peer.StableVenueId, amount, reference, false)).NormalizedAttraction : FacilityAttractivenessService.NormalizeStructuralMass(structural[peer.Id], scale));
                 var gravityParameters = new GravityParameters(alpha, TravelFrictionForm.InversePower, beta, 1, MissingRouteBehavior.ExcludeFacility);
                 return item.Origins.Sum(origin =>
@@ -165,7 +169,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             await File.WriteAllTextAsync(outputPath, JsonSerializer.Serialize(new
             {
                 ProtocolHash = protocolHash, Scope = "Development-only structural normalization remediation; previously inspected final holdouts remain withheld and are not rescored.",
-                ScalingVersion = "consistent-physical-v2", CandidateCount = searchRows.Count, SelectedOn = "selection only", Selected = selected,
+                ScalingVersion = "consistent-physical-v2", protocol.AttractionSpecification, CandidateCount = searchRows.Count, SelectedOn = "selection only", Selected = selected,
                 graph.GraphHash, MatrixCorrelationVersion = ValhallaClient.MatrixCorrelationVersion,
                 ReleaseAccepted = false, FinalHoldoutScored = false,
                 RouteCoverage = development.Select(item => new { item.Facility.StableVenueId, OriginCount = item.Origins.Length,
@@ -184,7 +188,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var holdoutBias = 100 * holdoutRows.Sum(row => row.Predicted - row.Observed) / holdoutRows.Sum(row => row.Observed);
         var output = new
         {
-            ProtocolHash = protocolHash, protocol.ProtocolVersion,
+            ProtocolHash = protocolHash, protocol.ProtocolVersion, protocol.AttractionSpecification,
             Scope = diagnosticReplay ? "Diagnostic replay of inspected properties after development-only selection; not an untouched acceptance evaluation." : "Resident revenue-component calibration; no downstream acceptance or parameter publication.",
             HoldoutPreviouslyInspected = diagnosticReplay, ScalingVersion = "consistent-physical-v2",
             MatrixCorrelationVersion = ValhallaClient.MatrixCorrelationVersion,
