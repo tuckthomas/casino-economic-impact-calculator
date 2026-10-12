@@ -1,0 +1,25 @@
+{
+  "scope": "Read-only dedicated-database comparison of shared input identities and exact facility-coordinate hashes; not full reproducibility acceptance.",
+  "originComparison": {
+    "oldAgi": 2533434934000.0,
+    "oldIncomeSnapshot": "9232145d-5f95-4860-b9c4-c13b9977f6a5",
+    "changedAgi": 0,
+    "newIncomeSnapshot": "0c237148-a4ef-40ea-b22f-87e508bb0460",
+    "newOriginSnapshot": "921f0c42-62d9-4289-b0c2-dc7382d3499e",
+    "oldOriginSnapshot": "0e277abe-37c1-4049-a5b6-33be29ceab1e",
+    "newAgi": 2533434934000.0,
+    "matchedOrigins": 6909,
+    "changedCoordinates": 0
+  },
+  "routeComparison": {
+    "lostRoutes": 1536,
+    "bothRouted": 42158,
+    "medianTimeRatio": 1,
+    "meanAbsoluteMinutesDifference": 0.46555971978428984,
+    "oldGraphHash": "98df738e87b0ccf93da4f77f356120179907110239bc14f3534ee6e955d71aa3",
+    "method": "Latest stored row per stable origin/facility identity in each specified origin snapshot and graph; compare only equal facility-coordinate hashes. Positive shared routed times form the time-ratio denominator. Missing pairs are retained, not replaced.",
+    "identicalFacilityGeometryPairs": 65974,
+    "newGraphHash": "a0e711d461b574fbf685999566e114b72846322add48d4f3cd2e2e6254790d69"
+  },
+  "releaseAccepted": false
+}

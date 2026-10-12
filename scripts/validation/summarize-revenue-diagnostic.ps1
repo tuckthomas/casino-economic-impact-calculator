@@ -26,12 +26,31 @@ if (!$expected.Count -or $actual.Count -ne $expected.Count -or (Compare-Object $
 if (@($actual | Select-Object -Unique).Count -ne $actual.Count) { throw 'Duplicate holdout property.' }
 $facilities = @{}
 foreach ($facility in $bundle.facilities.rows) { $facilities[$facility.stableVenueId] = $facility }
+$yearStart = [datetime]::new([int]$protocol.observedYear, 1, 1)
+$yearEnd = $yearStart.AddYears(1).AddDays(-1)
 foreach ($row in $result.holdout) {
     if (!$facilities.ContainsKey($row.stableVenueId) -or $row.state -cne $facilities[$row.stableVenueId].state) {
         throw 'A holdout property or its jurisdiction is absent from the captured source.'
     }
     $market = @($protocol.holdout.PSObject.Properties | Where-Object { $_.Value -ccontains $row.stableVenueId })
     if ($market.Count -ne 1 -or $row.market -cne $market[0].Name) { throw 'Result market differs from frozen partition.' }
+    $periods = @($bundle.performance.rows | Where-Object {
+        $_.stableVenueId -ceq $row.stableVenueId -and $_.reportedMetricKey -ceq 'comparable-land-based-gaming-revenue' -and
+        [datetime]$_.periodStart -ge $yearStart -and [datetime]$_.periodEnd -le $yearEnd
+    } | Sort-Object periodStart)
+    $cursor = $yearStart; $amount = 0.0
+    foreach ($period in $periods) {
+        $end = [datetime]$period.periodEnd
+        if ([datetime]$period.periodStart -ne $cursor -or $end -lt $cursor) {
+            throw 'Captured comparable revenue periods have gaps or overlaps.'
+        }
+        $cursor = $end.AddDays(1)
+        $amount += [double]$(if ($null -ne $period.inflationAdjustedAmount) { $period.inflationAdjustedAmount } else { $period.reportedAmount })
+    }
+    if ($cursor -ne $yearEnd.AddDays(1) -or @($periods.reportedMetricDefinition | Select-Object -Unique).Count -ne 1 -or
+        [Math]::Abs($amount - [double]$row.observed) -gt 1e-4) {
+        throw 'Holdout observation does not reconcile to complete comparable source revenue.'
+    }
 }
 
 function Measure-Residuals([object[]]$Rows) {
@@ -87,6 +106,7 @@ $summary = [ordered]@{
     scope = 'Checksum-bound resident-revenue diagnostic; descriptive gates do not authorize release.'
     protocolHash = $protocolHash; resultHash = $resultHash; sourceBundleHash = $bundleHash
     frozenScope = $protocol.scope; graphHash = $result.graphHash
+    observedRevenueSourceReconciled = $true
     overall = $overall; markets = $markets; jurisdictions = $jurisdictions
     descriptiveGates = [ordered]@{
         mape = $overall.mape -le 20; wape = $overall.wape -le 15

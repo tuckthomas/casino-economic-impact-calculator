@@ -1,0 +1,314 @@
+{
+  "scope": "Checksum-bound resident-revenue diagnostic; descriptive gates do not authorize release.",
+  "protocolHash": "e20743004bf43d81b0efd8f0d5f88d00bc85c63c5bcf08b3fc3c7645d8d7ac82",
+  "resultHash": "59c661626eccbc2913f42e6d4394a3ed39452f2c3af3003bc1ebd3a8834c9827",
+  "sourceBundleHash": "c38b499ae3ef2f62cbc84125d6f1499ab90d790edb1cb8b4594d31e10d8203d7",
+  "frozenScope": "Fresh twelve-property resident-revenue diagnostic in two markets (Chicago and St. Louis), using 2025 observations and prior inspected development properties. This is not release-qualified: three-market coverage, complete competitive inventory, temporal facility-history matching and independent input/fiscal audits remain incomplete. Missing attributes use the existing explicit structural references. Wind Creek first full operating year and Ballys temporary site are retained as declared limitations. Full-year coordinate matching for relocated 2025 Hollywood Joliet/Aurora is not assumed; they are excluded as targets but remain peers with flagged static-coordinate limitations.",
+  "graphHash": "a0e711d461b574fbf685999566e114b72846322add48d4f3cd2e2e6254790d69",
+  "observedRevenueSourceReconciled": true,
+  "overall": {
+    "propertyCount": 12,
+    "observedRevenue": 2318187502.81,
+    "mape": 205.30062112018098,
+    "wape": 147.91142039326456,
+    "normalizedSignedBias": 147.48406326381595,
+    "maximumPropertyApe": 915.9073900029088,
+    "fractionWithinThirtyPercent": 0.25
+  },
+  "markets": [
+    {
+      "market": "chicago-region",
+      "residuals": {
+        "propertyCount": 6,
+        "observedRevenue": 1204002305.23,
+        "mape": 323.2352335490228,
+        "wape": 245.44558363017524,
+        "normalizedSignedBias": 245.44558363017524,
+        "maximumPropertyApe": 915.9073900029088,
+        "fractionWithinThirtyPercent": 0.0
+      }
+    },
+    {
+      "market": "st-louis-region",
+      "residuals": {
+        "propertyCount": 6,
+        "observedRevenue": 1114185197.58,
+        "mape": 87.36600869133922,
+        "wape": 42.514797254688126,
+        "normalizedSignedBias": 41.62563272541932,
+        "maximumPropertyApe": 221.8046160100327,
+        "fractionWithinThirtyPercent": 0.5
+      }
+    }
+  ],
+  "jurisdictions": [
+    {
+      "state": "IL",
+      "residuals": {
+        "propertyCount": 8,
+        "observedRevenue": 1322970133.21,
+        "mape": 293.5594486843307,
+        "wape": 241.1328682709785,
+        "normalizedSignedBias": 241.1328682709785,
+        "maximumPropertyApe": 915.9073900029088,
+        "fractionWithinThirtyPercent": 0.0
+      }
+    },
+    {
+      "state": "MO",
+      "residuals": {
+        "propertyCount": 4,
+        "observedRevenue": 995217369.5999999,
+        "mape": 28.782965991881586,
+        "wape": 23.989556603470522,
+        "normalizedSignedBias": 22.9941017541217,
+        "maximumPropertyApe": 71.08919412841297,
+        "fractionWithinThirtyPercent": 0.75
+      }
+    }
+  ],
+  "descriptiveGates": {
+    "mape": false,
+    "wape": false,
+    "bias": false,
+    "maximumProperty": false,
+    "propertyTail": false,
+    "twelveProperties": true,
+    "threeMarkets": false,
+    "twoJurisdictions": true,
+    "everyGroupHasThreeProperties": true,
+    "everyGroupMeetsErrorAndBias": false,
+    "noMissingCandidateRoutes": false
+  },
+  "worstProperties": [
+    {
+      "stableVenueId": "USA-IL-IGB-ballys-chicago",
+      "market": "chicago-region",
+      "state": "IL",
+      "observed": 124666210.16,
+      "predicted": 1266493241.8519971,
+      "ape": 915.9073900029088,
+      "missingCandidateRoutes": 2
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-american-place",
+      "market": "chicago-region",
+      "state": "IL",
+      "observed": 121732450.29,
+      "predicted": 579689086.215364,
+      "ape": 376.1993082652866,
+      "missingCandidateRoutes": 7
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-grand-victoria-casino",
+      "market": "chicago-region",
+      "state": "IL",
+      "observed": 142187327.07,
+      "predicted": 494813166.4263141,
+      "ape": 248.00089193793866,
+      "missingCandidateRoutes": 2
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-argosy-casino-alton",
+      "market": "st-louis-region",
+      "state": "IL",
+      "observed": 35219807.35,
+      "predicted": 113338965.80214077,
+      "ape": 221.8046160100327,
+      "missingCandidateRoutes": 7
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-draftkings-casino-queen",
+      "market": "st-louis-region",
+      "state": "IL",
+      "observed": 83748020.63,
+      "predicted": 240574205.76298016,
+      "ape": 187.25957217047625,
+      "missingCandidateRoutes": 6
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-harrahs-joliet",
+      "market": "chicago-region",
+      "state": "IL",
+      "observed": 114410296.55,
+      "predicted": 282055265.0927662,
+      "ape": 146.52961630031385,
+      "missingCandidateRoutes": 2
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-wind-creek-chicago-southland",
+      "market": "chicago-region",
+      "state": "IL",
+      "observed": 197952986.4,
+      "predicted": 481142010.9001484,
+      "ape": 143.05872805975935,
+      "missingCandidateRoutes": 2
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-rivers-casino-des-plaines",
+      "market": "chicago-region",
+      "state": "IL",
+      "observed": 503053034.76,
+      "predicted": 1054980019.7359476,
+      "ape": 109.71546672792955,
+      "missingCandidateRoutes": 4
+    },
+    {
+      "stableVenueId": "USA-MO-MGC-horseshoe-st-louis",
+      "market": "st-louis-region",
+      "state": "MO",
+      "observed": 162495573.32,
+      "predicted": 278012366.8875324,
+      "ape": 71.08919412841297,
+      "missingCandidateRoutes": 7
+    },
+    {
+      "stableVenueId": "USA-MO-MGC-hollywood-st-louis",
+      "market": "st-louis-region",
+      "state": "MO",
+      "observed": 259471615.03000003,
+      "predicted": 317783812.4553574,
+      "ape": 22.473439886137566,
+      "missingCandidateRoutes": 10
+    },
+    {
+      "stableVenueId": "USA-MO-MGC-ameristar-st-charles",
+      "market": "st-louis-region",
+      "state": "MO",
+      "observed": 303932512.11999995,
+      "predicted": 363898285.5512501,
+      "ape": 19.729963409631612,
+      "missingCandidateRoutes": 9
+    },
+    {
+      "stableVenueId": "USA-MO-MGC-river-city",
+      "market": "st-louis-region",
+      "state": "MO",
+      "observed": 269317669.13,
+      "predicted": 264364199.3463775,
+      "ape": 1.8392665433441937,
+      "missingCandidateRoutes": 10
+    }
+  ],
+  "candidateInputGaps": [
+    {
+      "stableVenueId": "USA-IL-IGB-american-place",
+      "missingAttributes": [
+        "gamingPositions",
+        "hotelRoomCount",
+        "foodBeverageVenueCount",
+        "eventCapacity"
+      ],
+      "sourceNotes": "IGB licensed address: 600 Lakehurst Road, Waukegan, IL 60085. Coordinate match: 600 Lakehurst Rd, Waukegan, Illinois, 60085 (score 100.0). Gaming floor and presence derive from the 2025 Casino Summary. Slot/table fields are sums of reported 2025-12 Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 467ec942b49b2aaf190c5f70eb3eb0afeb0bf1697f0df2cd22417d9545912c4e; table SHA-256 325281b1eeaa7abe8b4a5f931f329f91d48c2d25399a0ed920cd72d45ca39a8e. Unreported attributes remain null."
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-ballys-chicago",
+      "missingAttributes": [
+        "gamingPositions",
+        "hotelRoomCount",
+        "foodBeverageVenueCount",
+        "eventCapacity"
+      ],
+      "sourceNotes": "IGB licensed address: 640 North LaSalle St., Suite 460, Chicago, IL 60654. Coordinate match: 640 N LA Salle Dr, Suite 460, Chicago, Illinois, 60654 (score 97.1). Gaming floor and presence derive from the 2025 Casino Summary. Slot/table fields are sums of reported 2025-12 Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 467ec942b49b2aaf190c5f70eb3eb0afeb0bf1697f0df2cd22417d9545912c4e; table SHA-256 325281b1eeaa7abe8b4a5f931f329f91d48c2d25399a0ed920cd72d45ca39a8e. Unreported attributes remain null."
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-grand-victoria-casino",
+      "missingAttributes": [
+        "gamingPositions",
+        "hotelRoomCount",
+        "foodBeverageVenueCount",
+        "eventCapacity"
+      ],
+      "sourceNotes": "IGB licensed address: 250 S. Grove Ave., Elgin, IL 60120. Coordinate match: 250 S Grove Ave, Elgin, Illinois, 60120 (score 100.0). Gaming floor and presence derive from the 2025 Casino Summary. Slot/table fields are sums of reported 2025-12 Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 467ec942b49b2aaf190c5f70eb3eb0afeb0bf1697f0df2cd22417d9545912c4e; table SHA-256 325281b1eeaa7abe8b4a5f931f329f91d48c2d25399a0ed920cd72d45ca39a8e. Unreported attributes remain null."
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-harrahs-joliet",
+      "missingAttributes": [
+        "gamingPositions",
+        "hotelRoomCount",
+        "foodBeverageVenueCount",
+        "eventCapacity"
+      ],
+      "sourceNotes": "IGB licensed address: 151 N. Joliet Street, Joliet, IL 60432. Coordinate match: 151 N Joliet St, Joliet, Illinois, 60432 (score 100.0). Gaming floor and presence derive from the 2025 Casino Summary. Slot/table fields are sums of reported 2025-12 Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 467ec942b49b2aaf190c5f70eb3eb0afeb0bf1697f0df2cd22417d9545912c4e; table SHA-256 325281b1eeaa7abe8b4a5f931f329f91d48c2d25399a0ed920cd72d45ca39a8e. Unreported attributes remain null."
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-rivers-casino-des-plaines",
+      "missingAttributes": [
+        "gamingPositions",
+        "hotelRoomCount",
+        "foodBeverageVenueCount",
+        "eventCapacity"
+      ],
+      "sourceNotes": "IGB licensed address: 3000 S. River Road, Des Plaines, IL 60018. Coordinate match: 3000 S River Rd, Des Plaines, Illinois, 60018 (score 100.0). Gaming floor and presence derive from the 2025 Casino Summary. Slot/table fields are sums of reported 2025-12 Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 467ec942b49b2aaf190c5f70eb3eb0afeb0bf1697f0df2cd22417d9545912c4e; table SHA-256 325281b1eeaa7abe8b4a5f931f329f91d48c2d25399a0ed920cd72d45ca39a8e. Unreported attributes remain null."
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-wind-creek-chicago-southland",
+      "missingAttributes": [
+        "gamingPositions",
+        "hotelRoomCount",
+        "foodBeverageVenueCount",
+        "eventCapacity"
+      ],
+      "sourceNotes": "IGB licensed address: 17400 S. Halsted Street, East Hazel Crest, IL 60429. Coordinate match: 17400 S Halsted St, Hazel Crest, Illinois, 60429 (score 100.0). Gaming floor and presence derive from the 2025 Casino Summary. Slot/table fields are sums of reported 2025-12 Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 467ec942b49b2aaf190c5f70eb3eb0afeb0bf1697f0df2cd22417d9545912c4e; table SHA-256 325281b1eeaa7abe8b4a5f931f329f91d48c2d25399a0ed920cd72d45ca39a8e. Unreported attributes remain null."
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-argosy-casino-alton",
+      "missingAttributes": [
+        "gamingPositions",
+        "hotelRoomCount",
+        "foodBeverageVenueCount",
+        "eventCapacity"
+      ],
+      "sourceNotes": "IGB licensed address: 1 Piasa Street, Alton, IL 62002. Coordinate match: 1 Piasa St, Alton, Illinois, 62002 (score 100.0). Gaming floor and presence derive from the 2025 Casino Summary. Slot/table fields are sums of reported 2025-12 Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 467ec942b49b2aaf190c5f70eb3eb0afeb0bf1697f0df2cd22417d9545912c4e; table SHA-256 325281b1eeaa7abe8b4a5f931f329f91d48c2d25399a0ed920cd72d45ca39a8e. Unreported attributes remain null."
+    },
+    {
+      "stableVenueId": "USA-IL-IGB-draftkings-casino-queen",
+      "missingAttributes": [
+        "gamingPositions",
+        "hotelRoomCount",
+        "foodBeverageVenueCount",
+        "eventCapacity"
+      ],
+      "sourceNotes": "IGB licensed address: 200 S. Front Street, East St. Louis, IL 62201. Coordinate match: 200 Front St, East Saint Louis, Illinois, 62201 (score 98.9). Gaming floor and presence derive from the 2025 Casino Summary. Slot/table fields are sums of reported 2025-12 Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 467ec942b49b2aaf190c5f70eb3eb0afeb0bf1697f0df2cd22417d9545912c4e; table SHA-256 325281b1eeaa7abe8b4a5f931f329f91d48c2d25399a0ed920cd72d45ca39a8e. Unreported attributes remain null."
+    },
+    {
+      "stableVenueId": "USA-MO-MGC-hollywood-st-louis",
+      "missingAttributes": [
+        "gamingPositions",
+        "eventCapacity"
+      ],
+      "sourceNotes": "FY2025 MGC annual profile page 23: 777 Casino Center Drive, Maryland Heights, MO 63043. Geocode 777 Casino Center Dr, Maryland Heights, Missouri, 63043, score 100.0. December 2025 reported units: 1652 EGD, 59 regular tables, 0 hybrid electronic units. Electronic position proxy includes hybrid units; legal seat capacity remains unknown. Floor/hotel/restaurant observations use the FY2025 profile, not a newer marketing page. Fiscal and causal-impact validation are outside this capture."
+    },
+    {
+      "stableVenueId": "USA-MO-MGC-ameristar-st-charles",
+      "missingAttributes": [
+        "gamingPositions",
+        "eventCapacity"
+      ],
+      "sourceNotes": "FY2025 MGC annual profile page 17: 1 Ameristar Blvd, St Charles, MO 63301. Geocode 1 Ameristar Blvd, Saint Charles, Missouri, 63301, score 100.0. December 2025 reported units: 1753 EGD, 61 regular tables, 0 hybrid electronic units. Electronic position proxy includes hybrid units; legal seat capacity remains unknown. Floor/hotel/restaurant observations use the FY2025 profile, not a newer marketing page. Fiscal and causal-impact validation are outside this capture."
+    },
+    {
+      "stableVenueId": "USA-MO-MGC-river-city",
+      "missingAttributes": [
+        "gamingPositions",
+        "eventCapacity"
+      ],
+      "sourceNotes": "FY2025 MGC annual profile page 27: 777 River City Casino Blvd, St Louis, MO 63125. Geocode 777 River City Casino Blvd, Saint Louis, Missouri, 63125, score 100.0. December 2025 reported units: 1588 EGD, 42 regular tables, 0 hybrid electronic units. Electronic position proxy includes hybrid units; legal seat capacity remains unknown. Floor/hotel/restaurant observations use the FY2025 profile, not a newer marketing page. Fiscal and causal-impact validation are outside this capture."
+    },
+    {
+      "stableVenueId": "USA-MO-MGC-horseshoe-st-louis",
+      "missingAttributes": [
+        "gamingPositions",
+        "eventCapacity"
+      ],
+      "sourceNotes": "FY2025 MGC annual profile page 24: 999 N Second Street, St Louis, MO 63102. Geocode 999 N 2nd St, Saint Louis, Missouri, 63102, score 100.0. December 2025 reported units: 882 EGD, 38 regular tables, 0 hybrid electronic units. Electronic position proxy includes hybrid units; legal seat capacity remains unknown. Floor/hotel/restaurant observations use the FY2025 profile, not a newer marketing page. Fiscal and causal-impact validation are outside this capture."
+    }
+  ],
+  "releaseAccepted": false,
+  "releaseBlocks": [
+    "Independent required-input/fiscal/reproducibility audits remain incomplete.",
+    "Competitive inventory and nonresident demand coverage remain scoped and incomplete.",
+    "Full eligible-pool coverage, baseline improvement, freshness, frozen audit and all competitor routes require independent policy evidence.",
+    "Property capacity proxies and static facility coordinates require temporal verification."
+  ]
+}
