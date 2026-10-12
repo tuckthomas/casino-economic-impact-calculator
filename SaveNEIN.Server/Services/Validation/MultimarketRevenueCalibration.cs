@@ -44,8 +44,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var protocolHash = Convert.ToHexString(SHA256.HashData(protocolBytes)).ToLowerInvariant();
         var protocol = JsonSerializer.Deserialize<MultimarketCalibrationProtocol>(protocolBytes, JsonOptions)
             ?? throw new InvalidDataException("Calibration protocol is missing.");
-        if (protocol.AttractionSpecification is not (FacilityAttractionSpecifications.Structural or FacilityAttractionSpecifications.HybridObservedGgr))
-            throw new InvalidDataException("Component calibration supports structural or hybrid-observed-ggr attraction.");
+        ValidateAttractionProtocol(protocol);
         var useObservedPeers = protocol.AttractionSpecification == FacilityAttractionSpecifications.HybridObservedGgr;
         var allTargetKeys = protocol.Training.Concat(protocol.Selection).Concat(protocol.Holdout.Values.SelectMany(value => value)).ToArray();
         if (allTargetKeys.Distinct(StringComparer.Ordinal).Count() != allTargetKeys.Length || protocol.Training.Length < 2 || protocol.Selection.Length == 0)
@@ -213,6 +212,15 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         await File.WriteAllTextAsync(outputPath, JsonSerializer.Serialize(output, JsonOptions), cancellationToken);
         await RegisterInspectionAsync(protocolPath, outputPath, cancellationToken);
         Console.WriteLine($"{(diagnosticReplay ? "INSPECTED-SAMPLE DIAGNOSTIC" : "NEW HOLDOUT")}: MAPE={holdoutMetrics.MeanAbsolutePercentageError:F4}% WAPE={holdoutWape:F4}% bias={holdoutBias:F4}% across {holdoutCases.Length} properties. Saved {outputPath}.");
+    }
+
+    internal static void ValidateAttractionProtocol(MultimarketCalibrationProtocol protocol)
+    {
+        if (protocol.AttractionSpecification is not (FacilityAttractionSpecifications.Structural or FacilityAttractionSpecifications.HybridObservedGgr))
+            throw new InvalidDataException("Component calibration supports structural or hybrid-observed-ggr attraction.");
+        if (protocol.GamingPositionsOffset is { } offsets &&
+            (offsets.Length == 0 || offsets.Any(value => !double.IsFinite(value) || value <= 0)))
+            throw new InvalidDataException("Gaming-position offsets must be finite and positive before routing or calibration.");
     }
 
     public async Task RegisterInspectionAsync(string protocolPath, string resultPath, CancellationToken cancellationToken = default)
