@@ -820,6 +820,27 @@ if (args is ["--export-ohio-provider-bundle", var ohioBundleOutputPath])
     return;
 }
 
+if (args is [var calibrationMode, var calibrationDatabase, var calibrationRoutingUrl, var calibrationProtocolPath, var calibrationOutputPath] &&
+    calibrationMode is "--calibrate-multimarket-revenue" or "--calibrate-multimarket-development" or "--register-multimarket-inspection" or "--replay-inspected-multimarket")
+{
+    if (!calibrationDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        calibrationDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe multi-market calibration database name.");
+    var multiConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.")) { Database = calibrationDatabase };
+    await using var multiDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(multiConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    using var multiHttp = new HttpClient { BaseAddress = new Uri(calibrationRoutingUrl), Timeout = TimeSpan.FromMinutes(2) };
+    var multiCalibration = new MultimarketRevenueCalibration(multiDb, new ValhallaClient(multiHttp, NullLogger<ValhallaClient>.Instance));
+    if (calibrationMode == "--register-multimarket-inspection")
+        await multiCalibration.RegisterInspectionAsync(Path.GetFullPath(calibrationProtocolPath), Path.GetFullPath(calibrationOutputPath));
+    else
+        await multiCalibration.RunAsync(Path.GetFullPath(calibrationProtocolPath), Path.GetFullPath(calibrationOutputPath),
+            evaluateFinalHoldout: calibrationMode != "--calibrate-multimarket-development",
+            diagnosticReplay: calibrationMode == "--replay-inspected-multimarket");
+    return;
+}
+
 if (args is ["--validate-michigan-commercial-fiscal", var michiganFiscalDatabase])
 {
     if (!michiganFiscalDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||

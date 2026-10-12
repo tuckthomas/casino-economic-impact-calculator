@@ -1,0 +1,89 @@
+{
+  "protocolVersion": "resident-revenue-development-offset-v2",
+  "frozenOn": "2026-10-12",
+  "sourceBundleSha256": "0118ab5489982d889b81d584bc3dbf023d21fe65b1021b0ffa727c1f267abb75",
+  "observedYear": 2025,
+  "originSnapshotId": "0e277abe-37c1-4049-a5b6-33be29ceab1e",
+  "incomeSnapshotId": "9232145d-5f95-4860-b9c4-c13b9977f6a5",
+  "facilitySnapshotId": "25995054-9ac0-47aa-9a00-7bcb16e818a7",
+  "performanceSnapshotId": "e5b8ccbb-8ca1-4c46-8ff4-af57101db846",
+  "originRadiusMiles": 100,
+  "competitorRadiusMiles": 150,
+  "scope": "Development only: inspect gaming-position smoothing sensitivity using eight training and four selection properties. Previously inspected twelve properties remain excluded from scoring and withheld from competitor observed GGR. No release evaluation or parameter publication.",
+  "selectionObjective": "WAPE; ties broken by MAPE, then candidate key",
+  "incomeShareFit": "Median observed/unit-share prediction on training properties only, bounded to [0.001, 0.03].",
+  "beta": [
+    1.6,
+    2.0,
+    2.4,
+    2.8
+  ],
+  "alpha": [
+    0.75,
+    1.0,
+    1.25
+  ],
+  "positionsCoefficient": [
+    0.5,
+    0.75,
+    1.0,
+    1.25,
+    1.5
+  ],
+  "tablesCoefficient": 0.2,
+  "comparableScale": [
+    1.0,
+    2.0,
+    4.0,
+    8.0
+  ],
+  "outsideWeight": [
+    1E-08,
+    0.0001,
+    0.01
+  ],
+  "training": [
+    "USA-IN-IGC-ameristar-casino",
+    "USA-IN-IGC-blue-chip-casino",
+    "USA-IN-IGC-hard-rock-casino-northern-indiana",
+    "USA-IN-IGC-harrahs-hoosier-park",
+    "USA-IN-IGC-horseshoe-hammond",
+    "USA-IN-IGC-horseshoe-indianapolis",
+    "USA-IN-IGC-terre-haute-casino",
+    "USA-IN-IGC-french-lick-resort"
+  ],
+  "selection": [
+    "USA-IN-IGC-ballys-evansville",
+    "USA-IN-IGC-caesars-southern-indiana",
+    "USA-OH-OCCC-hollywood-casino-toledo",
+    "USA-OH-OLC-hollywood-mahoning-valley-race-course"
+  ],
+  "holdout": {
+    "cleveland-region": [
+      "USA-OH-OCCC-jack-cleveland-casino",
+      "USA-OH-OLC-jack-thistledown-racino",
+      "USA-OH-OLC-mgm-northfield-park"
+    ],
+    "central-ohio-corridor": [
+      "USA-OH-OCCC-hollywood-casino-columbus",
+      "USA-OH-OLC-eldorado-gaming-scioto-downs",
+      "USA-OH-OLC-hollywood-gaming-dayton-raceway"
+    ],
+    "cincinnati-tristate-region": [
+      "USA-OH-OCCC-hard-rock-casino-cincinnati",
+      "USA-OH-OLC-belterra-park-cincinnati",
+      "USA-OH-OLC-miami-valley-gaming",
+      "USA-IN-IGC-belterra-casino",
+      "USA-IN-IGC-hollywood-lawrenceburg",
+      "USA-IN-IGC-rising-star-casino"
+    ]
+  },
+  "gamingPositionsOffset": [
+    1.0,
+    250.0,
+    500.0,
+    1000.0,
+    2000.0
+  ],
+  "rationale": "Training residuals overpredict Ameristar and underpredict Hard Rock Northern Indiana; the fixed 2000-position offset dampens relative physical-size differences. Extend that existing parameter and travel-decay range; choose only on selection WAPE. Existing inspected properties are not fresh release evidence."
+}

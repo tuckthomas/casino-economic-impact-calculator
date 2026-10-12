@@ -66,9 +66,15 @@ public static class ModelReleaseAcceptance
         var caseIds = (await db.ValidationCaseResults.AsNoTracking()
             .Where(item => ids.Contains(item.ValidationEvaluationId))
             .Select(item => item.ValidationCaseId).Distinct().ToListAsync(cancellationToken)).ToHashSet();
+        var inspectedVenueKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var evaluation in finalized)
         {
             using var document = JsonDocument.Parse(evaluation.InclusionRulesJson);
+            if (document.RootElement.TryGetProperty("inspectedPropertyKeys", out var inspected))
+            {
+                foreach (var key in inspected.EnumerateArray())
+                    inspectedVenueKeys.Add(key.GetString() ?? throw new InvalidDataException("Inspected property identity is missing."));
+            }
             if (document.RootElement.TryGetProperty("pairs", out var pairs) && pairs.ValueKind == JsonValueKind.Array)
             {
                 foreach (var pair in pairs.EnumerateArray())
@@ -82,7 +88,8 @@ public static class ModelReleaseAcceptance
             .Select(item => item.TargetCasinoCompetitorId!.Value).Distinct().ToArrayAsync(cancellationToken);
         var venueKeys = await db.CasinoCompetitors.AsNoTracking().Where(item => previousIds.Contains(item.Id))
             .Select(item => item.StableVenueId).Distinct().ToArrayAsync(cancellationToken);
-        return await db.CasinoCompetitors.AsNoTracking().Where(item => venueKeys.Contains(item.StableVenueId))
+        var allVenueKeys = venueKeys.Concat(inspectedVenueKeys).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        return await db.CasinoCompetitors.AsNoTracking().Where(item => allVenueKeys.Contains(item.StableVenueId))
             .Select(item => item.Id).ToArrayAsync(cancellationToken);
     }
 

@@ -706,7 +706,14 @@ public sealed class DemandSpecificationValidationEvaluationService(
             ReadPopulationScenarioYear(root),
             ReadString(root, "IncomeTaxYear"),
             ReadString(root, "computationalOriginType"),
+            ReadHybridScalingVersion(root),
             ReadObservedExclusions(root));
+    }
+
+    internal static string ReadHybridScalingVersion(JsonElement root)
+    {
+        var version = ReadString(root, "hybridStructuralScalingVersion");
+        return string.IsNullOrEmpty(version) ? "legacy-proposed-only-v1" : version;
     }
 
     private static string ReadObservedExclusions(JsonElement root)
@@ -870,5 +877,6 @@ public sealed class DemandSpecificationValidationEvaluationService(
         string PopulationScenarioYear,
         string IncomeTaxYear,
         string ComputationalOriginType,
+        string HybridStructuralScalingVersion,
         string ObservedGgrExcludedCompetitorIds);
 }

@@ -391,6 +391,7 @@ public sealed class GravityModelExecutionService(
             request.FacilityRegime,
             request.DemandSpecification,
             request.AttractionSpecification,
+            hybridStructuralScalingVersion = "consistent-physical-v2",
             request.FrictionForm,
             request.ObservedMetricKey,
             request.ObservedPeriodStart,
@@ -910,13 +911,14 @@ public sealed class GravityModelExecutionService(
             }
             else
             {
-                attractions.Add(competitor.StableVenueId, structural[competitor.StableVenueId]);
+                attractions.Add(competitor.StableVenueId, FacilityAttractivenessService.NormalizeStructuralMass(
+                    structural[competitor.StableVenueId], RequireParameter(parameters, "facility.comparable_scale_multiplier")));
                 structuralFallbackFacilityIds.Add(competitor.StableVenueId);
             }
         }
         attractions.Add(
             proposedFacilityKey,
-            proposedStructural * RequireParameter(parameters, "facility.comparable_scale_multiplier"));
+            FacilityAttractivenessService.NormalizeStructuralMass(proposedStructural, RequireParameter(parameters, "facility.comparable_scale_multiplier")));
         var warnings = structuralFallbackFacilityIds.Count == 0
             ? Array.Empty<string>()
             : [$"Hybrid attraction used structural mass for {structuralFallbackFacilityIds.Count} incumbent facility/facilities without the selected observed metric: {string.Join(", ", structuralFallbackFacilityIds.Order(StringComparer.Ordinal))}."];
@@ -935,11 +937,11 @@ public sealed class GravityModelExecutionService(
             features,
             MissingFacilityAttributeBehavior.UseReferenceValue)).NormalizedAttraction;
 
-    private static IReadOnlyCollection<FacilityFeatureTerm> FacilityFeatures(
+    internal static IReadOnlyCollection<FacilityFeatureTerm> FacilityFeatures(
         CasinoCompetitor competitor,
         IReadOnlyDictionary<string, double> parameters) =>
     [
-        Feature("gaming-positions", competitor.GamingPositions ?? competitor.SlotOrVltPositions, "facility.reference_gaming_positions", "facility.gaming_positions_coefficient", "facility.gaming_positions_offset", parameters),
+        Feature("gaming-positions", KnownGamingPositionCount(competitor), "facility.reference_gaming_positions", "facility.gaming_positions_coefficient", "facility.gaming_positions_offset", parameters),
         Feature("table-games", competitor.TableGameCount, "facility.reference_table_games", "facility.table_games_coefficient", "facility.table_games_offset", parameters),
         Feature("hotel-rooms", competitor.HotelRoomCount, "facility.reference_hotel_rooms", "facility.hotel_rooms_coefficient", "facility.hotel_rooms_offset", parameters),
         Feature("gaming-floor-square-feet", competitor.GamingFloorSquareFeet, "facility.reference_gaming_floor_square_feet", "facility.gaming_floor_coefficient", "facility.gaming_floor_square_feet_offset", parameters),
@@ -949,7 +951,11 @@ public sealed class GravityModelExecutionService(
         Feature("highway-access", competitor.HasInterchangeAccess is null ? null : competitor.HasInterchangeAccess.Value ? 1 : 0, "facility.reference_highway_access", "facility.highway_access_coefficient", "facility.highway_access_offset", parameters)
     ];
 
-    private static IReadOnlyCollection<FacilityFeatureTerm> FacilityFeatures(
+    internal static int? KnownGamingPositionCount(CasinoCompetitor competitor) =>
+        competitor.GamingPositions ?? (competitor.SlotOrVltPositions is { } slots
+            ? checked(slots + (competitor.TableGameCount ?? 0)) : null);
+
+    internal static IReadOnlyCollection<FacilityFeatureTerm> FacilityFeatures(
         DevelopmentProgram program,
         IReadOnlyDictionary<string, double> parameters) =>
     [

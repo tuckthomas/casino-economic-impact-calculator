@@ -50,6 +50,7 @@ public sealed class ValhallaMatrixClientTests
 
         Assert.Contains(handler.RequestBodies, body =>
             body.Contains("\"costing\":\"auto\"", StringComparison.Ordinal) &&
+            body.Contains("\"radius\":100", StringComparison.Ordinal) &&
             body.Contains("\"verbose\":true", StringComparison.Ordinal));
     }
 
