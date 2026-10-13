@@ -8,17 +8,17 @@ const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 export function verifyValidationEvidence(directory) {
     const documents = [];
     for (const folder of [directory, path.join(directory, 'bundles')]) {
-        for (const name of readdirSync(folder).filter(name => name.endsWith('.json'))) {
+        for (const name of readdirSync(folder).filter(name => name.endsWith('.json') || name.endsWith('.csv'))) {
             const file = path.join(folder, name);
             const bytes = readFileSync(file);
-            documents.push({ file, folder, hash: digest(bytes), value: JSON.parse(bytes.toString('utf8')) });
+            documents.push({ file, folder, hash: digest(bytes), value: name.endsWith('.json') ? JSON.parse(bytes.toString('utf8')) : {} });
         }
     }
     const protocolHashes = new Set(documents.filter(document => document.folder === directory).map(document => document.hash));
     const bundleHashes = new Set(documents.filter(document => document.folder === path.join(directory, 'bundles')).map(document => document.hash));
     let references = 0;
     for (const document of documents) {
-        for (const key of ['sourceBundleSha256', 'protocolHash', 'sourceBundleHash', 'resultHash']) {
+        for (const key of ['sourceBundleSha256', 'protocolHash', 'sourceBundleHash', 'resultHash', 'sourceCsvSha256', 'sourceGeocodeSha256']) {
             const reference = document.value[key];
             if (reference === undefined) continue;
             const hashes = key === 'protocolHash' ? protocolHashes : bundleHashes;
@@ -33,5 +33,5 @@ export function verifyValidationEvidence(directory) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     const result = verifyValidationEvidence(path.resolve('docs/validation'));
-    console.log(`Validation byte-integrity guard passed: ${result.files} JSON artifacts, ${result.references} checksum references.`);
+    console.log(`Validation byte-integrity guard passed: ${result.files} retained artifacts, ${result.references} checksum references.`);
 }

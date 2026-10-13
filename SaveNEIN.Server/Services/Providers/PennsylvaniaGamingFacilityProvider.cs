@@ -15,6 +15,7 @@ public sealed record PennsylvaniaGamingProfile(string Key, string Name, string A
 
 public sealed class PennsylvaniaGamingFacilityProvider(HttpClient http)
 {
+    public const string TransformVersion = "pgcb-fy2025-physical-v2";
     public const string SourceUrl = "https://gamingcontrolboard.pa.gov/sites/default/files/2025-09/PGCB%20Annual%20Report%202024-2025%20FINAL.pdf";
     public async Task<ProviderDataset<CasinoCompetitorImportRow>> CaptureAsync(byte[] pdfBytes, CancellationToken cancellationToken = default)
     {
@@ -42,11 +43,11 @@ public sealed class PennsylvaniaGamingFacilityProvider(HttpClient http)
                 "Slot count is reported Average Number of Machines in Play, not exact year-end seats. Table count sums banked, nonbanked, fully automated and hybrid categories; source category counts are not converted to player-seat capacity. Fiscal-year revenue was not substituted for calendar-2025 observations. Unreported amenities remain null."));
         }
         var rawHash = Hash(pdfBytes);
-        var hash = Hash(Encoding.UTF8.GetBytes(rawHash + "\n" + string.Join('\n', geocodes.Order(StringComparer.Ordinal))));
+        var hash = Hash(Encoding.UTF8.GetBytes(TransformVersion + "\n" + rawHash + "\n" + string.Join('\n', geocodes.Order(StringComparer.Ordinal))));
         return new(new RegisterDataSourceRequest("PGCB FY2025 licensed physical casino inventory", "Pennsylvania Gaming Control Board", SourceUrl,
                 "state-regulator-pdf-with-address-geocode", "US-PA", "FY2024-2025", DateTime.UtcNow, hash, true,
                 "Pennsylvania public-record and geocoder terms apply.", $"Exact source PDF SHA-256 {rawHash}. Geocoder response hashes:\n{string.Join('\n', geocodes)}"),
-            DatasetSnapshotKinds.Competitors, "FY2024-2025", new(2024, 7, 1), new(2025, 6, 30), hash, "pgcb-fy2025-physical-v1", rows,
+            DatasetSnapshotKinds.Competitors, "FY2024-2025", new(2024, 7, 1), new(2025, 6, 30), hash, TransformVersion, rows,
             ["Seventeen land-based casino profiles captured. Pennsylvania truck-stop VGTs are separate and remain outside this inventory.",
              "June-2025 fiscal-year capacity proxies and current address geocodes are not a complete calendar-2025 temporal/fiscal audit. Gaming floor, hotel and other missing attributes remain unknown."]);
     }

@@ -90,6 +90,20 @@ public sealed class IllinoisGamingBoardProviderTests
     }
 
     [Fact]
+    public void Aurora2025UsesTheRiverboatAddressRatherThanTheCurrentSite()
+    {
+        var current = new IllinoisGamingLicense("USA-IL-IGB-hollywood-casino-aurora", "Hollywood Casino Aurora",
+            "HC Aurora LLC", "2500 N. Farnsworth Ave.", "Aurora", "60502", false);
+        var historical = IllinoisGamingBoardFacilityInventoryProvider.ResolveDatedAddress(current, new(2025, 1, 1), new(2025, 12, 31));
+        Assert.Equal("1 W. New York St., Aurora, IL 60506", historical.FullAddress);
+        Assert.Equal(current.StableVenueId, historical.StableVenueId);
+        Assert.Equal(current, IllinoisGamingBoardFacilityInventoryProvider.ResolveDatedAddress(current, new(2026, 6, 24), new(2026, 12, 31)));
+        Assert.Throws<InvalidDataException>(() => IllinoisGamingBoardFacilityInventoryProvider.ResolveDatedAddress(current, new(2026, 1, 1), new(2026, 12, 31)));
+        Assert.Throws<InvalidDataException>(() => IllinoisGamingBoardFacilityInventoryProvider.ResolveDatedAddress(current, new(2026, 6, 10), new(2026, 6, 23)));
+        Assert.Throws<InvalidDataException>(() => IllinoisGamingBoardFacilityInventoryProvider.ResolveDatedAddress(current, new(2023, 1, 1), new(2023, 12, 31)));
+    }
+
+    [Fact]
     public async Task FacilityProvider_IntersectsRevenueUniverseWithLicensedFacilitiesAndGeocodesAddress()
     {
         var configured = TestOptions();

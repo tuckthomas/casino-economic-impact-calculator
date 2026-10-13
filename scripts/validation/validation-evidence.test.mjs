@@ -37,3 +37,15 @@ test('rejects unresolved frozen protocol references', () => fixture(({ directory
     writeFileSync(protocolFile, JSON.stringify({ protocolHash: 'a'.repeat(64) }));
     assert.throws(() => verifyValidationEvidence(directory), /protocolHash does not match/);
 }));
+
+test('verifies raw source CSV references without parsing CSV as JSON', () => fixture(({ directory, protocolFile }) => {
+    const csvFile = path.join(directory, 'bundles', 'source.csv');
+    const bytes = Buffer.from('license,income\r\n123,100.30\r\n');
+    writeFileSync(csvFile, bytes);
+    writeFileSync(protocolFile, JSON.stringify({ sourceCsvSha256: createHash('sha256').update(bytes).digest('hex') }));
+    try {
+        assert.deepEqual(verifyValidationEvidence(directory), { files: 3, references: 1 });
+        writeFileSync(csvFile, bytes.toString().replaceAll('\r\n', '\n'));
+        assert.throws(() => verifyValidationEvidence(directory), /sourceCsvSha256 does not match/);
+    } finally { unlinkSync(csvFile); }
+}));

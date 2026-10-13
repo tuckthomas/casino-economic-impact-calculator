@@ -296,6 +296,9 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
     IllinoisGamingBoardRevenueProvider revenueProvider,
     IOptions<IllinoisGamingBoardProviderOptions> options) : IGamingFacilityInventoryProvider
 {
+    internal const string TransformVersion = "igb-licensed-operating-facilities-v3";
+    internal const string AuroraHistoricalAddressSource = "https://igb.illinois.gov/content/dam/soi/en/web/igb/documents/reports/annual-reports/igb-annual-reports/2024-igb-annual-report.pdf";
+    internal const string AuroraRelocationSource = "https://pennnationalgaming.gcs-web.com/news-releases/news-release-details/penn-entertainment-celebrates-grand-opening-hollywood-casino-and";
     public string ProviderKey => "illinois-gaming-board-facility-inventory";
     public string GeographicCoverage => "US-IL";
 
@@ -328,6 +331,7 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
 
         var rows = new List<CasinoCompetitorImportRow>(report.Rows.Count);
         var canonicalGeocodes = new List<string>(report.Rows.Count);
+        var temporalWarnings = new List<string>();
         foreach (var summary in report.Rows.OrderBy(row => row.Name, StringComparer.Ordinal))
         {
             var stableVenueId = IllinoisGamingFacilityIds.FromReportedName(summary.Name);
@@ -338,6 +342,12 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
                 throw new InvalidDataException(
                     $"IGB Casino Summary facility '{summary.Name}' has no matching active licensed-facility record.");
             }
+            var currentAddress = license.FullAddress;
+            license = ResolveDatedAddress(license, request.PeriodStart, request.PeriodEnd);
+            var historicalAddressNote = license.FullAddress != currentAddress
+                ? $"Historical address replaces current license address {currentAddress}. Source {AuroraHistoricalAddressSource}; replacement site opened June 24, 2026 ({AuroraRelocationSource}). " : "";
+            if (stableVenueId == "USA-IL-IGB-hollywood-casino-joliet" && request.PeriodStart < new DateOnly(2025, 8, 11) && request.PeriodEnd >= new DateOnly(2025, 8, 11))
+                temporalWarnings.Add("Hollywood Joliet relocated August 11, 2025. This static inventory retains its end-period site; annual demand/travel needs separate effective-dated sites before release acceptance.");
             var geocode = await GeocodeAsync(license, cancellationToken);
             canonicalGeocodes.Add($"{stableVenueId}|{geocode.Latitude:R}|{geocode.Longitude:R}|{geocode.MatchAddress}|{geocode.Score:R}");
             rows.Add(new CasinoCompetitorImportRow(
@@ -387,7 +397,7 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
                 HasInterchangeAccess: null,
                 MarketOrientation: null,
                 IsBorderMarket: null,
-                Notes: $"IGB licensed address: {license.FullAddress}. Coordinate match: {geocode.MatchAddress} (score {geocode.Score.ToString("0.0", CultureInfo.InvariantCulture)}). Gaming floor and presence derive from the {report.PeriodLabel} Casino Summary. Slot/table fields are sums of reported {capacity.PeriodLabel} Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 {Convert.ToHexString(SHA256.HashData(capacity.EgdCsvBytes)).ToLowerInvariant()}; table SHA-256 {Convert.ToHexString(SHA256.HashData(capacity.TableCsvBytes)).ToLowerInvariant()}. Unreported attributes remain null."));
+                Notes: $"IGB licensed address: {license.FullAddress}. {historicalAddressNote}Coordinate match: {geocode.MatchAddress} (score {geocode.Score.ToString("0.0", CultureInfo.InvariantCulture)}). Gaming floor and presence derive from the {report.PeriodLabel} Casino Summary. Slot/table fields are sums of reported {capacity.PeriodLabel} Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 {Convert.ToHexString(SHA256.HashData(capacity.EgdCsvBytes)).ToLowerInvariant()}; table SHA-256 {Convert.ToHexString(SHA256.HashData(capacity.TableCsvBytes)).ToLowerInvariant()}. Unreported attributes remain null."));
         }
 
         var expectedIds = report.Rows.Select(row => IllinoisGamingFacilityIds.FromReportedName(row.Name)).ToHashSet(StringComparer.Ordinal);
@@ -397,6 +407,7 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
         }
 
         using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        hasher.AppendData(Encoding.UTF8.GetBytes(TransformVersion));
         hasher.AppendData(report.CsvBytes);
         hasher.AppendData(capacity.EgdCsvBytes);
         hasher.AppendData(capacity.TableCsvBytes);
@@ -422,11 +433,24 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
             request.PeriodStart,
             request.PeriodEnd,
             checksum,
-            "igb-licensed-operating-facilities-v2",
+            TransformVersion,
             rows,
             ["Facility coordinates are derived address geocodes; unreported amenities and legal gaming-position counts remain null.",
-             $"Slot/table counts are {capacity.PeriodLabel} reported monthly averages, used as explicitly labeled physical proxies. They are not exact year-end capacity and require review before forecast acceptance."]);
+             $"Slot/table counts are {capacity.PeriodLabel} reported monthly averages, used as explicitly labeled physical proxies. They are not exact year-end capacity and require review before forecast acceptance.",
+             .. temporalWarnings]);
         return (dataset, capacity);
+    }
+
+    internal static IllinoisGamingLicense ResolveDatedAddress(IllinoisGamingLicense license, DateOnly start, DateOnly end)
+    {
+        if (end < start) throw new InvalidDataException("Inventory address period is reversed.");
+        if (license.StableVenueId != "USA-IL-IGB-hollywood-casino-aurora") return license;
+        var closure = new DateOnly(2026, 6, 10);
+        var opening = new DateOnly(2026, 6, 24);
+        if (start >= new DateOnly(2024, 1, 1) && end < closure)
+            return license with { Street = "1 W. New York St.", City = "Aurora", PostalCode = "60506" };
+        if (start >= opening) return license;
+        throw new InvalidDataException("Aurora inventory spans unsupported history or the June 2026 relocation/closure. Split the observation into sourced effective-dated sites.");
     }
 
     internal static IReadOnlyList<IllinoisGamingLicense> ParseLicensedFacilities(byte[] jsonBytes)
