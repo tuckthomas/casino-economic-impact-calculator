@@ -1,0 +1,15 @@
+{
+  "sourceUrl": "https://igbapps.illinois.gov/VideoReports_AEM.aspx",
+  "period": "January 2025 - December 2025",
+  "sourceCsvSha256": "fe5376ea0bb8af2060a3ed10e3494e7b2b962ab1afe7f88d1fd26fa44c66605f",
+  "rawFile": "illinois-video-gaming-2025.raw.csv",
+  "observations": 9441,
+  "distinctEstablishmentLicenses": 9283,
+  "publishedNetTerminalIncome": 3185923121.02,
+  "unassignedPriorPeriodAdjustmentRows": 140,
+  "unassignedPriorPeriodAdjustmentNti": 0.0,
+  "fundsSubtractionSourceDiscrepancies": 9,
+  "includedInRouting": false,
+  "scope": "Captured source accounting only. Not a count of simultaneous active venues or terminal capacity. Historical facility addresses, location/unit periods and competitive-market membership remain unresolved.",
+  "releaseAccepted": false
+}

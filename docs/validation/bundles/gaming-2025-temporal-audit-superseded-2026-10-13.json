@@ -1,0 +1,23 @@
+{
+  "transformVersion": "known-border-supply-temporal-v2",
+  "sourceBundleSha256": "3320f1cdbb6a3972f11f500472b217123943c77550bdb96398c53443c9ff7dd9",
+  "sourcePdfSha256": "8018fe9ef2a6756106fad54b402a81e36ae53549fd8df046877afea43dccbde4",
+  "addressSourceUrl": "https://igb.illinois.gov/content/dam/soi/en/web/igb/documents/reports/annual-reports/igb-annual-reports/2024-igb-annual-report.pdf",
+  "relocationSourceUrl": "https://pennnationalgaming.gcs-web.com/news-releases/news-release-details/penn-entertainment-celebrates-grand-opening-hollywood-casino-and",
+  "sourceGeocodeSha256": "655ef2f00c836ec71061d0e5642f09ea2a8238c02bdb2edc8588ecf6a1610e66",
+  "geocodeAddress": "1 W New York St, Aurora, Illinois, 60506",
+  "geocodeScore": 100,
+  "previousCoordinates": {
+    "latitude": 41.805845523163,
+    "longitude": -88.282849410681
+  },
+  "correctedCoordinates": {
+    "latitude": 41.759239040203,
+    "longitude": -88.313483674225
+  },
+  "facilityContentChecksum": "5f9153759a4dec478a58dd8ee3984fecb273608c5ff52fb232bbf410fc8635ea",
+  "facilityRows": 102,
+  "performanceSourceChecksumUnchanged": "7718b3be128fc6d286d9f9b762952cc2340ed8ea5fa40e05241cc49fb7d36066",
+  "scope": "Historical Aurora coordinate and conservative PA category correction only. Joliet temporal sites, Wisconsin capacities, other competitors and input/fiscal acceptance remain incomplete.",
+  "releaseAccepted": false
+}

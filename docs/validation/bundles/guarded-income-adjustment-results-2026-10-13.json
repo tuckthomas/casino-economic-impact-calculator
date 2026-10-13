@@ -1,0 +1,2550 @@
+{
+  "protocolHash": "63c1b955225e87393191a6c29ee284a093083ff98e0f1f3feda6bef0a4fc8dbc",
+  "protocolVersion": "guarded-income-adjustment-development-v1",
+  "selectionPolicyVersion": "gravity-development-selection-v1",
+  "attractionSpecification": "structural",
+  "demandSpecification": "eligible-adult-per-capita",
+  "fittedScaleUnits": "USD/eligible-adult/year",
+  "scope": "No candidate passed development admission. Diagnostic candidates are not selected specifications; no final holdout scored.",
+  "candidateCount": 40,
+  "admittedCandidateCount": 0,
+  "selected": null,
+  "bestDiagnosticCandidate": {
+    "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=-1;scale=1;outside=0.0001",
+    "beta": 2,
+    "alpha": 1,
+    "positionsCoefficient": 2,
+    "positionsOffset": 2000,
+    "floorCoefficient": 0.5,
+    "tableCoefficient": 0.2,
+    "travelRegularizationMinutes": 1,
+    "incomeElasticity": -1,
+    "scale": 1,
+    "outsideWeight": 0.0001,
+    "fittedDemandScale": 335.3017020556601,
+    "fittedDemandScaleByJurisdiction": {
+      "IN": 399.5316765736736,
+      "IL": 310.26953633346045,
+      "MO": 521.5208611703617,
+      "OH": 308.84033349252854
+    },
+    "trainingMetrics": {
+      "observationCount": 22,
+      "mapeObservationCount": 22,
+      "meanAbsoluteError": 29967280.93875984,
+      "meanAbsolutePercentageError": 13.19500523267264,
+      "symmetricMeanAbsolutePercentageError": 13.132784394161854,
+      "rootMeanSquaredError": 48936343.297816515,
+      "bias": -10984790.04052061,
+      "spearmanRankCorrelation": 0.9006211180124224
+    },
+    "selectionMetrics": {
+      "observationCount": 14,
+      "mapeObservationCount": 14,
+      "meanAbsoluteError": 21286179.28315149,
+      "meanAbsolutePercentageError": 13.031835202145757,
+      "symmetricMeanAbsolutePercentageError": 13.2831596136914,
+      "rootMeanSquaredError": 37428296.68617114,
+      "bias": -5343938.653704243,
+      "spearmanRankCorrelation": 0.8813186813186813
+    },
+    "selectionWape": 13.20068903484353,
+    "observations": [
+      {
+        "caseKey": "USA-IN-IGC-ameristar-casino",
+        "observed": 153244503.63,
+        "predicted": 136089465.20917872
+      },
+      {
+        "caseKey": "USA-IN-IGC-blue-chip-casino",
+        "observed": 123264071.1,
+        "predicted": 84199595.54607815
+      },
+      {
+        "caseKey": "USA-IN-IGC-hard-rock-casino-northern-indiana",
+        "observed": 431768158.02000004,
+        "predicted": 282359806.0157386
+      },
+      {
+        "caseKey": "USA-IN-IGC-harrahs-hoosier-park",
+        "observed": 252330767.79999998,
+        "predicted": 217131029.09778795
+      },
+      {
+        "caseKey": "USA-IN-IGC-horseshoe-hammond",
+        "observed": 250364832.32,
+        "predicted": 311823607.3684135
+      },
+      {
+        "caseKey": "USA-IN-IGC-horseshoe-indianapolis",
+        "observed": 336660150.17,
+        "predicted": 338617626.3823574
+      },
+      {
+        "caseKey": "USA-IN-IGC-terre-haute-casino",
+        "observed": 139382091.89000002,
+        "predicted": 142871075.8157578
+      },
+      {
+        "caseKey": "USA-IN-IGC-french-lick-resort",
+        "observed": 74026694.67000002,
+        "predicted": 71844937.2222984
+      },
+      {
+        "caseKey": "USA-IL-IGB-american-place",
+        "observed": 121732450.29,
+        "predicted": 166017523.178625
+      },
+      {
+        "caseKey": "USA-IL-IGB-ballys-chicago",
+        "observed": 124666210.16,
+        "predicted": 196899218.4659016
+      },
+      {
+        "caseKey": "USA-IL-IGB-grand-victoria-casino",
+        "observed": 142187327.07,
+        "predicted": 142187327.07
+      },
+      {
+        "caseKey": "USA-IL-IGB-rivers-casino-des-plaines",
+        "observed": 503053034.76,
+        "predicted": 386404069.1792274
+      },
+      {
+        "caseKey": "USA-IL-IGB-draftkings-casino-queen",
+        "observed": 83748020.63,
+        "predicted": 81945497.31430991
+      },
+      {
+        "caseKey": "USA-MO-MGC-hollywood-st-louis",
+        "observed": 259471615.03000003,
+        "predicted": 259471615.03000003
+      },
+      {
+        "caseKey": "USA-MO-MGC-ameristar-st-charles",
+        "observed": 303932512.11999995,
+        "predicted": 308417490.68487036
+      },
+      {
+        "caseKey": "USA-MO-MGC-river-city",
+        "observed": 269317669.13,
+        "predicted": 228599828.80477023
+      },
+      {
+        "caseKey": "USA-OH-OCCC-hollywood-casino-columbus",
+        "observed": 294712983,
+        "predicted": 303238161.2929872
+      },
+      {
+        "caseKey": "USA-OH-OCCC-jack-cleveland-casino",
+        "observed": 257877052,
+        "predicted": 246345336.75391424
+      },
+      {
+        "caseKey": "USA-OH-OLC-jack-thistledown-racino",
+        "observed": 186245034,
+        "predicted": 198618960.6417186
+      },
+      {
+        "caseKey": "USA-OH-OLC-eldorado-gaming-scioto-downs",
+        "observed": 229436268,
+        "predicted": 229436267.99999997
+      },
+      {
+        "caseKey": "USA-OH-OLC-hollywood-gaming-dayton-raceway",
+        "observed": 169367709,
+        "predicted": 152235799.53006747
+      },
+      {
+        "caseKey": "USA-OH-OLC-miami-valley-gaming",
+        "observed": 248744815,
+        "predicted": 229114350.29454398
+      },
+      {
+        "caseKey": "USA-IN-IGC-ballys-evansville",
+        "observed": 167708757.96999997,
+        "predicted": 166710477.0762123
+      },
+      {
+        "caseKey": "USA-IN-IGC-caesars-southern-indiana",
+        "observed": 233631819.68,
+        "predicted": 239026858.9786356
+      },
+      {
+        "caseKey": "USA-OH-OCCC-hollywood-casino-toledo",
+        "observed": 237706322,
+        "predicted": 230727068.9581523
+      },
+      {
+        "caseKey": "USA-OH-OLC-hollywood-mahoning-valley-race-course",
+        "observed": 177111007,
+        "predicted": 151503075.16979155
+      },
+      {
+        "caseKey": "USA-OH-OLC-mgm-northfield-park",
+        "observed": 326354929,
+        "predicted": 203389615.8773913
+      },
+      {
+        "caseKey": "USA-OH-OCCC-hard-rock-casino-cincinnati",
+        "observed": 243624009,
+        "predicted": 238553426.96024472
+      },
+      {
+        "caseKey": "USA-OH-OLC-belterra-park-cincinnati",
+        "observed": 86741577,
+        "predicted": 103922769.15136075
+      },
+      {
+        "caseKey": "USA-IN-IGC-belterra-casino",
+        "observed": 83248243.81000002,
+        "predicted": 82748523.99463677
+      },
+      {
+        "caseKey": "USA-IN-IGC-hollywood-lawrenceburg",
+        "observed": 148209841.22,
+        "predicted": 154280045.82466537
+      },
+      {
+        "caseKey": "USA-IN-IGC-rising-star-casino",
+        "observed": 43092064.19,
+        "predicted": 51235853.149132125
+      },
+      {
+        "caseKey": "USA-IL-IGB-harrahs-joliet",
+        "observed": 114410296.55,
+        "predicted": 90120551.73558095
+      },
+      {
+        "caseKey": "USA-IL-IGB-wind-creek-chicago-southland",
+        "observed": 197952986.4,
+        "predicted": 246188597.78888783
+      },
+      {
+        "caseKey": "USA-IL-IGB-argosy-casino-alton",
+        "observed": 35219807.35,
+        "predicted": 42880266.05499144
+      },
+      {
+        "caseKey": "USA-MO-MGC-horseshoe-st-louis",
+        "observed": 162495573.32,
+        "predicted": 181404962.6184576
+      }
+    ],
+    "admission": {
+      "admitted": false,
+      "failures": [
+        "training: property error exceeds 40%.",
+        "training: fewer than 90% of properties are within 30% error.",
+        "training/market:chicago-region: WAPE exceeds 20%.",
+        "training/jurisdiction:IL: WAPE exceeds 20%.",
+        "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+        "selection/market:cleveland-region: WAPE exceeds 20%.",
+        "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+        "selection/market:chicago-region: WAPE exceeds 20%.",
+        "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+        "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+        "selection/jurisdiction:IL: WAPE exceeds 20%.",
+        "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+      ]
+    }
+  },
+  "graphHash": "a0e711d461b574fbf685999566e114b72846322add48d4f3cd2e2e6254790d69",
+  "matrixCorrelationVersion": "target-radius100-cutoff500-v2",
+  "finalHoldoutScored": false,
+  "releaseAccepted": false,
+  "searchEvidence": [
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=-1;scale=1;outside=0.0001",
+      "fittedDemandScale": 360.64727176483444,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 404.67345744123867,
+        "IL": 357.7601713419271,
+        "MO": 452.9017327916702,
+        "OH": 297.5630473955033
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 30267292.4193562,
+        "meanAbsolutePercentageError": 15.67804963311828,
+        "symmetricMeanAbsolutePercentageError": 16.54228808632759,
+        "rootMeanSquaredError": 40936609.1915856,
+        "bias": -8628472.708945833,
+        "spearmanRankCorrelation": 0.8915866741953699
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 33048092.73469764,
+        "meanAbsolutePercentageError": 20.508517842741046,
+        "symmetricMeanAbsolutePercentageError": 22.413136828892245,
+        "rootMeanSquaredError": 47216500.740301445,
+        "bias": -18833082.191906698,
+        "spearmanRankCorrelation": 0.8945054945054945
+      },
+      "selectionWape": 20.494875551984258,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:chicago-region: absolute normalized bias exceeds 10%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:IL: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=0;scale=1;outside=0.0001",
+      "fittedDemandScale": 331.0268255552017,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 424.6862409726545,
+        "IL": 331.0268255552017,
+        "MO": 411.72355364902177,
+        "OH": 282.2448415957006
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 32820484.266865753,
+        "meanAbsolutePercentageError": 16.561620914936093,
+        "symmetricMeanAbsolutePercentageError": 17.33553318397846,
+        "rootMeanSquaredError": 43195240.18913538,
+        "bias": -6687150.124404789,
+        "spearmanRankCorrelation": 0.8972332015810277
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 30816954.33787359,
+        "meanAbsolutePercentageError": 18.521991137639155,
+        "symmetricMeanAbsolutePercentageError": 21.00489468543551,
+        "rootMeanSquaredError": 45614720.895551816,
+        "bias": -19400377.762808315,
+        "spearmanRankCorrelation": 0.8989010989010989
+      },
+      "selectionWape": 19.111228267124357,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=0.5;scale=1;outside=0.0001",
+      "fittedDemandScale": 309.02230472778007,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 419.01799190137,
+        "IL": 295.81469814592754,
+        "MO": 376.8777575064689,
+        "OH": 262.66263036909834
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 35140378.79316149,
+        "meanAbsolutePercentageError": 17.531335756245166,
+        "symmetricMeanAbsolutePercentageError": 18.356165027831747,
+        "rootMeanSquaredError": 45823918.81391469,
+        "bias": -6730732.0888319425,
+        "spearmanRankCorrelation": 0.8961038961038961
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 31947274.567382276,
+        "meanAbsolutePercentageError": 18.97782134515312,
+        "symmetricMeanAbsolutePercentageError": 22.151928555543698,
+        "rootMeanSquaredError": 46797696.51100274,
+        "bias": -21148630.856539253,
+        "spearmanRankCorrelation": 0.9076923076923077
+      },
+      "selectionWape": 19.812199806500026,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=1;scale=1;outside=0.0001",
+      "fittedDemandScale": 317.2696101944551,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 415.75751927727146,
+        "IL": 293.40634191672785,
+        "MO": 361.2168249092786,
+        "OH": 256.3690169304993
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 35515135.497823566,
+        "meanAbsolutePercentageError": 17.604006269058676,
+        "symmetricMeanAbsolutePercentageError": 18.49126113933541,
+        "rootMeanSquaredError": 46749085.49798838,
+        "bias": -6770349.273897466,
+        "spearmanRankCorrelation": 0.8961038961038961
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 32933037.40481813,
+        "meanAbsolutePercentageError": 19.394060067362112,
+        "symmetricMeanAbsolutePercentageError": 22.657670058170783,
+        "rootMeanSquaredError": 47467406.17008555,
+        "bias": -21012550.969477896,
+        "spearmanRankCorrelation": 0.9076923076923077
+      },
+      "selectionWape": 20.423523638080997,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: WAPE exceeds 20%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: WAPE exceeds 20%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=2;scale=1;outside=0.0001",
+      "fittedDemandScale": 324.78768886118263,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 415.2619597824294,
+        "IL": 294.2549843009313,
+        "MO": 354.82922695544846,
+        "OH": 255.02823122801726
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 35855509.18520654,
+        "meanAbsolutePercentageError": 17.73806761922273,
+        "symmetricMeanAbsolutePercentageError": 18.715434461853246,
+        "rootMeanSquaredError": 47187854.86452015,
+        "bias": -7631339.435880493,
+        "spearmanRankCorrelation": 0.9028797289666854
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 33214077.510818165,
+        "meanAbsolutePercentageError": 19.528349150477634,
+        "symmetricMeanAbsolutePercentageError": 22.850002358609032,
+        "rootMeanSquaredError": 47673167.346606374,
+        "bias": -21037904.19980705,
+        "spearmanRankCorrelation": 0.9076923076923077
+      },
+      "selectionWape": 20.597811517379395,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:central-indiana: WAPE exceeds 20%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: WAPE exceeds 20%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: WAPE exceeds 20%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=-1;scale=1;outside=0.0001",
+      "fittedDemandScale": 377.8504672521667,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 399.0565359828132,
+        "IL": 373.85890686067665,
+        "MO": 446.46401506577314,
+        "OH": 304.03303471644864
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 30310315.43021268,
+        "meanAbsolutePercentageError": 15.591518842870613,
+        "symmetricMeanAbsolutePercentageError": 16.66569304733971,
+        "rootMeanSquaredError": 41744061.88519583,
+        "bias": -11454975.074473573,
+        "spearmanRankCorrelation": 0.8893280632411067
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 35748231.217051476,
+        "meanAbsolutePercentageError": 21.572204856740278,
+        "symmetricMeanAbsolutePercentageError": 23.502255465026533,
+        "rootMeanSquaredError": 49140899.25680981,
+        "bias": -20832367.284041733,
+        "spearmanRankCorrelation": 0.9076923076923077
+      },
+      "selectionWape": 22.1693746709868,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: absolute normalized bias exceeds 5%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:evansville: absolute normalized bias exceeds 10%.",
+          "selection/market:louisville-region: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:chicago-region: absolute normalized bias exceeds 10%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:IL: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=0;scale=1;outside=0.0001",
+      "fittedDemandScale": 364.7458334677741,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 421.2862232863563,
+        "IL": 347.14778946293796,
+        "MO": 407.024537762651,
+        "OH": 290.21274468626865
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 32210081.289904345,
+        "meanAbsolutePercentageError": 16.016389865825722,
+        "symmetricMeanAbsolutePercentageError": 16.917227120558596,
+        "rootMeanSquaredError": 42989005.66747502,
+        "bias": -8416405.055600777,
+        "spearmanRankCorrelation": 0.8893280632411067
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 32051659.938091975,
+        "meanAbsolutePercentageError": 18.703865720591313,
+        "symmetricMeanAbsolutePercentageError": 21.083486702313817,
+        "rootMeanSquaredError": 46635078.976420686,
+        "bias": -20413026.942568865,
+        "spearmanRankCorrelation": 0.8989010989010989
+      },
+      "selectionWape": 19.876934712665935,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=0.5;scale=1;outside=0.0001",
+      "fittedDemandScale": 316.5224337231442,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 413.91637534827026,
+        "IL": 316.5224337231442,
+        "MO": 373.4229232598217,
+        "OH": 271.24821762022356
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 33810726.053563066,
+        "meanAbsolutePercentageError": 16.7228211468523,
+        "symmetricMeanAbsolutePercentageError": 17.62158535993113,
+        "rootMeanSquaredError": 44841305.73867905,
+        "bias": -7494515.42745099,
+        "spearmanRankCorrelation": 0.8802936194240542
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 32156691.960129015,
+        "meanAbsolutePercentageError": 18.800290465817834,
+        "symmetricMeanAbsolutePercentageError": 21.728134837149366,
+        "rootMeanSquaredError": 47253100.22338342,
+        "bias": -21441734.068485353,
+        "spearmanRankCorrelation": 0.9032967032967033
+      },
+      "selectionWape": 19.942070641625683,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: WAPE exceeds 20%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=1;scale=1;outside=0.0001",
+      "fittedDemandScale": 311.08683207248265,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 422.56487152122656,
+        "IL": 311.08683207248265,
+        "MO": 357.93279854183385,
+        "OH": 266.46916458171063
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 34126878.07119474,
+        "meanAbsolutePercentageError": 16.50130182805414,
+        "symmetricMeanAbsolutePercentageError": 17.231609385573613,
+        "rootMeanSquaredError": 46093575.42572439,
+        "bias": -5271803.738482862,
+        "spearmanRankCorrelation": 0.883681535855449
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 32686237.249524735,
+        "meanAbsolutePercentageError": 18.823880902645488,
+        "symmetricMeanAbsolutePercentageError": 21.79902788452682,
+        "rootMeanSquaredError": 47376771.449613884,
+        "bias": -19689266.819628272,
+        "spearmanRankCorrelation": 0.9032967032967033
+      },
+      "selectionWape": 20.270469768692706,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: WAPE exceeds 20%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: WAPE exceeds 20%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=2;scale=1;outside=0.0001",
+      "fittedDemandScale": 334.70021599953947,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 422.95277128626145,
+        "IL": 311.51959114024686,
+        "MO": 351.3941529122473,
+        "OH": 267.00961944845676
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 34531028.66091735,
+        "meanAbsolutePercentageError": 16.611521298834575,
+        "symmetricMeanAbsolutePercentageError": 17.385020253905903,
+        "rootMeanSquaredError": 46350307.630865514,
+        "bias": -5602432.874017015,
+        "spearmanRankCorrelation": 0.8712591756070017
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 32967145.46095053,
+        "meanAbsolutePercentageError": 18.96993719765812,
+        "symmetricMeanAbsolutePercentageError": 21.95787379548194,
+        "rootMeanSquaredError": 47129810.37246951,
+        "bias": -19186318.49373422,
+        "spearmanRankCorrelation": 0.9076923076923077
+      },
+      "selectionWape": 20.444675853168427,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training/market:central-indiana: WAPE exceeds 20%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: WAPE exceeds 20%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: WAPE exceeds 20%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=-1;scale=1;outside=0.0001",
+      "fittedDemandScale": 335.3017020556601,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 399.5316765736736,
+        "IL": 310.26953633346045,
+        "MO": 521.5208611703617,
+        "OH": 308.84033349252854
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 29967280.93875984,
+        "meanAbsolutePercentageError": 13.19500523267264,
+        "symmetricMeanAbsolutePercentageError": 13.132784394161854,
+        "rootMeanSquaredError": 48936343.297816515,
+        "bias": -10984790.04052061,
+        "spearmanRankCorrelation": 0.9006211180124224
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 21286179.28315149,
+        "meanAbsolutePercentageError": 13.031835202145757,
+        "symmetricMeanAbsolutePercentageError": 13.2831596136914,
+        "rootMeanSquaredError": 37428296.68617114,
+        "bias": -5343938.653704243,
+        "spearmanRankCorrelation": 0.8813186813186813
+      },
+      "selectionWape": 13.20068903484353,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=0;scale=1;outside=0.0001",
+      "fittedDemandScale": 347.65006956153235,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 406.7802383212112,
+        "IL": 296.00593974840257,
+        "MO": 470.9069659281101,
+        "OH": 297.23763456047124
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 30919984.457343183,
+        "meanAbsolutePercentageError": 13.78879862726735,
+        "symmetricMeanAbsolutePercentageError": 13.605001177525413,
+        "rootMeanSquaredError": 50017498.29631673,
+        "bias": -9490816.890777051,
+        "spearmanRankCorrelation": 0.9006211180124224
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 24218481.263794806,
+        "meanAbsolutePercentageError": 15.542825012244421,
+        "symmetricMeanAbsolutePercentageError": 15.806559335268256,
+        "rootMeanSquaredError": 37773740.1047354,
+        "bias": -5315009.194178884,
+        "spearmanRankCorrelation": 0.8945054945054945
+      },
+      "selectionWape": 15.01916505573126,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=0.5;scale=1;outside=0.0001",
+      "fittedDemandScale": 342.9082156834541,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 395.1455716527236,
+        "IL": 275.8051866949091,
+        "MO": 429.2334506246089,
+        "OH": 269.8328659141478
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 32563432.382262185,
+        "meanAbsolutePercentageError": 14.835912487957069,
+        "symmetricMeanAbsolutePercentageError": 14.548276905824828,
+        "rootMeanSquaredError": 51993036.2531097,
+        "bias": -10714498.40057681,
+        "spearmanRankCorrelation": 0.8848108413325805
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 26739380.807081606,
+        "meanAbsolutePercentageError": 16.86515273565769,
+        "symmetricMeanAbsolutePercentageError": 17.3955959884573,
+        "rootMeanSquaredError": 41632683.00446004,
+        "bias": -8502252.204441462,
+        "spearmanRankCorrelation": 0.8813186813186813
+      },
+      "selectionWape": 16.58250859974379,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:louisville-region: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=1;scale=1;outside=0.0001",
+      "fittedDemandScale": 336.76888531363,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 394.8900544000433,
+        "IL": 269.91501283729156,
+        "MO": 410.66628993034567,
+        "OH": 256.4593349887266
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 33018575.861930396,
+        "meanAbsolutePercentageError": 14.941357458755753,
+        "symmetricMeanAbsolutePercentageError": 14.839861553617306,
+        "rootMeanSquaredError": 52848947.049051575,
+        "bias": -12447609.690877462,
+        "spearmanRankCorrelation": 0.8848108413325805
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 29496801.9158477,
+        "meanAbsolutePercentageError": 18.55012599572794,
+        "symmetricMeanAbsolutePercentageError": 19.174750418803757,
+        "rootMeanSquaredError": 44589433.42068748,
+        "bias": -9857182.10123297,
+        "spearmanRankCorrelation": 0.8813186813186813
+      },
+      "selectionWape": 18.292531714307426,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: absolute normalized bias exceeds 5%.",
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:louisville-region: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=2;scale=1;outside=0.0001",
+      "fittedDemandScale": 337.2195476348284,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 399.70386456779335,
+        "IL": 270.114081664954,
+        "MO": 402.9069048472409,
+        "OH": 256.93293666688965
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 33583964.42315103,
+        "meanAbsolutePercentageError": 15.180956358687167,
+        "symmetricMeanAbsolutePercentageError": 15.083899866106082,
+        "rootMeanSquaredError": 53216285.40387348,
+        "bias": -11976118.314427689,
+        "spearmanRankCorrelation": 0.8791643139469226
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 30454597.9996355,
+        "meanAbsolutePercentageError": 19.544125525707724,
+        "symmetricMeanAbsolutePercentageError": 19.977305736920297,
+        "rootMeanSquaredError": 45097239.51482722,
+        "bias": -8716636.093642576,
+        "spearmanRankCorrelation": 0.8813186813186813
+      },
+      "selectionWape": 18.886511878276135,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: absolute normalized bias exceeds 5%.",
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:louisville-region: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=-1;scale=1;outside=0.0001",
+      "fittedDemandScale": 340.59698272163956,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 410.57077981422526,
+        "IL": 304.86465866001566,
+        "MO": 516.2908643385331,
+        "OH": 315.05379191820947
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 29598249.629905093,
+        "meanAbsolutePercentageError": 12.347765005069904,
+        "symmetricMeanAbsolutePercentageError": 12.509224930730726,
+        "rootMeanSquaredError": 49161265.49533389,
+        "bias": -12682876.297973746,
+        "spearmanRankCorrelation": 0.9051383399209486
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 21897201.800168388,
+        "meanAbsolutePercentageError": 14.156542206735988,
+        "symmetricMeanAbsolutePercentageError": 14.328366897810408,
+        "rootMeanSquaredError": 36468391.436132394,
+        "bias": -6314431.832222694,
+        "spearmanRankCorrelation": 0.8945054945054945
+      },
+      "selectionWape": 13.57961651323848,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: absolute normalized bias exceeds 5%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=0;scale=1;outside=0.0001",
+      "fittedDemandScale": 335.0358918132163,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 404.1209758378329,
+        "IL": 276.7102642835422,
+        "MO": 467.0627232174386,
+        "OH": 299.21166477898726
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 30863946.258275438,
+        "meanAbsolutePercentageError": 12.770051687416158,
+        "symmetricMeanAbsolutePercentageError": 13.35635418474478,
+        "rootMeanSquaredError": 51739385.69888337,
+        "bias": -16508128.116912825,
+        "spearmanRankCorrelation": 0.9028797289666854
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 22322908.738858063,
+        "meanAbsolutePercentageError": 14.792363800197993,
+        "symmetricMeanAbsolutePercentageError": 15.17970898775424,
+        "rootMeanSquaredError": 38119644.91404131,
+        "bias": -9558458.163036315,
+        "spearmanRankCorrelation": 0.8989010989010989
+      },
+      "selectionWape": 13.84361997026403,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: absolute normalized bias exceeds 5%.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:chicago-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=0.5;scale=1;outside=0.0001",
+      "fittedDemandScale": 330.93322595608186,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 390.88859652181463,
+        "IL": 286.2790904303416,
+        "MO": 427.44052535472474,
+        "OH": 272.9131866639737
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 30873729.524900638,
+        "meanAbsolutePercentageError": 13.559734644912806,
+        "symmetricMeanAbsolutePercentageError": 13.589573490133112,
+        "rootMeanSquaredError": 49722951.68592341,
+        "bias": -13157773.34602021,
+        "spearmanRankCorrelation": 0.893845285149633
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 26966012.431283742,
+        "meanAbsolutePercentageError": 17.704636900204882,
+        "symmetricMeanAbsolutePercentageError": 17.997907309636048,
+        "rootMeanSquaredError": 41986683.073617965,
+        "bias": -9770425.827051546,
+        "spearmanRankCorrelation": 0.8901098901098901
+      },
+      "selectionWape": 16.72305489303382,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: absolute normalized bias exceeds 5%.",
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=1;scale=1;outside=0.0001",
+      "fittedDemandScale": 338.4297431123426,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 390.1356046155201,
+        "IL": 280.2736810797919,
+        "MO": 407.85016490820067,
+        "OH": 266.6234904003505
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 31424101.69646528,
+        "meanAbsolutePercentageError": 13.669682307896629,
+        "symmetricMeanAbsolutePercentageError": 13.820558479366836,
+        "rootMeanSquaredError": 50175144.573120326,
+        "bias": -13380155.987150721,
+        "spearmanRankCorrelation": 0.8983625070581592
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 28190878.331404448,
+        "meanAbsolutePercentageError": 18.885353476917828,
+        "symmetricMeanAbsolutePercentageError": 19.05792349080389,
+        "rootMeanSquaredError": 43046251.64150587,
+        "bias": -9446546.623485487,
+        "spearmanRankCorrelation": 0.8901098901098901
+      },
+      "selectionWape": 17.482659218535073,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: absolute normalized bias exceeds 5%.",
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=2;scale=1;outside=0.0001",
+      "fittedDemandScale": 346.52500562662664,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 394.58076458953724,
+        "IL": 280.1728416009895,
+        "MO": 399.9438875458342,
+        "OH": 267.40681373723515
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 32023842.30064062,
+        "meanAbsolutePercentageError": 13.956725951712402,
+        "symmetricMeanAbsolutePercentageError": 14.123519367683604,
+        "rootMeanSquaredError": 50491246.674062744,
+        "bias": -12934279.915509863,
+        "spearmanRankCorrelation": 0.8927159796725014
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 29272634.869041536,
+        "meanAbsolutePercentageError": 19.925440021090484,
+        "symmetricMeanAbsolutePercentageError": 19.906861462117664,
+        "rootMeanSquaredError": 43303436.18652809,
+        "bias": -8301495.13765999,
+        "spearmanRankCorrelation": 0.8901098901098901
+      },
+      "selectionWape": 18.153513836209893,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: absolute normalized bias exceeds 5%.",
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=-1;scale=1;outside=0.0001",
+      "fittedDemandScale": 351.6764116992307,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 500.9996617701604,
+        "IL": 351.6764116992307,
+        "MO": 502.8838571422927,
+        "OH": 310.8962363950309
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 29937434.32763265,
+        "meanAbsolutePercentageError": 15.59809588358463,
+        "symmetricMeanAbsolutePercentageError": 15.320153406759642,
+        "rootMeanSquaredError": 47504435.731326945,
+        "bias": 3422383.45999157,
+        "spearmanRankCorrelation": 0.9040090344438171
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 31084784.790371947,
+        "meanAbsolutePercentageError": 20.078130228495834,
+        "symmetricMeanAbsolutePercentageError": 22.11953216265808,
+        "rootMeanSquaredError": 45629527.875300236,
+        "bias": -17213612.10102211,
+        "spearmanRankCorrelation": 0.8857142857142857
+      },
+      "selectionWape": 19.277324139495903,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:chicago-region: absolute normalized bias exceeds 10%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:IL: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=0;scale=1;outside=0.0001",
+      "fittedDemandScale": 325.77576178124053,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 456.08606649047897,
+        "IL": 322.9893167692336,
+        "MO": 453.25245677497384,
+        "OH": 291.04376237804223
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 33968545.615372255,
+        "meanAbsolutePercentageError": 17.966308060029576,
+        "symmetricMeanAbsolutePercentageError": 18.92088356547891,
+        "rootMeanSquaredError": 43515951.21059779,
+        "bias": -7280163.854998543,
+        "spearmanRankCorrelation": 0.9006211180124224
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 32584424.59379344,
+        "meanAbsolutePercentageError": 21.35355517334109,
+        "symmetricMeanAbsolutePercentageError": 24.673209677873285,
+        "rootMeanSquaredError": 45804954.01797605,
+        "bias": -25027848.56172551,
+        "spearmanRankCorrelation": 0.8901098901098901
+      },
+      "selectionWape": 20.207330339571005,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:terre-haute: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=0.5;scale=1;outside=0.0001",
+      "fittedDemandScale": 326.96867562733235,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 457.7561458749956,
+        "IL": 275.29033396651516,
+        "MO": 412.30425226640693,
+        "OH": 269.10583289172945
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 37000975.671767525,
+        "meanAbsolutePercentageError": 18.855873684458384,
+        "symmetricMeanAbsolutePercentageError": 19.999998522087672,
+        "rootMeanSquaredError": 47093632.26784129,
+        "bias": -8449284.456562785,
+        "spearmanRankCorrelation": 0.8972332015810277
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 31624651.06051391,
+        "meanAbsolutePercentageError": 20.719896308720458,
+        "symmetricMeanAbsolutePercentageError": 24.90640877914282,
+        "rootMeanSquaredError": 47126189.23946292,
+        "bias": -27420088.38860342,
+        "spearmanRankCorrelation": 0.9076923076923077
+      },
+      "selectionWape": 19.61212385426603,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: WAPE exceeds 20%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:chicago-region: absolute normalized bias exceeds 10%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:IL: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=1;scale=1;outside=0.0001",
+      "fittedDemandScale": 332.80042680106055,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 469.34892868081454,
+        "IL": 273.01002403625415,
+        "MO": 394.6118746390196,
+        "OH": 262.4495452631008
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 37180332.74721748,
+        "meanAbsolutePercentageError": 18.661792890451512,
+        "symmetricMeanAbsolutePercentageError": 19.603090027639293,
+        "rootMeanSquaredError": 48892291.756423004,
+        "bias": -6037197.2362760445,
+        "spearmanRankCorrelation": 0.8972332015810277
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 31693848.367965426,
+        "meanAbsolutePercentageError": 20.106803317062774,
+        "symmetricMeanAbsolutePercentageError": 24.246832420805013,
+        "rootMeanSquaredError": 47930752.426359735,
+        "bias": -25790654.383594368,
+        "spearmanRankCorrelation": 0.8989010989010989
+      },
+      "selectionWape": 19.655036775629938,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:central-indiana: WAPE exceeds 20%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: WAPE exceeds 20%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:chicago-region: absolute normalized bias exceeds 10%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:IL: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=2;scale=1;outside=0.0001",
+      "fittedDemandScale": 333.3053545634211,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 477.0668205237885,
+        "IL": 273.73330991298684,
+        "MO": 387.27734391654957,
+        "OH": 262.2146436498877
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 37481418.152264826,
+        "meanAbsolutePercentageError": 18.67493057194746,
+        "symmetricMeanAbsolutePercentageError": 19.551713234066657,
+        "rootMeanSquaredError": 49533330.81028751,
+        "bias": -5356103.489682302,
+        "spearmanRankCorrelation": 0.8994918125352908
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 32156327.031197183,
+        "meanAbsolutePercentageError": 20.087658137375872,
+        "symmetricMeanAbsolutePercentageError": 24.18106824661052,
+        "rootMeanSquaredError": 48128419.02293165,
+        "bias": -24638705.489540696,
+        "spearmanRankCorrelation": 0.8989010989010989
+      },
+      "selectionWape": 19.941844329835067,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:central-indiana: WAPE exceeds 20%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:louisville-region: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: WAPE exceeds 20%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: absolute normalized bias exceeds 10%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:IL: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=-1;scale=1;outside=0.0001",
+      "fittedDemandScale": 368.9759640064372,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 521.8272512309429,
+        "IL": 368.9759640064372,
+        "MO": 498.42490394527624,
+        "OH": 323.91928637889293
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 29519676.630360197,
+        "meanAbsolutePercentageError": 15.094834809493248,
+        "symmetricMeanAbsolutePercentageError": 14.679481712678951,
+        "rootMeanSquaredError": 50689476.32424042,
+        "bias": 4842243.886346445,
+        "spearmanRankCorrelation": 0.8893280632411067
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 30701177.77015927,
+        "meanAbsolutePercentageError": 19.38535612188092,
+        "symmetricMeanAbsolutePercentageError": 21.23224866742453,
+        "rootMeanSquaredError": 46002937.14390083,
+        "bias": -17436652.455570128,
+        "spearmanRankCorrelation": 0.8901098901098901
+      },
+      "selectionWape": 19.039429075377065,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "training/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:chicago-region: absolute normalized bias exceeds 10%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:IL: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=0;scale=1;outside=0.0001",
+      "fittedDemandScale": 341.09651757364526,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 440.6750057181609,
+        "IL": 341.09651757364526,
+        "MO": 450.6435666398826,
+        "OH": 304.33489581835227
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 33609680.53601592,
+        "meanAbsolutePercentageError": 17.78298807944061,
+        "symmetricMeanAbsolutePercentageError": 19.18563297970866,
+        "rootMeanSquaredError": 42828307.98794978,
+        "bias": -11197234.48341564,
+        "spearmanRankCorrelation": 0.8961038961038961
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 36799489.14506001,
+        "meanAbsolutePercentageError": 23.45092934436675,
+        "symmetricMeanAbsolutePercentageError": 26.930676934347844,
+        "rootMeanSquaredError": 47717771.97160699,
+        "bias": -27542440.01856758,
+        "spearmanRankCorrelation": 0.9120879120879121
+      },
+      "selectionWape": 22.82131548283737,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:terre-haute: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:evansville: absolute normalized bias exceeds 10%.",
+          "selection/market:louisville-region: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=0.5;scale=1;outside=0.0001",
+      "fittedDemandScale": 311.43781282842673,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 436.012937956683,
+        "IL": 310.24935582848263,
+        "MO": 410.9582797376906,
+        "OH": 281.0380190986355
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 35242388.83448537,
+        "meanAbsolutePercentageError": 18.5090651852582,
+        "symmetricMeanAbsolutePercentageError": 19.92443967048822,
+        "rootMeanSquaredError": 44642899.0716005,
+        "bias": -10554314.95422914,
+        "spearmanRankCorrelation": 0.8961038961038961
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 35869427.382896446,
+        "meanAbsolutePercentageError": 22.68606778012853,
+        "symmetricMeanAbsolutePercentageError": 26.64469583685214,
+        "rootMeanSquaredError": 48519195.30095535,
+        "bias": -29133663.289630372,
+        "spearmanRankCorrelation": 0.9032967032967033
+      },
+      "selectionWape": 22.244534843052115,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:terre-haute: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:evansville: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: WAPE exceeds 20%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=1;scale=1;outside=0.0001",
+      "fittedDemandScale": 319.37997121313293,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 447.1319596951923,
+        "IL": 304.6142799328571,
+        "MO": 393.3267854124037,
+        "OH": 278.51474542679625
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 35715441.87581278,
+        "meanAbsolutePercentageError": 18.351560549071586,
+        "symmetricMeanAbsolutePercentageError": 19.51755613679111,
+        "rootMeanSquaredError": 45492086.65429099,
+        "bias": -7647560.82518219,
+        "spearmanRankCorrelation": 0.8893280632411067
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 33778029.44316338,
+        "meanAbsolutePercentageError": 21.043239361962367,
+        "symmetricMeanAbsolutePercentageError": 24.86317688327232,
+        "rootMeanSquaredError": 47428205.00513298,
+        "bias": -26913934.237517662,
+        "spearmanRankCorrelation": 0.8945054945054945
+      },
+      "selectionWape": 20.947548029059572,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:terre-haute: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: WAPE exceeds 20%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:evansville: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: WAPE exceeds 20%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=500;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=2;scale=1;outside=0.0001",
+      "fittedDemandScale": 327.4098849962926,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 458.3738389915355,
+        "IL": 304.91035224315357,
+        "MO": 385.7187976152996,
+        "OH": 279.22884967836444
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 35989092.33905454,
+        "meanAbsolutePercentageError": 18.275176659808206,
+        "symmetricMeanAbsolutePercentageError": 19.281936717822397,
+        "rootMeanSquaredError": 46193271.38730368,
+        "bias": -6154176.336466418,
+        "spearmanRankCorrelation": 0.8904573687182383
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 32948396.01289338,
+        "meanAbsolutePercentageError": 20.506876638894088,
+        "symmetricMeanAbsolutePercentageError": 24.23405986216424,
+        "rootMeanSquaredError": 46817724.18725756,
+        "bias": -25316369.33212482,
+        "spearmanRankCorrelation": 0.8989010989010989
+      },
+      "selectionWape": 20.43304832574394,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/market:terre-haute: absolute normalized bias exceeds 10%.",
+          "training/market:french-lick: WAPE exceeds 20%.",
+          "training/market:french-lick: absolute normalized bias exceeds 10%.",
+          "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+          "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "training/market:cincinnati-tristate-region: WAPE exceeds 20%.",
+          "training/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IN: WAPE exceeds 20%.",
+          "selection: MAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: WAPE exceeds 20%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=-1;scale=1;outside=0.0001",
+      "fittedDemandScale": 356.15696034085465,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 446.3135300170711,
+        "IL": 309.35734635763333,
+        "MO": 565.8711130463344,
+        "OH": 325.4038439568098
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 30236855.1145769,
+        "meanAbsolutePercentageError": 13.723595741331984,
+        "symmetricMeanAbsolutePercentageError": 13.241886048504504,
+        "rootMeanSquaredError": 47651922.401500955,
+        "bias": -5193190.382173192,
+        "spearmanRankCorrelation": 0.9153020892151327
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 21677193.559708185,
+        "meanAbsolutePercentageError": 12.421458951580245,
+        "symmetricMeanAbsolutePercentageError": 12.887151980117265,
+        "rootMeanSquaredError": 37037196.89858489,
+        "bias": -5706579.989786573,
+        "spearmanRankCorrelation": 0.8989010989010989
+      },
+      "selectionWape": 13.44317773158653,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: WAPE exceeds 20%.",
+          "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=0;scale=1;outside=0.0001",
+      "fittedDemandScale": 364.2024401824415,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 451.4190397671778,
+        "IL": 294.22486438702254,
+        "MO": 506.88241167322207,
+        "OH": 312.1852411095119
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 31293418.65015495,
+        "meanAbsolutePercentageError": 14.397222759367763,
+        "symmetricMeanAbsolutePercentageError": 13.823085192625205,
+        "rootMeanSquaredError": 49130482.38149577,
+        "bias": -4622976.627917081,
+        "spearmanRankCorrelation": 0.9164313946922643
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 22523202.537866842,
+        "meanAbsolutePercentageError": 13.216678745612347,
+        "symmetricMeanAbsolutePercentageError": 13.791138280103613,
+        "rootMeanSquaredError": 36825403.593744665,
+        "bias": -6373038.3805369185,
+        "spearmanRankCorrelation": 0.8989010989010989
+      },
+      "selectionWape": 13.967832780893467,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=0.5;scale=1;outside=0.0001",
+      "fittedDemandScale": 335.561518256636,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 433.3822144841235,
+        "IL": 273.7462847393641,
+        "MO": 459.40162638086383,
+        "OH": 281.79328953398334
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 33447244.047687877,
+        "meanAbsolutePercentageError": 15.81860069535383,
+        "symmetricMeanAbsolutePercentageError": 15.203803482009329,
+        "rootMeanSquaredError": 51833525.64218777,
+        "bias": -7150711.644507851,
+        "spearmanRankCorrelation": 0.8881987577639752
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 24773022.35067613,
+        "meanAbsolutePercentageError": 14.189707153116037,
+        "symmetricMeanAbsolutePercentageError": 15.123100830425788,
+        "rootMeanSquaredError": 40754973.67175472,
+        "bias": -10584275.405658055,
+        "spearmanRankCorrelation": 0.8813186813186813
+      },
+      "selectionWape": 15.363065402880867,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection/market:louisville-region: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=1;scale=1;outside=0.0001",
+      "fittedDemandScale": 329.308209921793,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 428.38439184744794,
+        "IL": 267.4697998365156,
+        "MO": 438.94381610858034,
+        "OH": 266.93800651332197
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 33860721.25210161,
+        "meanAbsolutePercentageError": 15.854979938558058,
+        "symmetricMeanAbsolutePercentageError": 15.515593664958748,
+        "rootMeanSquaredError": 52900889.02046253,
+        "bias": -10036114.080638455,
+        "spearmanRankCorrelation": 0.8769057029926595
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 26615905.2024459,
+        "meanAbsolutePercentageError": 15.171856398276038,
+        "symmetricMeanAbsolutePercentageError": 16.321637177757854,
+        "rootMeanSquaredError": 43645676.81667865,
+        "bias": -12792825.38674122,
+        "spearmanRankCorrelation": 0.8813186813186813
+      },
+      "selectionWape": 16.505934826756945,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:louisville-region: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=1;income-elasticity=2;scale=1;outside=0.0001",
+      "fittedDemandScale": 329.6487387407322,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 435.3054035270803,
+        "IL": 267.4178912446852,
+        "MO": 430.322009920301,
+        "OH": 264.7585523862953
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 34075857.1897923,
+        "meanAbsolutePercentageError": 15.788136772555777,
+        "symmetricMeanAbsolutePercentageError": 15.458229449364062,
+        "rootMeanSquaredError": 53344636.64044332,
+        "bias": -9952932.970339827,
+        "spearmanRankCorrelation": 0.8769057029926595
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 28922362.233134665,
+        "meanAbsolutePercentageError": 16.790157203326455,
+        "symmetricMeanAbsolutePercentageError": 17.864602551220127,
+        "rootMeanSquaredError": 44820140.679250054,
+        "bias": -12041006.410667075,
+        "spearmanRankCorrelation": 0.8901098901098901
+      },
+      "selectionWape": 17.936291192234446,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: WAPE exceeds 15%.",
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:louisville-region: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/market:chicago-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IL: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=-1;scale=1;outside=0.0001",
+      "fittedDemandScale": 357.28837834585704,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 454.2986256591845,
+        "IL": 293.3170245236767,
+        "MO": 560.904129441601,
+        "OH": 339.5484847948354
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 29979381.490456637,
+        "meanAbsolutePercentageError": 12.80725726997826,
+        "symmetricMeanAbsolutePercentageError": 12.851496854696126,
+        "rootMeanSquaredError": 49377951.255550385,
+        "bias": -9082048.058243623,
+        "spearmanRankCorrelation": 0.919819311123659
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 20089746.77804644,
+        "meanAbsolutePercentageError": 11.912245967082097,
+        "symmetricMeanAbsolutePercentageError": 12.501193086245502,
+        "rootMeanSquaredError": 34408162.0453301,
+        "bias": -8143128.363437721,
+        "spearmanRankCorrelation": 0.9164835164835164
+      },
+      "selectionWape": 12.458717766022557,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=0;scale=1;outside=0.0001",
+      "fittedDemandScale": 350.0254415333884,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 482.95751958410796,
+        "IL": 308.0903191078191,
+        "MO": 504.3196528495813,
+        "OH": 316.45047396418715
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 29836031.552756418,
+        "meanAbsolutePercentageError": 13.151584153819016,
+        "symmetricMeanAbsolutePercentageError": 12.451401328509839,
+        "rootMeanSquaredError": 46708168.77769105,
+        "bias": -2059017.3830583969,
+        "spearmanRankCorrelation": 0.9028797289666854
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 24972030.96536245,
+        "meanAbsolutePercentageError": 15.916885037731117,
+        "symmetricMeanAbsolutePercentageError": 16.05157010590946,
+        "rootMeanSquaredError": 38503733.37656116,
+        "bias": -5077934.074590152,
+        "spearmanRankCorrelation": 0.8813186813186813
+      },
+      "selectionWape": 15.48648120253113,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=0.5;scale=1;outside=0.0001",
+      "fittedDemandScale": 348.3532906032626,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 458.0435628579292,
+        "IL": 286.0953556877309,
+        "MO": 458.4177142877185,
+        "OH": 287.0819173689656
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 31227938.190862235,
+        "meanAbsolutePercentageError": 14.066213660707882,
+        "symmetricMeanAbsolutePercentageError": 13.46613296613149,
+        "rootMeanSquaredError": 48142301.14492932,
+        "bias": -5193470.340575057,
+        "spearmanRankCorrelation": 0.8949745906267645
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 27481213.06113506,
+        "meanAbsolutePercentageError": 16.97931447261311,
+        "symmetricMeanAbsolutePercentageError": 17.460949081188357,
+        "rootMeanSquaredError": 42074876.32716257,
+        "bias": -9265465.440974934,
+        "spearmanRankCorrelation": 0.8813186813186813
+      },
+      "selectionWape": 17.042558135713257,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=1;scale=1;outside=0.0001",
+      "fittedDemandScale": 344.77422847942046,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 452.7166917284859,
+        "IL": 279.72260457241487,
+        "MO": 438.045130153943,
+        "OH": 277.2966225166879
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 31719762.717236564,
+        "meanAbsolutePercentageError": 14.101526044587134,
+        "symmetricMeanAbsolutePercentageError": 13.713697883561991,
+        "rootMeanSquaredError": 48653798.309086114,
+        "bias": -6888306.973716378,
+        "spearmanRankCorrelation": 0.8915866741953699
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 28679729.617650848,
+        "meanAbsolutePercentageError": 17.894891107066478,
+        "symmetricMeanAbsolutePercentageError": 18.40251265592007,
+        "rootMeanSquaredError": 43787992.98767615,
+        "bias": -10135386.091206042,
+        "spearmanRankCorrelation": 0.8901098901098901
+      },
+      "selectionWape": 17.78582183537585,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: property error exceeds 40%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    },
+    {
+      "key": "beta=2.2;alpha=1;positions=2;positions-offset=2000;floor=0.5;tables=0.2;travel-regularization=5;income-elasticity=2;scale=1;outside=0.0001",
+      "fittedDemandScale": 345.2790595328091,
+      "fittedDemandScaleByJurisdiction": {
+        "IN": 453.64059899698907,
+        "IL": 279.48558523078077,
+        "MO": 429.14478347145814,
+        "OH": 277.95422279152706
+      },
+      "trainingMetrics": {
+        "observationCount": 22,
+        "mapeObservationCount": 22,
+        "meanAbsoluteError": 32159660.161837205,
+        "meanAbsolutePercentageError": 14.203482611859895,
+        "symmetricMeanAbsolutePercentageError": 13.881170885050569,
+        "rootMeanSquaredError": 48945814.57335511,
+        "bias": -7268506.942785829,
+        "spearmanRankCorrelation": 0.9017504234895539
+      },
+      "selectionMetrics": {
+        "observationCount": 14,
+        "mapeObservationCount": 14,
+        "meanAbsoluteError": 29071070.908464678,
+        "meanAbsolutePercentageError": 18.481638046510504,
+        "symmetricMeanAbsolutePercentageError": 18.873921313727894,
+        "rootMeanSquaredError": 43954639.11210104,
+        "bias": -9476788.443523632,
+        "spearmanRankCorrelation": 0.8637362637362638
+      },
+      "selectionWape": 18.028513331008256,
+      "admission": {
+        "admitted": false,
+        "failures": [
+          "training: property error exceeds 40%.",
+          "training: fewer than 90% of properties are within 30% error.",
+          "training/market:chicago-region: WAPE exceeds 20%.",
+          "training/market:central-indiana: absolute normalized bias exceeds 10%.",
+          "training/jurisdiction:IL: WAPE exceeds 20%.",
+          "selection: WAPE exceeds 15%.",
+          "selection: absolute normalized bias exceeds 5%.",
+          "selection: fewer than 90% of properties are within 30% error.",
+          "selection/market:louisville-region: absolute normalized bias exceeds 10%.",
+          "selection/market:toledo: absolute normalized bias exceeds 10%.",
+          "selection/market:mahoning-valley: WAPE exceeds 20%.",
+          "selection/market:mahoning-valley: absolute normalized bias exceeds 10%.",
+          "selection/market:cleveland-region: WAPE exceeds 20%.",
+          "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+          "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+          "selection/jurisdiction:OH: WAPE exceeds 20%.",
+          "selection/jurisdiction:OH: absolute normalized bias exceeds 10%."
+        ]
+      }
+    }
+  ]
+}
