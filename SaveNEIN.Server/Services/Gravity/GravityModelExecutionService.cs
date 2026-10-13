@@ -2238,7 +2238,7 @@ public sealed class GravityModelExecutionService(
         }
     }
 
-    private static double ResolveIncomeMetric(OriginZoneIncomePeriod income, string originKey)
+    internal static double ResolveIncomeMetric(OriginZoneIncomePeriod income, string originKey)
     {
         if (income.MedianHouseholdIncome is > 0)
         {

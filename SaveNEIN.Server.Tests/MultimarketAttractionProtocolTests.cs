@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SaveNEIN.Server.Data.Entities;
 using SaveNEIN.Server.Services.Gravity;
 using SaveNEIN.Server.Services.Validation;
 
@@ -36,9 +37,31 @@ public class MultimarketAttractionProtocolTests
     [InlineData("{\"fitDemandScaleByJurisdiction\":true}")]
     [InlineData("{\"travelTimeRegularizationMinutes\":[0]}")]
     [InlineData("{\"travelTimeRegularizationMinutes\":[]}")]
+    [InlineData("{\"incomeElasticity\":[]}")]
+    [InlineData("{\"incomeElasticity\":[1]}")]
+    [InlineData("{\"incomeElasticity\":[6]}")]
+    [InlineData("{\"incomeAdjustmentMinimum\":0}")]
+    [InlineData("{\"incomeAdjustmentMinimum\":2,\"incomeAdjustmentMaximum\":1}")]
     [InlineData("{\"selectionPolicyVersion\":\"gravity-development-selection-v1\",\"training\":[\"t1\",\"t2\"],\"selection\":[\"s1\"]}")]
     public void RejectsInvalidSpecificationBeforeAnyDatabaseOrRoutingWork(string json)
     {
         Assert.Throws<InvalidDataException>(() => MultimarketRevenueCalibration.ValidateAttractionProtocol(Read(json)));
+    }
+
+    [Fact]
+    public void IncomeResolutionUsesTheServerMetricAndRejectsMissingValues()
+    {
+        var period = new OriginZoneIncomePeriod
+        {
+            MedianHouseholdIncome = 60_000, AdjustedGrossIncome = 1_000_000,
+            InflationAdjustedAdjustedGrossIncome = 1_200_000, ReturnCount = 20
+        };
+        Assert.Equal(60_000, GravityModelExecutionService.ResolveIncomeMetric(period, "origin"));
+        period.MedianHouseholdIncome = null;
+        Assert.Equal(60_000, GravityModelExecutionService.ResolveIncomeMetric(period, "origin"));
+        period.InflationAdjustedAdjustedGrossIncome = null;
+        Assert.Equal(50_000, GravityModelExecutionService.ResolveIncomeMetric(period, "origin"));
+        period.ReturnCount = 0;
+        Assert.Throws<InvalidOperationException>(() => GravityModelExecutionService.ResolveIncomeMetric(period, "origin"));
     }
 }
