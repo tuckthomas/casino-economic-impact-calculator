@@ -40,7 +40,11 @@ public sealed record MultimarketCalibrationProtocol(
     double[]? TravelTimeRegularizationMinutes = null,
     double[]? IncomeElasticity = null,
     double IncomeAdjustmentMinimum = 0.5,
-    double IncomeAdjustmentMaximum = 1.5);
+    double IncomeAdjustmentMaximum = 1.5,
+    double ReferenceIncome = 0,
+    string[]? ObservedGgrExcludedVenueIds = null,
+    string FrictionForm = "inverse-power",
+    double[]? ExponentialLambda = null);
 
 /// <summary>
 /// Revenue-component backtests use the same demand, facility feature and gravity
@@ -60,7 +64,9 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var protocol = JsonSerializer.Deserialize<MultimarketCalibrationProtocol>(protocolBytes, JsonOptions)
             ?? throw new InvalidDataException("Calibration protocol is missing.");
         ValidateAttractionProtocol(protocol);
+        if (evaluateFinalHoldout && !diagnosticReplay) ValidateFinalHoldoutBudget(protocol);
         var useObservedPeers = protocol.AttractionSpecification == FacilityAttractionSpecifications.HybridObservedGgr;
+        var friction = protocol.FrictionForm == "inverse-power" ? TravelFrictionForm.InversePower : TravelFrictionForm.Exponential;
         var guardedSelection = protocol.SelectionPolicyVersion == CalibrationDevelopmentSelection.PolicyVersion;
         if (!guardedSelection && !diagnosticReplay)
             throw new InvalidDataException("New calibration searches require guarded development selection. Legacy selection is restricted to explicit inspected diagnostic replay.");
@@ -77,6 +83,8 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             .OrderBy(row => row.StableVenueId).ToArrayAsync(cancellationToken);
         var facilityByKey = facilities.ToDictionary(row => row.StableVenueId, StringComparer.Ordinal);
         if (allTargetKeys.Any(key => !facilityByKey.ContainsKey(key))) throw new InvalidDataException("A target is absent from the sealed inventory.");
+        if (protocol.ObservedGgrExcludedVenueIds?.Any(key => !facilityByKey.ContainsKey(key)) == true)
+            throw new InvalidDataException("A reserved observed-GGR exclusion is absent from the sealed inventory.");
         if (protocol.FitDemandScaleByJurisdiction)
         {
             var trainingCounts = protocol.Training.GroupBy(key => facilityByKey[key].State, StringComparer.Ordinal)
@@ -116,7 +124,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
                 var eligible = EligiblePopulationCalculator.Calculate(bins[origin.Id].Select(bin => new AgeBinValue(bin.MinimumAge, bin.MaximumAge, bin.Population)).ToArray(), protocol.EligibleAge).Population;
                 var projected = PopulationProjectionCalculator.Calculate(new PopulationProjectionInput(eligible, populationYear, protocol.ObservedYear, 0)).ProjectedPopulation;
                 // Population growth remains zero in this component diagnostic.
-                // Apply the case-relative server income adjustment during prediction.
+                // Apply the same resolved income adjustment as server execution.
                 return projected;
             });
         }
@@ -154,13 +162,14 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             return new PreparedCase(facility, partition, market, observedById[facility.Id], caseOrigins, casePeers);
         }).ToArray();
         var referenceIncomeByCase = incomeMetricsById is null ? null : cases.ToDictionary(item => item.Facility.Id,
-            item => Median(item.Origins.Select(origin => incomeMetricsById[origin.Id])));
+            item => GravityModelExecutionService.ResolveReferenceIncome(protocol.ReferenceIncome,
+                item.Origins.Select(origin => incomeMetricsById[origin.Id])));
         var demandService = new OriginDemandService();
         Console.WriteLine($"Frozen protocol {protocolHash}: {protocol.Training.Length} training, {protocol.Selection.Length} selection, {protocol.Holdout.Values.Sum(value => value.Length)} final holdout properties.");
         var graph = await routing.GetRoutingGraphIdentityAsync(cancellationToken);
         var routingCases = evaluateFinalHoldout ? cases : cases.Where(item => item.Partition != "holdout").ToArray();
         var routes = await WarmRoutesAsync(origins, facilities, routingCases, graph, cancellationToken);
-        var withheldIds = cases.Where(item => item.Partition != "training").Select(item => item.Facility.Id).ToHashSet();
+        var withheldIds = BuildObservedGgrExclusions(protocol, facilityByKey.ToDictionary(pair => pair.Key, pair => pair.Value.Id, StringComparer.Ordinal));
         var featureService = new FacilityAttractivenessService();
         var metrics = new ValidationMetricsService();
         var searchRows = new List<SearchRow>();
@@ -181,7 +190,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
                 proposedMass = FacilityAttractivenessService.NormalizeStructuralMass(proposedMass, scale);
                 var peerMasses = item.Peers.ToDictionary(peer => peer.Id, peer => useObservedPeers && !withheldIds.Contains(peer.Id) && observedById.TryGetValue(peer.Id, out var amount)
                     ? featureService.CalculateObservedGgr(new(peer.StableVenueId, amount, reference, false)).NormalizedAttraction : FacilityAttractivenessService.NormalizeStructuralMass(structural[peer.Id], scale));
-                var gravityParameters = new GravityParameters(alpha, TravelFrictionForm.InversePower, beta, travelRegularization, MissingRouteBehavior.ExcludeFacility);
+                var gravityParameters = new GravityParameters(alpha, friction, beta, travelRegularization, MissingRouteBehavior.ExcludeFacility);
                 return item.Origins.Sum(origin =>
                 {
                     var alternatives = item.Peers.Select(peer => Alternative(origin.Id, peer, peerMasses[peer.Id], false, routes))
@@ -198,6 +207,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var trainingIndices = development.Select((item, index) => (item, index)).Where(value => value.item.Partition == "training").Select(value => value.index).ToArray();
         var searchTimer = Stopwatch.StartNew();
         foreach (var beta in protocol.Beta)
+        foreach (var lambda in protocol.ExponentialLambda ?? [0.03d])
         foreach (var alpha in protocol.Alpha)
         foreach (var coefficient in protocol.PositionsCoefficient)
         foreach (var positionsOffset in protocol.GamingPositionsOffset ?? [2000d])
@@ -209,7 +219,8 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         foreach (var outside in protocol.OutsideWeight)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var units = UnitPredictions(beta, alpha, coefficient, positionsOffset, floorCoefficient, tableCoefficient, travelRegularization, incomeElasticity, scale, outside, development);
+            var decay = ResolveActiveTravelDecay(protocol, beta, lambda);
+            var units = UnitPredictions(decay, alpha, coefficient, positionsOffset, floorCoefficient, tableCoefficient, travelRegularization, incomeElasticity, scale, outside, development);
             if (trainingIndices.Any(index => units[index] <= 0)) continue;
             var share = guardedSelection
                 ? CalibrationDevelopmentSelection.FitTrainingWapeScale(trainingIndices.Select(index => (development[index].Observed, units[index])), protocol.MinimumDemandScale, protocol.MaximumDemandScale, protocol.ConstrainTrainingScale)
@@ -226,8 +237,10 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             var admission = guardedSelection ? CalibrationDevelopmentSelection.Evaluate(development.Select((item, index) =>
                 new DevelopmentRevenueObservation(item.Facility.StableVenueId, item.Partition, item.Market, item.Facility.State,
                     item.Observed, observations[index].Predicted)).ToArray()) : null;
-            searchRows.Add(new($"beta={beta:R};alpha={alpha:R};positions={coefficient:R};positions-offset={positionsOffset:R};floor={floorCoefficient:R};tables={tableCoefficient:R};travel-regularization={travelRegularization:R};income-elasticity={incomeElasticity:R};scale={scale:R};outside={outside:R}", beta, alpha,
-                coefficient, positionsOffset, floorCoefficient, tableCoefficient, travelRegularization, incomeElasticity, scale, outside, share, jurisdictionShares, metrics.Calculate(training), metrics.Calculate(selection), Wape(selection), observations, admission));
+            var keyPrefix = friction == TravelFrictionForm.InversePower ? $"beta={beta:R}" : $"friction=exponential;lambda={lambda:R}";
+            searchRows.Add(new($"{keyPrefix};alpha={alpha:R};positions={coefficient:R};positions-offset={positionsOffset:R};floor={floorCoefficient:R};tables={tableCoefficient:R};travel-regularization={travelRegularization:R};income-elasticity={incomeElasticity:R};scale={scale:R};outside={outside:R}", beta, alpha,
+                coefficient, positionsOffset, floorCoefficient, tableCoefficient, travelRegularization, incomeElasticity, scale, outside, share, jurisdictionShares, metrics.Calculate(training), metrics.Calculate(selection), Wape(selection), observations, admission,
+                friction == TravelFrictionForm.Exponential ? lambda : null, protocol.FrictionForm));
             if (searchRows.Count % 20 == 0) Console.WriteLine($"Scored {searchRows.Count} training/selection candidates in {searchTimer.Elapsed.TotalSeconds:F0}s; final holdout remains unscored.");
         }
         var ranked = searchRows.OrderBy(row => row.SelectionWape).ThenBy(row => row.SelectionMetrics.MeanAbsolutePercentageError).ThenBy(row => row.Key, StringComparer.Ordinal);
@@ -239,6 +252,9 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             await File.WriteAllTextAsync(outputPath, JsonSerializer.Serialize(new
             {
                 ProtocolHash = protocolHash, protocol.ProtocolVersion, protocol.SelectionPolicyVersion, protocol.AttractionSpecification, protocol.DemandSpecification,
+                protocol.ReferenceIncome, IncomeReferenceMode = protocol.ReferenceIncome > 0 ? "fixed-common-reference" : "case-median",
+                protocol.ObservedGgrExcludedVenueIds, InputSnapshots = snapshots.Select(row => new { row.Id, row.Checksum, row.ValidationState }),
+                protocol.FrictionForm, DecayParameterKey = friction == TravelFrictionForm.InversePower ? "gravity.beta" : "gravity.exponential_lambda",
                 FittedScaleUnits = protocol.DemandSpecification == GravityDemandSpecifications.AgiShare ? "share of AGI" : "USD/eligible-adult/year",
                 Scope = "No candidate passed development admission. Diagnostic candidates are not selected specifications; no final holdout scored.",
                 CandidateCount = searchRows.Count, AdmittedCandidateCount = 0, Selected = (SearchRow?)null, BestDiagnosticCandidate = diagnostic,
@@ -256,6 +272,9 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             {
                 ProtocolHash = protocolHash, Scope = "Development-only structural normalization remediation; previously inspected final holdouts remain withheld and are not rescored.",
                 ScalingVersion = "consistent-physical-v2", protocol.AttractionSpecification, protocol.SelectionPolicyVersion, protocol.DemandSpecification,
+                protocol.ReferenceIncome, IncomeReferenceMode = protocol.ReferenceIncome > 0 ? "fixed-common-reference" : "case-median",
+                protocol.ObservedGgrExcludedVenueIds, InputSnapshots = snapshots.Select(row => new { row.Id, row.Checksum, row.ValidationState }),
+                protocol.FrictionForm, DecayParameterKey = friction == TravelFrictionForm.InversePower ? "gravity.beta" : "gravity.exponential_lambda",
                 FittedScaleUnits = protocol.DemandSpecification == GravityDemandSpecifications.AgiShare ? "share of AGI" : "USD/eligible-adult/year",
                 CandidateCount = searchRows.Count, AdmittedCandidateCount = searchRows.Count(row => row.Admission?.Admitted ?? true), SelectedOn = guardedSelection ? "selection among admitted development fits" : "legacy selection only", Selected = selected,
                 graph.GraphHash, MatrixCorrelationVersion = ValhallaClient.MatrixCorrelationVersion,
@@ -269,7 +288,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         }
         // The final holdout is evaluated exactly once, after every selection decision.
         var holdoutCases = cases.Where(item => item.Partition == "holdout").ToArray();
-        var holdoutUnits = UnitPredictions(selected.Beta, selected.Alpha, selected.PositionsCoefficient, selected.PositionsOffset, selected.FloorCoefficient, selected.TableCoefficient, selected.TravelRegularizationMinutes, selected.IncomeElasticity, selected.Scale, selected.OutsideWeight, holdoutCases);
+        var holdoutUnits = UnitPredictions(selected.ExponentialLambda ?? selected.Beta, selected.Alpha, selected.PositionsCoefficient, selected.PositionsOffset, selected.FloorCoefficient, selected.TableCoefficient, selected.TravelRegularizationMinutes, selected.IncomeElasticity, selected.Scale, selected.OutsideWeight, holdoutCases);
         var holdoutRows = holdoutCases.Select((item, index) => new ValidationObservation(item.Facility.StableVenueId, item.Observed,
             holdoutUnits[index] * (selected.FittedDemandScaleByJurisdiction is null ? selected.FittedDemandScale : selected.FittedDemandScaleByJurisdiction[item.Facility.State]))).ToArray();
         var holdoutMetrics = metrics.Calculate(holdoutRows);
@@ -278,6 +297,9 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var output = new
         {
             ProtocolHash = protocolHash, protocol.ProtocolVersion, protocol.AttractionSpecification, protocol.DemandSpecification,
+            protocol.ReferenceIncome, IncomeReferenceMode = protocol.ReferenceIncome > 0 ? "fixed-common-reference" : "case-median",
+            protocol.ObservedGgrExcludedVenueIds,
+            protocol.FrictionForm, DecayParameterKey = friction == TravelFrictionForm.InversePower ? "gravity.beta" : "gravity.exponential_lambda",
             Scope = diagnosticReplay ? "Diagnostic replay of inspected properties after development-only selection; not an untouched acceptance evaluation." : "Resident revenue-component calibration; no downstream acceptance or parameter publication.",
             HoldoutPreviouslyInspected = diagnosticReplay, ScalingVersion = "consistent-physical-v2",
             MatrixCorrelationVersion = ValhallaClient.MatrixCorrelationVersion,
@@ -304,8 +326,32 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         Console.WriteLine($"{(diagnosticReplay ? "INSPECTED-SAMPLE DIAGNOSTIC" : "NEW HOLDOUT")}: MAPE={holdoutMetrics.MeanAbsolutePercentageError:F4}% WAPE={holdoutWape:F4}% bias={holdoutBias:F4}% across {holdoutCases.Length} properties. Saved {outputPath}.");
     }
 
+    internal static HashSet<int> BuildObservedGgrExclusions(MultimarketCalibrationProtocol protocol, IReadOnlyDictionary<string, int> facilityIds) =>
+        protocol.Selection.Concat(protocol.Holdout.Values.SelectMany(keys => keys)).Concat(protocol.ObservedGgrExcludedVenueIds ?? [])
+            .Select(key => facilityIds[key]).ToHashSet();
+
+    internal static double ResolveActiveTravelDecay(MultimarketCalibrationProtocol protocol, double beta, double lambda) =>
+        protocol.FrictionForm == "exponential" ? lambda : beta;
+
+    internal static void ValidateFinalHoldoutBudget(MultimarketCalibrationProtocol protocol)
+    {
+        if (protocol.FitDemandScaleByJurisdiction)
+            throw new InvalidDataException("Final holdout cannot use target-jurisdiction spending multipliers; each origin must retain one common demand budget.");
+        if (protocol.DemandSpecification == GravityDemandSpecifications.EligibleAdultPerCapita &&
+            (protocol.IncomeElasticity ?? [0d]).Any(value => value != 0) && protocol.ReferenceIncome <= 0)
+            throw new InvalidDataException("Income-adjusted final holdout requires a frozen common income reference before routing or scoring.");
+    }
+
     internal static void ValidateAttractionProtocol(MultimarketCalibrationProtocol protocol)
     {
+        if (protocol.FrictionForm is not ("inverse-power" or "exponential"))
+            throw new InvalidDataException("Unknown routed travel-friction form.");
+        if (protocol.FrictionForm == "exponential" &&
+            (protocol.ExponentialLambda is not { Length: > 0 } || protocol.ExponentialLambda.Any(value => !double.IsFinite(value) || value is < 0 or > 1) ||
+             protocol.Beta is not { Length: 1 } || protocol.TravelTimeRegularizationMinutes is { Length: not 1 }))
+            throw new InvalidDataException("Exponential calibration requires a declared per-minute lambda grid; unused inverse-power beta and regularization cannot create duplicate candidates.");
+        if (protocol.FrictionForm == "inverse-power" && protocol.ExponentialLambda is not null)
+            throw new InvalidDataException("Inverse-power calibration cannot include an unused exponential-lambda grid.");
         if (protocol.AttractionSpecification is not (FacilityAttractionSpecifications.Structural or FacilityAttractionSpecifications.HybridObservedGgr))
             throw new InvalidDataException("Component calibration supports structural or hybrid-observed-ggr attraction.");
         if (protocol.GamingPositionsOffset is { } offsets &&
@@ -339,9 +385,16 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         if (!double.IsFinite(protocol.IncomeAdjustmentMinimum) || !double.IsFinite(protocol.IncomeAdjustmentMaximum) ||
             protocol.IncomeAdjustmentMinimum <= 0 || protocol.IncomeAdjustmentMaximum < protocol.IncomeAdjustmentMinimum)
             throw new InvalidDataException("Income adjustment bounds must be finite, positive and ordered.");
+        if (!double.IsFinite(protocol.ReferenceIncome) || protocol.ReferenceIncome is < 0 or > 1_000_000 ||
+            (protocol.ReferenceIncome > 0 && protocol.DemandSpecification != GravityDemandSpecifications.EligibleAdultPerCapita))
+            throw new InvalidDataException("A common income reference must be a finite supported per-capita income value; zero retains historical case-median replay.");
+        if (protocol.ObservedGgrExcludedVenueIds is { } exclusions &&
+            (exclusions.Any(string.IsNullOrWhiteSpace) || exclusions.Distinct(StringComparer.Ordinal).Count() != exclusions.Length ||
+             exclusions.Intersect(protocol.Training ?? [], StringComparer.Ordinal).Any()))
+            throw new InvalidDataException("Reserved observed-GGR identities must be distinct, nonempty and outside the training partition.");
         if (protocol.SelectionPolicyVersion == CalibrationDevelopmentSelection.PolicyVersion)
         {
-            var development = protocol.Training.Concat(protocol.Selection).ToArray();
+            var development = (protocol.Training ?? []).Concat(protocol.Selection ?? []).ToArray();
             var declared = protocol.DevelopmentMarkets?.Values.SelectMany(value => value).ToArray() ?? [];
             if (declared.Length != development.Length || declared.Distinct(StringComparer.Ordinal).Count() != declared.Length ||
                 !declared.Order().SequenceEqual(development.Order()))
@@ -511,5 +564,5 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
     private sealed record PreparedCase(CasinoCompetitor Facility, string Partition, string Market, double Observed, OriginZone[] Origins, CasinoCompetitor[] Peers);
     private sealed record SearchRow(string Key, double Beta, double Alpha, double PositionsCoefficient, double PositionsOffset, double FloorCoefficient, double TableCoefficient, double TravelRegularizationMinutes, double IncomeElasticity, double Scale, double OutsideWeight,
         double FittedDemandScale, Dictionary<string, double>? FittedDemandScaleByJurisdiction, ValidationMetrics TrainingMetrics, ValidationMetrics SelectionMetrics, double SelectionWape,
-        ValidationObservation[] Observations, DevelopmentFitReport? Admission);
+        ValidationObservation[] Observations, DevelopmentFitReport? Admission, double? ExponentialLambda = null, string FrictionForm = "inverse-power");
 }

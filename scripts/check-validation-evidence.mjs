@@ -18,7 +18,7 @@ export function verifyValidationEvidence(directory) {
     const bundleHashes = new Set(documents.filter(document => document.folder === path.join(directory, 'bundles')).map(document => document.hash));
     let references = 0;
     for (const document of documents) {
-        for (const key of ['sourceBundleSha256', 'protocolHash', 'sourceBundleHash', 'resultHash', 'sourceCsvSha256', 'sourceGeocodeSha256']) {
+        for (const key of ['sourceBundleSha256', 'demographicInputBundleSha256', 'protocolHash', 'sourceBundleHash', 'resultHash', 'replayResultHash', 'sourceCsvSha256', 'sourceGeocodeSha256']) {
             const reference = document.value[key];
             if (reference === undefined) continue;
             const hashes = key === 'protocolHash' ? protocolHashes : bundleHashes;

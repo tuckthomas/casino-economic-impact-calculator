@@ -86,7 +86,7 @@ public sealed class PennsylvaniaGamingFacilityProvider(HttpClient http)
 
     private static string Normalize(string value) => Regex.Replace(value.ToUpperInvariant(), "[^A-Z0-9]", "");
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
-    private static readonly (string Key, string Name, string Address)[] Catalog =
+    internal static readonly (string Key, string Name, string Address)[] Catalog =
     [
         ("mohegan-pennsylvania", "MOHEGAN PENNSYLVANIA", "1280 PA-315, Wilkes-Barre, PA 18702"),
         ("harrahs-philadelphia", "HARRAH’S PHILADELPHIA CASINO & RACETRACK", "777 Harrahs Boulevard, Chester, PA 19013"),

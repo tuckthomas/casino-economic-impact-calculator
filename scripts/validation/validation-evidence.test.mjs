@@ -38,6 +38,17 @@ test('rejects unresolved frozen protocol references', () => fixture(({ directory
     assert.throws(() => verifyValidationEvidence(directory), /protocolHash does not match/);
 }));
 
+test('checks separately frozen demographic inputs and replay results', () => fixture(({ directory, sourceFile, protocolFile }) => {
+    for (const key of ['demographicInputBundleSha256', 'replayResultHash']) {
+        const bytes = Buffer.from('{\r\n  "observed": 123\r\n}\r\n');
+        writeFileSync(sourceFile, bytes);
+        writeFileSync(protocolFile, JSON.stringify({ [key]: createHash('sha256').update(bytes).digest('hex') }));
+        assert.deepEqual(verifyValidationEvidence(directory), { files: 2, references: 1 });
+        writeFileSync(sourceFile, '{}');
+        assert.throws(() => verifyValidationEvidence(directory), new RegExp(`${key} does not match`));
+    }
+}));
+
 test('verifies raw source CSV references without parsing CSV as JSON', () => fixture(({ directory, protocolFile }) => {
     const csvFile = path.join(directory, 'bundles', 'source.csv');
     const bytes = Buffer.from('license,income\r\n123,100.30\r\n');

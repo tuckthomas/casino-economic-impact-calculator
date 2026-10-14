@@ -1,0 +1,15 @@
+{
+  "protocolHash": "b4166543c54c6dc283e2d29803f4ab0cae9094ae43a64bfc44b46135383b489e",
+  "scope": "Retained failed wide input capture before any new demographic ingestion or scoring. The subsequent 36-property development capture does not constitute a redraw or substitute for a final holdout.",
+  "completed": false,
+  "releaseAccepted": false,
+  "fullOrigins": 10745,
+  "missingAgeControls": [
+    "USA-ZCTA-11798"
+  ],
+  "error": "ACS table B01001 is missing requested ZCTA code 11798.",
+  "officialErrataUrl": "https://www.census.gov/programs-surveys/acs/technical-documentation/errata/148.html",
+  "populationImputed": false,
+  "freshHoldoutScored": false,
+  "missingPopulationCoveragePassed": false
+}

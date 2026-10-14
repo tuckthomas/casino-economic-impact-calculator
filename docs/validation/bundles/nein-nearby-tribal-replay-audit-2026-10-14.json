@@ -1,0 +1,140 @@
+{
+  "version": "nein-nearby-tribal-replay-audit-v1",
+  "protocolHash": "970aa1800a7bb35333c5a299ee0e6236bb7779f9a9f3c5696afa07d34098c2be",
+  "resultHash": "02687322123aa2353f88f4bc363f83d4d04ce62cd7880f011f9809d378eafa30",
+  "replayResultHash": "633631fc12e9ce8f2b5e458e90d6cc58268717184416ae2151ee0b6b3c64adbc",
+  "completedScenarios": 3,
+  "numericChecks": [
+    {
+      "scenario": "nein-allen-cbre",
+      "field": "totalResidentDemand",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.064937907154
+    },
+    {
+      "scenario": "nein-allen-cbre",
+      "field": "proposedResidentGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.015017855937
+    },
+    {
+      "scenario": "nein-allen-cbre",
+      "field": "proposedInducedResidentGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 1E-08
+    },
+    {
+      "scenario": "nein-allen-cbre",
+      "field": "tourismGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 1E-08
+    },
+    {
+      "scenario": "nein-allen-cbre",
+      "field": "trafficGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 1E-08
+    },
+    {
+      "scenario": "nein-allen-cbre",
+      "field": "stabilizedTotalGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.015017855937
+    },
+    {
+      "scenario": "nein-allen-cbre",
+      "field": "population",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.00018450510000000002
+    },
+    {
+      "scenario": "nein-dekalb-spectrum",
+      "field": "totalResidentDemand",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.078705336136
+    },
+    {
+      "scenario": "nein-dekalb-spectrum",
+      "field": "proposedResidentGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.013580550581
+    },
+    {
+      "scenario": "nein-dekalb-spectrum",
+      "field": "proposedInducedResidentGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 1E-08
+    },
+    {
+      "scenario": "nein-dekalb-spectrum",
+      "field": "tourismGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 1E-08
+    },
+    {
+      "scenario": "nein-dekalb-spectrum",
+      "field": "trafficGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 1E-08
+    },
+    {
+      "scenario": "nein-dekalb-spectrum",
+      "field": "stabilizedTotalGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.013580550581
+    },
+    {
+      "scenario": "nein-dekalb-spectrum",
+      "field": "population",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.0002176129
+    },
+    {
+      "scenario": "nein-steuben-steinberg",
+      "field": "totalResidentDemand",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.087138118971
+    },
+    {
+      "scenario": "nein-steuben-steinberg",
+      "field": "proposedResidentGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.011749328253000001
+    },
+    {
+      "scenario": "nein-steuben-steinberg",
+      "field": "proposedInducedResidentGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 1E-08
+    },
+    {
+      "scenario": "nein-steuben-steinberg",
+      "field": "tourismGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 1E-08
+    },
+    {
+      "scenario": "nein-steuben-steinberg",
+      "field": "trafficGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 1E-08
+    },
+    {
+      "scenario": "nein-steuben-steinberg",
+      "field": "stabilizedTotalGgr",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.011749328253000001
+    },
+    {
+      "scenario": "nein-steuben-steinberg",
+      "field": "population",
+      "absoluteDifference": 0.0,
+      "tolerance": 0.0002348375
+    }
+  ],
+  "allNumericChecksPassed": true,
+  "sharedOriginBudgetChecks": 631,
+  "maximumSharedOriginBudgetDifference": 0,
+  "releaseAccepted": false,
+  "scope": "Unrounded replay of configured Northeast Indiana scenarios, not observed revenue accuracy or downstream acceptance."
+}
