@@ -1,9 +1,9 @@
 {
   "plan": "sector_weighted_casino_displacement_model_and_revenue_projections_model",
-  "branch": "feature/sector-weighted-casino-displacement-model-and-revenue-projections-model",
+  "branch": "codex/gravity-economic-model-completion",
   "lifecycle": "in-progress",
   "createdAt": "2026-08-09T04:12:41.675Z",
-  "updatedAt": "2026-08-20T02:51:00.000Z",
+  "updatedAt": "2026-10-14T14:50:15.435Z",
   "completedRequirements": 817,
   "pendingRequirements": 204,
   "completedSections": 19,

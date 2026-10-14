@@ -1,0 +1,27 @@
+name: Model workflow consistency
+
+on:
+  push:
+    paths:
+      - 'docs/plans/in-progress/sector_weighted_casino_displacement_model_and_revenue_projections_model/**'
+      - 'scripts/check-model-workflow.mjs'
+      - '.github/workflows/model-workflow-guard.yml'
+  pull_request:
+    paths:
+      - 'docs/plans/in-progress/sector_weighted_casino_displacement_model_and_revenue_projections_model/**'
+      - 'scripts/check-model-workflow.mjs'
+      - '.github/workflows/model-workflow-guard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/check-model-workflow.mjs
