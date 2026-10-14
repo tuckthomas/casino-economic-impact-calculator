@@ -16,6 +16,35 @@ namespace SaveNEIN.Server.Tests;
 
 public sealed class TravelMatrixServiceTests
 {
+    [Fact]
+    public async Task CurrentSnapshotCandidateCacheTakesPrecedenceOverOlderSnapshotFallback()
+    {
+        await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"snapshot-cache-priority-{Guid.NewGuid():N}").Options);
+        var point = new NetTopologySuite.Geometries.Point(-85.14, 41.08) { SRID = 4326 };
+        db.OriginZones.AddRange(
+            new OriginZone { Id = 1, DatasetSnapshotId = Guid.NewGuid(), StableOriginId = "USA-ZCTA-46802", RepresentativePoint = point, AreaGeometry = point },
+            new OriginZone { Id = 2, DatasetSnapshotId = Guid.NewGuid(), StableOriginId = "USA-ZCTA-46802", RepresentativePoint = point, AreaGeometry = point });
+        await db.SaveChangesAsync();
+        var handler = new ValhallaMatrixHandler();
+        var service = new TravelMatrixService(db, new ValhallaClient(new HttpClient(handler)
+            { BaseAddress = new Uri("http://valhalla.test") }, NullLogger<ValhallaClient>.Instance));
+        var first = await service.ResolveAsync([new(1, "USA-ZCTA-46802", 41.08, -85.14)],
+            [new("old-snapshot", FacilityKinds.Scenario, null, Guid.NewGuid(), 41.0793, -85.1394)]);
+        db.CandidateLocationTravelCache.Add(new()
+        {
+            OriginZoneId = 2, CandidateCoordinateHash = TravelMatrixService.CandidateCoordinateHash(41.0793, -85.1394),
+            CandidateLatitude = 41.0793, CandidateLongitude = -85.1394, RoutingGraphHash = first.RoutingGraphHash,
+            CostingProfile = "auto", ValhallaVersion = "3.5.1", TravelTimeMinutes = 12.345,
+            RoutedDistanceMeters = 15_000, RouteFound = true
+        });
+        await db.SaveChangesAsync();
+        var second = await service.ResolveAsync([new(2, "USA-ZCTA-46802", 41.08, -85.14)],
+            [new("current-snapshot", FacilityKinds.Scenario, null, Guid.NewGuid(), 41.0793, -85.1394)]);
+        Assert.Equal(12.345, second.Routes.Single().TravelTimeMinutes);
+        Assert.Equal(1, handler.MatrixRequestCount);
+    }
+
     [Theory]
     [InlineData("unchanged", 1)]
     [InlineData("origin-moved", 2)]
