@@ -22,6 +22,26 @@ using QuestPDF.Infrastructure;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
+if (args is ["--execute-regional-suite", var regionalDatabase, var regionalRoutingUrl, var regionalProtocolPath, var regionalOutputPath])
+{
+    if (!regionalDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        regionalDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe regional validation database name.");
+    var regionalConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Regional validation connection configuration is missing.")) { Database = regionalDatabase };
+    await using var regionalDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(regionalConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    using var regionalHttp = new HttpClient { BaseAddress = new Uri(regionalRoutingUrl), Timeout = TimeSpan.FromMinutes(3) };
+    var regionalRouter = new ValhallaClient(regionalHttp, NullLogger<ValhallaClient>.Instance);
+    var regionalGraph = await regionalRouter.GetRoutingGraphIdentityAsync();
+    using var regionalProtocol = JsonDocument.Parse(await File.ReadAllBytesAsync(regionalProtocolPath));
+    if (regionalGraph.GraphHash != regionalProtocol.RootElement.GetProperty("routingGraphHash").GetString())
+        throw new InvalidDataException("Regional router differs from the frozen graph before execution.");
+    await new RegionalScenarioValidationService(regionalDb, ValidationExecutionFactory.Create(regionalDb, regionalRouter))
+        .RunAsync(Path.GetFullPath(regionalProtocolPath), Path.GetFullPath(regionalOutputPath));
+    return;
+}
+
 if (args is ["--supplement-border-competition", var borderBasePath, var borderPaPdfPath, var borderWiPdfPath, var borderOutputPath])
 {
     if (File.Exists(borderOutputPath)) throw new ArgumentException("Border-supply capture output already exists.");
