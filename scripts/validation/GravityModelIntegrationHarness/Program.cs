@@ -22,6 +22,41 @@ using QuestPDF.Infrastructure;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
+if (args is ["--warm-regional-travel-cache", var warmingDatabase, var warmingRoutingUrl, var warmingProtocolPath])
+{
+    if (!warmingDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        warmingDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe regional route-warming database name.");
+    var warmingProtocol = JsonSerializer.Deserialize<RegionalValidationProtocol>(await File.ReadAllBytesAsync(warmingProtocolPath),
+        new JsonSerializerOptions(JsonSerializerDefaults.Web)) ?? throw new InvalidDataException("Route-warming protocol is missing.");
+    var warmingConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Route-warming connection configuration is missing.")) { Database = warmingDatabase };
+    await using var warmingDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(warmingConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    foreach (var kind in new[] { DatasetSnapshotKinds.OriginGeography, DatasetSnapshotKinds.Competitors })
+    {
+        var input = warmingProtocol.Snapshots[kind];
+        if (!await warmingDb.DatasetSnapshots.AnyAsync(row => row.Id == input.Id && row.DatasetKey == kind && row.IsSealed && row.Checksum == input.Checksum))
+            throw new InvalidDataException("Route warming must use the exact declared sealed geometry/inventory.");
+    }
+    using var warmingHttp = new HttpClient { BaseAddress = new Uri(warmingRoutingUrl), Timeout = TimeSpan.FromMinutes(3) };
+    var warmingRouter = new ValhallaClient(warmingHttp, NullLogger<ValhallaClient>.Instance);
+    if ((await warmingRouter.GetRoutingGraphIdentityAsync()).GraphHash != warmingProtocol.RoutingGraphHash)
+        throw new InvalidDataException("Route warming cannot substitute a different graph.");
+    var warmingOrigins = await warmingDb.OriginZones.AsNoTracking().Where(row => row.DatasetSnapshotId == warmingProtocol.Snapshots[DatasetSnapshotKinds.OriginGeography].Id)
+        .OrderBy(row => row.StableOriginId).ToArrayAsync();
+    var warmingFacilities = await new CompetitiveUniverseService(warmingDb).SelectAsync(
+        warmingProtocol.Snapshots[DatasetSnapshotKinds.Competitors].Id, warmingOrigins, warmingProtocol.FiscalDate, warmingProtocol.CompetitorRadiusMiles);
+    var warmingTimer = System.Diagnostics.Stopwatch.StartNew();
+    var warmed = await new TravelMatrixService(warmingDb, warmingRouter).ResolveAsync(
+        warmingOrigins.Select(row => new TravelMatrixOrigin(row.Id, row.StableOriginId, row.RepresentativePoint.Y, row.RepresentativePoint.X)).ToArray(),
+        warmingFacilities.Select(row => new TravelMatrixFacility(row.StableVenueId, FacilityKinds.Incumbent, row.Id, null, row.Latitude, row.Longitude)).ToArray());
+    Console.WriteLine(JsonSerializer.Serialize(new { Origins = warmingOrigins.Length, Facilities = warmingFacilities.Count,
+        Routes = warmed.Routes.Count, ElapsedSeconds = warmingTimer.Elapsed.TotalSeconds, warmed.RoutingGraphHash,
+        Scope = "Exact physical route reuse/warming in the owned validation database; no model execution, synthetic times, publication or deployment." }));
+    return;
+}
+
 if (args is ["--seed-regional-validation-catalog", var regionalCatalogDatabase])
 {
     if (!regionalCatalogDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||

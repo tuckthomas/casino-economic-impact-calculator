@@ -122,6 +122,38 @@ public sealed class TravelMatrixService(
                 group => group.Key,
                 group => group.OrderByDescending(route => route.CalculatedAtUtc).First());
         var materializedCandidateRoute = false;
+        if (routeByKey.Count < orderedOrigins.Length * orderedFacilities.Length)
+        {
+            // A refreshed demographic/geography snapshot changes database IDs even
+            // when the exact physical routing endpoints remain unchanged.
+            var stableOriginIds = orderedOrigins.Select(origin => origin.StableOriginId).ToArray();
+            var endpointHashes = facilityIdentities.Values.Select(identity => identity.Hash).Distinct().ToArray();
+            var priorRoutes = await (from route in db.OriginFacilityTravel.AsNoTracking()
+                                     join sourceOrigin in db.OriginZones.AsNoTracking() on route.OriginZoneId equals sourceOrigin.Id
+                                     where !originIds.Contains(sourceOrigin.Id) && stableOriginIds.Contains(sourceOrigin.StableOriginId) &&
+                                           sourceOrigin.RepresentativePoint != null && endpointHashes.Contains(route.FacilityCoordinateHash) &&
+                                           route.RoutingGraphHash == graph.GraphHash && route.CostingProfile == costingProfile
+                                     select new { Route = route, sourceOrigin.StableOriginId,
+                                         Latitude = sourceOrigin.RepresentativePoint.Y, Longitude = sourceOrigin.RepresentativePoint.X })
+                .ToListAsync(cancellationToken);
+            var priorByEndpoints = priorRoutes.GroupBy(row => (row.StableOriginId, row.Latitude, row.Longitude, row.Route.FacilityCoordinateHash))
+                .ToDictionary(group => group.Key, group => group.OrderByDescending(row => row.Route.CalculatedAtUtc).First().Route);
+            foreach (var origin in orderedOrigins)
+            foreach (var facility in orderedFacilities)
+            {
+                var key = (origin.OriginZoneId, facility.FacilityKey);
+                var identity = facilityIdentities[facility.FacilityKey];
+                if (routeByKey.ContainsKey(key) || !priorByEndpoints.TryGetValue((origin.StableOriginId, origin.Latitude, origin.Longitude, identity.Hash), out var prior) ||
+                    !CoordinatesMatch(prior, identity)) continue;
+                var reused = CreateRoute(origin, facility, graph, costingProfile, prior.TravelTimeMinutes,
+                    prior.RoutedDistanceMeters, prior.RouteFound, prior.RouteFailureReason);
+                reused.CalculatedAtUtc = prior.CalculatedAtUtc;
+                TrackNewRoute(reused);
+                routeByKey.Add(key, reused);
+                AddCandidateCacheIfNeeded(origin, facility, reused);
+                materializedCandidateRoute = true;
+            }
+        }
         foreach (var origin in orderedOrigins)
         {
             foreach (var facility in scenarioFacilities)
