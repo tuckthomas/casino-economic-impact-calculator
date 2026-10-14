@@ -4,6 +4,8 @@ Implementation tracking: [issue #38](https://github.com/tuckthomas/casino-econom
 
 The canonical requirements remain in `docs/plans/in-progress/sector_weighted_casino_displacement_model_and_revenue_projections_model/`. This ledger records implementation and verification evidence.
 
+The first production use case is **Northeast Indiana**, including the configured Allen County, DeKalb County and Steuben County scenarios and the surrounding market. This is the scope already stated in the [canonical plan](../plans/in-progress/sector_weighted_casino_displacement_model_and_revenue_projections_model/sector_weighted_casino_displacement_model_and_revenue_projections_model.md:9). Fort Wayne is one scenario within that regional use case. External incumbent calibration and Chicago diagnostics do not establish accuracy for Northeast Indiana. Regional boundaries, candidate locations, competitors and jurisdiction rules remain scenario/data configuration; they must not be hard-coded into the reusable model.
+
 ## Verified engineering work
 
 - [x] Restore versioned location, active zones, population attribution and exposure assumptions between workflow stages. Reject missing, inconsistent or expired context.
@@ -184,8 +186,11 @@ Verification: **365 server tests pass**, four byte-integrity tests pass, Release
 
 Remaining accuracy work is explicit:
 
+- [ ] Verify the Northeast Indiana scenario suite first: Allen County, DeKalb County and Steuben County with the surrounding market, using common supported model assumptions and correctly scoped origins, competition, fiscal geography, projection years and incremental nonresident demand. Reconcile the existing CBRE/Spectrum/Steinberg benchmark work and its unresolved limitations. Those studies contain forecasts, not observed revenues for operating proposed casinos; matching them is not independent empirical accuracy acceptance.
 - [ ] Reconcile historical Illinois video-gaming location/unit periods and include eligible sites in the routed competitive universe; complete neighboring tribal and other border supply with supported historical attributes.
 - [ ] Handle relocated/midyear facilities with effective-dated geometry and capacity, including Joliet. Current static snapshots cannot establish annual market completeness.
 - [ ] Establish a coherent origin-budget specification that transfers across markets; close the remaining property-tail and geographic failures before another final validation. Target-jurisdiction diagnostic scales alone do not establish this.
 - [ ] Predeclare and pass a new untouched sample meeting the existing twelve-property, three-market, two-jurisdiction policy, with independent input/fiscal/reproducibility evidence. Preserve all 36 inspected identities as unavailable for fresh holdout use.
 - [ ] Complete the public visualization/override, fractional geography/population-control and causal/economic-input audits already listed above.
+
+Scope correction: previous commentary incorrectly reduced the use case to Fort Wayne and emphasized the Chicago diagnostic as the remaining objective. The governing scope was already explicit in the canonical plan. The roughly 13% development errors above are not measured Northeast Indiana forecast accuracy, and neither engineering tests nor a single site-centered income-coverage audit establish regional completion. The canonical scope and acceptance limits are unchanged.
