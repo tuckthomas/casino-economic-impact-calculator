@@ -80,6 +80,9 @@ public sealed class RegionalScenarioValidationService(AppDbContext db, IGravityM
         var program = await db.DevelopmentPrograms.AsNoTracking().SingleOrDefaultAsync(row => row.StableProgramId == programDefinition.StableProgramId && row.Version == "1", cancellationToken)
             ?? await new DevelopmentProgramService(db).CreateAsync(programDefinition, cancellationToken);
         var results = new List<object>();
+        var budgetsByOriginAndYear = new Dictionary<(string Origin, int Year), decimal>();
+        var budgetChecks = 0;
+        var maximumBudgetDifference = 0m;
         foreach (var item in prepared)
         {
             var scenario = item.Scenario;
@@ -108,6 +111,20 @@ public sealed class RegionalScenarioValidationService(AppDbContext db, IGravityM
             var populations = originResults.ToDictionary(row => row.OriginZoneId);
             if (originResults.Length != selected.Length || originResults.Any(row => row.EligiblePopulation is null || !double.IsFinite(row.EligiblePopulation.Value)))
                 throw new InvalidDataException("Regional run omitted eligible origin populations.");
+            foreach (var origin in selected)
+            {
+                var growth = protocol.ExpectedParameters["demographics.population_annual_growth_rate"];
+                var key = (origin.StableOriginId, growth == 0 ? 0 : scenario.PopulationScenarioYear);
+                var budget = populations[origin.Id].ResidentDemand;
+                if (budgetsByOriginAndYear.TryGetValue(key, out var previousBudget))
+                {
+                    budgetChecks++;
+                    maximumBudgetDifference = Math.Max(maximumBudgetDifference, Math.Abs(previousBudget - budget));
+                }
+                else budgetsByOriginAndYear.Add(key, budget);
+            }
+            if (protocol.ExpectedParameters.GetValueOrDefault("demand.reference_income") > 0 && maximumBudgetDifference > 0)
+                throw new InvalidDataException("A shared regional reference did not preserve overlapping origin budgets.");
             results.Add(new
             {
                 scenario.Key, scenario.CountyFips, scenario.Latitude, scenario.Longitude, scenario.LocationBasis, scenario.PopulationScenarioYear,
@@ -134,6 +151,8 @@ public sealed class RegionalScenarioValidationService(AppDbContext db, IGravityM
             ProtocolHash = protocolHash, protocol.Version, protocol.Scope, protocol.RoutingGraphHash,
             protocol.Snapshots, protocol.ExpectedParameters, ScenarioResults = results, CompletedScenarios = results.Count,
             ExpectedScenarios = protocol.Scenarios.Length, ReleaseAccepted = false,
+            SharedOriginBudgetChecks = budgetChecks, MaximumSharedOriginBudgetDifference = maximumBudgetDifference,
+            FixedRegionalReference = protocol.ExpectedParameters.GetValueOrDefault("demand.reference_income") > 0,
             Limitations = new[] { "Study values are forecasts, not independent observed casino revenues.",
                 "Development program and proxy sites are explicitly assumed; no parcel precision is claimed.",
                 "Site-addressable tourism/traffic are not supplied; no statewide totals are converted into site demand.",

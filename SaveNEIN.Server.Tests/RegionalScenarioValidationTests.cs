@@ -36,6 +36,21 @@ public sealed class RegionalScenarioValidationTests
         });
     }
 
+    [Fact]
+    public void FixedRegionalReferencePreservesAnOriginsBudgetAcrossCandidateMarkets()
+    {
+        var service = new OriginDemandService();
+        var first = GravityModelExecutionService.ResolveReferenceIncome(80_000, [40_000, 60_000, 80_000]);
+        var second = GravityModelExecutionService.ResolveReferenceIncome(80_000, [80_000, 100_000, 120_000]);
+        var a = service.CalculatePerCapita(new("shared-origin", 100, 370, 80_000, first, 1, 0.5, 1.5));
+        var b = service.CalculatePerCapita(new("shared-origin", 100, 370, 80_000, second, 1, 0.5, 1.5));
+        Assert.Equal(37_000, a.Demand);
+        Assert.Equal(a.Demand, b.Demand);
+        Assert.Equal(60_000, GravityModelExecutionService.ResolveReferenceIncome(0, [40_000, 60_000, 80_000]));
+        Assert.Throws<InvalidOperationException>(() => GravityModelExecutionService.ResolveReferenceIncome(double.NaN, [80_000]));
+        Assert.Throws<InvalidOperationException>(() => GravityModelExecutionService.ResolveReferenceIncome(-1, [80_000]));
+    }
+
     [Theory]
     [InlineData("scope")]
     [InlineData("snapshot")]

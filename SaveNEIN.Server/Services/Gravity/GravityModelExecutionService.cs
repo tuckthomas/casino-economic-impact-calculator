@@ -787,7 +787,7 @@ public sealed class GravityModelExecutionService(
         var incomeMetricByOrigin = context.Origins.ToDictionary(
             origin => origin.Id,
             origin => ResolveIncomeMetric(incomeByOrigin[origin.Id], origin.StableOriginId));
-        var referenceIncome = Median(incomeMetricByOrigin.Values);
+        var referenceIncome = ResolveReferenceIncome(parameters.GetValueOrDefault("demand.reference_income"), incomeMetricByOrigin.Values);
 
         OriginDemandResult CalculatePerCapita(OriginZone origin)
         {
@@ -2251,6 +2251,13 @@ public sealed class GravityModelExecutionService(
         }
         throw new InvalidOperationException(
             $"Origin '{originKey}' has no positive median income or AGI-per-return metric.");
+    }
+
+    internal static double ResolveReferenceIncome(double declaredReference, IEnumerable<double> selectedIncomeMetrics)
+    {
+        if (!double.IsFinite(declaredReference) || declaredReference < 0)
+            throw new InvalidOperationException("Declared regional reference income must be finite and nonnegative.");
+        return declaredReference > 0 ? declaredReference : Median(selectedIncomeMetrics);
     }
 
     private static double Median(IEnumerable<double> values)

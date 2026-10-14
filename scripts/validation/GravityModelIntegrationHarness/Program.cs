@@ -22,6 +22,115 @@ using QuestPDF.Infrastructure;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
+if (args is ["--seed-regional-validation-catalog", var regionalCatalogDatabase])
+{
+    if (!regionalCatalogDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        regionalCatalogDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe regional catalog validation database name.");
+    var regionalCatalogConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Regional catalog connection configuration is missing.")) { Database = regionalCatalogDatabase };
+    await using var regionalCatalogDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(regionalCatalogConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    await ModelFoundationInitializer.SeedAsync(regionalCatalogDb);
+    Console.WriteLine("Regional parameter catalog seeded in the owned validation database.");
+    return;
+}
+
+if (args is ["--capture-regional-demographics", var demographicDatabase, var demographicProtocolPath, var demographicYearText, var demographicOutputPath])
+{
+    if (!demographicDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        demographicDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_') || File.Exists(demographicOutputPath))
+        throw new ArgumentException("Regional demographics require an owned validation database and new output path.");
+    var demographicProtocolBytes = await File.ReadAllBytesAsync(demographicProtocolPath);
+    var demographicProtocol = JsonSerializer.Deserialize<RegionalValidationProtocol>(demographicProtocolBytes, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+        ?? throw new InvalidDataException("Regional demographic protocol is missing.");
+    var demographicYear = int.Parse(demographicYearText, System.Globalization.CultureInfo.InvariantCulture);
+    if (demographicYear is < 2020 or > 2024) throw new ArgumentException("Regional demographics require an explicitly supported published ACS vintage.");
+    var demographicConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Regional demographic connection configuration is missing.")) { Database = demographicDatabase };
+    await using var demographicDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(demographicConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    var centerLat = demographicProtocol.Scenarios.Average(item => item.Latitude);
+    var centerLon = demographicProtocol.Scenarios.Average(item => item.Longitude);
+    // One deliberately broad envelope contains every scenario circle. Final coverage
+    // uses each scenario's declared radius and the same Census representative points.
+    var envelopeMiles = demographicProtocol.OriginRadiusMiles + 100 * demographicProtocol.Scenarios.Max(item =>
+        Math.Abs(item.Latitude - centerLat) + Math.Abs(item.Longitude - centerLon));
+    using var demographicHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(8) };
+    var fullGeography = await new CensusZctaOriginProvider(demographicHttp, Options.Create(new CensusZctaOriginProviderOptions()))
+        .FetchAsync(new("US-ZCTA", new(2020, 1, 1), new(2020, 12, 31), new Dictionary<string, string>
+        {
+            ["center-latitude"] = centerLat.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            ["center-longitude"] = centerLon.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            ["radius-miles"] = envelopeMiles.ToString("R", System.Globalization.CultureInfo.InvariantCulture)
+        }));
+    var union = fullGeography.Rows.Where(origin => demographicProtocol.Scenarios.Any(scenario =>
+        CompetitiveUniverseService.IsWithinBroadPrefilter(origin.RepresentativeLatitude, origin.RepresentativeLongitude,
+            scenario.Latitude, scenario.Longitude, demographicProtocol.OriginRadiusMiles))).OrderBy(origin => origin.StableOriginId).ToArray();
+    Console.WriteLine($"Captured {union.Length} complete Census regional origins before income filtering.");
+    var demographicRequest = new ProviderFetchRequest("US-ZCTA", new(demographicYear, 1, 1), new(demographicYear, 12, 31),
+        new Dictionary<string, string> { ["zcta-codes"] = string.Join(',', union.Select(origin => origin.GeographyCode)) });
+    var acsOptions = Options.Create(new CensusAcsProviderOptions { ApiKey = Environment.GetEnvironmentVariable("CensusAcs__ApiKey") });
+    var ages = await new CensusAcsAgePopulationProvider(demographicHttp, acsOptions).FetchAsync(demographicRequest);
+    var medians = await new CensusAcsMedianIncomeProvider(demographicHttp, acsOptions).FetchAsync(demographicRequest);
+    var binsByOrigin = ages.Rows.GroupBy(row => row.StableOriginId).ToDictionary(group => group.Key, group => group.ToArray());
+    if (union.Any(origin => !binsByOrigin.ContainsKey(origin.StableOriginId)))
+        throw new InvalidDataException("Complete regional Census origins lack independent ACS age controls.");
+    var gamingAge = await new GamingAgeResolver(new JurisdictionProfileService(demographicDb)).ResolveMinimumAgeAsync(
+        demographicProtocol.JurisdictionCode, demographicProtocol.FacilityRegime, demographicProtocol.FiscalDate);
+    var eligible = binsByOrigin.ToDictionary(pair => pair.Key, pair => EligiblePopulationCalculator.Calculate(pair.Value.Select(row =>
+        new AgeBinValue(row.MinimumAge, row.MaximumAge, row.Population)).ToArray(), gamingAge).Population);
+    var medianByOrigin = medians.Rows.Where(row => row.MedianHouseholdIncome is > 0).ToDictionary(row => row.StableOriginId);
+    var covered = medianByOrigin.Keys.ToHashSet(StringComparer.Ordinal);
+    var selected = union.Where(origin => covered.Contains(origin.StableOriginId)).ToArray();
+    var transform = "regional-census-acs-percapita-inputs-v1";
+    string DerivedHash(string source) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(transform + "\n" + source + "\n" +
+        string.Join('\n', selected.Select(origin => origin.StableOriginId))))).ToLowerInvariant();
+    var geographyHash = DerivedHash(fullGeography.ContentChecksum + "\n" + medians.ContentChecksum);
+    var demographicGeography = fullGeography with { Rows = selected, ContentChecksum = geographyHash, TransformVersion = transform,
+        Warnings = fullGeography.Warnings.Append("Regional union filtered only to positive published ACS median household income; no synthetic income is substituted. Separate controls retain all omitted population.").ToArray() };
+    var demographicIncome = medians with { Rows = selected.Select(origin => medianByOrigin[origin.StableOriginId]).ToArray(),
+        ContentChecksum = DerivedHash(medians.ContentChecksum + "\n" + geographyHash), TransformVersion = transform + "+median-income" };
+    var demographicAge = ages with { Rows = ages.Rows.Where(row => covered.Contains(row.StableOriginId)).ToArray(),
+        ContentChecksum = DerivedHash(ages.ContentChecksum + "\n" + geographyHash), TransformVersion = transform + "+age" };
+    var ingester = new ProviderSnapshotIngestionService(new DataSnapshotService(demographicDb), new ModelDataIngestionService(demographicDb));
+    var originId = await ingester.IngestOriginsAsync(new FrozenOriginProvider(demographicGeography), new("US-ZCTA", new(2020, 1, 1), new(2020, 12, 31)));
+    var incomeId = await ingester.IngestIncomeAsync(new FrozenOriginIncomeProvider(demographicIncome), demographicRequest, originId);
+    var ageId = await ingester.IngestAgePopulationAsync(new FrozenAgeProvider(demographicAge), demographicRequest, originId);
+    var sealedDemographicInputs = await demographicDb.DatasetSnapshots.AsNoTracking()
+        .Where(row => row.Id == originId || row.Id == incomeId || row.Id == ageId).ToDictionaryAsync(row => row.Id);
+    var coverage = demographicProtocol.Scenarios.Select(scenario =>
+    {
+        var circle = union.Where(origin => CompetitiveUniverseService.IsWithinBroadPrefilter(origin.RepresentativeLatitude,
+            origin.RepresentativeLongitude, scenario.Latitude, scenario.Longitude, demographicProtocol.OriginRadiusMiles)).ToArray();
+        var expected = circle.Sum(origin => eligible[origin.StableOriginId]);
+        var retained = circle.Where(origin => covered.Contains(origin.StableOriginId)).Sum(origin => eligible[origin.StableOriginId]);
+        return new { scenario.Key, ExpectedOrigins = circle.Length, CoveredOrigins = circle.Count(origin => covered.Contains(origin.StableOriginId)),
+            ExpectedEligiblePopulation = expected, CoveredEligiblePopulation = retained,
+            CoveragePercent = expected > 0 ? 100 * retained / expected : (double?)null,
+            PopulationCoverageGatePassed = expected > 0 && retained >= 0.99 * expected,
+            MissingOrigins = circle.Where(origin => !covered.Contains(origin.StableOriginId)).Select(origin => new { origin.StableOriginId, Population = eligible[origin.StableOriginId] }) };
+    }).ToArray();
+    var demographicCaptureResult = new
+    {
+        ProtocolHash = Convert.ToHexString(SHA256.HashData(demographicProtocolBytes)).ToLowerInvariant(),
+        Scope = "Regional input coverage and ACS median-household-income correction; not empirical model accuracy, fractional county controls or acceptance.",
+        ObservationYear = demographicYear, GamingAge = gamingAge, FullOrigins = union.Length, ModelOrigins = selected.Length,
+        SourceGeography = new { fullGeography.Source.Url, fullGeography.Source.ContentHash, fullGeography.ContentChecksum },
+        SourceAges = new { ages.Source.Url, ages.Source.ContentHash, ages.ContentChecksum },
+        SourceMedianIncome = new { medians.Source.Url, medians.Source.ContentHash, medians.ContentChecksum },
+        InputSnapshots = new { Origin = new { Id = originId, sealedDemographicInputs[originId].Checksum },
+            Income = new { Id = incomeId, sealedDemographicInputs[incomeId].Checksum }, Age = new { Id = ageId, sealedDemographicInputs[ageId].Checksum } },
+        Coverage = coverage,
+        Controls = union.Select(origin => new { origin.StableOriginId, origin.RepresentativeLatitude, origin.RepresentativeLongitude,
+            EligiblePopulation = eligible[origin.StableOriginId], MedianHouseholdIncome = medianByOrigin.GetValueOrDefault(origin.StableOriginId)?.MedianHouseholdIncome }),
+        Warnings = demographicGeography.Warnings.Concat(demographicAge.Warnings).Concat(demographicIncome.Warnings), ReleaseAccepted = false
+    };
+    await File.WriteAllTextAsync(demographicOutputPath, JsonSerializer.Serialize(demographicCaptureResult, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { originId, incomeId, ageId, Cases = coverage.Select(row => new { row.Key, row.CoveragePercent, row.PopulationCoverageGatePassed }) }));
+    return;
+}
+
 if (args is ["--execute-regional-suite", var regionalDatabase, var regionalRoutingUrl, var regionalProtocolPath, var regionalOutputPath])
 {
     if (!regionalDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
@@ -3273,6 +3382,13 @@ file sealed class FrozenOriginIncomeProvider(
 
     public Task<ProviderDataset<OriginIncomeImportRow>> FetchAsync(
         ProviderFetchRequest request,
+        CancellationToken cancellationToken = default) => Task.FromResult(dataset);
+}
+
+file sealed class FrozenAgeProvider(ProviderDataset<OriginAgeBinImportRow> dataset) : IAgePopulationProvider
+{
+    public string ProviderKey => "frozen-regional-acs-age-validation";
+    public Task<ProviderDataset<OriginAgeBinImportRow>> FetchAsync(ProviderFetchRequest request,
         CancellationToken cancellationToken = default) => Task.FromResult(dataset);
 }
 

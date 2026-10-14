@@ -803,6 +803,8 @@ public static class ModelFoundationInitializer
             "Zero-safe fallback prevents unsupported production forecasts until calibrated.");
         yield return Definition("demand.income_elasticity", "demand", "Income elasticity", "elasticity", 1.0, -5, 5, 0, 2, 0.05, "advanced", false,
             "Unit-elastic prior; requires validation.");
+        yield return Definition("demand.reference_income", "demand", "Regional reference income", "USD/year", 0, 0, 1_000_000, 0, null, 1000, "expert", false,
+            "A positive value fixes the common income reference across regional scenarios. Zero retains automatic median income for the selected origins. Use a declared income metric/vintage and retain the regional reference source; changing candidate origin selections must not silently redefine a deliberately shared reference.");
         yield return Definition("demand.income_adjustment_minimum", "demand", "Minimum income adjustment", "multiplier", 0.5, 0, 10, 0.25, 1, 0.05, "expert", false,
             "Numerical and model-risk bound pending market calibration.");
         yield return Definition("demand.income_adjustment_maximum", "demand", "Maximum income adjustment", "multiplier", 1.5, 0, 10, 1, 3, 0.05, "expert", false,

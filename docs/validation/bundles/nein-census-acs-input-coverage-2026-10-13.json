@@ -1,0 +1,4219 @@
+{
+  "protocolHash": "ccc4688c1ca0c64b19e34bdd8e49166424b4c48fc25c6f143d5274e1ce90d07f",
+  "scope": "Regional input coverage and ACS median-household-income correction; not empirical model accuracy, fractional county controls or acceptance.",
+  "observationYear": 2024,
+  "gamingAge": 21,
+  "fullOrigins": 542,
+  "modelOrigins": 505,
+  "sourceGeography": {
+    "url": "https://www2.census.gov/geo/tiger/GENZ2020/shp/cb_2020_us_zcta520_500k.zip",
+    "contentHash": "32906894267127899acd4a8092f33356a39c90f183a82af122ccdf8753f4b768",
+    "contentChecksum": "a3ba62ef8a8002aae4955e1780b3b0dbfdbc3695bb003952e25da53a4bae9389"
+  },
+  "sourceAges": {
+    "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b01001.dat",
+    "contentHash": "1637b18a96881b81e050df1cd3d5ac38a33208b9b69b40e1dbeb3c4e13718f0e",
+    "contentChecksum": "c681a65b21b2454215c90c0daffe0f1371ccfc70c21b438976e33a9ef750bef7"
+  },
+  "sourceMedianIncome": {
+    "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b19013.dat",
+    "contentHash": "b25a176b0e6c339b6f3a2a0d3d8446bf06f5f080b4395993ec9a8313efb1c229",
+    "contentChecksum": "036523f821f879f66b903a40545fa34e4ecc0b28a1d848493cbdf3eb124b9e4a"
+  },
+  "inputSnapshots": {
+    "origin": {
+      "id": "70c3b288-98d1-47ad-ab8b-bf09a0d40ede",
+      "checksum": "9714418b768a4f035f5611c964bd3a9dc054d17d282b95f424ff0d285c49be12"
+    },
+    "income": {
+      "id": "be604760-9691-4d01-be76-3fe9592470a2",
+      "checksum": "08004c27526aef7186af3f9a7921e63674a7c7eefa75d5a94b58620d10063c0d"
+    },
+    "age": {
+      "id": "48a60613-a24c-4867-967c-9d757af06c20",
+      "checksum": "c6d41ea14ac33788c2ce65a3137df9010b94515de606cca12f6bfa7c0544bf94"
+    }
+  },
+  "coverage": [
+    {
+      "key": "nein-allen-cbre",
+      "expectedOrigins": 409,
+      "coveredOrigins": 375,
+      "expectedEligiblePopulation": 1849836,
+      "coveredEligiblePopulation": 1845051,
+      "coveragePercent": 99.74132842046538,
+      "populationCoverageGatePassed": true,
+      "missingOrigins": [
+        {
+          "stableOriginId": "USA-ZCTA-43505",
+          "population": 48
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43510",
+          "population": 12
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43520",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43523",
+          "population": 44
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43530",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-45809",
+          "population": 30
+        },
+        {
+          "stableOriginId": "USA-ZCTA-45884",
+          "population": 141
+        },
+        {
+          "stableOriginId": "USA-ZCTA-45893",
+          "population": 160
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46047",
+          "population": 49
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46502",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46513",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46556",
+          "population": 2798
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46595",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46624",
+          "population": 28
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46704",
+          "population": 60
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46771",
+          "population": 80
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46778",
+          "population": 34
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46786",
+          "population": 35
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46789",
+          "population": 63
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46796",
+          "population": 204
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46922",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46937",
+          "population": 17
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46945",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46965",
+          "population": 53
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46967",
+          "population": 120
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46968",
+          "population": 79
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46971",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46980",
+          "population": 61
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46984",
+          "population": 8
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46998",
+          "population": 75
+        },
+        {
+          "stableOriginId": "USA-ZCTA-47306",
+          "population": 400
+        },
+        {
+          "stableOriginId": "USA-ZCTA-47367",
+          "population": 70
+        },
+        {
+          "stableOriginId": "USA-ZCTA-49258",
+          "population": 19
+        },
+        {
+          "stableOriginId": "USA-ZCTA-49289",
+          "population": 97
+        }
+      ]
+    },
+    {
+      "key": "nein-dekalb-spectrum",
+      "expectedOrigins": 411,
+      "coveredOrigins": 383,
+      "expectedEligiblePopulation": 2180175,
+      "coveredEligiblePopulation": 2176129,
+      "coveragePercent": 99.81441856731685,
+      "populationCoverageGatePassed": true,
+      "missingOrigins": [
+        {
+          "stableOriginId": "USA-ZCTA-43403",
+          "population": 145
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43505",
+          "population": 48
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43510",
+          "population": 12
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43520",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43523",
+          "population": 44
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43530",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-45809",
+          "population": 30
+        },
+        {
+          "stableOriginId": "USA-ZCTA-45893",
+          "population": 160
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46502",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46513",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46556",
+          "population": 2798
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46595",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46624",
+          "population": 28
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46704",
+          "population": 60
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46771",
+          "population": 80
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46778",
+          "population": 34
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46786",
+          "population": 35
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46789",
+          "population": 63
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46796",
+          "population": 204
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46922",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46945",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46967",
+          "population": 120
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46971",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46980",
+          "population": 61
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46984",
+          "population": 8
+        },
+        {
+          "stableOriginId": "USA-ZCTA-49258",
+          "population": 19
+        },
+        {
+          "stableOriginId": "USA-ZCTA-49263",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-49289",
+          "population": 97
+        }
+      ]
+    },
+    {
+      "key": "nein-steuben-steinberg",
+      "expectedOrigins": 401,
+      "coveredOrigins": 378,
+      "expectedEligiblePopulation": 2352257,
+      "coveredEligiblePopulation": 2348375,
+      "coveragePercent": 99.83496701253307,
+      "populationCoverageGatePassed": true,
+      "missingOrigins": [
+        {
+          "stableOriginId": "USA-ZCTA-43505",
+          "population": 48
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43510",
+          "population": 12
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43520",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43523",
+          "population": 44
+        },
+        {
+          "stableOriginId": "USA-ZCTA-43530",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-45809",
+          "population": 30
+        },
+        {
+          "stableOriginId": "USA-ZCTA-45893",
+          "population": 160
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46502",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46513",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46556",
+          "population": 2798
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46595",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46624",
+          "population": 28
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46704",
+          "population": 60
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46771",
+          "population": 80
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46778",
+          "population": 34
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46786",
+          "population": 35
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46789",
+          "population": 63
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46796",
+          "population": 204
+        },
+        {
+          "stableOriginId": "USA-ZCTA-46980",
+          "population": 61
+        },
+        {
+          "stableOriginId": "USA-ZCTA-49104",
+          "population": 109
+        },
+        {
+          "stableOriginId": "USA-ZCTA-49258",
+          "population": 19
+        },
+        {
+          "stableOriginId": "USA-ZCTA-49263",
+          "population": 0
+        },
+        {
+          "stableOriginId": "USA-ZCTA-49289",
+          "population": 97
+        }
+      ]
+    }
+  ],
+  "controls": [
+    {
+      "stableOriginId": "USA-ZCTA-43402",
+      "representativeLatitude": 41.3980715,
+      "representativeLongitude": -83.64516471027154,
+      "eligiblePopulation": 23790,
+      "medianHouseholdIncome": 52426
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43403",
+      "representativeLatitude": 41.3791685,
+      "representativeLongitude": -83.63628517455012,
+      "eligiblePopulation": 145,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43413",
+      "representativeLatitude": 41.2416445,
+      "representativeLongitude": -83.66474293425131,
+      "eligiblePopulation": 826,
+      "medianHouseholdIncome": 80069
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43462",
+      "representativeLatitude": 41.284272,
+      "representativeLongitude": -83.71791692570346,
+      "eligiblePopulation": 790,
+      "medianHouseholdIncome": 88000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43501",
+      "representativeLatitude": 41.658724,
+      "representativeLongitude": -84.45687695406352,
+      "eligiblePopulation": 490,
+      "medianHouseholdIncome": 68203
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43502",
+      "representativeLatitude": 41.5375265,
+      "representativeLongitude": -84.30607781620762,
+      "eligiblePopulation": 5001,
+      "medianHouseholdIncome": 74925
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43504",
+      "representativeLatitude": 41.6908495,
+      "representativeLongitude": -83.83014281898939,
+      "eligiblePopulation": 793,
+      "medianHouseholdIncome": 91731
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43505",
+      "representativeLatitude": 41.522968500000005,
+      "representativeLongitude": -84.7310686795237,
+      "eligiblePopulation": 48,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43506",
+      "representativeLatitude": 41.457567499999996,
+      "representativeLongitude": -84.55377388554629,
+      "eligiblePopulation": 11485,
+      "medianHouseholdIncome": 60234
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43510",
+      "representativeLatitude": 41.4659635,
+      "representativeLongitude": -83.94707119237918,
+      "eligiblePopulation": 12,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43511",
+      "representativeLatitude": 41.262558,
+      "representativeLongitude": -83.82423921802676,
+      "eligiblePopulation": 605,
+      "medianHouseholdIncome": 66250
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43512",
+      "representativeLatitude": 41.302598,
+      "representativeLongitude": -84.37049022344524,
+      "eligiblePopulation": 21352,
+      "medianHouseholdIncome": 71841
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43515",
+      "representativeLatitude": 41.584138499999995,
+      "representativeLongitude": -84.00848695766273,
+      "eligiblePopulation": 6023,
+      "medianHouseholdIncome": 69536
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43516",
+      "representativeLatitude": 41.2154375,
+      "representativeLongitude": -83.90049576975703,
+      "eligiblePopulation": 1847,
+      "medianHouseholdIncome": 89000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43517",
+      "representativeLatitude": 41.4464817423368,
+      "representativeLongitude": -84.72756204994239,
+      "eligiblePopulation": 2548,
+      "medianHouseholdIncome": 58578
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43518",
+      "representativeLatitude": 41.59454942173235,
+      "representativeLongitude": -84.74842946701594,
+      "eligiblePopulation": 1938,
+      "medianHouseholdIncome": 86200
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43519",
+      "representativeLatitude": 41.417078000000004,
+      "representativeLongitude": -84.4077177284039,
+      "eligiblePopulation": 198,
+      "medianHouseholdIncome": 78114
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43520",
+      "representativeLatitude": 41.380718,
+      "representativeLongitude": -84.6356854730268,
+      "eligiblePopulation": 0,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43521",
+      "representativeLatitude": 41.650242500000004,
+      "representativeLongitude": -84.31473941200841,
+      "eligiblePopulation": 1877,
+      "medianHouseholdIncome": 60550
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43522",
+      "representativeLatitude": 41.4195195,
+      "representativeLongitude": -83.8348242297597,
+      "eligiblePopulation": 2536,
+      "medianHouseholdIncome": 76583
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43523",
+      "representativeLatitude": 41.334554999999995,
+      "representativeLongitude": -83.9994184227844,
+      "eligiblePopulation": 44,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43524",
+      "representativeLatitude": 41.2318095,
+      "representativeLongitude": -84.03610840464704,
+      "eligiblePopulation": 856,
+      "medianHouseholdIncome": 60882
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43525",
+      "representativeLatitude": 41.463086,
+      "representativeLongitude": -83.70139081976174,
+      "eligiblePopulation": 852,
+      "medianHouseholdIncome": 108672
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43526",
+      "representativeLatitude": 41.3145815947602,
+      "representativeLongitude": -84.73667176550462,
+      "eligiblePopulation": 4051,
+      "medianHouseholdIncome": 66912
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43527",
+      "representativeLatitude": 41.246346,
+      "representativeLongitude": -84.15118847935253,
+      "eligiblePopulation": 1724,
+      "medianHouseholdIncome": 58821
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43528",
+      "representativeLatitude": 41.6331395,
+      "representativeLongitude": -83.74007705384973,
+      "eligiblePopulation": 12113,
+      "medianHouseholdIncome": 93986
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43529",
+      "representativeLatitude": 41.1897785,
+      "representativeLongitude": -83.78437501165516,
+      "eligiblePopulation": 286,
+      "medianHouseholdIncome": 84167
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43530",
+      "representativeLatitude": 41.3274635,
+      "representativeLongitude": -84.289745119862,
+      "eligiblePopulation": 0,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43531",
+      "representativeLatitude": 41.635048,
+      "representativeLongitude": -84.49452837125506,
+      "eligiblePopulation": 159,
+      "medianHouseholdIncome": 36200
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43532",
+      "representativeLatitude": 41.4506325,
+      "representativeLongitude": -83.97182506334534,
+      "eligiblePopulation": 2408,
+      "medianHouseholdIncome": 88074
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43533",
+      "representativeLatitude": 41.6839395,
+      "representativeLongitude": -84.09832178614136,
+      "eligiblePopulation": 1164,
+      "medianHouseholdIncome": 64342
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43534",
+      "representativeLatitude": 41.3507825,
+      "representativeLongitude": -83.93182839610924,
+      "eligiblePopulation": 1091,
+      "medianHouseholdIncome": 81094
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43535",
+      "representativeLatitude": 41.308391,
+      "representativeLongitude": -84.02223200912914,
+      "eligiblePopulation": 690,
+      "medianHouseholdIncome": 67083
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43536",
+      "representativeLatitude": 41.303461999999996,
+      "representativeLongitude": -84.64043456507875,
+      "eligiblePopulation": 190,
+      "medianHouseholdIncome": 68625
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43537",
+      "representativeLatitude": 41.5757925,
+      "representativeLongitude": -83.67319036822408,
+      "eligiblePopulation": 22356,
+      "medianHouseholdIncome": 82752
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43540",
+      "representativeLatitude": 41.6945125,
+      "representativeLongitude": -83.93599785190472,
+      "eligiblePopulation": 1114,
+      "medianHouseholdIncome": 119583
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43541",
+      "representativeLatitude": 41.303542,
+      "representativeLongitude": -83.82955900507727,
+      "eligiblePopulation": 125,
+      "medianHouseholdIncome": 63438
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43542",
+      "representativeLatitude": 41.5657535,
+      "representativeLongitude": -83.76161285883383,
+      "eligiblePopulation": 3089,
+      "medianHouseholdIncome": 148657
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43543",
+      "representativeLatitude": 41.605838,
+      "representativeLongitude": -84.61382292690338,
+      "eligiblePopulation": 5454,
+      "medianHouseholdIncome": 56236
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43545",
+      "representativeLatitude": 41.3876465,
+      "representativeLongitude": -84.09684238079504,
+      "eligiblePopulation": 10589,
+      "medianHouseholdIncome": 78548
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43547",
+      "representativeLatitude": 41.491769500000004,
+      "representativeLongitude": -83.87610068699004,
+      "eligiblePopulation": 508,
+      "medianHouseholdIncome": 99851
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43548",
+      "representativeLatitude": 41.200478000000004,
+      "representativeLongitude": -84.18002654099696,
+      "eligiblePopulation": 581,
+      "medianHouseholdIncome": 96875
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43549",
+      "representativeLatitude": 41.376308,
+      "representativeLongitude": -84.52546182908097,
+      "eligiblePopulation": 994,
+      "medianHouseholdIncome": 84189
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43551",
+      "representativeLatitude": 41.529503,
+      "representativeLongitude": -83.61578500584093,
+      "eligiblePopulation": 32321,
+      "medianHouseholdIncome": 95846
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43553",
+      "representativeLatitude": 41.530991,
+      "representativeLongitude": -84.22288961197833,
+      "eligiblePopulation": 288,
+      "medianHouseholdIncome": 88750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43554",
+      "representativeLatitude": 41.647979500000005,
+      "representativeLongitude": -84.54377670637652,
+      "eligiblePopulation": 1551,
+      "medianHouseholdIncome": 52917
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43555",
+      "representativeLatitude": 41.4394025,
+      "representativeLongitude": -84.2565079577885,
+      "eligiblePopulation": 202,
+      "medianHouseholdIncome": 83109
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43556",
+      "representativeLatitude": 41.3179855,
+      "representativeLongitude": -84.56353714650737,
+      "eligiblePopulation": 1112,
+      "medianHouseholdIncome": 73125
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43557",
+      "representativeLatitude": 41.4850365,
+      "representativeLongitude": -84.40552277049201,
+      "eligiblePopulation": 2447,
+      "medianHouseholdIncome": 84950
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43558",
+      "representativeLatitude": 41.586985999999996,
+      "representativeLongitude": -83.87329930045695,
+      "eligiblePopulation": 10015,
+      "medianHouseholdIncome": 74173
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43560",
+      "representativeLatitude": 41.692455499999994,
+      "representativeLongitude": -83.73856629870372,
+      "eligiblePopulation": 23883,
+      "medianHouseholdIncome": 109486
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43565",
+      "representativeLatitude": 41.420621999999995,
+      "representativeLongitude": -83.74008624674207,
+      "eligiblePopulation": 228,
+      "medianHouseholdIncome": 59167
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43566",
+      "representativeLatitude": 41.498355000000004,
+      "representativeLongitude": -83.74603220265149,
+      "eligiblePopulation": 6258,
+      "medianHouseholdIncome": 105985
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43567",
+      "representativeLatitude": 41.571372499999995,
+      "representativeLongitude": -84.16263591336663,
+      "eligiblePopulation": 9002,
+      "medianHouseholdIncome": 70417
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43569",
+      "representativeLatitude": 41.3492985,
+      "representativeLongitude": -83.79791444933318,
+      "eligiblePopulation": 2010,
+      "medianHouseholdIncome": 70898
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43570",
+      "representativeLatitude": 41.590033,
+      "representativeLongitude": -84.45869636421513,
+      "eligiblePopulation": 2021,
+      "medianHouseholdIncome": 68500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43571",
+      "representativeLatitude": 41.512063,
+      "representativeLongitude": -83.82303184118908,
+      "eligiblePopulation": 5568,
+      "medianHouseholdIncome": 108143
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43606",
+      "representativeLatitude": 41.672589,
+      "representativeLongitude": -83.60870694603753,
+      "eligiblePopulation": 17450,
+      "medianHouseholdIncome": 66917
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43607",
+      "representativeLatitude": 41.6474925,
+      "representativeLongitude": -83.60221566591858,
+      "eligiblePopulation": 14756,
+      "medianHouseholdIncome": 41335
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43613",
+      "representativeLatitude": 41.704953,
+      "representativeLongitude": -83.60452417522771,
+      "eligiblePopulation": 22446,
+      "medianHouseholdIncome": 64384
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43614",
+      "representativeLatitude": 41.602000000000004,
+      "representativeLongitude": -83.63597280943443,
+      "eligiblePopulation": 22628,
+      "medianHouseholdIncome": 58961
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43615",
+      "representativeLatitude": 41.6498345,
+      "representativeLongitude": -83.68417649922256,
+      "eligiblePopulation": 29887,
+      "medianHouseholdIncome": 57713
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43617",
+      "representativeLatitude": 41.666357500000004,
+      "representativeLongitude": -83.72377636046215,
+      "eligiblePopulation": 6159,
+      "medianHouseholdIncome": 127019
+    },
+    {
+      "stableOriginId": "USA-ZCTA-43623",
+      "representativeLatitude": 41.705967,
+      "representativeLongitude": -83.63959781865435,
+      "eligiblePopulation": 16033,
+      "medianHouseholdIncome": 71171
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45302",
+      "representativeLatitude": 40.398787999999996,
+      "representativeLongitude": -84.19521364577867,
+      "eligiblePopulation": 2942,
+      "medianHouseholdIncome": 91602
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45303",
+      "representativeLatitude": 40.217594500000004,
+      "representativeLongitude": -84.64350509321244,
+      "eligiblePopulation": 1492,
+      "medianHouseholdIncome": 65556
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45306",
+      "representativeLatitude": 40.4603665,
+      "representativeLongitude": -84.20264238363538,
+      "eligiblePopulation": 1466,
+      "medianHouseholdIncome": 86354
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45310",
+      "representativeLatitude": 40.352706999999995,
+      "representativeLongitude": -84.64304626566107,
+      "eligiblePopulation": 165,
+      "medianHouseholdIncome": 77917
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45328",
+      "representativeLatitude": 40.1170065,
+      "representativeLongitude": -84.4966364429468,
+      "eligiblePopulation": 344,
+      "medianHouseholdIncome": 63125
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45331",
+      "representativeLatitude": 40.0841801068321,
+      "representativeLongitude": -84.65649005453717,
+      "eligiblePopulation": 16838,
+      "medianHouseholdIncome": 53801
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45333",
+      "representativeLatitude": 40.243053,
+      "representativeLongitude": -84.31465327476135,
+      "eligiblePopulation": 1145,
+      "medianHouseholdIncome": 63906
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45334",
+      "representativeLatitude": 40.444278,
+      "representativeLongitude": -84.04661581030628,
+      "eligiblePopulation": 1401,
+      "medianHouseholdIncome": 70595
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45336",
+      "representativeLatitude": 40.4425535,
+      "representativeLongitude": -84.25979118615275,
+      "eligiblePopulation": 68,
+      "medianHouseholdIncome": 87500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45348",
+      "representativeLatitude": 40.317678,
+      "representativeLongitude": -84.69905100461162,
+      "eligiblePopulation": 587,
+      "medianHouseholdIncome": 120170
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45350",
+      "representativeLatitude": 40.326603000000006,
+      "representativeLongitude": -84.57374673224884,
+      "eligiblePopulation": 50,
+      "medianHouseholdIncome": 102500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45351",
+      "representativeLatitude": 40.340331,
+      "representativeLongitude": -84.49414901097632,
+      "eligiblePopulation": 211,
+      "medianHouseholdIncome": 101875
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45352",
+      "representativeLatitude": 40.0500335,
+      "representativeLongitude": -84.74540481474531,
+      "eligiblePopulation": 126,
+      "medianHouseholdIncome": 62500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45362",
+      "representativeLatitude": 40.2896635,
+      "representativeLongitude": -84.6400811773299,
+      "eligiblePopulation": 864,
+      "medianHouseholdIncome": 61687
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45363",
+      "representativeLatitude": 40.24418,
+      "representativeLongitude": -84.39554121247846,
+      "eligiblePopulation": 1227,
+      "medianHouseholdIncome": 95268
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45365",
+      "representativeLatitude": 40.2845305,
+      "representativeLongitude": -84.1905991749272,
+      "eligiblePopulation": 21365,
+      "medianHouseholdIncome": 67051
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45380",
+      "representativeLatitude": 40.2481395,
+      "representativeLongitude": -84.52430228503016,
+      "eligiblePopulation": 3943,
+      "medianHouseholdIncome": 84135
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45388",
+      "representativeLatitude": 40.3205875,
+      "representativeLongitude": -84.47009440135628,
+      "eligiblePopulation": 470,
+      "medianHouseholdIncome": 86996
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45390",
+      "representativeLatitude": 40.2157310064613,
+      "representativeLongitude": -84.75798812200642,
+      "eligiblePopulation": 2479,
+      "medianHouseholdIncome": 52150
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45801",
+      "representativeLatitude": 40.7728565,
+      "representativeLongitude": -84.05178781534877,
+      "eligiblePopulation": 15633,
+      "medianHouseholdIncome": 51731
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45804",
+      "representativeLatitude": 40.716311,
+      "representativeLongitude": -84.07652119392915,
+      "eligiblePopulation": 9792,
+      "medianHouseholdIncome": 44911
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45805",
+      "representativeLatitude": 40.734984,
+      "representativeLongitude": -84.14611150186013,
+      "eligiblePopulation": 17241,
+      "medianHouseholdIncome": 68842
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45806",
+      "representativeLatitude": 40.679076499999994,
+      "representativeLongitude": -84.13541944794727,
+      "eligiblePopulation": 8074,
+      "medianHouseholdIncome": 82587
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45807",
+      "representativeLatitude": 40.798975,
+      "representativeLongitude": -84.18307749479226,
+      "eligiblePopulation": 8809,
+      "medianHouseholdIncome": 70725
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45808",
+      "representativeLatitude": 40.83072,
+      "representativeLongitude": -83.97390571134304,
+      "eligiblePopulation": 270,
+      "medianHouseholdIncome": 81875
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45809",
+      "representativeLatitude": 40.843525,
+      "representativeLongitude": -84.18426279726337,
+      "eligiblePopulation": 30,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45810",
+      "representativeLatitude": 40.776104000000004,
+      "representativeLongitude": -83.8282256095676,
+      "eligiblePopulation": 4696,
+      "medianHouseholdIncome": 63451
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45812",
+      "representativeLatitude": 40.674220000000005,
+      "representativeLongitude": -83.83355337687031,
+      "eligiblePopulation": 1308,
+      "medianHouseholdIncome": 44045
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45813",
+      "representativeLatitude": 41.195335003790305,
+      "representativeLongitude": -84.72214587406111,
+      "eligiblePopulation": 2539,
+      "medianHouseholdIncome": 65054
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45815",
+      "representativeLatitude": 41.157472999999996,
+      "representativeLongitude": -83.94268776588203,
+      "eligiblePopulation": 65,
+      "medianHouseholdIncome": 60000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45816",
+      "representativeLatitude": 41.0029275,
+      "representativeLongitude": -83.79446895832183,
+      "eligiblePopulation": 265,
+      "medianHouseholdIncome": 76719
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45817",
+      "representativeLatitude": 40.869872,
+      "representativeLongitude": -83.88089733274629,
+      "eligiblePopulation": 4309,
+      "medianHouseholdIncome": 76848
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45819",
+      "representativeLatitude": 40.6249185,
+      "representativeLongitude": -84.26048646341988,
+      "eligiblePopulation": 168,
+      "medianHouseholdIncome": 67500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45820",
+      "representativeLatitude": 40.833128,
+      "representativeLongitude": -84.08803101162898,
+      "eligiblePopulation": 448,
+      "medianHouseholdIncome": 83125
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45821",
+      "representativeLatitude": 41.231076,
+      "representativeLongitude": -84.5632743219364,
+      "eligiblePopulation": 592,
+      "medianHouseholdIncome": 76648
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45822",
+      "representativeLatitude": 40.535134,
+      "representativeLongitude": -84.61304277459051,
+      "eligiblePopulation": 14993,
+      "medianHouseholdIncome": 70200
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45826",
+      "representativeLatitude": 40.438208,
+      "representativeLongitude": -84.49416804919518,
+      "eligiblePopulation": 264,
+      "medianHouseholdIncome": 101250
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45827",
+      "representativeLatitude": 41.0133425,
+      "representativeLongitude": -84.30119542940272,
+      "eligiblePopulation": 1740,
+      "medianHouseholdIncome": 85400
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45828",
+      "representativeLatitude": 40.487479,
+      "representativeLongitude": -84.68773981364365,
+      "eligiblePopulation": 4124,
+      "medianHouseholdIncome": 72703
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45830",
+      "representativeLatitude": 40.909828000000005,
+      "representativeLongitude": -84.10094273237073,
+      "eligiblePopulation": 3898,
+      "medianHouseholdIncome": 80897
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45831",
+      "representativeLatitude": 41.111122,
+      "representativeLongitude": -84.25594517845036,
+      "eligiblePopulation": 2303,
+      "medianHouseholdIncome": 71473
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45832",
+      "representativeLatitude": 40.919593,
+      "representativeLongitude": -84.72575420629934,
+      "eligiblePopulation": 2276,
+      "medianHouseholdIncome": 83000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45833",
+      "representativeLatitude": 40.8349785,
+      "representativeLongitude": -84.36909677116337,
+      "eligiblePopulation": 8184,
+      "medianHouseholdIncome": 65000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45838",
+      "representativeLatitude": 40.7404,
+      "representativeLongitude": -84.47780845764233,
+      "eligiblePopulation": 46,
+      "medianHouseholdIncome": 91181
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45841",
+      "representativeLatitude": 40.8814105,
+      "representativeLongitude": -83.73231650176223,
+      "eligiblePopulation": 727,
+      "medianHouseholdIncome": 96544
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45844",
+      "representativeLatitude": 40.9162465,
+      "representativeLongitude": -84.30255452775117,
+      "eligiblePopulation": 2241,
+      "medianHouseholdIncome": 88792
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45845",
+      "representativeLatitude": 40.327374500000005,
+      "representativeLongitude": -84.36895931870694,
+      "eligiblePopulation": 2208,
+      "medianHouseholdIncome": 95078
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45846",
+      "representativeLatitude": 40.4226903637486,
+      "representativeLongitude": -84.75610674660516,
+      "eligiblePopulation": 3112,
+      "medianHouseholdIncome": 91736
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45848",
+      "representativeLatitude": 41.025747,
+      "representativeLongitude": -84.07818887595926,
+      "eligiblePopulation": 76,
+      "medianHouseholdIncome": 77813
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45849",
+      "representativeLatitude": 41.015407499999995,
+      "representativeLongitude": -84.4717506381058,
+      "eligiblePopulation": 675,
+      "medianHouseholdIncome": 77841
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45850",
+      "representativeLatitude": 40.7050155,
+      "representativeLongitude": -83.93271025790258,
+      "eligiblePopulation": 2496,
+      "medianHouseholdIncome": 84886
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45851",
+      "representativeLatitude": 41.026199500000004,
+      "representativeLongitude": -84.6304400383475,
+      "eligiblePopulation": 422,
+      "medianHouseholdIncome": 76157
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45853",
+      "representativeLatitude": 40.984947500000004,
+      "representativeLongitude": -84.19099633710107,
+      "eligiblePopulation": 1137,
+      "medianHouseholdIncome": 87500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45854",
+      "representativeLatitude": 40.758061,
+      "representativeLongitude": -83.95150896759958,
+      "eligiblePopulation": 209,
+      "medianHouseholdIncome": 53125
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45855",
+      "representativeLatitude": 41.088862,
+      "representativeLongitude": -84.58320500137287,
+      "eligiblePopulation": 136,
+      "medianHouseholdIncome": 90000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45856",
+      "representativeLatitude": 41.101735000000005,
+      "representativeLongitude": -83.97698230751962,
+      "eligiblePopulation": 3462,
+      "medianHouseholdIncome": 86494
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45858",
+      "representativeLatitude": 41.099025,
+      "representativeLongitude": -83.81343281746265,
+      "eligiblePopulation": 2042,
+      "medianHouseholdIncome": 74709
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45860",
+      "representativeLatitude": 40.396479,
+      "representativeLongitude": -84.51831088235657,
+      "eligiblePopulation": 1507,
+      "medianHouseholdIncome": 111269
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45861",
+      "representativeLatitude": 41.0875685,
+      "representativeLongitude": -84.42503658486456,
+      "eligiblePopulation": 267,
+      "medianHouseholdIncome": 93269
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45862",
+      "representativeLatitude": 40.6772435,
+      "representativeLongitude": -84.52704140793027,
+      "eligiblePopulation": 1109,
+      "medianHouseholdIncome": 45556
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45863",
+      "representativeLatitude": 40.910810999999995,
+      "representativeLongitude": -84.4562739535325,
+      "eligiblePopulation": 908,
+      "medianHouseholdIncome": 56989
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45864",
+      "representativeLatitude": 41.0998275,
+      "representativeLongitude": -84.14534991684295,
+      "eligiblePopulation": 169,
+      "medianHouseholdIncome": 81875
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45865",
+      "representativeLatitude": 40.389289500000004,
+      "representativeLongitude": -84.36695678127991,
+      "eligiblePopulation": 3750,
+      "medianHouseholdIncome": 89000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45866",
+      "representativeLatitude": 40.4896835,
+      "representativeLongitude": -84.54906193870804,
+      "eligiblePopulation": 107,
+      "medianHouseholdIncome": 80833
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45868",
+      "representativeLatitude": 40.973217500000004,
+      "representativeLongitude": -83.85221774437463,
+      "eligiblePopulation": 503,
+      "medianHouseholdIncome": 95875
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45869",
+      "representativeLatitude": 40.463080000000005,
+      "representativeLongitude": -84.4066166937782,
+      "eligiblePopulation": 3036,
+      "medianHouseholdIncome": 88277
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45870",
+      "representativeLatitude": 40.5540365,
+      "representativeLongitude": -83.94917642749999,
+      "eligiblePopulation": 270,
+      "medianHouseholdIncome": 162813
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45871",
+      "representativeLatitude": 40.495990500000005,
+      "representativeLongitude": -84.29047038114692,
+      "eligiblePopulation": 1549,
+      "medianHouseholdIncome": 87500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45872",
+      "representativeLatitude": 41.191252000000006,
+      "representativeLongitude": -83.68228745497655,
+      "eligiblePopulation": 3223,
+      "medianHouseholdIncome": 62298
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45873",
+      "representativeLatitude": 41.121455499999996,
+      "representativeLongitude": -84.41424795038688,
+      "eligiblePopulation": 1759,
+      "medianHouseholdIncome": 62162
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45874",
+      "representativeLatitude": 40.800509500000004,
+      "representativeLongitude": -84.7182938020471,
+      "eligiblePopulation": 1248,
+      "medianHouseholdIncome": 68521
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45875",
+      "representativeLatitude": 41.028258,
+      "representativeLongitude": -84.01804660590048,
+      "eligiblePopulation": 7939,
+      "medianHouseholdIncome": 93144
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45876",
+      "representativeLatitude": 40.933571,
+      "representativeLongitude": -84.34189950679051,
+      "eligiblePopulation": 611,
+      "medianHouseholdIncome": 71125
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45877",
+      "representativeLatitude": 40.94885549999999,
+      "representativeLongitude": -83.93898726423869,
+      "eligiblePopulation": 1888,
+      "medianHouseholdIncome": 68665
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45879",
+      "representativeLatitude": 41.129824,
+      "representativeLongitude": -84.58256540616719,
+      "eligiblePopulation": 4609,
+      "medianHouseholdIncome": 64013
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45880",
+      "representativeLatitude": 41.069766,
+      "representativeLongitude": -84.72680704705623,
+      "eligiblePopulation": 1709,
+      "medianHouseholdIncome": 69500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45881",
+      "representativeLatitude": 40.943760499999996,
+      "representativeLongitude": -83.76574962996725,
+      "eligiblePopulation": 1136,
+      "medianHouseholdIncome": 73775
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45882",
+      "representativeLatitude": 40.671454499999996,
+      "representativeLongitude": -84.677175993406,
+      "eligiblePopulation": 2159,
+      "medianHouseholdIncome": 74625
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45883",
+      "representativeLatitude": 40.3958995,
+      "representativeLongitude": -84.63122028003252,
+      "eligiblePopulation": 2533,
+      "medianHouseholdIncome": 113967
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45884",
+      "representativeLatitude": 40.5476775,
+      "representativeLongitude": -84.08343053376808,
+      "eligiblePopulation": 141,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45885",
+      "representativeLatitude": 40.5718385,
+      "representativeLongitude": -84.3818171816335,
+      "eligiblePopulation": 9521,
+      "medianHouseholdIncome": 78550
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45886",
+      "representativeLatitude": 40.9958505,
+      "representativeLongitude": -84.65923932337262,
+      "eligiblePopulation": 257,
+      "medianHouseholdIncome": 65750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45887",
+      "representativeLatitude": 40.721124,
+      "representativeLongitude": -84.35613057907014,
+      "eligiblePopulation": 3012,
+      "medianHouseholdIncome": 68409
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45888",
+      "representativeLatitude": 40.602083,
+      "representativeLongitude": -84.08504685406785,
+      "eligiblePopulation": 141,
+      "medianHouseholdIncome": 88237
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45891",
+      "representativeLatitude": 40.8789745,
+      "representativeLongitude": -84.58692525625884,
+      "eligiblePopulation": 11502,
+      "medianHouseholdIncome": 64272
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45893",
+      "representativeLatitude": 40.881214,
+      "representativeLongitude": -84.14373370153463,
+      "eligiblePopulation": 160,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45894",
+      "representativeLatitude": 40.7651465,
+      "representativeLongitude": -84.47742943174487,
+      "eligiblePopulation": 413,
+      "medianHouseholdIncome": 81360
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45895",
+      "representativeLatitude": 40.5772355,
+      "representativeLongitude": -84.14320337773046,
+      "eligiblePopulation": 13284,
+      "medianHouseholdIncome": 74783
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45896",
+      "representativeLatitude": 40.606918500000006,
+      "representativeLongitude": -83.9408705017758,
+      "eligiblePopulation": 1314,
+      "medianHouseholdIncome": 62449
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45898",
+      "representativeLatitude": 40.723153499999995,
+      "representativeLongitude": -84.7720884296254,
+      "eligiblePopulation": 656,
+      "medianHouseholdIncome": 53783
+    },
+    {
+      "stableOriginId": "USA-ZCTA-45899",
+      "representativeLatitude": 40.7995935,
+      "representativeLongitude": -84.7752400348917,
+      "eligiblePopulation": 136,
+      "medianHouseholdIncome": 50625
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46001",
+      "representativeLatitude": 40.24125600000001,
+      "representativeLongitude": -85.65911940809679,
+      "eligiblePopulation": 7614,
+      "medianHouseholdIncome": 70962
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46011",
+      "representativeLatitude": 40.124365499999996,
+      "representativeLongitude": -85.77366049986188,
+      "eligiblePopulation": 12683,
+      "medianHouseholdIncome": 76391
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46012",
+      "representativeLatitude": 40.1552435,
+      "representativeLongitude": -85.62427704988548,
+      "eligiblePopulation": 16054,
+      "medianHouseholdIncome": 58041
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46016",
+      "representativeLatitude": 40.1002915,
+      "representativeLongitude": -85.68021609538424,
+      "eligiblePopulation": 12680,
+      "medianHouseholdIncome": 36029
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46017",
+      "representativeLatitude": 40.066633499999995,
+      "representativeLongitude": -85.6051700187601,
+      "eligiblePopulation": 4098,
+      "medianHouseholdIncome": 75011
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46036",
+      "representativeLatitude": 40.2841545,
+      "representativeLongitude": -85.83139962363892,
+      "eligiblePopulation": 8934,
+      "medianHouseholdIncome": 62074
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46044",
+      "representativeLatitude": 40.213727500000005,
+      "representativeLongitude": -85.7809516654996,
+      "eligiblePopulation": 1954,
+      "medianHouseholdIncome": 81402
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46047",
+      "representativeLatitude": 40.283967000000004,
+      "representativeLongitude": -85.94726299999999,
+      "eligiblePopulation": 49,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46063",
+      "representativeLatitude": 40.2717875,
+      "representativeLongitude": -85.7252831048183,
+      "eligiblePopulation": 162,
+      "medianHouseholdIncome": 48750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46068",
+      "representativeLatitude": 40.375508999999994,
+      "representativeLongitude": -86.11974881117493,
+      "eligiblePopulation": 1875,
+      "medianHouseholdIncome": 98708
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46070",
+      "representativeLatitude": 40.346331000000006,
+      "representativeLongitude": -85.66018055168661,
+      "eligiblePopulation": 1449,
+      "medianHouseholdIncome": 57667
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46072",
+      "representativeLatitude": 40.2890105,
+      "representativeLongitude": -86.01790290838532,
+      "eligiblePopulation": 7055,
+      "medianHouseholdIncome": 72375
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46076",
+      "representativeLatitude": 40.359390000000005,
+      "representativeLongitude": -85.94938342617225,
+      "eligiblePopulation": 1186,
+      "medianHouseholdIncome": 73889
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46501",
+      "representativeLatitude": 41.2244355,
+      "representativeLongitude": -86.25742594750754,
+      "eligiblePopulation": 2606,
+      "medianHouseholdIncome": 64172
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46502",
+      "representativeLatitude": 41.2613285,
+      "representativeLongitude": -85.97752694921874,
+      "eligiblePopulation": 0,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46504",
+      "representativeLatitude": 41.304632,
+      "representativeLongitude": -86.12512303519597,
+      "eligiblePopulation": 2274,
+      "medianHouseholdIncome": 74567
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46506",
+      "representativeLatitude": 41.468459,
+      "representativeLongitude": -86.17381817151517,
+      "eligiblePopulation": 6773,
+      "medianHouseholdIncome": 79386
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46507",
+      "representativeLatitude": 41.7115395,
+      "representativeLongitude": -85.82962411585765,
+      "eligiblePopulation": 6862,
+      "medianHouseholdIncome": 82683
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46508",
+      "representativeLatitude": 41.154418,
+      "representativeLongitude": -85.96870160294117,
+      "eligiblePopulation": 169,
+      "medianHouseholdIncome": 55833
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46510",
+      "representativeLatitude": 41.115991,
+      "representativeLongitude": -85.89087818050923,
+      "eligiblePopulation": 2267,
+      "medianHouseholdIncome": 99420
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46511",
+      "representativeLatitude": 41.217501999999996,
+      "representativeLongitude": -86.42812196067578,
+      "eligiblePopulation": 2956,
+      "medianHouseholdIncome": 58293
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46513",
+      "representativeLatitude": 41.362532,
+      "representativeLongitude": -86.44926026287008,
+      "eligiblePopulation": 0,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46514",
+      "representativeLatitude": 41.717197,
+      "representativeLongitude": -85.97609640028405,
+      "eligiblePopulation": 30811,
+      "medianHouseholdIncome": 65833
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46516",
+      "representativeLatitude": 41.665194,
+      "representativeLongitude": -85.92960151788373,
+      "eligiblePopulation": 22419,
+      "medianHouseholdIncome": 56492
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46517",
+      "representativeLatitude": 41.6153265,
+      "representativeLongitude": -86.00054652422196,
+      "eligiblePopulation": 17719,
+      "medianHouseholdIncome": 56772
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46524",
+      "representativeLatitude": 41.297965000000005,
+      "representativeLongitude": -86.02823545876848,
+      "eligiblePopulation": 1171,
+      "medianHouseholdIncome": 65987
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46526",
+      "representativeLatitude": 41.555196499999994,
+      "representativeLongitude": -85.89523592743055,
+      "eligiblePopulation": 22836,
+      "medianHouseholdIncome": 67461
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46528",
+      "representativeLatitude": 41.5968155,
+      "representativeLongitude": -85.78886957971005,
+      "eligiblePopulation": 16910,
+      "medianHouseholdIncome": 81529
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46530",
+      "representativeLatitude": 41.7347625,
+      "representativeLongitude": -86.12624477411936,
+      "eligiblePopulation": 22027,
+      "medianHouseholdIncome": 122129
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46531",
+      "representativeLatitude": 41.356791,
+      "representativeLongitude": -86.52005940970571,
+      "eligiblePopulation": 1398,
+      "medianHouseholdIncome": 57786
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46536",
+      "representativeLatitude": 41.514005999999995,
+      "representativeLongitude": -86.291993413049,
+      "eligiblePopulation": 2179,
+      "medianHouseholdIncome": 78448
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46537",
+      "representativeLatitude": 41.4562995,
+      "representativeLongitude": -86.30775399743221,
+      "eligiblePopulation": 415,
+      "medianHouseholdIncome": 64063
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46538",
+      "representativeLatitude": 41.321608499999996,
+      "representativeLongitude": -85.83736878971503,
+      "eligiblePopulation": 3194,
+      "medianHouseholdIncome": 89803
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46539",
+      "representativeLatitude": 41.1645935,
+      "representativeLongitude": -86.02035049758638,
+      "eligiblePopulation": 1801,
+      "medianHouseholdIncome": 74079
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46540",
+      "representativeLatitude": 41.6769885,
+      "representativeLongitude": -85.70158243304746,
+      "eligiblePopulation": 8281,
+      "medianHouseholdIncome": 96615
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46542",
+      "representativeLatitude": 41.3952855,
+      "representativeLongitude": -85.87988787274787,
+      "eligiblePopulation": 3499,
+      "medianHouseholdIncome": 78606
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46543",
+      "representativeLatitude": 41.535940499999995,
+      "representativeLongitude": -85.66458779266908,
+      "eligiblePopulation": 2297,
+      "medianHouseholdIncome": 104896
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46544",
+      "representativeLatitude": 41.6190955,
+      "representativeLongitude": -86.14176662921005,
+      "eligiblePopulation": 22567,
+      "medianHouseholdIncome": 58829
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46545",
+      "representativeLatitude": 41.693273,
+      "representativeLongitude": -86.14680142515166,
+      "eligiblePopulation": 19964,
+      "medianHouseholdIncome": 56865
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46550",
+      "representativeLatitude": 41.4404605,
+      "representativeLongitude": -85.97972209053628,
+      "eligiblePopulation": 9256,
+      "medianHouseholdIncome": 84084
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46552",
+      "representativeLatitude": 41.696793,
+      "representativeLongitude": -86.48820050413178,
+      "eligiblePopulation": 4893,
+      "medianHouseholdIncome": 91341
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46553",
+      "representativeLatitude": 41.475350500000005,
+      "representativeLongitude": -85.86158137557808,
+      "eligiblePopulation": 2430,
+      "medianHouseholdIncome": 89417
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46554",
+      "representativeLatitude": 41.562197999999995,
+      "representativeLongitude": -86.418396437978,
+      "eligiblePopulation": 3258,
+      "medianHouseholdIncome": 88068
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46555",
+      "representativeLatitude": 41.325075999999996,
+      "representativeLongitude": -85.6909186954149,
+      "eligiblePopulation": 2040,
+      "medianHouseholdIncome": 70399
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46556",
+      "representativeLatitude": 41.702142,
+      "representativeLongitude": -86.2404733272474,
+      "eligiblePopulation": 2798,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46561",
+      "representativeLatitude": 41.665721500000004,
+      "representativeLongitude": -86.08044508205987,
+      "eligiblePopulation": 9764,
+      "medianHouseholdIncome": 91711
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46562",
+      "representativeLatitude": 41.2185385,
+      "representativeLongitude": -85.70859606762848,
+      "eligiblePopulation": 3672,
+      "medianHouseholdIncome": 68902
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46563",
+      "representativeLatitude": 41.3595295,
+      "representativeLongitude": -86.31735944058542,
+      "eligiblePopulation": 17287,
+      "medianHouseholdIncome": 73293
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46565",
+      "representativeLatitude": 41.6709355,
+      "representativeLongitude": -85.57925079919977,
+      "eligiblePopulation": 5228,
+      "medianHouseholdIncome": 96199
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46567",
+      "representativeLatitude": 41.408497499999996,
+      "representativeLongitude": -85.73047943603868,
+      "eligiblePopulation": 7314,
+      "medianHouseholdIncome": 77103
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46570",
+      "representativeLatitude": 41.2133205,
+      "representativeLongitude": -86.10949482124596,
+      "eligiblePopulation": 740,
+      "medianHouseholdIncome": 54185
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46571",
+      "representativeLatitude": 41.5754325,
+      "representativeLongitude": -85.55439590935427,
+      "eligiblePopulation": 3697,
+      "medianHouseholdIncome": 85500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46572",
+      "representativeLatitude": 41.407651,
+      "representativeLongitude": -86.39292787583207,
+      "eligiblePopulation": 115,
+      "medianHouseholdIncome": 125250
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46573",
+      "representativeLatitude": 41.5413075,
+      "representativeLongitude": -86.06643476028734,
+      "eligiblePopulation": 2824,
+      "medianHouseholdIncome": 85750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46574",
+      "representativeLatitude": 41.483208000000005,
+      "representativeLongitude": -86.48443951699048,
+      "eligiblePopulation": 5773,
+      "medianHouseholdIncome": 76181
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46580",
+      "representativeLatitude": 41.1994355,
+      "representativeLongitude": -85.87201896657783,
+      "eligiblePopulation": 15915,
+      "medianHouseholdIncome": 71687
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46582",
+      "representativeLatitude": 41.275452,
+      "representativeLongitude": -85.85881749169194,
+      "eligiblePopulation": 10224,
+      "medianHouseholdIncome": 66738
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46590",
+      "representativeLatitude": 41.219162,
+      "representativeLongitude": -85.8056541042841,
+      "eligiblePopulation": 3470,
+      "medianHouseholdIncome": 82188
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46595",
+      "representativeLatitude": 41.525896,
+      "representativeLongitude": -86.16372039097273,
+      "eligiblePopulation": 0,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46601",
+      "representativeLatitude": 41.673970999999995,
+      "representativeLongitude": -86.25846671035583,
+      "eligiblePopulation": 3774,
+      "medianHouseholdIncome": 30789
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46613",
+      "representativeLatitude": 41.652851,
+      "representativeLongitude": -86.26329813071067,
+      "eligiblePopulation": 7551,
+      "medianHouseholdIncome": 42537
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46614",
+      "representativeLatitude": 41.599653,
+      "representativeLongitude": -86.30955150062546,
+      "eligiblePopulation": 21860,
+      "medianHouseholdIncome": 74153
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46615",
+      "representativeLatitude": 41.677341,
+      "representativeLongitude": -86.20643080839733,
+      "eligiblePopulation": 10476,
+      "medianHouseholdIncome": 62964
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46616",
+      "representativeLatitude": 41.696547,
+      "representativeLongitude": -86.26574140045176,
+      "eligiblePopulation": 4168,
+      "medianHouseholdIncome": 58537
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46617",
+      "representativeLatitude": 41.683208,
+      "representativeLongitude": -86.23129727986208,
+      "eligiblePopulation": 8243,
+      "medianHouseholdIncome": 74186
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46619",
+      "representativeLatitude": 41.656821,
+      "representativeLongitude": -86.36304560463522,
+      "eligiblePopulation": 15045,
+      "medianHouseholdIncome": 48081
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46624",
+      "representativeLatitude": 41.702473,
+      "representativeLongitude": -86.25162858566276,
+      "eligiblePopulation": 28,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46628",
+      "representativeLatitude": 41.716869,
+      "representativeLongitude": -86.33664301439251,
+      "eligiblePopulation": 19833,
+      "medianHouseholdIncome": 61759
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46635",
+      "representativeLatitude": 41.7190705,
+      "representativeLongitude": -86.20541561809524,
+      "eligiblePopulation": 4885,
+      "medianHouseholdIncome": 81944
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46637",
+      "representativeLatitude": 41.727416000000005,
+      "representativeLongitude": -86.24252925262812,
+      "eligiblePopulation": 12840,
+      "medianHouseholdIncome": 71462
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46701",
+      "representativeLatitude": 41.361002,
+      "representativeLongitude": -85.41940251499354,
+      "eligiblePopulation": 6014,
+      "medianHouseholdIncome": 78385
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46702",
+      "representativeLatitude": 40.820304,
+      "representativeLongitude": -85.60298036145463,
+      "eligiblePopulation": 1573,
+      "medianHouseholdIncome": 77727
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46703",
+      "representativeLatitude": 41.6649605,
+      "representativeLongitude": -85.0229500044083,
+      "eligiblePopulation": 13354,
+      "medianHouseholdIncome": 74569
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46704",
+      "representativeLatitude": 41.1033825,
+      "representativeLongitude": -85.29115607941338,
+      "eligiblePopulation": 60,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46705",
+      "representativeLatitude": 41.5237895,
+      "representativeLongitude": -85.0636148424141,
+      "eligiblePopulation": 1415,
+      "medianHouseholdIncome": 67266
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46706",
+      "representativeLatitude": 41.333906999999996,
+      "representativeLongitude": -85.01669159887877,
+      "eligiblePopulation": 14534,
+      "medianHouseholdIncome": 80965
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46710",
+      "representativeLatitude": 41.3514585,
+      "representativeLongitude": -85.25225542269807,
+      "eligiblePopulation": 3286,
+      "medianHouseholdIncome": 84408
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46711",
+      "representativeLatitude": 40.6653256192783,
+      "representativeLongitude": -84.92416302966814,
+      "eligiblePopulation": 4803,
+      "medianHouseholdIncome": 70656
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46714",
+      "representativeLatitude": 40.714071000000004,
+      "representativeLongitude": -85.15546318895125,
+      "eligiblePopulation": 11069,
+      "medianHouseholdIncome": 66441
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46721",
+      "representativeLatitude": 41.4201135,
+      "representativeLongitude": -84.88234650922406,
+      "eligiblePopulation": 3466,
+      "medianHouseholdIncome": 68580
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46723",
+      "representativeLatitude": 41.236717999999996,
+      "representativeLongitude": -85.32165432208339,
+      "eligiblePopulation": 6011,
+      "medianHouseholdIncome": 84286
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46725",
+      "representativeLatitude": 41.151108,
+      "representativeLongitude": -85.46173972128166,
+      "eligiblePopulation": 17354,
+      "medianHouseholdIncome": 79526
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46730",
+      "representativeLatitude": 41.458361499999995,
+      "representativeLongitude": -85.15357893657989,
+      "eligiblePopulation": 966,
+      "medianHouseholdIncome": 116181
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46731",
+      "representativeLatitude": 40.8030215,
+      "representativeLongitude": -85.1044753909167,
+      "eligiblePopulation": 425,
+      "medianHouseholdIncome": 108036
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46732",
+      "representativeLatitude": 41.3726895,
+      "representativeLongitude": -85.60647381872532,
+      "eligiblePopulation": 1547,
+      "medianHouseholdIncome": 58906
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46733",
+      "representativeLatitude": 40.82300539864545,
+      "representativeLongitude": -84.93716950037425,
+      "eligiblePopulation": 14187,
+      "medianHouseholdIncome": 64483
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46737",
+      "representativeLatitude": 41.7095655,
+      "representativeLongitude": -84.90097205815039,
+      "eligiblePopulation": 5684,
+      "medianHouseholdIncome": 74975
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46738",
+      "representativeLatitude": 41.322869,
+      "representativeLongitude": -85.13408404286608,
+      "eligiblePopulation": 6280,
+      "medianHouseholdIncome": 57545
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46740",
+      "representativeLatitude": 40.6129715,
+      "representativeLongitude": -84.94533066368695,
+      "eligiblePopulation": 2274,
+      "medianHouseholdIncome": 58484
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46741",
+      "representativeLatitude": 41.202406499999995,
+      "representativeLongitude": -84.97346875910723,
+      "eligiblePopulation": 2999,
+      "medianHouseholdIncome": 102281
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46742",
+      "representativeLatitude": 41.5490105,
+      "representativeLongitude": -84.87634155186029,
+      "eligiblePopulation": 2558,
+      "medianHouseholdIncome": 78750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46743",
+      "representativeLatitude": 41.227239999999995,
+      "representativeLongitude": -84.83995903403398,
+      "eligiblePopulation": 1809,
+      "medianHouseholdIncome": 81406
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46745",
+      "representativeLatitude": 40.9577395,
+      "representativeLongitude": -85.01711237262042,
+      "eligiblePopulation": 1258,
+      "medianHouseholdIncome": 89643
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46746",
+      "representativeLatitude": 41.7164545,
+      "representativeLongitude": -85.35009830480726,
+      "eligiblePopulation": 3155,
+      "medianHouseholdIncome": 73244
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46747",
+      "representativeLatitude": 41.5619735,
+      "representativeLongitude": -85.18904671714657,
+      "eligiblePopulation": 1778,
+      "medianHouseholdIncome": 75662
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46748",
+      "representativeLatitude": 41.2462505,
+      "representativeLongitude": -85.17695474042131,
+      "eligiblePopulation": 4465,
+      "medianHouseholdIncome": 109375
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46750",
+      "representativeLatitude": 40.8656215,
+      "representativeLongitude": -85.45773096304615,
+      "eligiblePopulation": 19872,
+      "medianHouseholdIncome": 63978
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46755",
+      "representativeLatitude": 41.448419,
+      "representativeLongitude": -85.27972721786891,
+      "eligiblePopulation": 11492,
+      "medianHouseholdIncome": 66717
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46759",
+      "representativeLatitude": 40.600355,
+      "representativeLongitude": -85.21463883486356,
+      "eligiblePopulation": 157,
+      "medianHouseholdIncome": 56354
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46760",
+      "representativeLatitude": 41.346979000000005,
+      "representativeLongitude": -85.55845856547325,
+      "eligiblePopulation": 863,
+      "medianHouseholdIncome": 46992
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46761",
+      "representativeLatitude": 41.635014999999996,
+      "representativeLongitude": -85.38332945673406,
+      "eligiblePopulation": 7992,
+      "medianHouseholdIncome": 71430
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46763",
+      "representativeLatitude": 41.300359,
+      "representativeLongitude": -85.21166799926063,
+      "eligiblePopulation": 1159,
+      "medianHouseholdIncome": 97054
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46764",
+      "representativeLatitude": 41.225379000000004,
+      "representativeLongitude": -85.63345610733464,
+      "eligiblePopulation": 1082,
+      "medianHouseholdIncome": 62939
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46765",
+      "representativeLatitude": 41.2308075,
+      "representativeLongitude": -85.05129168189649,
+      "eligiblePopulation": 3905,
+      "medianHouseholdIncome": 112328
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46766",
+      "representativeLatitude": 40.702983,
+      "representativeLongitude": -85.29746037742058,
+      "eligiblePopulation": 331,
+      "medianHouseholdIncome": 85570
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46767",
+      "representativeLatitude": 41.46052,
+      "representativeLongitude": -85.61792440141932,
+      "eligiblePopulation": 5791,
+      "medianHouseholdIncome": 77317
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46770",
+      "representativeLatitude": 40.8173555,
+      "representativeLongitude": -85.32246527913597,
+      "eligiblePopulation": 1900,
+      "medianHouseholdIncome": 66750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46771",
+      "representativeLatitude": 41.6908685,
+      "representativeLongitude": -85.29669160556443,
+      "eligiblePopulation": 80,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46772",
+      "representativeLatitude": 40.7244795,
+      "representativeLongitude": -84.94747707265927,
+      "eligiblePopulation": 1936,
+      "medianHouseholdIncome": 80000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46773",
+      "representativeLatitude": 40.981286499999996,
+      "representativeLongitude": -84.89630084527622,
+      "eligiblePopulation": 2580,
+      "medianHouseholdIncome": 72813
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46774",
+      "representativeLatitude": 41.103232,
+      "representativeLongitude": -84.96608817567741,
+      "eligiblePopulation": 13096,
+      "medianHouseholdIncome": 76292
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46776",
+      "representativeLatitude": 41.71398,
+      "representativeLongitude": -85.17846950638176,
+      "eligiblePopulation": 1239,
+      "medianHouseholdIncome": 54801
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46777",
+      "representativeLatitude": 40.8591205,
+      "representativeLongitude": -85.13855767472216,
+      "eligiblePopulation": 4508,
+      "medianHouseholdIncome": 72758
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46778",
+      "representativeLatitude": 40.611112500000004,
+      "representativeLongitude": -85.14983197703094,
+      "eligiblePopulation": 34,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46779",
+      "representativeLatitude": 41.571873499999995,
+      "representativeLongitude": -85.02697173182375,
+      "eligiblePopulation": 1779,
+      "medianHouseholdIncome": 86000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46781",
+      "representativeLatitude": 40.633030500000004,
+      "representativeLongitude": -85.26363300432865,
+      "eligiblePopulation": 809,
+      "medianHouseholdIncome": 87768
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46783",
+      "representativeLatitude": 40.962123,
+      "representativeLongitude": -85.35063376281084,
+      "eligiblePopulation": 5603,
+      "medianHouseholdIncome": 101705
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46784",
+      "representativeLatitude": 41.4981645,
+      "representativeLongitude": -85.38210491328617,
+      "eligiblePopulation": 1632,
+      "medianHouseholdIncome": 62102
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46785",
+      "representativeLatitude": 41.3208075,
+      "representativeLongitude": -84.88329354424289,
+      "eligiblePopulation": 1042,
+      "medianHouseholdIncome": 63250
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46786",
+      "representativeLatitude": 41.532213999999996,
+      "representativeLongitude": -85.2726851838359,
+      "eligiblePopulation": 35,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46787",
+      "representativeLatitude": 41.066539,
+      "representativeLongitude": -85.63697931910161,
+      "eligiblePopulation": 2778,
+      "medianHouseholdIncome": 62242
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46788",
+      "representativeLatitude": 41.268668000000005,
+      "representativeLongitude": -84.91458826737168,
+      "eligiblePopulation": 2325,
+      "medianHouseholdIncome": 101553
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46789",
+      "representativeLatitude": 41.582318,
+      "representativeLongitude": -85.19746664205562,
+      "eligiblePopulation": 63,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46791",
+      "representativeLatitude": 40.8376135,
+      "representativeLongitude": -85.25157007740754,
+      "eligiblePopulation": 955,
+      "medianHouseholdIncome": 128542
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46792",
+      "representativeLatitude": 40.680498,
+      "representativeLongitude": -85.45887785446158,
+      "eligiblePopulation": 2823,
+      "medianHouseholdIncome": 72664
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46793",
+      "representativeLatitude": 41.466075000000004,
+      "representativeLongitude": -85.03025507148755,
+      "eligiblePopulation": 2973,
+      "medianHouseholdIncome": 79949
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46794",
+      "representativeLatitude": 41.477903,
+      "representativeLongitude": -85.44758860384468,
+      "eligiblePopulation": 829,
+      "medianHouseholdIncome": 63583
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46795",
+      "representativeLatitude": 41.551801999999995,
+      "representativeLongitude": -85.34869782651514,
+      "eligiblePopulation": 4888,
+      "medianHouseholdIncome": 87175
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46796",
+      "representativeLatitude": 41.335876,
+      "representativeLongitude": -85.49609094318927,
+      "eligiblePopulation": 204,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46797",
+      "representativeLatitude": 41.1254585,
+      "representativeLongitude": -84.86268959192773,
+      "eligiblePopulation": 2604,
+      "medianHouseholdIncome": 103566
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46798",
+      "representativeLatitude": 40.941368499999996,
+      "representativeLongitude": -85.2243691762311,
+      "eligiblePopulation": 725,
+      "medianHouseholdIncome": 81691
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46799",
+      "representativeLatitude": 40.915857,
+      "representativeLongitude": -85.27813534613604,
+      "eligiblePopulation": 302,
+      "medianHouseholdIncome": 83125
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46802",
+      "representativeLatitude": 41.065328,
+      "representativeLongitude": -85.16342424222742,
+      "eligiblePopulation": 8702,
+      "medianHouseholdIncome": 46854
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46803",
+      "representativeLatitude": 41.0706265,
+      "representativeLongitude": -85.09662331183424,
+      "eligiblePopulation": 6720,
+      "medianHouseholdIncome": 34381
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46804",
+      "representativeLatitude": 41.0539375,
+      "representativeLongitude": -85.23703860380802,
+      "eligiblePopulation": 22847,
+      "medianHouseholdIncome": 85833
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46805",
+      "representativeLatitude": 41.100233,
+      "representativeLongitude": -85.11633302395757,
+      "eligiblePopulation": 16113,
+      "medianHouseholdIncome": 52154
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46806",
+      "representativeLatitude": 41.046859,
+      "representativeLongitude": -85.1007371536974,
+      "eligiblePopulation": 17016,
+      "medianHouseholdIncome": 47895
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46807",
+      "representativeLatitude": 41.040114,
+      "representativeLongitude": -85.15033177475047,
+      "eligiblePopulation": 10790,
+      "medianHouseholdIncome": 58685
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46808",
+      "representativeLatitude": 41.09984,
+      "representativeLongitude": -85.17683086900942,
+      "eligiblePopulation": 14553,
+      "medianHouseholdIncome": 53359
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46809",
+      "representativeLatitude": 41.010813,
+      "representativeLongitude": -85.21248085537253,
+      "eligiblePopulation": 6674,
+      "medianHouseholdIncome": 52253
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46814",
+      "representativeLatitude": 41.041417,
+      "representativeLongitude": -85.31023597803902,
+      "eligiblePopulation": 10875,
+      "medianHouseholdIncome": 147280
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46815",
+      "representativeLatitude": 41.099084,
+      "representativeLongitude": -85.05916616450304,
+      "eligiblePopulation": 19079,
+      "medianHouseholdIncome": 73239
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46816",
+      "representativeLatitude": 40.9900625,
+      "representativeLongitude": -85.0049168940568,
+      "eligiblePopulation": 12976,
+      "medianHouseholdIncome": 45343
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46818",
+      "representativeLatitude": 41.155745499999995,
+      "representativeLongitude": -85.25179662247172,
+      "eligiblePopulation": 15767,
+      "medianHouseholdIncome": 81066
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46819",
+      "representativeLatitude": 40.980404,
+      "representativeLongitude": -85.13155458976098,
+      "eligiblePopulation": 7037,
+      "medianHouseholdIncome": 63947
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46825",
+      "representativeLatitude": 41.1494595,
+      "representativeLongitude": -85.12826312944036,
+      "eligiblePopulation": 22457,
+      "medianHouseholdIncome": 70544
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46835",
+      "representativeLatitude": 41.15363,
+      "representativeLongitude": -85.04835314520048,
+      "eligiblePopulation": 27081,
+      "medianHouseholdIncome": 77152
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46845",
+      "representativeLatitude": 41.212267,
+      "representativeLongitude": -85.10690526953708,
+      "eligiblePopulation": 20777,
+      "medianHouseholdIncome": 112676
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46901",
+      "representativeLatitude": 40.527356499999996,
+      "representativeLongitude": -86.15678271082459,
+      "eligiblePopulation": 28106,
+      "medianHouseholdIncome": 60495
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46902",
+      "representativeLatitude": 40.4300185,
+      "representativeLongitude": -86.08926749269915,
+      "eligiblePopulation": 27193,
+      "medianHouseholdIncome": 62126
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46910",
+      "representativeLatitude": 41.046261,
+      "representativeLongitude": -86.04448302664366,
+      "eligiblePopulation": 2104,
+      "medianHouseholdIncome": 69226
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46911",
+      "representativeLatitude": 40.627928,
+      "representativeLongitude": -85.9534298224655,
+      "eligiblePopulation": 1322,
+      "medianHouseholdIncome": 95122
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46914",
+      "representativeLatitude": 40.626132999999996,
+      "representativeLongitude": -86.09913421766956,
+      "eligiblePopulation": 3541,
+      "medianHouseholdIncome": 63902
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46919",
+      "representativeLatitude": 40.586768,
+      "representativeLongitude": -85.88134362780855,
+      "eligiblePopulation": 1508,
+      "medianHouseholdIncome": 83664
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46922",
+      "representativeLatitude": 41.1399835,
+      "representativeLongitude": -86.42317171383826,
+      "eligiblePopulation": 0,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46926",
+      "representativeLatitude": 40.881240500000004,
+      "representativeLongitude": -86.01882159297489,
+      "eligiblePopulation": 1072,
+      "medianHouseholdIncome": 68218
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46928",
+      "representativeLatitude": 40.411722999999995,
+      "representativeLongitude": -85.72295366279351,
+      "eligiblePopulation": 3483,
+      "medianHouseholdIncome": 67412
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46930",
+      "representativeLatitude": 40.410365999999996,
+      "representativeLongitude": -85.57355890724784,
+      "eligiblePopulation": 143,
+      "medianHouseholdIncome": 52679
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46931",
+      "representativeLatitude": 40.9463375,
+      "representativeLongitude": -86.2650222581088,
+      "eligiblePopulation": 188,
+      "medianHouseholdIncome": 46667
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46932",
+      "representativeLatitude": 40.61289,
+      "representativeLongitude": -86.26015776310322,
+      "eligiblePopulation": 2555,
+      "medianHouseholdIncome": 61579
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46933",
+      "representativeLatitude": 40.4810535,
+      "representativeLongitude": -85.58294001701685,
+      "eligiblePopulation": 4924,
+      "medianHouseholdIncome": 56786
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46936",
+      "representativeLatitude": 40.486559,
+      "representativeLongitude": -85.9240394169845,
+      "eligiblePopulation": 4486,
+      "medianHouseholdIncome": 79900
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46937",
+      "representativeLatitude": 40.415395000000004,
+      "representativeLongitude": -86.03674298521236,
+      "eligiblePopulation": 17,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46938",
+      "representativeLatitude": 40.447987999999995,
+      "representativeLongitude": -85.59295081545608,
+      "eligiblePopulation": 1871,
+      "medianHouseholdIncome": 45884
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46939",
+      "representativeLatitude": 41.0119555,
+      "representativeLongitude": -86.40695882697793,
+      "eligiblePopulation": 1523,
+      "medianHouseholdIncome": 69000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46940",
+      "representativeLatitude": 40.692119000000005,
+      "representativeLongitude": -85.7045826412558,
+      "eligiblePopulation": 1943,
+      "medianHouseholdIncome": 64089
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46941",
+      "representativeLatitude": 40.8213395,
+      "representativeLongitude": -85.70101023262734,
+      "eligiblePopulation": 728,
+      "medianHouseholdIncome": 66993
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46943",
+      "representativeLatitude": 40.972950999999995,
+      "representativeLongitude": -85.84104769074945,
+      "eligiblePopulation": 127,
+      "medianHouseholdIncome": 33750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46945",
+      "representativeLatitude": 41.121029,
+      "representativeLongitude": -86.38522377526395,
+      "eligiblePopulation": 0,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46946",
+      "representativeLatitude": 41.0398945,
+      "representativeLongitude": -85.72780207376971,
+      "eligiblePopulation": 57,
+      "medianHouseholdIncome": 61346
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46947",
+      "representativeLatitude": 40.7478485,
+      "representativeLongitude": -86.41831917690808,
+      "eligiblePopulation": 20580,
+      "medianHouseholdIncome": 54791
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46950",
+      "representativeLatitude": 40.878190000000004,
+      "representativeLongitude": -86.36286981760874,
+      "eligiblePopulation": 402,
+      "medianHouseholdIncome": 48816
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46951",
+      "representativeLatitude": 40.9387585,
+      "representativeLongitude": -86.1106182167525,
+      "eligiblePopulation": 1689,
+      "medianHouseholdIncome": 55227
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46952",
+      "representativeLatitude": 40.607832,
+      "representativeLongitude": -85.69368658918346,
+      "eligiblePopulation": 13843,
+      "medianHouseholdIncome": 52880
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46953",
+      "representativeLatitude": 40.510447,
+      "representativeLongitude": -85.64291782779405,
+      "eligiblePopulation": 16456,
+      "medianHouseholdIncome": 46288
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46957",
+      "representativeLatitude": 40.388653500000004,
+      "representativeLongitude": -85.50054277968171,
+      "eligiblePopulation": 330,
+      "medianHouseholdIncome": 49444
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46958",
+      "representativeLatitude": 40.816184,
+      "representativeLongitude": -86.11973676914795,
+      "eligiblePopulation": 547,
+      "medianHouseholdIncome": 87640
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46959",
+      "representativeLatitude": 40.613259,
+      "representativeLongitude": -86.11339462193126,
+      "eligiblePopulation": 323,
+      "medianHouseholdIncome": 78750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46960",
+      "representativeLatitude": 41.156617,
+      "representativeLongitude": -86.51773749410202,
+      "eligiblePopulation": 821,
+      "medianHouseholdIncome": 45625
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46961",
+      "representativeLatitude": 40.768504,
+      "representativeLongitude": -86.19347913007684,
+      "eligiblePopulation": 64,
+      "medianHouseholdIncome": 110400
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46962",
+      "representativeLatitude": 41.0007205,
+      "representativeLongitude": -85.78266666243941,
+      "eligiblePopulation": 6422,
+      "medianHouseholdIncome": 67984
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46965",
+      "representativeLatitude": 40.41574,
+      "representativeLongitude": -86.10186370336041,
+      "eligiblePopulation": 53,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46967",
+      "representativeLatitude": 40.695419,
+      "representativeLongitude": -86.1947738901188,
+      "eligiblePopulation": 120,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46968",
+      "representativeLatitude": 41.1676165,
+      "representativeLongitude": -86.55564921163744,
+      "eligiblePopulation": 79,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46970",
+      "representativeLatitude": 40.75762,
+      "representativeLongitude": -86.07363472021818,
+      "eligiblePopulation": 17123,
+      "medianHouseholdIncome": 57842
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46971",
+      "representativeLatitude": 40.65979299999999,
+      "representativeLongitude": -86.16158488692531,
+      "eligiblePopulation": 0,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46974",
+      "representativeLatitude": 40.947379,
+      "representativeLongitude": -85.94469317739262,
+      "eligiblePopulation": 1216,
+      "medianHouseholdIncome": 61528
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46975",
+      "representativeLatitude": 41.041484,
+      "representativeLongitude": -86.21673814156182,
+      "eligiblePopulation": 10600,
+      "medianHouseholdIncome": 61185
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46978",
+      "representativeLatitude": 40.8572085,
+      "representativeLongitude": -86.50879643264003,
+      "eligiblePopulation": 1565,
+      "medianHouseholdIncome": 78750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46979",
+      "representativeLatitude": 40.421101,
+      "representativeLongitude": -86.25618609340043,
+      "eligiblePopulation": 3745,
+      "medianHouseholdIncome": 88832
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46980",
+      "representativeLatitude": 40.9555005,
+      "representativeLongitude": -85.74165006909283,
+      "eligiblePopulation": 61,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46982",
+      "representativeLatitude": 41.046617,
+      "representativeLongitude": -85.885198793754,
+      "eligiblePopulation": 2037,
+      "medianHouseholdIncome": 79688
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46984",
+      "representativeLatitude": 40.669219999999996,
+      "representativeLongitude": -85.82795866315737,
+      "eligiblePopulation": 8,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46986",
+      "representativeLatitude": 40.5010575,
+      "representativeLongitude": -85.8253395830945,
+      "eligiblePopulation": 1223,
+      "medianHouseholdIncome": 79438
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46987",
+      "representativeLatitude": 40.567643000000004,
+      "representativeLongitude": -85.7688571880528,
+      "eligiblePopulation": 773,
+      "medianHouseholdIncome": 80893
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46988",
+      "representativeLatitude": 40.8822565,
+      "representativeLongitude": -86.23387150989029,
+      "eligiblePopulation": 620,
+      "medianHouseholdIncome": 44792
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46989",
+      "representativeLatitude": 40.443433,
+      "representativeLongitude": -85.49075390598063,
+      "eligiblePopulation": 3131,
+      "medianHouseholdIncome": 82074
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46990",
+      "representativeLatitude": 40.8934175,
+      "representativeLongitude": -85.73630409950614,
+      "eligiblePopulation": 498,
+      "medianHouseholdIncome": 78875
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46991",
+      "representativeLatitude": 40.622164999999995,
+      "representativeLongitude": -85.51443856929032,
+      "eligiblePopulation": 1181,
+      "medianHouseholdIncome": 47692
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46992",
+      "representativeLatitude": 40.783237,
+      "representativeLongitude": -85.8101662355758,
+      "eligiblePopulation": 12460,
+      "medianHouseholdIncome": 66220
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46994",
+      "representativeLatitude": 40.681878499999996,
+      "representativeLongitude": -86.25127516773861,
+      "eligiblePopulation": 1639,
+      "medianHouseholdIncome": 56563
+    },
+    {
+      "stableOriginId": "USA-ZCTA-46998",
+      "representativeLatitude": 40.576648,
+      "representativeLongitude": -86.3512911272584,
+      "eligiblePopulation": 75,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47302",
+      "representativeLatitude": 40.135138,
+      "representativeLongitude": -85.38561038397032,
+      "eligiblePopulation": 19080,
+      "medianHouseholdIncome": 47837
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47303",
+      "representativeLatitude": 40.2786445,
+      "representativeLongitude": -85.38382495120882,
+      "eligiblePopulation": 18090,
+      "medianHouseholdIncome": 47674
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47304",
+      "representativeLatitude": 40.238371,
+      "representativeLongitude": -85.4543733042405,
+      "eligiblePopulation": 23660,
+      "medianHouseholdIncome": 63215
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47305",
+      "representativeLatitude": 40.1950885,
+      "representativeLongitude": -85.37897242732707,
+      "eligiblePopulation": 2726,
+      "medianHouseholdIncome": 36389
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47306",
+      "representativeLatitude": 40.2056545,
+      "representativeLongitude": -85.40669919765344,
+      "eligiblePopulation": 400,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47320",
+      "representativeLatitude": 40.284141,
+      "representativeLongitude": -85.26776924394954,
+      "eligiblePopulation": 3630,
+      "medianHouseholdIncome": 69764
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47326",
+      "representativeLatitude": 40.5491957030104,
+      "representativeLongitude": -84.98265233298397,
+      "eligiblePopulation": 964,
+      "medianHouseholdIncome": 48438
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47334",
+      "representativeLatitude": 40.137539000000004,
+      "representativeLongitude": -85.56084482122432,
+      "eligiblePopulation": 2526,
+      "medianHouseholdIncome": 71815
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47336",
+      "representativeLatitude": 40.4000565,
+      "representativeLongitude": -85.18496872815297,
+      "eligiblePopulation": 2230,
+      "medianHouseholdIncome": 50633
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47338",
+      "representativeLatitude": 40.34438,
+      "representativeLongitude": -85.33253885588519,
+      "eligiblePopulation": 1742,
+      "medianHouseholdIncome": 68239
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47340",
+      "representativeLatitude": 40.200548,
+      "representativeLongitude": -85.11959831334083,
+      "eligiblePopulation": 2278,
+      "medianHouseholdIncome": 63205
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47342",
+      "representativeLatitude": 40.317341,
+      "representativeLongitude": -85.50182197545297,
+      "eligiblePopulation": 1963,
+      "medianHouseholdIncome": 75030
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47348",
+      "representativeLatitude": 40.4721575,
+      "representativeLongitude": -85.33290636807666,
+      "eligiblePopulation": 6698,
+      "medianHouseholdIncome": 50426
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47354",
+      "representativeLatitude": 40.045845,
+      "representativeLongitude": -85.20429794291313,
+      "eligiblePopulation": 905,
+      "medianHouseholdIncome": 66566
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47355",
+      "representativeLatitude": 40.0448305,
+      "representativeLongitude": -84.92222491308189,
+      "eligiblePopulation": 2364,
+      "medianHouseholdIncome": 73133
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47356",
+      "representativeLatitude": 40.0370995,
+      "representativeLongitude": -85.51410611755384,
+      "eligiblePopulation": 4177,
+      "medianHouseholdIncome": 67049
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47358",
+      "representativeLatitude": 40.044263,
+      "representativeLongitude": -85.09962905356728,
+      "eligiblePopulation": 638,
+      "medianHouseholdIncome": 79063
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47359",
+      "representativeLatitude": 40.555983,
+      "representativeLongitude": -85.29464245236204,
+      "eligiblePopulation": 2476,
+      "medianHouseholdIncome": 71607
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47360",
+      "representativeLatitude": 40.011899,
+      "representativeLongitude": -85.24748659687756,
+      "eligiblePopulation": 1178,
+      "medianHouseholdIncome": 76250
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47367",
+      "representativeLatitude": 40.0836975,
+      "representativeLongitude": -85.3920743295406,
+      "eligiblePopulation": 70,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47368",
+      "representativeLatitude": 40.1749595,
+      "representativeLongitude": -85.20057709782486,
+      "eligiblePopulation": 1471,
+      "medianHouseholdIncome": 73654
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47369",
+      "representativeLatitude": 40.5151305,
+      "representativeLongitude": -85.13856775661165,
+      "eligiblePopulation": 922,
+      "medianHouseholdIncome": 32917
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47371",
+      "representativeLatitude": 40.414919863748594,
+      "representativeLongitude": -84.97167011611735,
+      "eligiblePopulation": 9107,
+      "medianHouseholdIncome": 64000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47373",
+      "representativeLatitude": 40.3421465,
+      "representativeLongitude": -85.15673427016526,
+      "eligiblePopulation": 1389,
+      "medianHouseholdIncome": 51532
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47380",
+      "representativeLatitude": 40.277721,
+      "representativeLongitude": -85.0479948459435,
+      "eligiblePopulation": 1459,
+      "medianHouseholdIncome": 57000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47381",
+      "representativeLatitude": 40.387637,
+      "representativeLongitude": -84.86478159190783,
+      "eligiblePopulation": 159,
+      "medianHouseholdIncome": 44464
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47382",
+      "representativeLatitude": 40.238037000000006,
+      "representativeLongitude": -84.91925838225808,
+      "eligiblePopulation": 84,
+      "medianHouseholdIncome": 48750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47383",
+      "representativeLatitude": 40.151902,
+      "representativeLongitude": -85.26201551590165,
+      "eligiblePopulation": 1955,
+      "medianHouseholdIncome": 61250
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47386",
+      "representativeLatitude": 40.050345,
+      "representativeLongitude": -85.38347588348319,
+      "eligiblePopulation": 1117,
+      "medianHouseholdIncome": 79157
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47390",
+      "representativeLatitude": 40.2004441280702,
+      "representativeLongitude": -84.84358435506732,
+      "eligiblePopulation": 3574,
+      "medianHouseholdIncome": 50417
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47394",
+      "representativeLatitude": 40.16425,
+      "representativeLongitude": -84.9986782610878,
+      "eligiblePopulation": 5742,
+      "medianHouseholdIncome": 59913
+    },
+    {
+      "stableOriginId": "USA-ZCTA-47396",
+      "representativeLatitude": 40.198636,
+      "representativeLongitude": -85.5221104458482,
+      "eligiblePopulation": 5615,
+      "medianHouseholdIncome": 78125
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48118",
+      "representativeLatitude": 42.317319499999996,
+      "representativeLongitude": -84.05200599747775,
+      "eligiblePopulation": 10118,
+      "medianHouseholdIncome": 88278
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48131",
+      "representativeLatitude": 41.959830999999994,
+      "representativeLongitude": -83.66955004083462,
+      "eligiblePopulation": 6314,
+      "medianHouseholdIncome": 85747
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48144",
+      "representativeLatitude": 41.7571995,
+      "representativeLongitude": -83.62558568982088,
+      "eligiblePopulation": 8046,
+      "medianHouseholdIncome": 101410
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48158",
+      "representativeLatitude": 42.161411,
+      "representativeLongitude": -84.03703438209214,
+      "eligiblePopulation": 5991,
+      "medianHouseholdIncome": 94784
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48176",
+      "representativeLatitude": 42.143734499999994,
+      "representativeLongitude": -83.8135128283291,
+      "eligiblePopulation": 17622,
+      "medianHouseholdIncome": 114206
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48813",
+      "representativeLatitude": 42.5621805,
+      "representativeLongitude": -84.85487602226246,
+      "eligiblePopulation": 15043,
+      "medianHouseholdIncome": 80429
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48819",
+      "representativeLatitude": 42.545094000000006,
+      "representativeLongitude": -84.28157655305944,
+      "eligiblePopulation": 1897,
+      "medianHouseholdIncome": 110833
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48821",
+      "representativeLatitude": 42.639977,
+      "representativeLongitude": -84.65744655733002,
+      "eligiblePopulation": 5087,
+      "medianHouseholdIncome": 107440
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48827",
+      "representativeLatitude": 42.5147835,
+      "representativeLongitude": -84.64298750911462,
+      "eligiblePopulation": 11727,
+      "medianHouseholdIncome": 78257
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48842",
+      "representativeLatitude": 42.6348415,
+      "representativeLongitude": -84.54673072788788,
+      "eligiblePopulation": 16497,
+      "medianHouseholdIncome": 88340
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48854",
+      "representativeLatitude": 42.5785365,
+      "representativeLongitude": -84.4770408625065,
+      "eligiblePopulation": 14671,
+      "medianHouseholdIncome": 94716
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48876",
+      "representativeLatitude": 42.646924,
+      "representativeLongitude": -84.74041648738563,
+      "eligiblePopulation": 3071,
+      "medianHouseholdIncome": 74594
+    },
+    {
+      "stableOriginId": "USA-ZCTA-48897",
+      "representativeLatitude": 42.694454,
+      "representativeLongitude": -85.11870118752259,
+      "eligiblePopulation": 1209,
+      "medianHouseholdIncome": 69531
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49001",
+      "representativeLatitude": 42.269379,
+      "representativeLongitude": -85.56024106973595,
+      "eligiblePopulation": 14629,
+      "medianHouseholdIncome": 56432
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49002",
+      "representativeLatitude": 42.19578,
+      "representativeLongitude": -85.5617582361391,
+      "eligiblePopulation": 15023,
+      "medianHouseholdIncome": 73647
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49004",
+      "representativeLatitude": 42.3523895,
+      "representativeLongitude": -85.54303060850336,
+      "eligiblePopulation": 13422,
+      "medianHouseholdIncome": 73453
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49006",
+      "representativeLatitude": 42.296886,
+      "representativeLongitude": -85.62415861517425,
+      "eligiblePopulation": 18239,
+      "medianHouseholdIncome": 43639
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49007",
+      "representativeLatitude": 42.3008325,
+      "representativeLongitude": -85.58696822705002,
+      "eligiblePopulation": 7211,
+      "medianHouseholdIncome": 39344
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49008",
+      "representativeLatitude": 42.269156,
+      "representativeLongitude": -85.61897406657548,
+      "eligiblePopulation": 11259,
+      "medianHouseholdIncome": 74943
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49009",
+      "representativeLatitude": 42.2941005,
+      "representativeLongitude": -85.71190604462495,
+      "eligiblePopulation": 34189,
+      "medianHouseholdIncome": 80930
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49010",
+      "representativeLatitude": 42.525268499999996,
+      "representativeLongitude": -85.87249195245624,
+      "eligiblePopulation": 13632,
+      "medianHouseholdIncome": 74370
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49011",
+      "representativeLatitude": 42.105159,
+      "representativeLongitude": -85.20765618192351,
+      "eligiblePopulation": 1841,
+      "medianHouseholdIncome": 59722
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49012",
+      "representativeLatitude": 42.3465355,
+      "representativeLongitude": -85.34744602639267,
+      "eligiblePopulation": 2335,
+      "medianHouseholdIncome": 73125
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49013",
+      "representativeLatitude": 42.312968,
+      "representativeLongitude": -86.09026047426059,
+      "eligiblePopulation": 3734,
+      "medianHouseholdIncome": 55349
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49014",
+      "representativeLatitude": 42.3006845,
+      "representativeLongitude": -85.10248816392809,
+      "eligiblePopulation": 16106,
+      "medianHouseholdIncome": 69009
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49015",
+      "representativeLatitude": 42.264801000000006,
+      "representativeLongitude": -85.2233876015359,
+      "eligiblePopulation": 20249,
+      "medianHouseholdIncome": 68821
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49017",
+      "representativeLatitude": 42.392835500000004,
+      "representativeLongitude": -85.20255082869025,
+      "eligiblePopulation": 15954,
+      "medianHouseholdIncome": 60885
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49021",
+      "representativeLatitude": 42.448212999999996,
+      "representativeLongitude": -85.09654201304335,
+      "eligiblePopulation": 4937,
+      "medianHouseholdIncome": 82959
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49024",
+      "representativeLatitude": 42.202847500000004,
+      "representativeLongitude": -85.61924450883339,
+      "eligiblePopulation": 23518,
+      "medianHouseholdIncome": 91105
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49026",
+      "representativeLatitude": 42.3794795,
+      "representativeLongitude": -85.95883413250343,
+      "eligiblePopulation": 1382,
+      "medianHouseholdIncome": 68203
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49027",
+      "representativeLatitude": 42.3493955,
+      "representativeLongitude": -86.06997034377866,
+      "eligiblePopulation": 145,
+      "medianHouseholdIncome": 108333
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49028",
+      "representativeLatitude": 41.8715065,
+      "representativeLongitude": -85.2025128752496,
+      "eligiblePopulation": 4208,
+      "medianHouseholdIncome": 60127
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49029",
+      "representativeLatitude": 42.1324835,
+      "representativeLongitude": -85.09342079243483,
+      "eligiblePopulation": 1147,
+      "medianHouseholdIncome": 75188
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49030",
+      "representativeLatitude": 41.8438725,
+      "representativeLongitude": -85.33101952046965,
+      "eligiblePopulation": 1769,
+      "medianHouseholdIncome": 69167
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49031",
+      "representativeLatitude": 41.904916,
+      "representativeLongitude": -86.01535134330774,
+      "eligiblePopulation": 6307,
+      "medianHouseholdIncome": 66944
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49032",
+      "representativeLatitude": 41.9055645,
+      "representativeLongitude": -85.53168544031266,
+      "eligiblePopulation": 2229,
+      "medianHouseholdIncome": 66420
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49033",
+      "representativeLatitude": 42.226735500000004,
+      "representativeLongitude": -85.0973378708034,
+      "eligiblePopulation": 1495,
+      "medianHouseholdIncome": 94750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49034",
+      "representativeLatitude": 42.228398,
+      "representativeLongitude": -85.33517343931612,
+      "eligiblePopulation": 1462,
+      "medianHouseholdIncome": 73929
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49036",
+      "representativeLatitude": 41.9013955,
+      "representativeLongitude": -85.0482836704681,
+      "eligiblePopulation": 18828,
+      "medianHouseholdIncome": 62259
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49037",
+      "representativeLatitude": 42.3280825,
+      "representativeLongitude": -85.2393899047569,
+      "eligiblePopulation": 14483,
+      "medianHouseholdIncome": 42690
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49040",
+      "representativeLatitude": 41.9809815,
+      "representativeLongitude": -85.33713701212014,
+      "eligiblePopulation": 2544,
+      "medianHouseholdIncome": 64306
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49042",
+      "representativeLatitude": 41.858605499999996,
+      "representativeLongitude": -85.6680965500148,
+      "eligiblePopulation": 3474,
+      "medianHouseholdIncome": 72910
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49045",
+      "representativeLatitude": 42.088049,
+      "representativeLongitude": -85.98308729427632,
+      "eligiblePopulation": 4010,
+      "medianHouseholdIncome": 57436
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49046",
+      "representativeLatitude": 42.521553499999996,
+      "representativeLongitude": -85.41828524507304,
+      "eligiblePopulation": 5892,
+      "medianHouseholdIncome": 86054
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49047",
+      "representativeLatitude": 41.995954999999995,
+      "representativeLongitude": -86.09825768644842,
+      "eligiblePopulation": 11375,
+      "medianHouseholdIncome": 62963
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49048",
+      "representativeLatitude": 42.264514,
+      "representativeLongitude": -85.49194931860896,
+      "eligiblePopulation": 17067,
+      "medianHouseholdIncome": 60454
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49050",
+      "representativeLatitude": 42.4935575,
+      "representativeLongitude": -85.22324656931033,
+      "eligiblePopulation": 1182,
+      "medianHouseholdIncome": 75089
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49051",
+      "representativeLatitude": 42.1789415,
+      "representativeLongitude": -85.2369675037568,
+      "eligiblePopulation": 1963,
+      "medianHouseholdIncome": 74886
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49052",
+      "representativeLatitude": 42.126866,
+      "representativeLongitude": -85.30920634213356,
+      "eligiblePopulation": 829,
+      "medianHouseholdIncome": 63889
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49053",
+      "representativeLatitude": 42.294967,
+      "representativeLongitude": -85.44105415164698,
+      "eligiblePopulation": 5670,
+      "medianHouseholdIncome": 85909
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49055",
+      "representativeLatitude": 42.3792075,
+      "representativeLongitude": -85.84395264783008,
+      "eligiblePopulation": 4609,
+      "medianHouseholdIncome": 62083
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49056",
+      "representativeLatitude": 42.398203499999994,
+      "representativeLongitude": -86.06924259476297,
+      "eligiblePopulation": 3097,
+      "medianHouseholdIncome": 63438
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49057",
+      "representativeLatitude": 42.1751715,
+      "representativeLongitude": -86.15000532533553,
+      "eligiblePopulation": 4553,
+      "medianHouseholdIncome": 51345
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49058",
+      "representativeLatitude": 42.6298495,
+      "representativeLongitude": -85.30220673592143,
+      "eligiblePopulation": 14671,
+      "medianHouseholdIncome": 68214
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49060",
+      "representativeLatitude": 42.425587500000006,
+      "representativeLongitude": -85.39619181131552,
+      "eligiblePopulation": 2284,
+      "medianHouseholdIncome": 134861
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49061",
+      "representativeLatitude": 41.877004,
+      "representativeLongitude": -85.7940703526381,
+      "eligiblePopulation": 1125,
+      "medianHouseholdIncome": 79229
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49064",
+      "representativeLatitude": 42.214884,
+      "representativeLongitude": -86.0511662222032,
+      "eligiblePopulation": 2646,
+      "medianHouseholdIncome": 68607
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49065",
+      "representativeLatitude": 42.138025999999996,
+      "representativeLongitude": -85.84101132921433,
+      "eligiblePopulation": 5414,
+      "medianHouseholdIncome": 71447
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49066",
+      "representativeLatitude": 42.03366,
+      "representativeLongitude": -85.35192711379827,
+      "eligiblePopulation": 480,
+      "medianHouseholdIncome": 69236
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49067",
+      "representativeLatitude": 42.0291675,
+      "representativeLongitude": -85.80977938465742,
+      "eligiblePopulation": 3128,
+      "medianHouseholdIncome": 74583
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49068",
+      "representativeLatitude": 42.2623255,
+      "representativeLongitude": -84.94669178293171,
+      "eligiblePopulation": 11326,
+      "medianHouseholdIncome": 80857
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49070",
+      "representativeLatitude": 42.5404225,
+      "representativeLongitude": -85.6236169741739,
+      "eligiblePopulation": 1705,
+      "medianHouseholdIncome": 68750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49071",
+      "representativeLatitude": 42.236087,
+      "representativeLongitude": -85.79025362696963,
+      "eligiblePopulation": 8775,
+      "medianHouseholdIncome": 108629
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49072",
+      "representativeLatitude": 42.01745,
+      "representativeLongitude": -85.46703459363783,
+      "eligiblePopulation": 2303,
+      "medianHouseholdIncome": 63875
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49073",
+      "representativeLatitude": 42.584956500000004,
+      "representativeLongitude": -85.12289283431718,
+      "eligiblePopulation": 3676,
+      "medianHouseholdIncome": 67604
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49074",
+      "representativeLatitude": 42.3189235,
+      "representativeLongitude": -85.53981038985512,
+      "eligiblePopulation": 193,
+      "medianHouseholdIncome": 33750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49075",
+      "representativeLatitude": 41.916909000000004,
+      "representativeLongitude": -85.44779544218981,
+      "eligiblePopulation": 168,
+      "medianHouseholdIncome": 105147
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49076",
+      "representativeLatitude": 42.4296235,
+      "representativeLongitude": -84.89514105032521,
+      "eligiblePopulation": 2821,
+      "medianHouseholdIncome": 74440
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49078",
+      "representativeLatitude": 42.4701555,
+      "representativeLongitude": -85.72498036365793,
+      "eligiblePopulation": 7626,
+      "medianHouseholdIncome": 77778
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49079",
+      "representativeLatitude": 42.230631,
+      "representativeLongitude": -85.91050861917088,
+      "eligiblePopulation": 9830,
+      "medianHouseholdIncome": 73333
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49080",
+      "representativeLatitude": 42.4759665,
+      "representativeLongitude": -85.56078055291971,
+      "eligiblePopulation": 12322,
+      "medianHouseholdIncome": 74864
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49082",
+      "representativeLatitude": 41.9537315,
+      "representativeLongitude": -84.87881051681788,
+      "eligiblePopulation": 4872,
+      "medianHouseholdIncome": 74063
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49083",
+      "representativeLatitude": 42.3778395,
+      "representativeLongitude": -85.45119727597216,
+      "eligiblePopulation": 5773,
+      "medianHouseholdIncome": 105496
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49087",
+      "representativeLatitude": 42.129532999999995,
+      "representativeLongitude": -85.68120338554235,
+      "eligiblePopulation": 4487,
+      "medianHouseholdIncome": 106250
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49088",
+      "representativeLatitude": 42.188122,
+      "representativeLongitude": -85.43135001435182,
+      "eligiblePopulation": 2805,
+      "medianHouseholdIncome": 100208
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49089",
+      "representativeLatitude": 41.998298,
+      "representativeLongitude": -85.21764996960192,
+      "eligiblePopulation": 1572,
+      "medianHouseholdIncome": 69286
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49091",
+      "representativeLatitude": 41.8428425,
+      "representativeLongitude": -85.45059277203208,
+      "eligiblePopulation": 13411,
+      "medianHouseholdIncome": 67333
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49092",
+      "representativeLatitude": 42.114971,
+      "representativeLongitude": -84.96265047591706,
+      "eligiblePopulation": 1405,
+      "medianHouseholdIncome": 64211
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49093",
+      "representativeLatitude": 41.9756365,
+      "representativeLongitude": -85.65420798504567,
+      "eligiblePopulation": 13764,
+      "medianHouseholdIncome": 63118
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49094",
+      "representativeLatitude": 42.054454500000006,
+      "representativeLongitude": -85.10673066029558,
+      "eligiblePopulation": 2584,
+      "medianHouseholdIncome": 65404
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49095",
+      "representativeLatitude": 41.9034965,
+      "representativeLongitude": -85.90058066317451,
+      "eligiblePopulation": 1896,
+      "medianHouseholdIncome": 83393
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49096",
+      "representativeLatitude": 42.640251,
+      "representativeLongitude": -85.01570553613479,
+      "eligiblePopulation": 2339,
+      "medianHouseholdIncome": 73929
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49097",
+      "representativeLatitude": 42.1092945,
+      "representativeLongitude": -85.47107674307746,
+      "eligiblePopulation": 8870,
+      "medianHouseholdIncome": 88208
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49098",
+      "representativeLatitude": 42.174204,
+      "representativeLongitude": -86.24083642552702,
+      "eligiblePopulation": 4549,
+      "medianHouseholdIncome": 59047
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49099",
+      "representativeLatitude": 41.798546,
+      "representativeLongitude": -85.68186402163198,
+      "eligiblePopulation": 4429,
+      "medianHouseholdIncome": 70307
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49102",
+      "representativeLatitude": 41.9514595,
+      "representativeLongitude": -86.26919575508526,
+      "eligiblePopulation": 1169,
+      "medianHouseholdIncome": 63000
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49103",
+      "representativeLatitude": 41.949450999999996,
+      "representativeLongitude": -86.37380133144066,
+      "eligiblePopulation": 8769,
+      "medianHouseholdIncome": 65827
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49104",
+      "representativeLatitude": 41.9632475,
+      "representativeLongitude": -86.3586834700713,
+      "eligiblePopulation": 109,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49107",
+      "representativeLatitude": 41.8437385,
+      "representativeLongitude": -86.38560654683636,
+      "eligiblePopulation": 7886,
+      "medianHouseholdIncome": 66289
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49111",
+      "representativeLatitude": 42.024536,
+      "representativeLongitude": -86.29073325038739,
+      "eligiblePopulation": 2413,
+      "medianHouseholdIncome": 70915
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49112",
+      "representativeLatitude": 41.810894,
+      "representativeLongitude": -86.04975865852305,
+      "eligiblePopulation": 7673,
+      "medianHouseholdIncome": 61785
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49120",
+      "representativeLatitude": 41.84308,
+      "representativeLongitude": -86.22149715062831,
+      "eligiblePopulation": 26861,
+      "medianHouseholdIncome": 65148
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49126",
+      "representativeLatitude": 42.0244625,
+      "representativeLongitude": -86.37015797941561,
+      "eligiblePopulation": 1174,
+      "medianHouseholdIncome": 76875
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49130",
+      "representativeLatitude": 41.784913,
+      "representativeLongitude": -85.8568586108008,
+      "eligiblePopulation": 1020,
+      "medianHouseholdIncome": 76667
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49201",
+      "representativeLatitude": 42.2529165,
+      "representativeLongitude": -84.28882143689783,
+      "eligiblePopulation": 37749,
+      "medianHouseholdIncome": 74484
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49202",
+      "representativeLatitude": 42.274558,
+      "representativeLongitude": -84.42347451919531,
+      "eligiblePopulation": 13999,
+      "medianHouseholdIncome": 42632
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49203",
+      "representativeLatitude": 42.2164885,
+      "representativeLongitude": -84.41046720849712,
+      "eligiblePopulation": 26649,
+      "medianHouseholdIncome": 56201
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49220",
+      "representativeLatitude": 41.994068999999996,
+      "representativeLongitude": -84.34959355027848,
+      "eligiblePopulation": 1773,
+      "medianHouseholdIncome": 72500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49221",
+      "representativeLatitude": 41.893063999999995,
+      "representativeLongitude": -84.04586060860089,
+      "eligiblePopulation": 30898,
+      "medianHouseholdIncome": 65977
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49224",
+      "representativeLatitude": 42.293420999999995,
+      "representativeLongitude": -84.76419,
+      "eligiblePopulation": 8542,
+      "medianHouseholdIncome": 53144
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49227",
+      "representativeLatitude": 41.9522635,
+      "representativeLongitude": -84.76750133300362,
+      "eligiblePopulation": 976,
+      "medianHouseholdIncome": 53587
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49228",
+      "representativeLatitude": 41.8109665,
+      "representativeLongitude": -83.91767505630631,
+      "eligiblePopulation": 3969,
+      "medianHouseholdIncome": 82703
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49229",
+      "representativeLatitude": 42.004670000000004,
+      "representativeLongitude": -83.81069558758574,
+      "eligiblePopulation": 2666,
+      "medianHouseholdIncome": 94950
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49230",
+      "representativeLatitude": 42.09943,
+      "representativeLongitude": -84.23141897475479,
+      "eligiblePopulation": 8305,
+      "medianHouseholdIncome": 83458
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49232",
+      "representativeLatitude": 41.74892,
+      "representativeLongitude": -84.68474508973009,
+      "eligiblePopulation": 1770,
+      "medianHouseholdIncome": 56324
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49233",
+      "representativeLatitude": 42.058468500000004,
+      "representativeLongitude": -84.36530602066298,
+      "eligiblePopulation": 2281,
+      "medianHouseholdIncome": 81250
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49234",
+      "representativeLatitude": 42.126511,
+      "representativeLongitude": -84.36454733374264,
+      "eligiblePopulation": 2062,
+      "medianHouseholdIncome": 110313
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49235",
+      "representativeLatitude": 41.8621205,
+      "representativeLongitude": -84.21760370873156,
+      "eligiblePopulation": 1631,
+      "medianHouseholdIncome": 64219
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49236",
+      "representativeLatitude": 42.078790999999995,
+      "representativeLongitude": -83.94264609410618,
+      "eligiblePopulation": 3641,
+      "medianHouseholdIncome": 79783
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49237",
+      "representativeLatitude": 42.1722005,
+      "representativeLongitude": -84.6490751826336,
+      "eligiblePopulation": 2327,
+      "medianHouseholdIncome": 66956
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49238",
+      "representativeLatitude": 41.9024575,
+      "representativeLongitude": -83.76868085458011,
+      "eligiblePopulation": 1228,
+      "medianHouseholdIncome": 75054
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49240",
+      "representativeLatitude": 42.288208999999995,
+      "representativeLongitude": -84.19012669196961,
+      "eligiblePopulation": 7032,
+      "medianHouseholdIncome": 99681
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49241",
+      "representativeLatitude": 42.1027995,
+      "representativeLongitude": -84.59368785329804,
+      "eligiblePopulation": 1754,
+      "medianHouseholdIncome": 81742
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49242",
+      "representativeLatitude": 41.862866499999996,
+      "representativeLongitude": -84.64304879133984,
+      "eligiblePopulation": 10458,
+      "medianHouseholdIncome": 61029
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49245",
+      "representativeLatitude": 42.141636500000004,
+      "representativeLongitude": -84.8055258482964,
+      "eligiblePopulation": 3313,
+      "medianHouseholdIncome": 62206
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49246",
+      "representativeLatitude": 42.112119500000006,
+      "representativeLongitude": -84.47541991897225,
+      "eligiblePopulation": 2308,
+      "medianHouseholdIncome": 81908
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49247",
+      "representativeLatitude": 41.8511975,
+      "representativeLongitude": -84.34271684386317,
+      "eligiblePopulation": 3823,
+      "medianHouseholdIncome": 59787
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49248",
+      "representativeLatitude": 41.764563,
+      "representativeLongitude": -84.03410979735256,
+      "eligiblePopulation": 579,
+      "medianHouseholdIncome": 81250
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49249",
+      "representativeLatitude": 42.0364105,
+      "representativeLongitude": -84.46373992364387,
+      "eligiblePopulation": 2778,
+      "medianHouseholdIncome": 82407
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49250",
+      "representativeLatitude": 42.021708000000004,
+      "representativeLongitude": -84.60800391514454,
+      "eligiblePopulation": 4092,
+      "medianHouseholdIncome": 65744
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49251",
+      "representativeLatitude": 42.473414500000004,
+      "representativeLongitude": -84.42394961308378,
+      "eligiblePopulation": 4364,
+      "medianHouseholdIncome": 85253
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49252",
+      "representativeLatitude": 42.0457805,
+      "representativeLongitude": -84.77013312088675,
+      "eligiblePopulation": 1917,
+      "medianHouseholdIncome": 55762
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49253",
+      "representativeLatitude": 41.9664455,
+      "representativeLongitude": -84.28050149761498,
+      "eligiblePopulation": 2503,
+      "medianHouseholdIncome": 89069
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49254",
+      "representativeLatitude": 42.2280145,
+      "representativeLongitude": -84.31970772228074,
+      "eligiblePopulation": 2778,
+      "medianHouseholdIncome": 63750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49255",
+      "representativeLatitude": 41.7558375,
+      "representativeLongitude": -84.79637300251926,
+      "eligiblePopulation": 1261,
+      "medianHouseholdIncome": 51346
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49256",
+      "representativeLatitude": 41.7610965,
+      "representativeLongitude": -84.23762608115521,
+      "eligiblePopulation": 2874,
+      "medianHouseholdIncome": 62880
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49258",
+      "representativeLatitude": 42.060209,
+      "representativeLongitude": -84.6584725691587,
+      "eligiblePopulation": 19,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49259",
+      "representativeLatitude": 42.374609500000005,
+      "representativeLongitude": -84.25159922871913,
+      "eligiblePopulation": 2023,
+      "medianHouseholdIncome": 66500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49261",
+      "representativeLatitude": 42.1621025,
+      "representativeLongitude": -84.25273358096885,
+      "eligiblePopulation": 137,
+      "medianHouseholdIncome": 91875
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49262",
+      "representativeLatitude": 41.963736,
+      "representativeLongitude": -84.47420912532702,
+      "eligiblePopulation": 933,
+      "medianHouseholdIncome": 54423
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49263",
+      "representativeLatitude": 42.157956999999996,
+      "representativeLongitude": -84.18188299017856,
+      "eligiblePopulation": 0,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49264",
+      "representativeLatitude": 42.4435295,
+      "representativeLongitude": -84.54875849190788,
+      "eligiblePopulation": 1093,
+      "medianHouseholdIncome": 92188
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49265",
+      "representativeLatitude": 42.0057215,
+      "representativeLongitude": -84.17844670835882,
+      "eligiblePopulation": 4017,
+      "medianHouseholdIncome": 77931
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49266",
+      "representativeLatitude": 41.818605000000005,
+      "representativeLongitude": -84.54406046357644,
+      "eligiblePopulation": 2450,
+      "medianHouseholdIncome": 66173
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49267",
+      "representativeLatitude": 41.767546,
+      "representativeLongitude": -83.71111819163163,
+      "eligiblePopulation": 3038,
+      "medianHouseholdIncome": 97961
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49268",
+      "representativeLatitude": 41.873532,
+      "representativeLongitude": -83.93364201488075,
+      "eligiblePopulation": 861,
+      "medianHouseholdIncome": 80833
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49269",
+      "representativeLatitude": 42.2967055,
+      "representativeLongitude": -84.59087198791183,
+      "eligiblePopulation": 3983,
+      "medianHouseholdIncome": 86699
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49270",
+      "representativeLatitude": 41.868715,
+      "representativeLongitude": -83.70242281212593,
+      "eligiblePopulation": 4180,
+      "medianHouseholdIncome": 94840
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49271",
+      "representativeLatitude": 41.850944,
+      "representativeLongitude": -84.4626913349799,
+      "eligiblePopulation": 1771,
+      "medianHouseholdIncome": 56389
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49272",
+      "representativeLatitude": 42.384983500000004,
+      "representativeLongitude": -84.35222075605289,
+      "eligiblePopulation": 2249,
+      "medianHouseholdIncome": 84107
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49274",
+      "representativeLatitude": 41.842918499999996,
+      "representativeLongitude": -84.77336485084149,
+      "eligiblePopulation": 2869,
+      "medianHouseholdIncome": 58087
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49276",
+      "representativeLatitude": 41.799358999999995,
+      "representativeLongitude": -83.78982474033495,
+      "eligiblePopulation": 601,
+      "medianHouseholdIncome": 73750
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49277",
+      "representativeLatitude": 42.385075,
+      "representativeLongitude": -84.463546825424,
+      "eligiblePopulation": 2023,
+      "medianHouseholdIncome": 91912
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49279",
+      "representativeLatitude": 41.7765195,
+      "representativeLongitude": -84.10820001124401,
+      "eligiblePopulation": 773,
+      "medianHouseholdIncome": 71364
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49282",
+      "representativeLatitude": 42.033198,
+      "representativeLongitude": -84.4059845129836,
+      "eligiblePopulation": 82,
+      "medianHouseholdIncome": 34911
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49283",
+      "representativeLatitude": 42.2065105,
+      "representativeLongitude": -84.55352877309714,
+      "eligiblePopulation": 3159,
+      "medianHouseholdIncome": 108464
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49284",
+      "representativeLatitude": 42.391352,
+      "representativeLongitude": -84.6752989519548,
+      "eligiblePopulation": 1922,
+      "medianHouseholdIncome": 57500
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49285",
+      "representativeLatitude": 42.482395,
+      "representativeLongitude": -84.21910609864727,
+      "eligiblePopulation": 5012,
+      "medianHouseholdIncome": 73375
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49286",
+      "representativeLatitude": 42.0115085,
+      "representativeLongitude": -83.93727009169821,
+      "eligiblePopulation": 10553,
+      "medianHouseholdIncome": 72429
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49287",
+      "representativeLatitude": 42.024637,
+      "representativeLongitude": -84.07623132460375,
+      "eligiblePopulation": 1705,
+      "medianHouseholdIncome": 88068
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49288",
+      "representativeLatitude": 41.7303425,
+      "representativeLongitude": -84.43113506959199,
+      "eligiblePopulation": 1075,
+      "medianHouseholdIncome": 66833
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49289",
+      "representativeLatitude": 41.771521,
+      "representativeLongitude": -84.1079211119814,
+      "eligiblePopulation": 97,
+      "medianHouseholdIncome": null
+    },
+    {
+      "stableOriginId": "USA-ZCTA-49344",
+      "representativeLatitude": 42.590433,
+      "representativeLongitude": -85.5732980530751,
+      "eligiblePopulation": 3012,
+      "medianHouseholdIncome": 84661
+    }
+  ],
+  "warnings": [
+    "Representative coordinates are deterministic geometry interior points computed from the generalized cartographic polygons; this source file does not publish TIGER internal-point attributes.",
+    "The 1:500,000 cartographic boundaries are generalized for regional modeling and reporting; they are not parcel-level boundaries and they do not make Census ZCTAs equivalent to USPS ZIP Codes.",
+    "State and county attributes use the county with the largest 2020 Census land-area overlap for each ZCTA; cross-county and cross-state ZCTAs remain single computational origins and are not proportionally allocated by this field.",
+    "The origin snapshot uses a broad representative-point Haversine radius only to prefilter the candidate study region; the model must use persisted Valhalla travel times, not this radius, for travel friction and final route reachability.",
+    "Regional union filtered only to positive published ACS median household income; no synthetic income is substituted. Separate controls retain all omitted population.",
+    "Census API key was not configured; ingestion used the official table-based ACS Summary File.",
+    "Census API key was not configured; ingestion used the official table-based ACS Summary File.",
+    "ACS B19013 publishes no usable median-household-income estimate for 37 selected ZCTA(s): 43403, 43505, 43510, 43520, 43523, 43530, 45809, 45884, 45893, 46047, 46502, 46513, 46556, 46595, 46624, 46704, 46771, 46778, 46786, 46789, 46796, 46922, 46937, 46945, 46965, 46967, 46968, 46971, 46980, 46984, 46998, 47306, 47367, 49104, 49258, 49263, 49289. Those origins are omitted from this income snapshot; no zero or imputed value was substituted."
+  ],
+  "releaseAccepted": false
+}
