@@ -19,5 +19,5 @@ jobs:
           node-version: 20
       - name: Verify captured bytes and checksum references
         run: |
-          node --test scripts/validation/validation-evidence.test.mjs
+          node --test scripts/validation/validation-evidence.test.mjs scripts/validation/audit-unreconciled-revenue-scope.test.mjs
           node scripts/check-validation-evidence.mjs

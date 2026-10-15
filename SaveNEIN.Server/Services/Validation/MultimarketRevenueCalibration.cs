@@ -45,7 +45,10 @@ public sealed record MultimarketCalibrationProtocol(
     string[]? ObservedGgrExcludedVenueIds = null,
     string FrictionForm = "inverse-power",
     double[]? ExponentialLambda = null,
-    string CompetitorSelectionVersion = "target-radius-v1");
+    string CompetitorSelectionVersion = "target-radius-v1",
+    string RevenueComparisonScope = CalibrationRevenueScope.LegacyUnreconciled,
+    string? RevenueScopeEvidencePath = null,
+    string? RevenueScopeEvidenceSha256 = null);
 
 /// <summary>
 /// Revenue-component backtests use the same demand, facility feature and gravity
@@ -66,6 +69,32 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             ?? throw new InvalidDataException("Calibration protocol is missing.");
         ValidateAttractionProtocol(protocol);
         if (!diagnosticReplay) ValidateServerCompetitiveUniverse(protocol);
+        if (!diagnosticReplay && !CalibrationRevenueScope.HasEvidence(protocol))
+        {
+            await File.WriteAllTextAsync(outputPath, JsonSerializer.Serialize(new
+            {
+                ProtocolHash = protocolHash, protocol.ProtocolVersion,
+                Status = "not-scored-revenue-scope-unreconciled", AccuracyMetricsValid = false,
+                protocol.RevenueComparisonScope,
+                PredictedComponent = "Gaming revenue allocated from the declared resident-origin universe.",
+                AvailableObservation = "Whole-property annual land-based gaming revenue; patron origins are not split in this source.",
+                RequiredEvidence = new[]
+                {
+                    "Observed GGR attributed to precisely the modeled origins, with period/source/origin-membership evidence; or",
+                    "Independent site-addressable tourism/traffic inputs and a coverage/deduplication audit, added to the resident prediction before comparison to total property GGR."
+                },
+                CasesRequiringEvidence = protocol.Training.Concat(protocol.Selection).Concat(protocol.Holdout.Values.SelectMany(keys => keys)).ToArray(),
+                CandidateCount = 0, FittedDemandScale = (double?)null, Selected = (SearchRow?)null,
+                TrainingMetrics = (ValidationMetrics?)null, SelectionMetrics = (ValidationMetrics?)null,
+                FinalHoldoutScored = false, ReleaseAccepted = false
+            }, JsonOptions), cancellationToken);
+            Console.WriteLine("NOT SCORED: resident-origin predictions and total-property observations lack matched-scope evidence. No expenditure fitted or accuracy percentage calculated.");
+            return;
+        }
+        var scopeBundle = CalibrationRevenueScope.HasEvidence(protocol)
+            ? await CalibrationRevenueScope.LoadAsync(protocol, protocolPath, cancellationToken) : null;
+        if (scopeBundle is null)
+            Console.WriteLine("HISTORICAL SCOPE-MISMATCH REPLAY: percentages and fitted expenditure are arithmetic diagnostics, not reconciled accuracy or calibrated resident spending.");
         if (evaluateFinalHoldout && !diagnosticReplay)
         {
             ValidateFinalHoldoutBudget(protocol);
@@ -73,7 +102,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var useObservedPeers = protocol.AttractionSpecification == FacilityAttractionSpecifications.HybridObservedGgr;
         var friction = protocol.FrictionForm == "inverse-power" ? TravelFrictionForm.InversePower : TravelFrictionForm.Exponential;
         var guardedSelection = protocol.SelectionPolicyVersion == CalibrationDevelopmentSelection.PolicyVersion;
-        if (!guardedSelection && !diagnosticReplay)
+        if (!guardedSelection && (!diagnosticReplay || scopeBundle is not null))
             throw new InvalidDataException("New calibration searches require guarded development selection. Legacy selection is restricted to explicit inspected diagnostic replay.");
         var allTargetKeys = protocol.Training.Concat(protocol.Selection).Concat(protocol.Holdout.Values.SelectMany(value => value)).ToArray();
         if (allTargetKeys.Distinct(StringComparer.Ordinal).Count() != allTargetKeys.Length || protocol.Training.Length < 2 || protocol.Selection.Length == 0)
@@ -138,6 +167,9 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var periods = await db.CasinoGamingRevenuePeriods.AsNoTracking().Where(row => row.DatasetSnapshotId == protocol.PerformanceSnapshotId &&
             row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue && row.PeriodStart >= start && row.PeriodEnd <= end)
             .OrderBy(row => row.PeriodStart).ToArrayAsync(cancellationToken);
+        if (scopeBundle is not null && periods.Any(row => row.InflationAdjustedAmount.HasValue &&
+            row.InflationAdjustmentDollarYear != protocol.ObservedYear))
+            throw new InvalidDataException("Scope evidence uses observed-year USD; performance dollar years must match before fitting.");
         var observedById = new Dictionary<int, double>();
         foreach (var group in periods.GroupBy(row => row.CasinoCompetitorId))
         {
@@ -163,7 +195,13 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             var partition = protocol.Training.Contains(key) ? "training" : protocol.Selection.Contains(key) ? "selection" : "holdout";
             var market = protocol.Holdout.FirstOrDefault(group => group.Value.Contains(key)).Key
                 ?? protocol.DevelopmentMarkets?.FirstOrDefault(group => group.Value.Contains(key)).Key ?? "development";
-            return new PreparedCase(facility, partition, market, observedById[facility.Id], caseOrigins, casePeers);
+            var propertyObserved = observedById[facility.Id];
+            var scope = scopeBundle is null
+                ? new ReconciledCalibrationRevenue(propertyObserved, propertyObserved, 0, 0,
+                    CalibrationRevenueScope.LegacyUnreconciled, CalibrationRevenueScope.OriginSetHash(caseOrigins.Select(origin => origin.StableOriginId)))
+                : CalibrationRevenueScope.Reconcile(scopeBundle, scopeBundle.Cases.Single(row => row.CaseKey == key),
+                    caseOrigins.Select(origin => origin.StableOriginId), propertyObserved);
+            return new PreparedCase(facility, partition, market, scope.ComparableObservedGgr, caseOrigins, casePeers, scope);
         }).ToArray();
         var referenceIncomeByCase = incomeMetricsById is null ? null : cases.ToDictionary(item => item.Facility.Id,
             item => GravityModelExecutionService.ResolveReferenceIncome(protocol.ReferenceIncome,
@@ -208,6 +246,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             }).ToArray();
         }
         var development = cases.Where(item => item.Partition != "holdout").ToArray();
+        var scopeReconciliation = development.Select(item => new { item.Facility.StableVenueId, item.RevenueScope }).ToArray();
         var choiceFieldAudit = development.Select(item => new
         {
             item.Facility.StableVenueId, item.Partition, item.Market,
@@ -236,15 +275,16 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             var units = UnitPredictions(decay, alpha, coefficient, positionsOffset, floorCoefficient, tableCoefficient, travelRegularization, incomeElasticity, scale, outside, development);
             if (trainingIndices.Any(index => units[index] <= 0)) continue;
             var share = guardedSelection
-                ? CalibrationDevelopmentSelection.FitTrainingWapeScale(trainingIndices.Select(index => (development[index].Observed, units[index])), protocol.MinimumDemandScale, protocol.MaximumDemandScale, protocol.ConstrainTrainingScale)
+                ? CalibrationDevelopmentSelection.FitTrainingWapeScaleWithOffsets(trainingIndices.Select(index =>
+                    (development[index].Observed, units[index], development[index].RevenueScope.FixedNonresidentGgr)), protocol.MinimumDemandScale, protocol.MaximumDemandScale, protocol.ConstrainTrainingScale)
                 : Math.Clamp(Median(trainingIndices.Select(index => development[index].Observed / units[index])), 0.001, 0.03);
             Dictionary<string, double>? jurisdictionShares = null;
             if (protocol.FitDemandScaleByJurisdiction)
                 jurisdictionShares = trainingIndices.GroupBy(index => development[index].Facility.State, StringComparer.Ordinal)
-                    .ToDictionary(group => group.Key, group => CalibrationDevelopmentSelection.FitTrainingWapeScale(
-                        group.Select(index => (development[index].Observed, units[index])), protocol.MinimumDemandScale, protocol.MaximumDemandScale, protocol.ConstrainTrainingScale), StringComparer.Ordinal);
+                    .ToDictionary(group => group.Key, group => CalibrationDevelopmentSelection.FitTrainingWapeScaleWithOffsets(
+                        group.Select(index => (development[index].Observed, units[index], development[index].RevenueScope.FixedNonresidentGgr)), protocol.MinimumDemandScale, protocol.MaximumDemandScale, protocol.ConstrainTrainingScale), StringComparer.Ordinal);
             var observations = development.Select((item, index) => new ValidationObservation(item.Facility.StableVenueId, item.Observed,
-                units[index] * (jurisdictionShares is null ? share : jurisdictionShares[item.Facility.State]))).ToArray();
+                item.RevenueScope.Predict(units[index], jurisdictionShares is null ? share : jurisdictionShares[item.Facility.State]))).ToArray();
             var selection = observations.Where((_, index) => development[index].Partition == "selection").ToArray();
             var training = observations.Where((_, index) => development[index].Partition == "training").ToArray();
             var admission = guardedSelection ? CalibrationDevelopmentSelection.Evaluate(development.Select((item, index) =>
@@ -265,6 +305,8 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             await File.WriteAllTextAsync(outputPath, JsonSerializer.Serialize(new
             {
                 ProtocolHash = protocolHash, protocol.ProtocolVersion, protocol.SelectionPolicyVersion, protocol.AttractionSpecification, protocol.DemandSpecification, protocol.CompetitorSelectionVersion,
+                AccuracyMetricsValid = scopeBundle is not null, protocol.RevenueComparisonScope, protocol.RevenueScopeEvidenceSha256,
+                ScopeReconciliation = scopeReconciliation,
                 protocol.ReferenceIncome, IncomeReferenceMode = protocol.ReferenceIncome > 0 ? "fixed-common-reference" : "case-median",
                 protocol.ObservedGgrExcludedVenueIds, InputSnapshots = snapshots.Select(row => new { row.Id, row.Checksum, row.ValidationState }),
                 protocol.FrictionForm, DecayParameterKey = friction == TravelFrictionForm.InversePower ? "gravity.beta" : "gravity.exponential_lambda",
@@ -285,6 +327,8 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             {
                 ProtocolHash = protocolHash, Scope = "Development-only structural normalization remediation; previously inspected final holdouts remain withheld and are not rescored.",
                 ScalingVersion = "consistent-physical-v2", protocol.AttractionSpecification, protocol.SelectionPolicyVersion, protocol.DemandSpecification, protocol.CompetitorSelectionVersion,
+                AccuracyMetricsValid = scopeBundle is not null, protocol.RevenueComparisonScope, protocol.RevenueScopeEvidenceSha256,
+                ScopeReconciliation = scopeReconciliation,
                 protocol.ReferenceIncome, IncomeReferenceMode = protocol.ReferenceIncome > 0 ? "fixed-common-reference" : "case-median",
                 protocol.ObservedGgrExcludedVenueIds, InputSnapshots = snapshots.Select(row => new { row.Id, row.Checksum, row.ValidationState }),
                 protocol.FrictionForm, DecayParameterKey = friction == TravelFrictionForm.InversePower ? "gravity.beta" : "gravity.exponential_lambda",
@@ -303,17 +347,19 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         var holdoutCases = cases.Where(item => item.Partition == "holdout").ToArray();
         var holdoutUnits = UnitPredictions(selected.ExponentialLambda ?? selected.Beta, selected.Alpha, selected.PositionsCoefficient, selected.PositionsOffset, selected.FloorCoefficient, selected.TableCoefficient, selected.TravelRegularizationMinutes, selected.IncomeElasticity, selected.Scale, selected.OutsideWeight, holdoutCases);
         var holdoutRows = holdoutCases.Select((item, index) => new ValidationObservation(item.Facility.StableVenueId, item.Observed,
-            holdoutUnits[index] * (selected.FittedDemandScaleByJurisdiction is null ? selected.FittedDemandScale : selected.FittedDemandScaleByJurisdiction[item.Facility.State]))).ToArray();
+            item.RevenueScope.Predict(holdoutUnits[index], selected.FittedDemandScaleByJurisdiction is null ? selected.FittedDemandScale : selected.FittedDemandScaleByJurisdiction[item.Facility.State]))).ToArray();
         var holdoutMetrics = metrics.Calculate(holdoutRows);
         var holdoutWape = Wape(holdoutRows);
         var holdoutBias = 100 * holdoutRows.Sum(row => row.Predicted - row.Observed) / holdoutRows.Sum(row => row.Observed);
         var output = new
         {
             ProtocolHash = protocolHash, protocol.ProtocolVersion, protocol.AttractionSpecification, protocol.DemandSpecification, protocol.CompetitorSelectionVersion,
+            AccuracyMetricsValid = scopeBundle is not null, protocol.RevenueComparisonScope, protocol.RevenueScopeEvidenceSha256,
+            ScopeReconciliation = scopeReconciliation,
             protocol.ReferenceIncome, IncomeReferenceMode = protocol.ReferenceIncome > 0 ? "fixed-common-reference" : "case-median",
             protocol.ObservedGgrExcludedVenueIds,
             protocol.FrictionForm, DecayParameterKey = friction == TravelFrictionForm.InversePower ? "gravity.beta" : "gravity.exponential_lambda",
-            Scope = diagnosticReplay ? "Diagnostic replay of inspected properties after development-only selection; not an untouched acceptance evaluation." : "Resident revenue-component calibration; no downstream acceptance or parameter publication.",
+            Scope = diagnosticReplay ? "Diagnostic replay of inspected properties after development-only selection; not an untouched acceptance evaluation." : "Scope-matched gaming-revenue calibration; no downstream acceptance or parameter publication.",
             HoldoutPreviouslyInspected = diagnosticReplay, ScalingVersion = "consistent-physical-v2",
             MatrixCorrelationVersion = ValhallaClient.MatrixCorrelationVersion,
             InputSnapshots = snapshots.Select(row => new { row.Id, row.Checksum, row.ValidationState }), graph.GraphHash,
@@ -323,6 +369,7 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             Holdout = holdoutCases.Select((item, index) => new
             {
                 item.Facility.StableVenueId, item.Facility.State, item.Market,
+                item.RevenueScope,
                 Observed = item.Observed, Predicted = holdoutRows[index].Predicted,
                 Ape = 100 * Math.Abs(holdoutRows[index].Predicted - item.Observed) / item.Observed,
                 OriginCount = item.Origins.Length, CompetitorCount = item.Peers.Length,
@@ -371,6 +418,9 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
 
     internal static void ValidateAttractionProtocol(MultimarketCalibrationProtocol protocol)
     {
+        if (protocol.RevenueComparisonScope is not (CalibrationRevenueScope.LegacyUnreconciled or
+            CalibrationRevenueScope.ModeledOrigins or CalibrationRevenueScope.TotalProperty))
+            throw new InvalidDataException("Unknown revenue comparison scope.");
         if (protocol.CompetitorSelectionVersion is not ("target-radius-v1" or "origin-union-v2"))
             throw new InvalidDataException("Unknown competitive-universe selection version.");
         if (protocol.FrictionForm is not ("inverse-power" or "exponential"))
@@ -590,7 +640,8 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         result["facility.gaming_positions_coefficient"] = positions; result["facility.table_games_coefficient"] = tables;
         return result;
     }
-    private sealed record PreparedCase(CasinoCompetitor Facility, string Partition, string Market, double Observed, OriginZone[] Origins, CasinoCompetitor[] Peers);
+    private sealed record PreparedCase(CasinoCompetitor Facility, string Partition, string Market, double Observed, OriginZone[] Origins, CasinoCompetitor[] Peers,
+        ReconciledCalibrationRevenue RevenueScope);
     private sealed record SearchRow(string Key, double Beta, double Alpha, double PositionsCoefficient, double PositionsOffset, double FloorCoefficient, double TableCoefficient, double TravelRegularizationMinutes, double IncomeElasticity, double Scale, double OutsideWeight,
         double FittedDemandScale, Dictionary<string, double>? FittedDemandScaleByJurisdiction, ValidationMetrics TrainingMetrics, ValidationMetrics SelectionMetrics, double SelectionWape,
         ValidationObservation[] Observations, DevelopmentFitReport? Admission, double? ExponentialLambda = null, string FrictionForm = "inverse-power");

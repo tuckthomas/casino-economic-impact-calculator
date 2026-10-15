@@ -18,9 +18,10 @@ export function verifyValidationEvidence(directory) {
     const bundleHashes = new Set(documents.filter(document => document.folder === path.join(directory, 'bundles')).map(document => document.hash));
     let references = 0;
     for (const document of documents) {
-        for (const key of ['sourceBundleSha256', 'demographicInputBundleSha256', 'protocolHash', 'sourceBundleHash', 'resultHash', 'replayResultHash', 'sourceCsvSha256', 'sourceGeocodeSha256']) {
+        for (const key of ['sourceBundleSha256', 'demographicInputBundleSha256', 'protocolHash', 'sourceBundleHash', 'resultHash', 'replayResultHash', 'sourceCsvSha256', 'sourceGeocodeSha256', 'revenueScopeEvidenceSha256']) {
             const reference = document.value[key];
             if (reference === undefined) continue;
+            if (key === 'revenueScopeEvidenceSha256' && reference === null && document.value.accuracyMetricsValid === false) continue;
             const hashes = key === 'protocolHash' ? protocolHashes : bundleHashes;
             if (typeof reference !== 'string' || !/^[a-f0-9]{64}$/.test(reference) || !hashes.has(reference)) {
                 throw new Error(`${path.basename(document.file)}: ${key} does not match any retained evidence bytes.`);

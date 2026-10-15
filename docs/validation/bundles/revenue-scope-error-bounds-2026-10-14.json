@@ -1,0 +1,714 @@
+{
+  "version": "unreconciled-revenue-scope-bounds-v1",
+  "protocolHash": "897e77de47a317c402e7e68d218744040dabcf8297b1afde8cb13aeab82d55c0",
+  "resultHash": "bd117281fa8aa9d46f84b83d00b6ee3cae752039877ec6d7fb40c888c20668a2",
+  "predictionScope": "modeled resident origins only",
+  "observationScope": "all-patron property land-based revenue",
+  "pointAccuracyAvailable": false,
+  "residentSpendingIdentified": false,
+  "releaseAccepted": false,
+  "method": "For R >= 0 and omitted demand N >= 0, min_N |R+N-Y| = max(R-Y,0). These are optimistic lower bounds under the existing nonnegative added-demand equations, not MAPE/WAPE estimates or a passing accuracy result. No revenue gaps become predicted visitor inputs.",
+  "partitions": [
+    {
+      "partition": "training",
+      "properties": 22,
+      "minimumPossibleTotalMape": 11.841520254981672,
+      "minimumPossibleTotalWape": 9.519634172284594,
+      "minimumPossibleSignedBias": 0.3409554777146524,
+      "maximumUnavoidablePropertyApe": 82.48143777316375,
+      "propertiesDefinitelyExceeding40Percent": [
+        "USA-IL-IGB-american-place"
+      ],
+      "propertiesDefinitelyExceeding30Percent": [
+        "USA-IN-IGC-horseshoe-hammond",
+        "USA-IL-IGB-american-place",
+        "USA-OH-OLC-jack-thistledown-racino"
+      ],
+      "groups": [
+        {
+          "kind": "market",
+          "key": "central-indiana",
+          "properties": 2,
+          "minimumPossibleTotalMape": 0,
+          "minimumPossibleTotalWape": 0,
+          "minimumPossibleSignedBias": -4.735235000496658,
+          "maximumUnavoidablePropertyApe": 0,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "market",
+          "key": "central-ohio-corridor",
+          "properties": 3,
+          "minimumPossibleTotalMape": 17.152392950214175,
+          "minimumPossibleTotalWape": 19.256016866238852,
+          "minimumPossibleSignedBias": 16.91397669921444,
+          "maximumUnavoidablePropertyApe": 27.739208338757244,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "market",
+          "key": "chicago-region",
+          "properties": 8,
+          "minimumPossibleTotalMape": 21.017546963957134,
+          "minimumPossibleTotalWape": 13.88879491870095,
+          "minimumPossibleSignedBias": 1.5129047534186524,
+          "maximumUnavoidablePropertyApe": 82.48143777316375,
+          "propertiesDefinitelyExceeding40Percent": [
+            "USA-IL-IGB-american-place"
+          ],
+          "propertiesDefinitelyExceeding30Percent": [
+            "USA-IN-IGC-horseshoe-hammond",
+            "USA-IL-IGB-american-place"
+          ]
+        },
+        {
+          "kind": "market",
+          "key": "cincinnati-tristate-region",
+          "properties": 1,
+          "minimumPossibleTotalMape": 8.250248024139982,
+          "minimumPossibleTotalWape": 8.250248024139983,
+          "minimumPossibleSignedBias": 8.250248024139983,
+          "maximumUnavoidablePropertyApe": 8.250248024139982,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "market",
+          "key": "cleveland-region",
+          "properties": 2,
+          "minimumPossibleTotalMape": 15.871627076468796,
+          "minimumPossibleTotalWape": 13.493753520712753,
+          "minimumPossibleSignedBias": 13.493753520712753,
+          "maximumUnavoidablePropertyApe": 30.614561776795288,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": [
+            "USA-OH-OLC-jack-thistledown-racino"
+          ]
+        },
+        {
+          "kind": "market",
+          "key": "french-lick",
+          "properties": 1,
+          "minimumPossibleTotalMape": 0,
+          "minimumPossibleTotalWape": 0,
+          "minimumPossibleSignedBias": -0.7615307501968149,
+          "maximumUnavoidablePropertyApe": 0,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "market",
+          "key": "st-louis-region",
+          "properties": 4,
+          "minimumPossibleTotalMape": 0.230597217554891,
+          "minimumPossibleTotalWape": 0.08428891023654546,
+          "minimumPossibleSignedBias": -18.144179152845037,
+          "maximumUnavoidablePropertyApe": 0.922388870219564,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "market",
+          "key": "terre-haute",
+          "properties": 1,
+          "minimumPossibleTotalMape": 0,
+          "minimumPossibleTotalWape": 0,
+          "minimumPossibleSignedBias": -10.122644497381227,
+          "maximumUnavoidablePropertyApe": 0,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "IL",
+          "properties": 5,
+          "minimumPossibleTotalMape": 26.460076884547743,
+          "minimumPossibleTotalWape": 16.98957233245932,
+          "minimumPossibleSignedBias": 13.069567377869864,
+          "maximumUnavoidablePropertyApe": 82.48143777316375,
+          "propertiesDefinitelyExceeding40Percent": [
+            "USA-IL-IGB-american-place"
+          ],
+          "propertiesDefinitelyExceeding30Percent": [
+            "USA-IL-IGB-american-place"
+          ]
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "IN",
+          "properties": 8,
+          "minimumPossibleTotalMape": 4.595297519892244,
+          "minimumPossibleTotalWape": 5.226457382408335,
+          "minimumPossibleSignedBias": -8.022321658428224,
+          "maximumUnavoidablePropertyApe": 36.762380159137955,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": [
+            "USA-IN-IGC-horseshoe-hammond"
+          ]
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "MO",
+          "properties": 3,
+          "minimumPossibleTotalMape": 0,
+          "minimumPossibleTotalWape": 0,
+          "minimumPossibleSignedBias": -20.061731136319235,
+          "maximumUnavoidablePropertyApe": 0,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "OH",
+          "properties": 6,
+          "minimumPossibleTotalMape": 15.241780171286683,
+          "minimumPossibleTotalWape": 15.435447036583975,
+          "minimumPossibleSignedBias": 14.263877875600606,
+          "maximumUnavoidablePropertyApe": 30.614561776795288,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": [
+            "USA-OH-OLC-jack-thistledown-racino"
+          ]
+        }
+      ]
+    },
+    {
+      "partition": "selection",
+      "properties": 14,
+      "minimumPossibleTotalMape": 17.587667108547585,
+      "minimumPossibleTotalWape": 14.49613734807351,
+      "minimumPossibleSignedBias": 9.238097951433495,
+      "maximumUnavoidablePropertyApe": 62.76646596196269,
+      "propertiesDefinitelyExceeding40Percent": [
+        "USA-OH-OLC-belterra-park-cincinnati",
+        "USA-IN-IGC-hollywood-lawrenceburg",
+        "USA-IL-IGB-wind-creek-chicago-southland"
+      ],
+      "propertiesDefinitelyExceeding30Percent": [
+        "USA-OH-OLC-belterra-park-cincinnati",
+        "USA-IN-IGC-hollywood-lawrenceburg",
+        "USA-IL-IGB-wind-creek-chicago-southland"
+      ],
+      "groups": [
+        {
+          "kind": "market",
+          "key": "chicago-region",
+          "properties": 2,
+          "minimumPossibleTotalMape": 25.728179735652457,
+          "minimumPossibleTotalWape": 32.15570439068652,
+          "minimumPossibleSignedBias": 32.15570439068652,
+          "maximumUnavoidablePropertyApe": 49.76047635063278,
+          "propertiesDefinitelyExceeding40Percent": [
+            "USA-IL-IGB-wind-creek-chicago-southland"
+          ],
+          "propertiesDefinitelyExceeding30Percent": [
+            "USA-IL-IGB-wind-creek-chicago-southland"
+          ]
+        },
+        {
+          "kind": "market",
+          "key": "cincinnati-tristate-region",
+          "properties": 5,
+          "minimumPossibleTotalMape": 32.547226001487154,
+          "minimumPossibleTotalWape": 30.49446774560551,
+          "minimumPossibleSignedBias": 30.49446774560551,
+          "maximumUnavoidablePropertyApe": 62.76646596196269,
+          "propertiesDefinitelyExceeding40Percent": [
+            "USA-OH-OLC-belterra-park-cincinnati",
+            "USA-IN-IGC-hollywood-lawrenceburg"
+          ],
+          "propertiesDefinitelyExceeding30Percent": [
+            "USA-OH-OLC-belterra-park-cincinnati",
+            "USA-IN-IGC-hollywood-lawrenceburg"
+          ]
+        },
+        {
+          "kind": "market",
+          "key": "cleveland-region",
+          "properties": 1,
+          "minimumPossibleTotalMape": 0,
+          "minimumPossibleTotalWape": 0,
+          "minimumPossibleSignedBias": -19.265445219499078,
+          "maximumUnavoidablePropertyApe": 0,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "market",
+          "key": "evansville",
+          "properties": 1,
+          "minimumPossibleTotalMape": 1.9341388861434168,
+          "minimumPossibleTotalWape": 1.9341388861434217,
+          "minimumPossibleSignedBias": 1.9341388861434217,
+          "maximumUnavoidablePropertyApe": 1.9341388861434168,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "market",
+          "key": "louisville-region",
+          "properties": 1,
+          "minimumPossibleTotalMape": 8.271159491785529,
+          "minimumPossibleTotalWape": 8.27115949178554,
+          "minimumPossibleSignedBias": 8.27115949178554,
+          "maximumUnavoidablePropertyApe": 8.271159491785529,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "market",
+          "key": "mahoning-valley",
+          "properties": 1,
+          "minimumPossibleTotalMape": 0,
+          "minimumPossibleTotalWape": 0,
+          "minimumPossibleSignedBias": -7.040021303871836,
+          "maximumUnavoidablePropertyApe": 0,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "market",
+          "key": "st-louis-region",
+          "properties": 2,
+          "minimumPossibleTotalMape": 7.930183265834879,
+          "minimumPossibleTotalWape": 2.82526858483577,
+          "minimumPossibleSignedBias": -19.104354154994635,
+          "maximumUnavoidablePropertyApe": 15.860366531669758,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "market",
+          "key": "toledo",
+          "properties": 1,
+          "minimumPossibleTotalMape": 5.969185131326795,
+          "minimumPossibleTotalWape": 5.969185131326804,
+          "minimumPossibleSignedBias": 5.969185131326804,
+          "maximumUnavoidablePropertyApe": 5.969185131326795,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "IL",
+          "properties": 3,
+          "minimumPossibleTotalMape": 22.438908667658225,
+          "minimumPossibleTotalWape": 30.504534710359497,
+          "minimumPossibleSignedBias": 30.504534710359497,
+          "maximumUnavoidablePropertyApe": 49.76047635063278,
+          "propertiesDefinitelyExceeding40Percent": [
+            "USA-IL-IGB-wind-creek-chicago-southland"
+          ],
+          "propertiesDefinitelyExceeding30Percent": [
+            "USA-IL-IGB-wind-creek-chicago-southland"
+          ]
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "IN",
+          "properties": 5,
+          "minimumPossibleTotalMape": 19.49453895999215,
+          "minimumPossibleTotalWape": 17.997468176553383,
+          "minimumPossibleSignedBias": 17.997468176553387,
+          "maximumUnavoidablePropertyApe": 50.39969020639113,
+          "propertiesDefinitelyExceeding40Percent": [
+            "USA-IN-IGC-hollywood-lawrenceburg"
+          ],
+          "propertiesDefinitelyExceeding30Percent": [
+            "USA-IN-IGC-hollywood-lawrenceburg"
+          ]
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "MO",
+          "properties": 1,
+          "minimumPossibleTotalMape": 0,
+          "minimumPossibleTotalWape": 0,
+          "minimumPossibleSignedBias": -26.682718915773705,
+          "maximumUnavoidablePropertyApe": 0,
+          "propertiesDefinitelyExceeding40Percent": [],
+          "propertiesDefinitelyExceeding30Percent": []
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "OH",
+          "properties": 5,
+          "minimumPossibleTotalMape": 16.28758374334615,
+          "minimumPossibleTotalWape": 9.29314134888913,
+          "minimumPossibleSignedBias": 2.2619027310646267,
+          "maximumUnavoidablePropertyApe": 62.76646596196269,
+          "propertiesDefinitelyExceeding40Percent": [
+            "USA-OH-OLC-belterra-park-cincinnati"
+          ],
+          "propertiesDefinitelyExceeding30Percent": [
+            "USA-OH-OLC-belterra-park-cincinnati"
+          ]
+        }
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "key": "USA-IN-IGC-ameristar-casino",
+      "partition": "training",
+      "market": "chicago-region",
+      "jurisdiction": "IN",
+      "observed": 153244503.63,
+      "residentPrediction": 144258215.79189104,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-blue-chip-casino",
+      "partition": "training",
+      "market": "chicago-region",
+      "jurisdiction": "IN",
+      "observed": 123264071.1,
+      "residentPrediction": 92347072.17624214,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-hard-rock-casino-northern-indiana",
+      "partition": "training",
+      "market": "chicago-region",
+      "jurisdiction": "IN",
+      "observed": 431768158.02000004,
+      "residentPrediction": 280917971.9503862,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-harrahs-hoosier-park",
+      "partition": "training",
+      "market": "central-indiana",
+      "jurisdiction": "IN",
+      "observed": 252330767.79999998,
+      "residentPrediction": 224440663.70253798,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-horseshoe-hammond",
+      "partition": "training",
+      "market": "chicago-region",
+      "jurisdiction": "IN",
+      "observed": 250364832.32,
+      "residentPrediction": 342404903.7622667,
+      "unavoidableOverprediction": 92040071.4422667,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-horseshoe-indianapolis",
+      "partition": "training",
+      "market": "central-indiana",
+      "jurisdiction": "IN",
+      "observed": 336660150.17,
+      "residentPrediction": 336660150.17,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-terre-haute-casino",
+      "partition": "training",
+      "market": "terre-haute",
+      "jurisdiction": "IN",
+      "observed": 139382091.89000002,
+      "residentPrediction": 125272938.23496208,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-french-lick-resort",
+      "partition": "training",
+      "market": "french-lick",
+      "jurisdiction": "IN",
+      "observed": 74026694.67000002,
+      "residentPrediction": 73462958.62673366,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IL-IGB-american-place",
+      "partition": "training",
+      "market": "chicago-region",
+      "jurisdiction": "IL",
+      "observed": 121732450.29,
+      "residentPrediction": 222139125.52569386,
+      "unavoidableOverprediction": 100406675.23569386,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IL-IGB-ballys-chicago",
+      "partition": "training",
+      "market": "chicago-region",
+      "jurisdiction": "IL",
+      "observed": 124666210.16,
+      "residentPrediction": 160169474.17374876,
+      "unavoidableOverprediction": 35503264.013748765,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IL-IGB-grand-victoria-casino",
+      "partition": "training",
+      "market": "chicago-region",
+      "jurisdiction": "IL",
+      "observed": 142187327.07,
+      "residentPrediction": 171218992.57586756,
+      "unavoidableOverprediction": 29031665.50586757,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IL-IGB-rivers-casino-des-plaines",
+      "partition": "training",
+      "market": "chicago-region",
+      "jurisdiction": "IL",
+      "observed": 503053034.76,
+      "residentPrediction": 464817814.35150445,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IL-IGB-draftkings-casino-queen",
+      "partition": "training",
+      "market": "st-louis-region",
+      "jurisdiction": "IL",
+      "observed": 83748020.63,
+      "residentPrediction": 84520503.0513203,
+      "unavoidableOverprediction": 772482.4213203043,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-MO-MGC-hollywood-st-louis",
+      "partition": "training",
+      "market": "st-louis-region",
+      "jurisdiction": "MO",
+      "observed": 259471615.03000003,
+      "residentPrediction": 231249152.680045,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-MO-MGC-ameristar-st-charles",
+      "partition": "training",
+      "market": "st-louis-region",
+      "jurisdiction": "MO",
+      "observed": 303932512.11999995,
+      "residentPrediction": 263379539.61613452,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-MO-MGC-river-city",
+      "partition": "training",
+      "market": "st-louis-region",
+      "jurisdiction": "MO",
+      "observed": 269317669.13,
+      "residentPrediction": 171034696.10059884,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OCCC-hollywood-casino-columbus",
+      "partition": "training",
+      "market": "central-ohio-corridor",
+      "jurisdiction": "OH",
+      "observed": 294712983,
+      "residentPrediction": 364612921.4026375,
+      "unavoidableOverprediction": 69899938.40263748,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OCCC-jack-cleveland-casino",
+      "partition": "training",
+      "market": "cleveland-region",
+      "jurisdiction": "OH",
+      "observed": 257877052,
+      "residentPrediction": 260787690.62574452,
+      "unavoidableOverprediction": 2910638.6257445216,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OLC-jack-thistledown-racino",
+      "partition": "training",
+      "market": "cleveland-region",
+      "jurisdiction": "OH",
+      "observed": 186245034,
+      "residentPrediction": 243263134.9901434,
+      "unavoidableOverprediction": 57018100.99014339,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OLC-eldorado-gaming-scioto-downs",
+      "partition": "training",
+      "market": "central-ohio-corridor",
+      "jurisdiction": "OH",
+      "observed": 229436268,
+      "residentPrediction": 293080072.3851894,
+      "unavoidableOverprediction": 63643804.385189414,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OLC-hollywood-gaming-dayton-raceway",
+      "partition": "training",
+      "market": "central-ohio-corridor",
+      "jurisdiction": "OH",
+      "observed": 169367709,
+      "residentPrediction": 153125263.2316734,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OLC-miami-valley-gaming",
+      "partition": "training",
+      "market": "cincinnati-tristate-region",
+      "jurisdiction": "OH",
+      "observed": 248744815,
+      "residentPrediction": 269266879.18468815,
+      "unavoidableOverprediction": 20522064.18468815,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-ballys-evansville",
+      "partition": "selection",
+      "market": "evansville",
+      "jurisdiction": "IN",
+      "observed": 167708757.96999997,
+      "residentPrediction": 170952478.27336589,
+      "unavoidableOverprediction": 3243720.303365916,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-caesars-southern-indiana",
+      "partition": "selection",
+      "market": "louisville-region",
+      "jurisdiction": "IN",
+      "observed": 233631819.68,
+      "residentPrediction": 252955880.10929358,
+      "unavoidableOverprediction": 19324060.429293573,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OCCC-hollywood-casino-toledo",
+      "partition": "selection",
+      "market": "toledo",
+      "jurisdiction": "OH",
+      "observed": 237706322,
+      "residentPrediction": 251895452.4290478,
+      "unavoidableOverprediction": 14189130.429047793,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OLC-hollywood-mahoning-valley-race-course",
+      "partition": "selection",
+      "market": "mahoning-valley",
+      "jurisdiction": "OH",
+      "observed": 177111007,
+      "residentPrediction": 164642354.37569806,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OLC-mgm-northfield-park",
+      "partition": "selection",
+      "market": "cleveland-region",
+      "jurisdiction": "OH",
+      "observed": 326354929,
+      "residentPrediction": 263481198.9323699,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OCCC-hard-rock-casino-cincinnati",
+      "partition": "selection",
+      "market": "cincinnati-tristate-region",
+      "jurisdiction": "OH",
+      "observed": 243624009,
+      "residentPrediction": 274569782.61813664,
+      "unavoidableOverprediction": 30945773.618136644,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-OH-OLC-belterra-park-cincinnati",
+      "partition": "selection",
+      "market": "cincinnati-tristate-region",
+      "jurisdiction": "OH",
+      "observed": 86741577,
+      "residentPrediction": 141186199.40257466,
+      "unavoidableOverprediction": 54444622.40257466,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-belterra-casino",
+      "partition": "selection",
+      "market": "cincinnati-tristate-region",
+      "jurisdiction": "IN",
+      "observed": 83248243.81000002,
+      "residentPrediction": 100851203.34930047,
+      "unavoidableOverprediction": 17602959.539300457,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-hollywood-lawrenceburg",
+      "partition": "selection",
+      "market": "cincinnati-tristate-region",
+      "jurisdiction": "IN",
+      "observed": 148209841.22,
+      "residentPrediction": 222907142.05026418,
+      "unavoidableOverprediction": 74697300.83026418,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IN-IGC-rising-star-casino",
+      "partition": "selection",
+      "market": "cincinnati-tristate-region",
+      "jurisdiction": "IN",
+      "observed": 43092064.19,
+      "residentPrediction": 49867241.56447942,
+      "unavoidableOverprediction": 6775177.3744794205,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IL-IGB-harrahs-joliet",
+      "partition": "selection",
+      "market": "chicago-region",
+      "jurisdiction": "IL",
+      "observed": 114410296.55,
+      "residentPrediction": 116350561.45750238,
+      "unavoidableOverprediction": 1940264.907502383,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IL-IGB-wind-creek-chicago-southland",
+      "partition": "selection",
+      "market": "chicago-region",
+      "jurisdiction": "IL",
+      "observed": 197952986.4,
+      "residentPrediction": 296455335.38294333,
+      "unavoidableOverprediction": 98502348.98294333,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-IL-IGB-argosy-casino-alton",
+      "partition": "selection",
+      "market": "st-louis-region",
+      "jurisdiction": "IL",
+      "observed": 35219807.35,
+      "residentPrediction": 40805797.88745797,
+      "unavoidableOverprediction": 5585990.537457965,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    },
+    {
+      "key": "USA-MO-MGC-horseshoe-st-louis",
+      "partition": "selection",
+      "market": "st-louis-region",
+      "jurisdiction": "MO",
+      "observed": 162495573.32,
+      "residentPrediction": 119137336.24044941,
+      "unavoidableOverprediction": 0,
+      "fullPredictionAndObservedResidentRevenue": "not identified by these inputs"
+    }
+  ]
+}

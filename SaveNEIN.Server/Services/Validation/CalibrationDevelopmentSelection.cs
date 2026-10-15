@@ -17,15 +17,24 @@ public static class CalibrationDevelopmentSelection
 
     public static double FitTrainingWapeScale(IEnumerable<(double Observed, double UnitPrediction)> observations,
         double minimum = 0.001, double maximum = 0.03, bool constrainPropertyAndBias = false)
+        => FitTrainingWapeScaleWithOffsets(observations.Select(row => (row.Observed, row.UnitPrediction, 0d)),
+            minimum, maximum, constrainPropertyAndBias);
+
+    public static double FitTrainingWapeScaleWithOffsets(
+        IEnumerable<(double Observed, double UnitPrediction, double FixedPrediction)> observations,
+        double minimum, double maximum, bool constrainPropertyAndBias = false)
     {
         if (!double.IsFinite(minimum) || !double.IsFinite(maximum) || minimum <= 0 || maximum < minimum)
             throw new ArgumentOutOfRangeException(nameof(minimum));
         var rows = observations.Select(row =>
         {
             if (!double.IsFinite(row.Observed) || row.Observed <= 0 ||
-                !double.IsFinite(row.UnitPrediction) || row.UnitPrediction <= 0)
+                !double.IsFinite(row.UnitPrediction) || row.UnitPrediction <= 0 ||
+                !double.IsFinite(row.FixedPrediction) || row.FixedPrediction < 0)
                 throw new ArgumentException("Training share fitting requires positive finite observations and unit predictions.", nameof(observations));
-            return (Ratio: row.Observed / row.UnitPrediction, Weight: row.UnitPrediction);
+            var ratio = (row.Observed - row.FixedPrediction) / row.UnitPrediction;
+            if (!double.IsFinite(ratio)) throw new ArgumentException("Training fit residual is not finite.", nameof(observations));
+            return (Ratio: ratio, Weight: row.UnitPrediction, row.Observed, Fixed: row.FixedPrediction);
         }).OrderBy(row => row.Ratio).ToArray();
         if (rows.Length == 0) throw new ArgumentException("Training observations are required.", nameof(observations));
         var lower = minimum;
@@ -35,15 +44,18 @@ public static class CalibrationDevelopmentSelection
             // Necessary training constraints, using training labels only.
             // If infeasible, retain an unrestricted diagnostic fit; admission
             // will reject it rather than fabricating a successful solution.
-            lower = Math.Max(lower, rows.Max(row => row.Ratio * 0.60000000001));
-            upper = Math.Min(upper, rows.Min(row => row.Ratio * 1.39999999999));
-            var normalization = rows.Max(row => Math.Max(row.Ratio * row.Weight, row.Weight));
-            var unbiased = rows.Sum(row => row.Ratio * (row.Weight / normalization)) / rows.Sum(row => row.Weight / normalization);
-            lower = Math.Max(lower, unbiased * 0.90000000001);
-            upper = Math.Min(upper, unbiased * 1.09999999999);
+            lower = Math.Max(lower, rows.Max(row => (row.Observed * 0.60000000001 - row.Fixed) / row.Weight));
+            upper = Math.Min(upper, rows.Min(row => (row.Observed * 1.39999999999 - row.Fixed) / row.Weight));
+            var normalization = rows.Max(row => Math.Max(Math.Max(row.Observed, row.Fixed), row.Weight));
+            var observedSum = rows.Sum(row => row.Observed / normalization);
+            var fixedSum = rows.Sum(row => row.Fixed / normalization);
+            var unitSum = rows.Sum(row => row.Weight / normalization);
+            lower = Math.Max(lower, (observedSum * 0.90000000001 - fixedSum) / unitSum);
+            upper = Math.Min(upper, (observedSum * 1.09999999999 - fixedSum) / unitSum);
             if (lower > upper || !double.IsFinite(lower) || !double.IsFinite(upper)) { lower = minimum; upper = maximum; }
         }
-        // Minimizing sum |s*u-y| is the weighted median of y/u with weights u.
+        // Minimizing sum |s*u+v-y| uses the weighted median of (y-v)/u
+        // with weights u; v is an independently predicted, fixed demand layer.
         // Scale weights before summation to avoid overflow for large income masses.
         var largest = rows.Max(row => row.Weight);
         var halfway = rows.Sum(row => row.Weight / largest) / 2;
