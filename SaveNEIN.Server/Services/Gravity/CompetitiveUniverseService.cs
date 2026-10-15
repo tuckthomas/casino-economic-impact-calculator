@@ -49,14 +49,33 @@ public sealed class CompetitiveUniverseService(AppDbContext db) : ICompetitiveUn
                                  (competitor.OpenedOn == null || competitor.OpenedOn <= effectiveOn) &&
                                  (competitor.ClosedOn == null || competitor.ClosedOn > effectiveOn))
             .ToListAsync(cancellationToken);
-        var missingExplicitIds = explicitIds.Except(candidates.Select(competitor => competitor.Id)).ToArray();
+        return SelectForOrigins(candidates, origins, effectiveOn, broadPrefilterMiles, explicitIds);
+    }
+
+    // Shared by execution and empirical calibration so a backtest cannot
+    // silently use a different patron choice field from a production run.
+    internal static CasinoCompetitor[] SelectForOrigins(
+        IReadOnlyCollection<CasinoCompetitor> candidates,
+        IReadOnlyCollection<OriginZone> origins,
+        DateOnly effectiveOn,
+        double broadPrefilterMiles,
+        IReadOnlyCollection<int>? explicitlyIncludedCompetitorIds = null)
+    {
+        if (origins.Count == 0) throw new ArgumentException("At least one origin is required.", nameof(origins));
+        if (!double.IsFinite(broadPrefilterMiles) || broadPrefilterMiles is <= 0 or > 2_000)
+            throw new ArgumentOutOfRangeException(nameof(broadPrefilterMiles));
+        var explicitIds = (explicitlyIncludedCompetitorIds ?? []).ToHashSet();
+        var active = candidates.Where(competitor => competitor.IsActive &&
+            (competitor.OpenedOn == null || competitor.OpenedOn <= effectiveOn) &&
+            (competitor.ClosedOn == null || competitor.ClosedOn > effectiveOn)).ToArray();
+        var missingExplicitIds = explicitIds.Except(active.Select(competitor => competitor.Id)).ToArray();
         if (missingExplicitIds.Length > 0)
         {
             throw new KeyNotFoundException(
                 $"Competitor snapshot does not contain requested active facility IDs: {string.Join(", ", missingExplicitIds)}.");
         }
 
-        var selected = candidates
+        var selected = active
             .Where(competitor => explicitIds.Contains(competitor.Id) ||
                                  IsCasinoFloorSubstitute(competitor) &&
                                  origins.Any(origin => IsWithinBroadPrefilter(
