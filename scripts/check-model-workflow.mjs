@@ -8,8 +8,10 @@ const readJson = file => JSON.parse(readFileSync(file, 'utf8'));
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const index = readJson(path.join(plan, 'workflow/requirements.json'));
 const state = readJson(path.join(plan, 'workflow/state.json'));
-const canonical = readFileSync(path.join(plan, index.canonicalFile));
-const lines = canonical.toString('utf8').split(/\r?\n/);
+// Markdown checkouts may use CRLF on Windows; the index hashes Git's LF text.
+// Captured validation evidence uses its separate raw-byte integrity guard.
+const canonical = readFileSync(path.join(plan, index.canonicalFile), 'utf8').replace(/\r\n/g, '\n');
+const lines = canonical.split('\n');
 assert.equal(index.canonicalHash, digest(canonical), 'Canonical file hash is stale');
 const requirements = new Map();
 for (const requirement of index.requirements) {
