@@ -48,7 +48,8 @@ public sealed record MultimarketCalibrationProtocol(
     string CompetitorSelectionVersion = "target-radius-v1",
     string RevenueComparisonScope = CalibrationRevenueScope.LegacyUnreconciled,
     string? RevenueScopeEvidencePath = null,
-    string? RevenueScopeEvidenceSha256 = null);
+    string? RevenueScopeEvidenceSha256 = null,
+    string[]? SelectedFacilityFeatureKeys = null);
 
 /// <summary>
 /// Revenue-component backtests use the same demand, facility feature and gravity
@@ -207,6 +208,13 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             item => GravityModelExecutionService.ResolveReferenceIncome(protocol.ReferenceIncome,
                 item.Origins.Select(origin => incomeMetricsById[origin.Id])));
         var demandService = new OriginDemandService();
+        // Preserve the old equation only for explicit historical scope-mismatch
+        // replay. New matched calibration uses the same available-input policy
+        // as execution, with one common feature set across the compared field.
+        var selectedFeatures = diagnosticReplay && scopeBundle is null ? null : FacilityInputSelection.Resolve(
+            protocol.SelectedFacilityFeatureKeys,
+            FacilityInputSelection.Availability(null, cases.SelectMany(item => item.Peers.Append(item.Facility)).DistinctBy(item => item.Id).ToArray(),
+                FacilityAttractionSpecifications.Structural));
         Console.WriteLine($"Frozen protocol {protocolHash}: {protocol.Training.Length} training, {protocol.Selection.Length} selection, {protocol.Holdout.Values.Sum(value => value.Length)} final holdout properties.");
         var graph = await routing.GetRoutingGraphIdentityAsync(cancellationToken);
         var routingCases = evaluateFinalHoldout ? cases : cases.Where(item => item.Partition != "holdout").ToArray();
@@ -219,8 +227,11 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
         {
             var parameters = FeatureParameters(coefficient, tableCoefficient, positionsOffset);
             parameters["facility.gaming_floor_coefficient"] = floorCoefficient;
-            var structural = facilities.ToDictionary(row => row.Id, row => featureService.CalculateStructural(new(row.StableVenueId,
-                GravityModelExecutionService.FacilityFeatures(row, parameters), MissingFacilityAttributeBehavior.UseReferenceValue)).NormalizedAttraction);
+            var requiredFacilities = selectedFeatures is null ? facilities : cases.SelectMany(item => item.Peers.Append(item.Facility)).DistinctBy(item => item.Id).ToArray();
+            var structural = requiredFacilities.ToDictionary(row => row.Id, row => selectedFeatures is null
+                ? featureService.CalculateStructural(new(row.StableVenueId, GravityModelExecutionService.FacilityFeatures(row, parameters), MissingFacilityAttributeBehavior.UseReferenceValue)).NormalizedAttraction
+                : FacilityInputSelection.Calculate(featureService, row.StableVenueId,
+                    FacilityInputSelection.ActiveTerms(GravityModelExecutionService.FacilityFeatures(row, parameters), selectedFeatures)));
             return requestedCases.Select(item =>
             {
                 var observedPeers = item.Peers.Where(peer => !withheldIds.Contains(peer.Id) && observedById.ContainsKey(peer.Id)).ToArray();
@@ -307,6 +318,8 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
                 ProtocolHash = protocolHash, protocol.ProtocolVersion, protocol.SelectionPolicyVersion, protocol.AttractionSpecification, protocol.DemandSpecification, protocol.CompetitorSelectionVersion,
                 AccuracyMetricsValid = scopeBundle is not null, protocol.RevenueComparisonScope, protocol.RevenueScopeEvidenceSha256,
                 ScopeReconciliation = scopeReconciliation,
+                SelectedFacilityFeatureKeys = selectedFeatures,
+                FacilityInputPolicy = selectedFeatures is null ? "historical-reference-imputation" : "available-selected-inputs-v1",
                 protocol.ReferenceIncome, IncomeReferenceMode = protocol.ReferenceIncome > 0 ? "fixed-common-reference" : "case-median",
                 protocol.ObservedGgrExcludedVenueIds, InputSnapshots = snapshots.Select(row => new { row.Id, row.Checksum, row.ValidationState }),
                 protocol.FrictionForm, DecayParameterKey = friction == TravelFrictionForm.InversePower ? "gravity.beta" : "gravity.exponential_lambda",
@@ -329,6 +342,8 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
                 ScalingVersion = "consistent-physical-v2", protocol.AttractionSpecification, protocol.SelectionPolicyVersion, protocol.DemandSpecification, protocol.CompetitorSelectionVersion,
                 AccuracyMetricsValid = scopeBundle is not null, protocol.RevenueComparisonScope, protocol.RevenueScopeEvidenceSha256,
                 ScopeReconciliation = scopeReconciliation,
+                SelectedFacilityFeatureKeys = selectedFeatures,
+                FacilityInputPolicy = selectedFeatures is null ? "historical-reference-imputation" : "available-selected-inputs-v1",
                 protocol.ReferenceIncome, IncomeReferenceMode = protocol.ReferenceIncome > 0 ? "fixed-common-reference" : "case-median",
                 protocol.ObservedGgrExcludedVenueIds, InputSnapshots = snapshots.Select(row => new { row.Id, row.Checksum, row.ValidationState }),
                 protocol.FrictionForm, DecayParameterKey = friction == TravelFrictionForm.InversePower ? "gravity.beta" : "gravity.exponential_lambda",
@@ -356,6 +371,8 @@ public sealed class MultimarketRevenueCalibration(AppDbContext db, ValhallaClien
             ProtocolHash = protocolHash, protocol.ProtocolVersion, protocol.AttractionSpecification, protocol.DemandSpecification, protocol.CompetitorSelectionVersion,
             AccuracyMetricsValid = scopeBundle is not null, protocol.RevenueComparisonScope, protocol.RevenueScopeEvidenceSha256,
             ScopeReconciliation = scopeReconciliation,
+                SelectedFacilityFeatureKeys = selectedFeatures,
+                FacilityInputPolicy = selectedFeatures is null ? "historical-reference-imputation" : "available-selected-inputs-v1",
             protocol.ReferenceIncome, IncomeReferenceMode = protocol.ReferenceIncome > 0 ? "fixed-common-reference" : "case-median",
             protocol.ObservedGgrExcludedVenueIds,
             protocol.FrictionForm, DecayParameterKey = friction == TravelFrictionForm.InversePower ? "gravity.beta" : "gravity.exponential_lambda",

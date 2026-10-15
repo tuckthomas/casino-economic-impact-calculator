@@ -298,3 +298,14 @@ The [scope-aligned protocol](matched-revenue-scope-development-protocol-2026-10-
 Verification: **440 server tests pass**, including matched-origin targets, rejected forecast/count proxies, period/dollar/origin mismatch, source/audit byte tampering, additive visitor fitting, excessive visitor forecasts and a pre-database no-fit regression. Nine evidence/scope-bound JavaScript tests pass and run in the evidence CI job. The harness builds successfully with existing warnings. [Evidence contract and method](revenue-scope-reconciliation-v1.md).
 
 Still required: obtain and independently verify the matched revenue or complete site-demand inputs; repair the definite overpredictions with the completed physical/competitive input field; calibrate and validate on matched quantities; pass fresh holdouts and the unchanged full acceptance checklist. This tranche repairs comparison and fitting mechanics. It does not establish an empirically accurate model or publish calibrated defaults. Nothing merged or deployed.
+
+## User-controlled available facility inputs — 2026-10-14
+
+The user clarified that missing optional inputs must be inactive and unavailable for selection. Sourcing more floor areas alone would not implement that requirement.
+
+- [x] Add explicit physical-input checkboxes and weight controls, with availability checked against the selected program, study origins, competitive snapshot and effective date. Missing coverage disables the input and related editors with a reason; a known zero remains available. Data changes refresh availability and visibly deselect unsupported choices.
+- [x] Share the feature catalog between availability and calculation; recheck explicit choices on the server before draft creation/routing. Keep all competitors in the field and exclude unavailable attributes consistently rather than substituting reference values. Empty selection permits neutral physical attraction with a saved warning. Observed-GGR incumbents do not require unused physical inputs.
+- [x] Carry selections through scenario save/load, immutable execution manifests, sensitivity requests and report version `professional-v7`. Historical selections are not invented and stored artifacts are not rewritten. Tourism/traffic parameter editors are inactive without their observations.
+- [x] Use the strict available-input policy for new matched calibration; retain the old equation only for explicit historical diagnostic replay. No historical revenue evidence or accuracy threshold changed.
+
+The server suite passes **450 tests**, including rendered disabled/enabled controls, source-field selection, missing/zero distinctions, API selection rejection and saved report choices. Repository/evidence guards and the nine evidence/bounds tests pass. [Input-selection policy](facility-input-selection-v1.md). This implements configurable input handling; empirical calibration and full acceptance remain open. Nothing merged or deployed.

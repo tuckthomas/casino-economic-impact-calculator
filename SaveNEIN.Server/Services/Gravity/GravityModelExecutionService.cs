@@ -82,7 +82,8 @@ public sealed record GravityModelRunRequest(
     Guid? LocalEconomicInventorySnapshotId = null,
     string MissingRoutePolicy = MissingRoutePolicies.RejectOrigin,
     int? PopulationScenarioYear = null,
-    IReadOnlyCollection<int>? ObservedGgrExcludedCompetitorIds = null);
+    IReadOnlyCollection<int>? ObservedGgrExcludedCompetitorIds = null,
+    IReadOnlyCollection<string>? SelectedFacilityFeatureKeys = null);
 
 public sealed record GravityModelRunResult(
     Guid ModelRunId,
@@ -154,6 +155,8 @@ public sealed class GravityModelExecutionService(
         var stopwatch = Stopwatch.StartNew();
         _ = SaveNEIN.Shared.Modeling.PopulationProjectionArithmetic.ResolveScenarioYear(request.PopulationScenarioYear, request.EffectiveOn.Year);
         var context = await LoadContextAsync(request, cancellationToken);
+        request = request with { SelectedFacilityFeatureKeys = FacilityInputSelection.Resolve(request.SelectedFacilityFeatureKeys,
+            FacilityInputSelection.Availability(context.DevelopmentProgram, context.Competitors, request.AttractionSpecification)) };
         var modelRun = await CreateDraftRunAsync(request, context, cancellationToken);
 
         try
@@ -391,6 +394,8 @@ public sealed class GravityModelExecutionService(
             request.FacilityRegime,
             request.DemandSpecification,
             request.AttractionSpecification,
+            request.SelectedFacilityFeatureKeys,
+            facilityInputPolicy = "available-selected-inputs-v1",
             hybridStructuralScalingVersion = "consistent-physical-v2",
             request.FrictionForm,
             request.ObservedMetricKey,
@@ -840,14 +845,18 @@ public sealed class GravityModelExecutionService(
         IReadOnlyDictionary<string, double> parameters,
         CancellationToken cancellationToken)
     {
-        var structural = context.Competitors.ToDictionary(
+        var selectedFeatures = request.SelectedFacilityFeatureKeys
+            ?? throw new InvalidOperationException("Facility input selection must be resolved before calculation.");
+        var structural = (request.AttractionSpecification == FacilityAttractionSpecifications.ObservedGgr ? [] : context.Competitors).ToDictionary(
             competitor => competitor.StableVenueId,
-            competitor => StructuralAttraction(competitor.StableVenueId, FacilityFeatures(competitor, parameters)),
+            competitor => StructuralAttraction(competitor.StableVenueId, FacilityInputSelection.ActiveTerms(FacilityFeatures(competitor, parameters), selectedFeatures)),
             StringComparer.OrdinalIgnoreCase);
         var proposedStructural = StructuralAttraction(
             proposedFacilityKey,
-            FacilityFeatures(context.DevelopmentProgram, parameters)) *
+            FacilityInputSelection.ActiveTerms(FacilityFeatures(context.DevelopmentProgram, parameters), selectedFeatures)) *
             RequireParameter(parameters, "facility.proposed_scale_multiplier");
+        var inputWarnings = FacilityInputSelection.ActiveTerms(FacilityFeatures(context.DevelopmentProgram, parameters), selectedFeatures).Length == 0
+            ? new[] { "No selected physical facility input has a nonzero weight. Physical facility attraction is neutral; demand, travel and any observed-revenue attraction still apply." } : [];
 
         if (request.AttractionSpecification == FacilityAttractionSpecifications.Structural)
         {
@@ -856,7 +865,7 @@ public sealed class GravityModelExecutionService(
                 structural,
                 [],
                 context.Competitors.Select(competitor => competitor.StableVenueId).Order(StringComparer.Ordinal).ToArray(),
-                []);
+                inputWarnings);
         }
 
         var competitorIds = context.Competitors.Select(competitor => competitor.Id).ToArray();
@@ -924,6 +933,7 @@ public sealed class GravityModelExecutionService(
             : [$"Hybrid attraction used structural mass for {structuralFallbackFacilityIds.Count} incumbent facility/facilities without the selected observed metric: {string.Join(", ", structuralFallbackFacilityIds.Order(StringComparer.Ordinal))}."];
         if (excludedObservedIds.Length > 0)
             warnings = warnings.Append($"Validation withheld observed GGR for competitor IDs: {string.Join(", ", excludedObservedIds.Order())}; eligible competitors remain in the field with structural attraction.").ToArray();
+        warnings = warnings.Concat(inputWarnings).ToArray();
         return new AttractionResolutionContext(
             attractions,
             observedFacilityIds.Order(StringComparer.Ordinal).ToArray(),
@@ -932,56 +942,19 @@ public sealed class GravityModelExecutionService(
     }
 
     private double StructuralAttraction(string facilityKey, IReadOnlyCollection<FacilityFeatureTerm> features) =>
-        attractivenessService.CalculateStructural(new StructuralAttractivenessInput(
-            facilityKey,
-            features,
-            MissingFacilityAttributeBehavior.UseReferenceValue)).NormalizedAttraction;
+        FacilityInputSelection.Calculate(attractivenessService, facilityKey, features);
 
     internal static IReadOnlyCollection<FacilityFeatureTerm> FacilityFeatures(
-        CasinoCompetitor competitor,
-        IReadOnlyDictionary<string, double> parameters) =>
-    [
-        Feature("gaming-positions", KnownGamingPositionCount(competitor), "facility.reference_gaming_positions", "facility.gaming_positions_coefficient", "facility.gaming_positions_offset", parameters),
-        Feature("table-games", competitor.TableGameCount, "facility.reference_table_games", "facility.table_games_coefficient", "facility.table_games_offset", parameters),
-        Feature("hotel-rooms", competitor.HotelRoomCount, "facility.reference_hotel_rooms", "facility.hotel_rooms_coefficient", "facility.hotel_rooms_offset", parameters),
-        Feature("gaming-floor-square-feet", competitor.GamingFloorSquareFeet, "facility.reference_gaming_floor_square_feet", "facility.gaming_floor_coefficient", "facility.gaming_floor_square_feet_offset", parameters),
-        Feature("food-beverage-venues", competitor.FoodBeverageVenueCount, "facility.reference_food_beverage_venues", "facility.food_beverage_coefficient", "facility.food_beverage_venues_offset", parameters),
-        Feature("entertainment-capacity", competitor.EventCapacity, "facility.reference_entertainment_capacity", "facility.entertainment_capacity_coefficient", "facility.entertainment_capacity_offset", parameters),
-        Feature("capital-cost", competitor.DevelopmentCost is null ? null : Convert.ToDouble(competitor.DevelopmentCost), "facility.reference_capital_cost", "facility.capital_scale_coefficient", "facility.capital_cost_offset", parameters),
-        Feature("highway-access", competitor.HasInterchangeAccess is null ? null : competitor.HasInterchangeAccess.Value ? 1 : 0, "facility.reference_highway_access", "facility.highway_access_coefficient", "facility.highway_access_offset", parameters)
-    ];
+        CasinoCompetitor competitor, IReadOnlyDictionary<string, double> parameters) =>
+        FacilityInputSelection.Features(competitor, parameters);
 
     internal static int? KnownGamingPositionCount(CasinoCompetitor competitor) =>
         competitor.GamingPositions ?? (competitor.SlotOrVltPositions is { } slots
             ? checked(slots + (competitor.TableGameCount ?? 0)) : null);
 
     internal static IReadOnlyCollection<FacilityFeatureTerm> FacilityFeatures(
-        DevelopmentProgram program,
-        IReadOnlyDictionary<string, double> parameters) =>
-    [
-        Feature("gaming-positions", program.SlotOrVltPositions + program.TableGameCount, "facility.reference_gaming_positions", "facility.gaming_positions_coefficient", "facility.gaming_positions_offset", parameters),
-        Feature("table-games", program.TableGameCount, "facility.reference_table_games", "facility.table_games_coefficient", "facility.table_games_offset", parameters),
-        Feature("hotel-rooms", program.HotelRoomCount, "facility.reference_hotel_rooms", "facility.hotel_rooms_coefficient", "facility.hotel_rooms_offset", parameters),
-        Feature("gaming-floor-square-feet", program.GamingFloorSquareFeet, "facility.reference_gaming_floor_square_feet", "facility.gaming_floor_coefficient", "facility.gaming_floor_square_feet_offset", parameters),
-        Feature("food-beverage-venues", program.FoodBeverageVenueCount, "facility.reference_food_beverage_venues", "facility.food_beverage_coefficient", "facility.food_beverage_venues_offset", parameters),
-        Feature("entertainment-capacity", program.EventCapacity, "facility.reference_entertainment_capacity", "facility.entertainment_capacity_coefficient", "facility.entertainment_capacity_offset", parameters),
-        Feature("capital-cost", program.CapitalCost is null ? null : Convert.ToDouble(program.CapitalCost), "facility.reference_capital_cost", "facility.capital_scale_coefficient", "facility.capital_cost_offset", parameters),
-        Feature("highway-access", null, "facility.reference_highway_access", "facility.highway_access_coefficient", "facility.highway_access_offset", parameters)
-    ];
-
-    private static FacilityFeatureTerm Feature(
-        string key,
-        double? value,
-        string referenceKey,
-        string coefficientKey,
-        string offsetKey,
-        IReadOnlyDictionary<string, double> parameters) =>
-        new(
-            key,
-            value,
-            RequireParameter(parameters, referenceKey),
-            RequireParameter(parameters, coefficientKey),
-            RequireParameter(parameters, offsetKey));
+        DevelopmentProgram program, IReadOnlyDictionary<string, double> parameters) =>
+        FacilityInputSelection.Features(program, parameters);
 
     private static GravityAlternativeInput Alternative(
         string facilityKey,

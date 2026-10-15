@@ -53,6 +53,11 @@ internal sealed record ReportWarningDigest(
 
 internal static class ReportDisclosure
 {
+    public static string FacilityInputDescription(CasinoImpactReportModel model) =>
+        model.Scenario.SelectedFacilityFeatureKeys is { } keys
+            ? keys.Count == 0 ? "None — physical attraction is neutral" : string.Join(", ", keys)
+            : "Not recorded in this historical run";
+
     private const string CalibrationNoticeMarker = "does not have a completed calibration designation.";
 
     public static ReportWarningDigest DigestWarnings(IReadOnlyCollection<string> warnings) => new(
@@ -130,7 +135,7 @@ public sealed class ReportArtifactService(
     IPdfReportRenderer pdfRenderer,
     ICsvReportRenderer csvRenderer) : IReportArtifactService
 {
-    public const string TemplateVersion = "professional-v6";
+    public const string TemplateVersion = "professional-v7";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true
@@ -598,6 +603,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             ("Hotel rooms", model.DevelopmentProgram.HotelRoomCount.ToString("N0")),
             ("Demand specification", model.Scenario.DemandSpecification),
             ("Attraction specification", model.Scenario.AttractionSpecification),
+            ("Selected facility inputs", ReportDisclosure.FacilityInputDescription(model)),
             ("Travel friction", model.Scenario.FrictionForm),
             ("Computational origin", model.Scenario.ComputationalOriginType),
             ("Impact geography", $"{model.Scenario.ImpactScopeKind}: {model.Scenario.ImpactScopeCode}")
@@ -639,6 +645,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
         [
             ("Demand specification", model.Scenario.DemandSpecification),
             ("Attraction specification", model.Scenario.AttractionSpecification),
+            ("Selected facility inputs", ReportDisclosure.FacilityInputDescription(model)),
             ("Travel-friction form", model.Scenario.FrictionForm),
             ("Routing graph hash(es)", string.Join(", ", model.Identity.RoutingGraphHashes)),
             ("Costing profile(s)", string.Join(", ", model.Identity.CostingProfiles))
@@ -1219,6 +1226,7 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                         ("Slots / VLT positions", model.DevelopmentProgram.SlotOrVltPositions.ToString("N0")),
                         ("Table games / hotel rooms", $"{model.DevelopmentProgram.TableGameCount:N0} / {model.DevelopmentProgram.HotelRoomCount:N0}"),
                         ("Demand / attraction", $"{model.Scenario.DemandSpecification} / {model.Scenario.AttractionSpecification}"),
+                        ("Selected facility inputs", ReportDisclosure.FacilityInputDescription(model)),
                         ("Travel friction", model.Scenario.FrictionForm),
                         ("Origin / report geography", $"{model.Scenario.ComputationalOriginType} / {model.Scenario.ImpactScopeKind}:{model.Scenario.ImpactScopeCode}")
                     ]);
@@ -1260,6 +1268,7 @@ public sealed class PdfReportRenderer : IPdfReportRenderer
                     KeyValues(column,
                     [
                         ("Demand / attraction", $"{model.Scenario.DemandSpecification} / {model.Scenario.AttractionSpecification}"),
+                        ("Selected facility inputs", ReportDisclosure.FacilityInputDescription(model)),
                         ("Travel-friction form", model.Scenario.FrictionForm),
                         ("Routing graph hash(es)", string.Join(", ", model.Identity.RoutingGraphHashes)),
                         ("Costing profile(s)", string.Join(", ", model.Identity.CostingProfiles))
@@ -1804,6 +1813,7 @@ public sealed class CsvReportRenderer : ICsvReportRenderer
         Row(csv, "scenario", "site", "candidate_longitude", model.Scenario.CandidateLongitude, "degrees");
         Row(csv, "scenario", "population", "population_scenario_year", model.Scenario.PopulationScenarioYear, "year");
         Row(csv, "scenario", "fiscal", "effective_on", model.Scenario.EffectiveOn?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), "ISO 8601 date");
+        Row(csv, "scenario", "attraction", "selected_facility_inputs", ReportDisclosure.FacilityInputDescription(model), "selected input keys");
         Row(csv, "revenue", "stabilized", "redistributed_resident_ggr", model.Revenue.RedistributedResidentGgr, "USD");
         Row(csv, "revenue", "stabilized", "induced_resident_ggr", model.Revenue.InducedResidentGgr, "USD");
         Row(csv, "revenue", "stabilized", "resident_ggr", model.Revenue.TotalResidentGgr, "USD");

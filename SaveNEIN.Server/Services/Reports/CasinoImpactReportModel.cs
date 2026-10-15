@@ -73,7 +73,8 @@ public sealed record ReportScenario(
     string ImpactScopeCode,
     IReadOnlyList<string> ParameterSets,
     DateOnly? EffectiveOn = null,
-    int? PopulationScenarioYear = null);
+    int? PopulationScenarioYear = null,
+    IReadOnlyList<string>? SelectedFacilityFeatureKeys = null);
 
 public sealed record ReportDevelopmentProgram(
     Guid Id,
@@ -788,7 +789,8 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
                 geographicAccounting?.ScopeCode ?? "not-configured",
                 parameterSets,
                 scenarioValues.EffectiveOn,
-                scenarioValues.PopulationScenarioYear),
+                scenarioValues.PopulationScenarioYear,
+                scenarioValues.SelectedFacilityFeatureKeys),
             new ReportDevelopmentProgram(
                 program.Id,
                 program.StableProgramId,
@@ -957,7 +959,9 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
             ReadString(root, "frictionForm", "unknown"),
             effectiveOn,
             populationYear ?? effectiveOn?.Year,
-            ReadString(root, "jurisdictionProfileVersion", string.Empty));
+            ReadString(root, "jurisdictionProfileVersion", string.Empty),
+            root.EnumerateObject().FirstOrDefault(item => item.Name.Equals("selectedFacilityFeatureKeys", StringComparison.OrdinalIgnoreCase)).Value is { ValueKind: JsonValueKind.Array } features
+                ? features.EnumerateArray().Select(item => item.GetString()!).ToArray() : null);
     }
 
     private static string ReadString(JsonElement root, string property, string fallback)
@@ -985,5 +989,6 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
         string FrictionForm,
         DateOnly? EffectiveOn,
         int? PopulationScenarioYear,
-        string JurisdictionProfileVersion);
+        string JurisdictionProfileVersion,
+        string[]? SelectedFacilityFeatureKeys);
 }

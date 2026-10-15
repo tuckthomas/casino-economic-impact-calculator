@@ -3,6 +3,7 @@
 @using System.Globalization
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components.Rendering
+@using SaveNEIN.Shared.Modeling
 
 @if (!Embedded)
 {
@@ -71,7 +72,7 @@
 
                         <label class="model-field">
                             <span>Development program</span>
-                            <select @bind="_form.DevelopmentProgramId">
+                            <select @bind="_form.DevelopmentProgramId" @bind:after="LoadFacilityInputsAsync">
                                 <option value="">Select program</option>
                                 @foreach (var program in _configuration.DevelopmentPrograms)
                                 {
@@ -103,7 +104,7 @@
                         </label>
                         <label class="model-field">
                             <span>Fiscal rule effective date</span>
-                            <input type="date" @bind="_form.EffectiveOn" />
+                            <input type="date" @bind="_form.EffectiveOn" @bind:after="LoadFacilityInputsAsync" />
                             <small>Use the date when the proposed facility's tax rules should apply.</small>
                         </label>
                         <label class="model-field">
@@ -228,7 +229,7 @@
                             </label>
                             <label class="model-field">
                                 <span>Casino competitors</span>
-                                <select @bind="_form.CompetitorSnapshotId">
+                                <select @bind="_form.CompetitorSnapshotId" @bind:after="LoadFacilityInputsAsync">
                                     <option value="">Select snapshot</option>
                                     @foreach (var snapshot in Snapshots("competitors"))
                                     {
@@ -324,6 +325,52 @@
                             </label>
                         </div>
 
+                        <fieldset class="model-facility-inputs" aria-describedby="facility-input-help">
+                            <legend>Inputs used to compare facilities</legend>
+                            <p id="facility-input-help">Choose the physical inputs used in facility attraction. Unavailable inputs are inactive; missing values are never replaced with a typical facility value.</p>
+                            <p>Selecting an input with a zero weight starts its weight at 1. You can change that weight below; it is a scenario assumption unless supplied by a validated parameter set.</p>
+                            @if (_facilityInputsLoading)
+                            {
+                                <p role="status">Checking input availability for the selected data…</p>
+                            }
+                            @if (_facilityInputError is not null)
+                            {
+                                <p role="alert">@_facilityInputError</p>
+                                <button type="button" class="model-secondary-button" @onclick="LoadFacilityInputsAsync">Check inputs again</button>
+                            }
+                            @if (_facilityInputNotice is not null)
+                            {
+                                <p role="status">@_facilityInputNotice</p>
+                            }
+                            @foreach (var input in _facilityInputs)
+                            {
+                                <div class="model-facility-input @(!input.Available ? "is-unavailable" : "")">
+                                    <label>
+                                        <input type="checkbox" checked="@(_selectedFacilityFeatures?.Contains(input.Key) == true)"
+                                               disabled="@(!input.Available || _facilityInputsLoading)"
+                                               aria-describedby="@($"facility-input-{input.Key}-status")"
+                                               @onchange="args => ToggleFacilityInput(input, args.Value is true)" />
+                                        <span>@input.DisplayName</span>
+                                    </label>
+                                    <p id="@($"facility-input-{input.Key}-status")">@(input.UnavailableReason ?? "Available for the facilities that require this input.")</p>
+                                    @if (input.Available && FindParameter(input.CoefficientKey) is { } weight)
+                                    {
+                                        <label class="model-facility-weight">
+                                            <span>@input.DisplayName weight</span>
+                                            <input type="number" step="@(weight.UiStep ?? 0.01)" min="@weight.ComputationalMinimum" max="@weight.ComputationalMaximum"
+                                                   disabled="@(_selectedFacilityFeatures?.Contains(input.Key) != true || _facilityInputsLoading || !weight.IsUserOverridable)"
+                                                   value="@ParameterValue(weight).ToString(CultureInfo.InvariantCulture)"
+                                                   @oninput="args => SetOverride(weight, args.Value?.ToString())" />
+                                        </label>
+                                    }
+                                </div>
+                            }
+                            @if (!_facilityInputsLoading && _facilityInputError is null && _selectedFacilityFeatures is not { Count: > 0 })
+                            {
+                                <p role="status">No physical inputs are selected. Physical facility attraction is neutral; demand, travel and any observed-revenue attraction still apply.</p>
+                            }
+                        </fieldset>
+
                         <div class="model-section-toolbar">
                             <p>Common decisions use plain-language controls. Exact coefficients remain available below.</p>
                             <button type="button" class="model-link-button" @onclick="ResetStandardOverrides">Reset this section</button>
@@ -358,7 +405,7 @@
                                     </label>
                                     <label class="model-field">
                                         <span>Facility attraction</span>
-                                        <select @bind="_form.AttractionSpecification">
+                                        <select @bind="_form.AttractionSpecification" @bind:after="LoadFacilityInputsAsync">
                                             <option value="observed-ggr">Observed-GGR mass</option>
                                             <option value="structural">Structural facility mass</option>
                                         </select>
@@ -798,6 +845,12 @@
     private readonly List<RunOriginSummaryRow> _runOrigins = [];
     private readonly List<RunFacilityResult> _runFacilities = [];
     private int _originLoadVersion;
+    private int _facilityInputLoadVersion;
+    private bool _facilityInputsLoading;
+    private string? _facilityInputError;
+    private string? _facilityInputNotice;
+    private FacilityInputAvailability[] _facilityInputs = [];
+    private HashSet<string>? _selectedFacilityFeatures;
     private readonly Dictionary<string, double> _runParameterValues = new(StringComparer.Ordinal);
     private int _runOriginTotal;
     private RunResult? _latestRun;
@@ -990,6 +1043,7 @@
                           ?? throw new InvalidOperationException("The development program was stored without a response body.");
             _configuration.DevelopmentPrograms.Insert(0, program);
             _form.DevelopmentProgramId = program.Id;
+            await LoadFacilityInputsAsync();
             _showProgramEditor = false;
             _programMessage = $"Stored and selected {program.Name} v{program.Version}.";
             _programForm.Reset();
@@ -1020,6 +1074,7 @@
     {
         var loadVersion = ++_originLoadVersion;
         _origins.Clear();
+        InvalidateFacilityInputs();
         if (_form.OriginGeographySnapshotId is not { } snapshotId)
         {
             return;
@@ -1040,6 +1095,7 @@
             });
             if (loadVersion != _originLoadVersion) return;
             _origins.AddRange(selected.Select(id => new OriginOption { StableOriginId = id }));
+            await LoadFacilityInputsAsync();
         }
         catch (Exception exception)
         {
@@ -1061,6 +1117,68 @@
         {
             _tourism.AddRange(rows);
         }
+    }
+
+    private void InvalidateFacilityInputs()
+    {
+        ++_facilityInputLoadVersion;
+        _facilityInputs = [];
+        _facilityInputsLoading = false;
+        _facilityInputError = "Select a facility program, study origins and competitor data to check supported inputs.";
+    }
+
+    private async Task LoadFacilityInputsAsync()
+    {
+        var version = ++_facilityInputLoadVersion;
+        _facilityInputs = [];
+        _facilityInputError = null;
+        _facilityInputNotice = null;
+        if (_form.DevelopmentProgramId is not { } program || _form.CompetitorSnapshotId is not { } competitors ||
+            _form.OriginGeographySnapshotId is not { } origins || _origins.Count == 0)
+        {
+            _facilityInputsLoading = false;
+            _facilityInputError = "Select a facility program, study origins and competitor data to check supported inputs.";
+            return;
+        }
+        _facilityInputsLoading = true;
+        try
+        {
+            using var response = await Http.PostAsJsonAsync("api/gravity-model-configuration/facility-input-availability",
+                new FacilityInputAvailabilityRequest(program, competitors, origins, _origins.Select(item => item.StableOriginId).ToArray(),
+                    _form.EffectiveOn, _form.AttractionSpecification));
+            if (!response.IsSuccessStatusCode) throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+            var inputs = await response.Content.ReadFromJsonAsync<FacilityInputAvailability[]>()
+                ?? throw new InvalidDataException("Input availability response was empty.");
+            if (version != _facilityInputLoadVersion) return;
+            _facilityInputs = inputs;
+            if (_selectedFacilityFeatures is null)
+                _selectedFacilityFeatures = inputs.Where(item => item.Available && FindParameter(item.CoefficientKey) is { } definition && ParameterValue(definition) != 0)
+                    .Select(item => item.Key).ToHashSet(StringComparer.Ordinal);
+            else
+            {
+                var removed = _selectedFacilityFeatures.Except(inputs.Where(item => item.Available).Select(item => item.Key), StringComparer.Ordinal).ToArray();
+                _selectedFacilityFeatures.IntersectWith(inputs.Where(item => item.Available).Select(item => item.Key));
+                if (removed.Length > 0) _facilityInputNotice = $"Disabled inputs that are unavailable in this selection: {string.Join(", ", removed)}. Review the remaining inputs before running.";
+            }
+        }
+        catch (Exception exception)
+        {
+            if (version == _facilityInputLoadVersion) _facilityInputError = $"Input availability could not be checked: {exception.Message}";
+        }
+        finally { if (version == _facilityInputLoadVersion) _facilityInputsLoading = false; }
+    }
+
+    private void ToggleFacilityInput(FacilityInputAvailability input, bool selected)
+    {
+        if (!input.Available || _facilityInputsLoading) return;
+        _selectedFacilityFeatures ??= new(StringComparer.Ordinal);
+        if (selected)
+        {
+            _selectedFacilityFeatures.Add(input.Key);
+            if (FindParameter(input.CoefficientKey) is { } definition && ParameterValue(definition) == 0)
+                _overrides[input.CoefficientKey] = 1;
+        }
+        else _selectedFacilityFeatures.Remove(input.Key);
     }
 
     private async Task LoadTrafficAsync()
@@ -1149,6 +1267,7 @@
                 FacilityRegime = _form.FacilityRegime,
                 DemandSpecification = _form.DemandSpecification,
                 AttractionSpecification = _form.AttractionSpecification,
+                SelectedFacilityFeatureKeys = _selectedFacilityFeatures?.Order(StringComparer.Ordinal).ToArray(),
                 FrictionForm = _form.FrictionForm,
                 ObservedMetricKey = _form.ObservedMetricKey,
                 ObservedPeriodStart = observedSnapshot.PeriodStart,
@@ -1249,6 +1368,8 @@
                      .OrderBy(item => item.Category, StringComparer.Ordinal).ThenBy(item => item.DisplayName, StringComparer.Ordinal))
         {
             var key = definition.Key;
+            var input = _facilityInputs.FirstOrDefault(item => item.ParameterKeys.Contains(key));
+            if (input is not null && _lastRunRequest?.SelectedFacilityFeatureKeys?.Contains(input.Key) != true) continue;
             if (!_runParameterValues.TryGetValue(key, out var baseline)) continue;
             var step = definition.UiStep ?? Math.Max(Math.Abs(baseline) * 0.1, 0.01);
             var low = definition.RecommendedMinimum ?? baseline - step * 2;
@@ -1481,6 +1602,7 @@
             FacilityRegime = _form.FacilityRegime,
             DemandSpecification = _form.DemandSpecification,
             AttractionSpecification = _form.AttractionSpecification,
+            SelectedFacilityFeatureKeys = _selectedFacilityFeatures?.Order(StringComparer.Ordinal).ToArray(),
             FrictionForm = _form.FrictionForm,
             ObservedMetricKey = _form.ObservedMetricKey,
             UserOverrides = new Dictionary<string, double>(_overrides, StringComparer.Ordinal)
@@ -1527,6 +1649,7 @@
             _form.FacilityRegime = document.FacilityRegime;
             _form.DemandSpecification = document.DemandSpecification;
             _form.AttractionSpecification = document.AttractionSpecification;
+            _selectedFacilityFeatures = document.SelectedFacilityFeatureKeys?.ToHashSet(StringComparer.Ordinal);
             _form.FrictionForm = document.FrictionForm;
             _form.ObservedMetricKey = document.ObservedMetricKey;
             _overrides.Clear();
@@ -1693,6 +1816,12 @@
         var outside = Definition.RecommendedMinimum is { } minimum && value < minimum ||
                       Definition.RecommendedMaximum is { } maximum && value > maximum;
         var inputId = $"model-parameter-{Definition.Key.Replace('.', '-')}";
+        var facilityInput = _facilityInputs.FirstOrDefault(item => item.ParameterKeys.Contains(Definition.Key));
+        var facilityDisabled = facilityInput is not null && (!facilityInput.Available || _selectedFacilityFeatures?.Contains(facilityInput.Key) != true);
+        var unavailableReason = Definition.Key.StartsWith("tourism.", StringComparison.Ordinal) && _tourism.Count == 0
+            ? "Inactive — no tourism observations are selected."
+            : Definition.Key.StartsWith("traffic.", StringComparison.Ordinal) && _traffic.Count == 0
+                ? "Inactive — no traffic observations are selected." : null;
         builder.OpenElement(sequence++, "article");
         builder.AddAttribute(sequence++, "class", $"model-parameter{(overridden ? " is-overridden" : "")}{(outside ? " is-outside-range" : "")}");
 
@@ -1717,7 +1846,7 @@
         builder.AddAttribute(sequence++, "id", inputId);
         builder.AddAttribute(sequence++, "type", "number");
         builder.AddAttribute(sequence++, "step", Definition.UiStep ?? 0.01);
-        builder.AddAttribute(sequence++, "disabled", !Definition.IsUserOverridable);
+        builder.AddAttribute(sequence++, "disabled", !Definition.IsUserOverridable || facilityDisabled || unavailableReason is not null || ((_facilityInputsLoading || _facilityInputError is not null) && Definition.Key.StartsWith("facility.", StringComparison.Ordinal)));
         if (Definition.ComputationalMinimum is { } hardMinimum) builder.AddAttribute(sequence++, "min", hardMinimum);
         if (Definition.ComputationalMaximum is { } hardMaximum) builder.AddAttribute(sequence++, "max", hardMaximum);
         builder.AddAttribute(sequence++, "value", value.ToString(CultureInfo.InvariantCulture));
@@ -1726,11 +1855,13 @@
 
         builder.OpenElement(sequence++, "span");
         builder.AddAttribute(sequence++, "class", "model-parameter-state");
-        builder.AddContent(sequence++, outside
+        builder.AddContent(sequence++, unavailableReason ?? (facilityDisabled
+            ? facilityInput!.UnavailableReason ?? "Inactive — select this facility input above to use it."
+            : outside
             ? "Outside recommended range — the backend run will preserve and report this warning."
             : overridden
                 ? "Custom override — the next backend run will store this exact value."
-                : $"{ParameterSource(Definition.Key)} value.");
+                : $"{ParameterSource(Definition.Key)} value."));
         builder.CloseElement();
 
         builder.OpenElement(sequence++, "small");
@@ -1927,7 +2058,8 @@
         _form.IncomeSnapshotId.HasValue &&
         _form.CompetitorSnapshotId.HasValue &&
         _form.ObservedPerformanceSnapshotId.HasValue &&
-        _origins.Count > 0;
+        _origins.Count > 0 && !_facilityInputsLoading && _facilityInputError is null &&
+        _selectedFacilityFeatures is not null && _facilityInputs.Length > 0;
 
     private bool CanCreateProgram =>
         !string.IsNullOrWhiteSpace(_programForm.Name) &&
@@ -2153,6 +2285,7 @@
         public string FrictionForm { get; set; } = "inverse-power";
         public string ObservedMetricKey { get; set; } = "casino-win";
         public Dictionary<string, double> UserOverrides { get; set; } = new(StringComparer.Ordinal);
+        public string[]? SelectedFacilityFeatureKeys { get; set; }
     }
 
     private sealed record ParameterOverrideRequest(string Key, double Value);
@@ -2258,6 +2391,7 @@
         public string FacilityRegime { get; set; } = string.Empty;
         public string DemandSpecification { get; set; } = string.Empty;
         public string AttractionSpecification { get; set; } = string.Empty;
+        public string[]? SelectedFacilityFeatureKeys { get; set; }
         public string FrictionForm { get; set; } = string.Empty;
         public string ObservedMetricKey { get; set; } = string.Empty;
         public DateOnly ObservedPeriodStart { get; set; }

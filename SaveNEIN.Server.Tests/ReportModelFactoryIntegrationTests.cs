@@ -10,6 +10,25 @@ namespace SaveNEIN.Server.Tests;
 public sealed class ReportModelFactoryIntegrationTests
 {
     [Fact]
+    public async Task ReportsPreserveStoredInputSelectionWithoutInferringHistoricalChoices()
+    {
+        await using var db = CreateContext();
+        var runId = await SeedFinalizedRunAsync(db);
+        var factory = new CasinoImpactReportModelFactory(db);
+        var legacy = await factory.BuildAsync(runId, ReportArtifactService.TemplateVersion, DateTime.UtcNow, new());
+        Assert.Null(legacy.Scenario.SelectedFacilityFeatureKeys);
+        var run = await db.ModelRuns.SingleAsync(item => item.Id == runId);
+        var input = System.Text.Json.Nodes.JsonNode.Parse(run.ResolvedInputJson)!.AsObject();
+        input["selectedFacilityFeatureKeys"] = System.Text.Json.Nodes.JsonNode.Parse("[\"gaming-positions\",\"table-games\"]");
+        run.ResolvedInputJson = input.ToJsonString();
+        await db.SaveChangesAsync();
+        var model = await factory.BuildAsync(runId, ReportArtifactService.TemplateVersion, DateTime.UtcNow, new());
+        Assert.Equal(["gaming-positions", "table-games"], model.Scenario.SelectedFacilityFeatureKeys);
+        Assert.Contains("gaming-positions, table-games", new HtmlReportRenderer().Render(model, new()));
+        Assert.Contains("selected_facility_inputs,\"gaming-positions, table-games\"", new CsvReportRenderer().Render(model));
+    }
+
+    [Fact]
     public async Task StoredRun_GeneratesDynamicOriginsAndOneImmutableArtifactPerPresentation()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -61,7 +80,7 @@ public sealed class ReportModelFactoryIntegrationTests
 
         Assert.Equal(first.Id, second.Id);
         Assert.True(first.IsImmutable);
-        Assert.Equal("professional-v6", first.TemplateVersion);
+        Assert.Equal("professional-v7", first.TemplateVersion);
         Assert.Equal(64, first.ReportModelHash.Length);
         Assert.Equal(64, first.HtmlContentHash.Length);
         Assert.Equal(64, first.PdfContentHash.Length);
