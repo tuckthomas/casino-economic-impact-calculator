@@ -1,0 +1,205 @@
+{
+  "matrixCorrelationVersion": "target-radius100-cutoff500-v2",
+  "scope": "Exact facility-coordinate road correlation; not a complete competitive inventory or origin routing audit.",
+  "status": {
+    "version": "3.5.1-49b40b7f2",
+    "tileset_last_modified": 1791817435,
+    "available_actions": [
+      "status",
+      "centroid",
+      "expansion",
+      "transit_available",
+      "trace_attributes",
+      "trace_route",
+      "isochrone",
+      "optimized_route",
+      "sources_to_targets",
+      "height",
+      "route",
+      "locate"
+    ]
+  },
+  "facilityChecks": [
+    {
+      "longitude": -87.895933970761,
+      "stableVenueId": "USA-IL-IGB-american-place",
+      "latitude": 42.341062017875,
+      "edgeCount": 69
+    },
+    {
+      "longitude": -90.186676508834,
+      "stableVenueId": "USA-IL-IGB-argosy-casino-alton",
+      "latitude": 38.888884754334,
+      "edgeCount": 29
+    },
+    {
+      "longitude": -87.633421480485,
+      "stableVenueId": "USA-IL-IGB-ballys-chicago",
+      "latitude": 41.893614903974,
+      "edgeCount": 101
+    },
+    {
+      "longitude": -90.613476480643,
+      "stableVenueId": "USA-IL-IGB-ballys-quad-cities",
+      "latitude": 41.45906498258,
+      "edgeCount": 39
+    },
+    {
+      "longitude": -90.174958440557,
+      "stableVenueId": "USA-IL-IGB-draftkings-casino-queen",
+      "latitude": 38.626134888561,
+      "edgeCount": 70
+    },
+    {
+      "longitude": -90.036291168088,
+      "stableVenueId": "USA-IL-IGB-fairmount-park-casino-racing",
+      "latitude": 38.661034912179,
+      "edgeCount": 64
+    },
+    {
+      "longitude": -87.547830179123,
+      "stableVenueId": "USA-IL-IGB-golden-nugget-danville",
+      "latitude": 40.125082661456,
+      "edgeCount": 67
+    },
+    {
+      "longitude": -88.279700664934,
+      "stableVenueId": "USA-IL-IGB-grand-victoria-casino",
+      "latitude": 42.031454505414,
+      "edgeCount": 74
+    },
+    {
+      "longitude": -88.962631062121,
+      "stableVenueId": "USA-IL-IGB-hard-rock-casino-rockford",
+      "latitude": 42.27054506646,
+      "edgeCount": 107
+    },
+    {
+      "longitude": -88.084646318147,
+      "stableVenueId": "USA-IL-IGB-harrahs-joliet",
+      "latitude": 41.526363408904,
+      "edgeCount": 76
+    },
+    {
+      "longitude": -88.735999990597,
+      "stableVenueId": "USA-IL-IGB-harrahs-metropolis",
+      "latitude": 37.146145010901,
+      "edgeCount": 49
+    },
+    {
+      "longitude": -88.282849410681,
+      "stableVenueId": "USA-IL-IGB-hollywood-casino-aurora",
+      "latitude": 41.805845523163,
+      "edgeCount": 51
+    },
+    {
+      "longitude": -88.190776802688,
+      "stableVenueId": "USA-IL-IGB-hollywood-casino-joliet",
+      "latitude": 41.496377359841,
+      "edgeCount": 29
+    },
+    {
+      "longitude": -89.56500474809,
+      "stableVenueId": "USA-IL-IGB-par-a-dice-hotel-casino",
+      "latitude": 40.679496019464,
+      "edgeCount": 8
+    },
+    {
+      "longitude": -87.864421032306,
+      "stableVenueId": "USA-IL-IGB-rivers-casino-des-plaines",
+      "latitude": 41.998034013434,
+      "edgeCount": 36
+    },
+    {
+      "longitude": -89.149648001953,
+      "stableVenueId": "USA-IL-IGB-walkers-bluff-casino-resort",
+      "latitude": 37.801415337157,
+      "edgeCount": 75
+    },
+    {
+      "longitude": -87.637433813716,
+      "stableVenueId": "USA-IL-IGB-wind-creek-chicago-southland",
+      "latitude": 41.574293352465,
+      "edgeCount": 39
+    },
+    {
+      "longitude": -94.620285366951,
+      "stableVenueId": "USA-MO-MGC-argosy-riverside",
+      "latitude": 39.161005671677,
+      "edgeCount": 13
+    },
+    {
+      "longitude": -89.64886133077,
+      "stableVenueId": "USA-MO-MGC-century-caruthersville",
+      "latitude": 36.190722461879,
+      "edgeCount": 58
+    },
+    {
+      "longitude": -90.482915179098,
+      "stableVenueId": "USA-MO-MGC-hollywood-st-louis",
+      "latitude": 38.754200394617,
+      "edgeCount": 12
+    },
+    {
+      "longitude": -94.545561035418,
+      "stableVenueId": "USA-MO-MGC-harrahs-kansas-city",
+      "latitude": 39.141902015145,
+      "edgeCount": 70
+    },
+    {
+      "longitude": -94.561619756074,
+      "stableVenueId": "USA-MO-MGC-ballys-kansas-city",
+      "latitude": 39.121133586914,
+      "edgeCount": 27
+    },
+    {
+      "longitude": -94.483181403244,
+      "stableVenueId": "USA-MO-MGC-ameristar-kansas-city",
+      "latitude": 39.150004968583,
+      "edgeCount": 31
+    },
+    {
+      "longitude": -91.499871542444,
+      "stableVenueId": "USA-MO-MGC-mark-twain",
+      "latitude": 40.035661165619,
+      "edgeCount": 50
+    },
+    {
+      "longitude": -90.485384906868,
+      "stableVenueId": "USA-MO-MGC-ameristar-st-charles",
+      "latitude": 38.767700874604,
+      "edgeCount": 41
+    },
+    {
+      "longitude": -90.26428848983,
+      "stableVenueId": "USA-MO-MGC-river-city",
+      "latitude": 38.531311633313,
+      "edgeCount": 38
+    },
+    {
+      "longitude": -90.184099995617,
+      "stableVenueId": "USA-MO-MGC-horseshoe-st-louis",
+      "latitude": 38.632865011987,
+      "edgeCount": 106
+    },
+    {
+      "longitude": -92.74977541191,
+      "stableVenueId": "USA-MO-MGC-isle-of-capri-boonville",
+      "latitude": 38.977361232497,
+      "edgeCount": 36
+    },
+    {
+      "longitude": -94.87656113453,
+      "stableVenueId": "USA-MO-MGC-st-jo-frontier",
+      "latitude": 39.783406155083,
+      "edgeCount": 12
+    },
+    {
+      "longitude": -89.51735949587,
+      "stableVenueId": "USA-MO-MGC-century-cape-girardeau",
+      "latitude": 37.312955235742,
+      "edgeCount": 82
+    }
+  ],
+  "capturedAtUtc": "2026-10-12T17:42:20.9520186Z"
+}

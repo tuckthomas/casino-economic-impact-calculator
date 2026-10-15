@@ -245,11 +245,26 @@ INSERT INTO model_run_origin_results (
     id, model_run_id, origin_zone_id, demand_specification, resident_demand,
     baseline_outside_share, with_project_outside_share, proposed_resident_ggr,
     host_jurisdiction_capture, external_jurisdiction_capture,
-    tribal_or_other_jurisdiction_capture, outside_option_capture
+    tribal_or_other_jurisdiction_capture, outside_option_capture, eligible_population
 ) VALUES (
     7000000001, '00000000-0000-0000-0000-000000000702', 7000000001,
-    'agi-share', 1000, 1, 0.5, 500, 0, 0, 0, 500
+    'agi-share', 1000, 1, 0.5, 500, 0, 0, 0, 500, 50.5
 );
+
+DO $$
+DECLARE invalid_population DOUBLE PRECISION;
+BEGIN
+    FOREACH invalid_population IN ARRAY ARRAY[-1::DOUBLE PRECISION, 'Infinity'::DOUBLE PRECISION, 'NaN'::DOUBLE PRECISION]
+    LOOP
+        BEGIN
+            UPDATE model_run_origin_results SET eligible_population = invalid_population WHERE id = 7000000001;
+            RAISE EXCEPTION 'Invalid eligible population was accepted.';
+        EXCEPTION WHEN check_violation THEN
+            NULL;
+        END;
+    END LOOP;
+END;
+$$;
 
 INSERT INTO model_run_facility_results (
     id, model_run_id, facility_key, facility_kind, is_proposed_facility,

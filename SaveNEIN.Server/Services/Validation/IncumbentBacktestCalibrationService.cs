@@ -33,14 +33,17 @@ public sealed record IncumbentBacktestCalibrationRequest(
     long SourceParameterSetId,
     string PublishedParameterSetVersion,
     double ComparableRidgePenalty = 1e-8,
-    double OriginPrefilterMiles = 100);
+    double OriginPrefilterMiles = 100,
+    ReleaseAcceptanceEvidence? AcceptanceEvidence = null);
 
 public sealed record IncumbentCalibrationCandidateResult(
     string CandidateKey,
     IReadOnlyDictionary<string, double> Parameters,
     ValidationMetrics TrainingMetrics,
     double ObjectiveValue,
-    IReadOnlyDictionary<string, Guid> ModelRunIds);
+    IReadOnlyDictionary<string, Guid> ModelRunIds,
+    ValidationMetrics? SelectionMetrics = null,
+    DevelopmentFitReport? DevelopmentAdmission = null);
 
 public sealed record IncumbentBacktestCalibrationResult(
     string SelectedCandidateKey,
@@ -74,6 +77,7 @@ public sealed class IncumbentBacktestCalibrationService(
         CancellationToken cancellationToken = default)
     {
         ValidateRequest(request);
+        var searchStartedAtUtc = DateTime.UtcNow;
         if (await db.ValidationEvaluations.AsNoTracking().AnyAsync(
                 evaluation => evaluation.EvaluationKey == request.EvaluationKey.Trim() &&
                               evaluation.Version == request.Version.Trim(),
@@ -142,33 +146,42 @@ public sealed class IncumbentBacktestCalibrationService(
             .Where(target => target.DatasetPartition == ValidationPartitions.Training)
             .Select(target => target.CaseKey)
             .ToHashSet(StringComparer.Ordinal);
+        var selectionCaseKeys = request.Targets.Where(target => target.DatasetPartition == DemandValidationPartitions.Selection)
+            .Select(target => target.CaseKey).ToHashSet(StringComparer.Ordinal);
+        var withheldObservedIds = (request.BaseRunRequest.ObservedGgrExcludedCompetitorIds ?? [])
+            .Concat(request.Targets.Where(target => target.DatasetPartition != ValidationPartitions.Training).Select(target => target.CasinoCompetitorId))
+            .Distinct().Order().ToArray();
+
+        async Task<GravityModelRunResult> ExecuteTargetAsync(IncumbentCalibrationCandidate candidate, IncumbentBacktestTarget target)
+        {
+            var competitor = competitors[target.CasinoCompetitorId];
+            var jurisdictionCode = await db.Jurisdictions.AsNoTracking()
+                .Where(item => item.Id == competitor.JurisdictionId).Select(item => item.Code).SingleAsync(cancellationToken);
+            // A cross-jurisdiction target must use its own effective fiscal/age rules.
+            var runRequest = request.BaseRunRequest with
+            {
+                ScenarioName = $"{request.EvaluationKey} {request.Version}: hold out {competitor.Name}; candidate {candidate.CandidateKey}",
+                DevelopmentProgramId = programs[competitor.Id].Id,
+                JurisdictionCode = jurisdictionCode,
+                ImpactGeography = new ImpactGeographyDefinition(ImpactScopeKinds.HostState, jurisdictionCode),
+                CandidateLatitude = competitor.Latitude,
+                CandidateLongitude = competitor.Longitude,
+                FacilityRegime = ResolveTargetFacilityRegime(competitor, request.BaseRunRequest.FacilityRegime),
+                StableOriginIds = originIdsByTarget[competitor.Id],
+                UserOverrides = MergeOverrides(request.BaseRunRequest.UserOverrides, candidate.Parameters),
+                ObservedGgrExcludedCompetitorIds = withheldObservedIds,
+                CompetitorIds = request.BaseRunRequest.CompetitorIds.Where(id => id != competitor.Id).ToArray(),
+                ExcludedCompetitorIds = (request.BaseRunRequest.ExcludedCompetitorIds ?? []).Append(competitor.Id).Distinct().ToArray()
+            };
+            return await gravityModel.ExecuteAsync(runRequest, cancellationToken);
+        }
 
         foreach (var candidate in request.Candidates.OrderBy(candidate => candidate.CandidateKey, StringComparer.Ordinal))
         {
             var modelRunIds = new Dictionary<string, Guid>(StringComparer.Ordinal);
-            foreach (var target in request.Targets.OrderBy(target => target.CaseKey, StringComparer.Ordinal))
+            foreach (var target in request.Targets.Where(target => trainingCaseKeys.Contains(target.CaseKey) || selectionCaseKeys.Contains(target.CaseKey)).OrderBy(target => target.CaseKey, StringComparer.Ordinal))
             {
-                var competitor = competitors[target.CasinoCompetitorId];
-                var excluded = (request.BaseRunRequest.ExcludedCompetitorIds ?? [])
-                    .Append(competitor.Id)
-                    .Distinct()
-                    .ToArray();
-                var mergedOverrides = MergeOverrides(request.BaseRunRequest.UserOverrides, candidate.Parameters);
-                var runRequest = request.BaseRunRequest with
-                {
-                    ScenarioName = $"{request.EvaluationKey} {request.Version}: hold out {competitor.Name}; candidate {candidate.CandidateKey}",
-                    DevelopmentProgramId = programs[competitor.Id].Id,
-                    CandidateLatitude = competitor.Latitude,
-                    CandidateLongitude = competitor.Longitude,
-                    FacilityRegime = ResolveTargetFacilityRegime(competitor, request.BaseRunRequest.FacilityRegime),
-                    StableOriginIds = originIdsByTarget[competitor.Id],
-                    UserOverrides = mergedOverrides,
-                    CompetitorIds = request.BaseRunRequest.CompetitorIds
-                        .Where(competitorId => competitorId != competitor.Id)
-                        .ToArray(),
-                    ExcludedCompetitorIds = excluded
-                };
-                var result = await gravityModel.ExecuteAsync(runRequest, cancellationToken);
+                var result = await ExecuteTargetAsync(candidate, target);
                 runResults[(candidate.CandidateKey, target.CaseKey)] = result;
                 modelRunIds[target.CaseKey] = result.ModelRunId;
             }
@@ -181,19 +194,43 @@ public sealed class IncumbentBacktestCalibrationService(
                     Convert.ToDouble(runResults[(candidate.CandidateKey, target.CaseKey)].StabilizedTotalGgr)))
                 .ToArray();
             var trainingMetrics = metrics.Calculate(trainingObservations);
+            var selectionMetrics = selectionCaseKeys.Count == 0 ? null : metrics.Calculate(request.Targets
+                .Where(target => selectionCaseKeys.Contains(target.CaseKey)).Select(target => new ValidationObservation(
+                    target.CaseKey, Convert.ToDouble(observed[target.CasinoCompetitorId].Amount),
+                    Convert.ToDouble(runResults[(candidate.CandidateKey, target.CaseKey)].StabilizedTotalGgr))).ToArray());
+            var admissionRows = request.Targets.Where(target => trainingCaseKeys.Contains(target.CaseKey) || selectionCaseKeys.Contains(target.CaseKey))
+                .Select(target => new DevelopmentRevenueObservation(target.CaseKey,
+                    trainingCaseKeys.Contains(target.CaseKey) ? "training" : "selection", target.HoldoutGroup,
+                    competitors[target.CasinoCompetitorId].State,
+                    Convert.ToDouble(observed[target.CasinoCompetitorId].Amount),
+                    Convert.ToDouble(runResults[(candidate.CandidateKey, target.CaseKey)].StabilizedTotalGgr))).ToArray();
+            var admission = CalibrationDevelopmentSelection.Evaluate(admissionRows);
             candidateResults.Add(new IncumbentCalibrationCandidateResult(
                 candidate.CandidateKey,
                 candidate.Parameters,
                 trainingMetrics,
-                Objective(request.ObjectiveFunction, trainingMetrics),
-                modelRunIds));
+                Objective(request.ObjectiveFunction, selectionMetrics ?? trainingMetrics),
+                modelRunIds,
+                selectionMetrics,
+                admission));
         }
 
         var selected = candidateResults
+            .Where(candidate => candidate.DevelopmentAdmission?.Admitted == true)
             .OrderBy(candidate => candidate.ObjectiveValue)
             .ThenBy(candidate => candidate.CandidateKey, StringComparer.Ordinal)
-            .First();
+            .FirstOrDefault()
+            ?? throw new InvalidOperationException("No calibration candidate passed training, selection and geographic admission. Final holdouts were not executed; no defaults were published.");
         var selectedCandidate = request.Candidates.Single(candidate => candidate.CandidateKey == selected.CandidateKey);
+        var selectedRunIds = new Dictionary<string, Guid>(selected.ModelRunIds, StringComparer.Ordinal);
+        foreach (var target in request.Targets.Where(target => target.DatasetPartition == ValidationPartitions.Holdout).OrderBy(target => target.CaseKey, StringComparer.Ordinal))
+        {
+            var result = await ExecuteTargetAsync(selectedCandidate, target);
+            runResults[(selected.CandidateKey, target.CaseKey)] = result;
+            selectedRunIds[target.CaseKey] = result.ModelRunId;
+        }
+        selected = selected with { ModelRunIds = selectedRunIds };
+        candidateResults[candidateResults.FindIndex(candidate => candidate.CandidateKey == selected.CandidateKey)] = selected;
         var validationCaseIds = new List<Guid>();
         foreach (var target in request.Targets.OrderBy(target => target.CaseKey, StringComparer.Ordinal))
         {
@@ -216,7 +253,9 @@ public sealed class IncumbentBacktestCalibrationService(
                 CaseKey = target.CaseKey.Trim(),
                 Name = $"Incumbent holdout: {competitor.Name}",
                 MarketCode = target.HoldoutGroup.Trim(),
-                JurisdictionCode = request.BaseRunRequest.JurisdictionCode,
+                JurisdictionCode = await db.Jurisdictions.AsNoTracking()
+                    .Where(item => item.Id == competitor.JurisdictionId)
+                    .Select(item => item.Code).SingleAsync(cancellationToken),
                 CaseKind = ValidationCaseKinds.IncumbentBacktest,
                 DatasetPartition = target.DatasetPartition,
                 HoldoutGroup = target.HoldoutGroup.Trim(),
@@ -254,6 +293,7 @@ public sealed class IncumbentBacktestCalibrationService(
             candidate.CandidateKey,
             candidate.Parameters,
             candidate.TrainingMetrics,
+            candidate.SelectionMetrics,
             candidate.ObjectiveValue
         }).ToArray();
         var evaluation = await evaluations.FinalizeAsync(new ValidationEvaluationRequest(
@@ -266,12 +306,15 @@ public sealed class IncumbentBacktestCalibrationService(
             JsonSerializer.Serialize(new
             {
                 suppliedRules = ParseJson(request.InclusionRulesJson),
-                selectionRule = "Candidate selected on training partition only; holdout results were not used for selection.",
+                selectionRule = selectionCaseKeys.Count > 0
+                    ? "Candidate selected on the separate specification-selection partition; final holdout was executed only after selection."
+                    : "Developmental candidate selected on training only; final holdout was executed after selection. Release remains blocked without a separate selection partition.",
                 candidates = searchEvidence
             }, JsonOptions),
             request.SourceParameterSetId,
             request.PublishedParameterSetVersion,
-            request.ComparableRidgePenalty), cancellationToken);
+            request.ComparableRidgePenalty,
+            request.AcceptanceEvidence is null ? null : request.AcceptanceEvidence with { SearchStartedAtUtc = searchStartedAtUtc }), cancellationToken);
 
         return new IncumbentBacktestCalibrationResult(
             selected.CandidateKey,
@@ -479,13 +522,14 @@ public sealed class IncumbentBacktestCalibrationService(
         }
         if (request.Targets.Count < 3 ||
             request.Targets.Count(target => target.DatasetPartition == ValidationPartitions.Training) < 2 ||
+            !request.Targets.Any(target => target.DatasetPartition == DemandValidationPartitions.Selection) ||
             !request.Targets.Any(target => target.DatasetPartition == ValidationPartitions.Holdout))
         {
-            throw new ArgumentException("Calibration requires at least two training targets and one independent holdout target.", nameof(request));
+            throw new ArgumentException("Calibration requires at least two training targets, a separate selection partition and an independent holdout target.", nameof(request));
         }
         if (request.Targets.Any(target => target.CasinoCompetitorId <= 0 || string.IsNullOrWhiteSpace(target.CaseKey) ||
                                           string.IsNullOrWhiteSpace(target.HoldoutGroup) ||
-                                          target.DatasetPartition is not (ValidationPartitions.Training or ValidationPartitions.Holdout)) ||
+                                          target.DatasetPartition is not (ValidationPartitions.Training or ValidationPartitions.Holdout or DemandValidationPartitions.Selection)) ||
             request.Targets.Select(target => target.CasinoCompetitorId).Distinct().Count() != request.Targets.Count ||
             request.Targets.Select(target => target.CaseKey).Distinct(StringComparer.Ordinal).Count() != request.Targets.Count)
         {
@@ -509,12 +553,10 @@ public sealed class IncumbentBacktestCalibrationService(
                 nameof(request),
                 "The broad diagnostic origin prefilter must be between 0 and 2,000 miles.");
         }
-        if (request.BaseRunRequest.AttractionSpecification is not (
-                FacilityAttractionSpecifications.ObservedGgr or
-                FacilityAttractionSpecifications.HybridObservedGgr))
+        if (request.BaseRunRequest.AttractionSpecification != FacilityAttractionSpecifications.HybridObservedGgr)
         {
             throw new ArgumentException(
-                "Incumbent back-tests must use observed-GGR or audited hybrid mass for remaining incumbents; target GGR remains excluded.",
+                "Incumbent back-tests require audited hybrid mass so final-holdout GGR can be withheld without removing competitors; target GGR remains excluded.",
                 nameof(request));
         }
         _ = Objective(request.ObjectiveFunction, new ValidationMetrics(1, 1, 0, 0, 0, 0, 0, null));

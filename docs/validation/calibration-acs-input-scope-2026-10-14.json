@@ -1,0 +1,380 @@
+{
+  "version": "observed-property-and-nein-acs-input-scope-v1",
+  "scope": "Input capture for the existing observed-property pool and all three Northeast Indiana scenarios. Includes complete positive calendar-2025 comparable revenue and reported physical slot counts as source-readiness criteria; this is not a final acceptance or holdout manifest. Age threshold 21 is explicit for input coverage; per-scenario legal, competitive, temporal, fiscal and model acceptance remain separate. No observed revenue values are supplied to the Census capture.",
+  "sourceBundleSha256": "15ba9912dd154178cc8dfefba22a899ab95e77fb4ec21bb9af9e139b650d368b",
+  "eligibleAge": 21,
+  "originRadiusMiles": 100,
+  "observedPropertyPoolCount": 71,
+  "scenarios": [
+    {
+      "key": "USA-IL-IGB-american-place",
+      "latitude": 42.341062017875,
+      "longitude": -87.895933970761
+    },
+    {
+      "key": "USA-IL-IGB-argosy-casino-alton",
+      "latitude": 38.888884754334,
+      "longitude": -90.186676508834
+    },
+    {
+      "key": "USA-IL-IGB-ballys-chicago",
+      "latitude": 41.893614903974,
+      "longitude": -87.633421480485
+    },
+    {
+      "key": "USA-IL-IGB-ballys-quad-cities",
+      "latitude": 41.45906498258,
+      "longitude": -90.613476480643
+    },
+    {
+      "key": "USA-IL-IGB-draftkings-casino-queen",
+      "latitude": 38.626134888561,
+      "longitude": -90.174958440557
+    },
+    {
+      "key": "USA-IL-IGB-fairmount-park-casino-racing",
+      "latitude": 38.661034912179,
+      "longitude": -90.036291168088
+    },
+    {
+      "key": "USA-IL-IGB-golden-nugget-danville",
+      "latitude": 40.125082661456,
+      "longitude": -87.547830179123
+    },
+    {
+      "key": "USA-IL-IGB-grand-victoria-casino",
+      "latitude": 42.031454505414,
+      "longitude": -88.279700664934
+    },
+    {
+      "key": "USA-IL-IGB-hard-rock-casino-rockford",
+      "latitude": 42.27054506646,
+      "longitude": -88.962631062121
+    },
+    {
+      "key": "USA-IL-IGB-harrahs-joliet",
+      "latitude": 41.526363408904,
+      "longitude": -88.084646318147
+    },
+    {
+      "key": "USA-IL-IGB-harrahs-metropolis",
+      "latitude": 37.146145010901,
+      "longitude": -88.735999990597
+    },
+    {
+      "key": "USA-IL-IGB-hollywood-casino-aurora",
+      "latitude": 41.759239040203,
+      "longitude": -88.313483674225
+    },
+    {
+      "key": "USA-IL-IGB-hollywood-casino-joliet",
+      "latitude": 41.496377359841,
+      "longitude": -88.190776802688
+    },
+    {
+      "key": "USA-IL-IGB-par-a-dice-hotel-casino",
+      "latitude": 40.679496019464,
+      "longitude": -89.56500474809
+    },
+    {
+      "key": "USA-IL-IGB-rivers-casino-des-plaines",
+      "latitude": 41.998034013434,
+      "longitude": -87.864421032306
+    },
+    {
+      "key": "USA-IL-IGB-walkers-bluff-casino-resort",
+      "latitude": 37.801415337157,
+      "longitude": -89.149648001953
+    },
+    {
+      "key": "USA-IL-IGB-wind-creek-chicago-southland",
+      "latitude": 41.574293352465,
+      "longitude": -87.637433813716
+    },
+    {
+      "key": "USA-IN-IGC-ameristar-casino",
+      "latitude": 41.6521503,
+      "longitude": -87.4356793
+    },
+    {
+      "key": "USA-IN-IGC-ballys-evansville",
+      "latitude": 37.972581893824,
+      "longitude": -87.57850700611
+    },
+    {
+      "key": "USA-IN-IGC-belterra-casino",
+      "latitude": 38.781538185458,
+      "longitude": -84.940459046408
+    },
+    {
+      "key": "USA-IN-IGC-blue-chip-casino",
+      "latitude": 41.718776974043,
+      "longitude": -86.891430253456
+    },
+    {
+      "key": "USA-IN-IGC-caesars-southern-indiana",
+      "latitude": 38.1789169,
+      "longitude": -85.9046683
+    },
+    {
+      "key": "USA-IN-IGC-french-lick-resort",
+      "latitude": 38.550993124181,
+      "longitude": -86.619480752287
+    },
+    {
+      "key": "USA-IN-IGC-hard-rock-casino-northern-indiana",
+      "latitude": 41.566315483341,
+      "longitude": -87.403521426675
+    },
+    {
+      "key": "USA-IN-IGC-harrahs-hoosier-park",
+      "latitude": 40.0679,
+      "longitude": -85.641
+    },
+    {
+      "key": "USA-IN-IGC-hollywood-lawrenceburg",
+      "latitude": 39.0973991,
+      "longitude": -84.8440636
+    },
+    {
+      "key": "USA-IN-IGC-horseshoe-hammond",
+      "latitude": 41.692681915464,
+      "longitude": -87.507449080342
+    },
+    {
+      "key": "USA-IN-IGC-horseshoe-indianapolis",
+      "latitude": 39.587909998332,
+      "longitude": -85.826873511019
+    },
+    {
+      "key": "USA-IN-IGC-rising-star-casino",
+      "latitude": 38.9533,
+      "longitude": -84.8476
+    },
+    {
+      "key": "USA-IN-IGC-terre-haute-casino",
+      "latitude": 39.433810860613,
+      "longitude": -87.347525598996
+    },
+    {
+      "key": "USA-MO-MGC-ameristar-kansas-city",
+      "latitude": 39.150004968583,
+      "longitude": -94.483181403244
+    },
+    {
+      "key": "USA-MO-MGC-ameristar-st-charles",
+      "latitude": 38.767700874604,
+      "longitude": -90.485384906868
+    },
+    {
+      "key": "USA-MO-MGC-argosy-riverside",
+      "latitude": 39.161005671677,
+      "longitude": -94.620285366951
+    },
+    {
+      "key": "USA-MO-MGC-ballys-kansas-city",
+      "latitude": 39.121133586914,
+      "longitude": -94.561619756074
+    },
+    {
+      "key": "USA-MO-MGC-century-cape-girardeau",
+      "latitude": 37.312955235742,
+      "longitude": -89.51735949587
+    },
+    {
+      "key": "USA-MO-MGC-century-caruthersville",
+      "latitude": 36.190722461879,
+      "longitude": -89.64886133077
+    },
+    {
+      "key": "USA-MO-MGC-harrahs-kansas-city",
+      "latitude": 39.141902015145,
+      "longitude": -94.545561035418
+    },
+    {
+      "key": "USA-MO-MGC-hollywood-st-louis",
+      "latitude": 38.754200394617,
+      "longitude": -90.482915179098
+    },
+    {
+      "key": "USA-MO-MGC-horseshoe-st-louis",
+      "latitude": 38.632865011987,
+      "longitude": -90.184099995617
+    },
+    {
+      "key": "USA-MO-MGC-isle-of-capri-boonville",
+      "latitude": 38.977361232497,
+      "longitude": -92.74977541191
+    },
+    {
+      "key": "USA-MO-MGC-mark-twain",
+      "latitude": 40.035661165619,
+      "longitude": -91.499871542444
+    },
+    {
+      "key": "USA-MO-MGC-river-city",
+      "latitude": 38.531311633313,
+      "longitude": -90.26428848983
+    },
+    {
+      "key": "USA-MO-MGC-st-jo-frontier",
+      "latitude": 39.783406155083,
+      "longitude": -94.87656113453
+    },
+    {
+      "key": "USA-OH-OCCC-hard-rock-casino-cincinnati",
+      "latitude": 39.107751794675,
+      "longitude": -84.507546929879
+    },
+    {
+      "key": "USA-OH-OCCC-hollywood-casino-columbus",
+      "latitude": 39.949269979237,
+      "longitude": -83.10851014364
+    },
+    {
+      "key": "USA-OH-OCCC-hollywood-casino-toledo",
+      "latitude": 41.620865008617,
+      "longitude": -83.544510008555
+    },
+    {
+      "key": "USA-OH-OCCC-jack-cleveland-casino",
+      "latitude": 41.498192209517,
+      "longitude": -81.69299520631
+    },
+    {
+      "key": "USA-OH-OLC-belterra-park-cincinnati",
+      "latitude": 39.052325035004,
+      "longitude": -84.409969255519
+    },
+    {
+      "key": "USA-OH-OLC-eldorado-gaming-scioto-downs",
+      "latitude": 39.838992883376,
+      "longitude": -82.998087957035
+    },
+    {
+      "key": "USA-OH-OLC-hollywood-gaming-dayton-raceway",
+      "latitude": 39.816886619579,
+      "longitude": -84.172562996006
+    },
+    {
+      "key": "USA-OH-OLC-hollywood-mahoning-valley-race-course",
+      "latitude": 41.115927259026,
+      "longitude": -80.76097006945
+    },
+    {
+      "key": "USA-OH-OLC-jack-thistledown-racino",
+      "latitude": 41.436199988907,
+      "longitude": -81.531099500848
+    },
+    {
+      "key": "USA-OH-OLC-mgm-northfield-park",
+      "latitude": 41.347960760513,
+      "longitude": -81.52278532345
+    },
+    {
+      "key": "USA-OH-OLC-miami-valley-gaming",
+      "latitude": 39.440426821777,
+      "longitude": -84.323783241509
+    },
+    {
+      "key": "USA-PA-PGCB-harrahs-philadelphia",
+      "latitude": 39.850591635262,
+      "longitude": -75.348612077231
+    },
+    {
+      "key": "USA-PA-PGCB-hollywood-meadows",
+      "latitude": 40.219896445153,
+      "longitude": -80.201935600583
+    },
+    {
+      "key": "USA-PA-PGCB-hollywood-morgantown",
+      "latitude": 40.161669082084,
+      "longitude": -75.888778714411
+    },
+    {
+      "key": "USA-PA-PGCB-hollywood-penn-national",
+      "latitude": 40.393398488124,
+      "longitude": -76.664147924941
+    },
+    {
+      "key": "USA-PA-PGCB-hollywood-york",
+      "latitude": 39.989120354871,
+      "longitude": -76.674969967769
+    },
+    {
+      "key": "USA-PA-PGCB-live-philadelphia",
+      "latitude": 39.909343034918,
+      "longitude": -75.16474270968
+    },
+    {
+      "key": "USA-PA-PGCB-live-pittsburgh",
+      "latitude": 40.29954095385,
+      "longitude": -79.508278378988
+    },
+    {
+      "key": "USA-PA-PGCB-mohegan-pennsylvania",
+      "latitude": 41.264677435532,
+      "longitude": -75.815690278839
+    },
+    {
+      "key": "USA-PA-PGCB-mount-airy",
+      "latitude": 41.112813004811,
+      "longitude": -75.321824352872
+    },
+    {
+      "key": "USA-PA-PGCB-nemacolin",
+      "latitude": 39.795323293561,
+      "longitude": -79.539428464854
+    },
+    {
+      "key": "USA-PA-PGCB-parx-bensalem",
+      "latitude": 40.118185277152,
+      "longitude": -74.953117591773
+    },
+    {
+      "key": "USA-PA-PGCB-parx-shippensburg",
+      "latitude": 40.068911830268,
+      "longitude": -77.502231437657
+    },
+    {
+      "key": "USA-PA-PGCB-presque-isle-downs",
+      "latitude": 42.066573087157,
+      "longitude": -80.028504971428
+    },
+    {
+      "key": "USA-PA-PGCB-rivers-philadelphia",
+      "latitude": 39.964158795757,
+      "longitude": -75.132336092709
+    },
+    {
+      "key": "USA-PA-PGCB-rivers-pittsburgh",
+      "latitude": 40.44714626877,
+      "longitude": -80.021859547133
+    },
+    {
+      "key": "USA-PA-PGCB-valley-forge",
+      "latitude": 40.096607618079,
+      "longitude": -75.415790348973
+    },
+    {
+      "key": "USA-PA-PGCB-wind-creek-bethlehem",
+      "latitude": 40.615112986702,
+      "longitude": -75.358358973338
+    },
+    {
+      "key": "nein-allen-cbre",
+      "latitude": 41.0793,
+      "longitude": -85.1394
+    },
+    {
+      "key": "nein-dekalb-spectrum",
+      "latitude": 41.366594988558,
+      "longitude": -85.081528008488
+    },
+    {
+      "key": "nein-steuben-steinberg",
+      "latitude": 41.634989982301,
+      "longitude": -85.047872990858
+    }
+  ]
+}

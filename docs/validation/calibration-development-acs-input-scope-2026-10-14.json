@@ -1,0 +1,205 @@
+{
+  "version": "inspected-development-and-nein-acs-input-scope-v2",
+  "scope": "ACS 2024 demographic capture for the existing 36 inspected calibration properties and all three Northeast Indiana scenarios. Unscored properties are outside this development input capture; the earlier wider 71-property input request is retained as a failed attempt because official ACS 2024 age data omit ZCTA 11798. No missing age population is replaced with zero and no fresh case is scored or dropped from a final holdout. Age threshold 21 is explicit for coverage; per-scenario legal and fiscal validation remains separate.",
+  "sourceBundleSha256": "15ba9912dd154178cc8dfefba22a899ab95e77fb4ec21bb9af9e139b650d368b",
+  "eligibleAge": 21,
+  "originRadiusMiles": 100,
+  "observedPropertyPoolCount": 36,
+  "scenarios": [
+    {
+      "key": "USA-IL-IGB-american-place",
+      "latitude": 42.341062017875,
+      "longitude": -87.895933970761
+    },
+    {
+      "key": "USA-IL-IGB-argosy-casino-alton",
+      "latitude": 38.888884754334,
+      "longitude": -90.186676508834
+    },
+    {
+      "key": "USA-IL-IGB-ballys-chicago",
+      "latitude": 41.893614903974,
+      "longitude": -87.633421480485
+    },
+    {
+      "key": "USA-IL-IGB-draftkings-casino-queen",
+      "latitude": 38.626134888561,
+      "longitude": -90.174958440557
+    },
+    {
+      "key": "USA-IL-IGB-grand-victoria-casino",
+      "latitude": 42.031454505414,
+      "longitude": -88.279700664934
+    },
+    {
+      "key": "USA-IL-IGB-harrahs-joliet",
+      "latitude": 41.526363408904,
+      "longitude": -88.084646318147
+    },
+    {
+      "key": "USA-IL-IGB-rivers-casino-des-plaines",
+      "latitude": 41.998034013434,
+      "longitude": -87.864421032306
+    },
+    {
+      "key": "USA-IL-IGB-wind-creek-chicago-southland",
+      "latitude": 41.574293352465,
+      "longitude": -87.637433813716
+    },
+    {
+      "key": "USA-IN-IGC-ameristar-casino",
+      "latitude": 41.6521503,
+      "longitude": -87.4356793
+    },
+    {
+      "key": "USA-IN-IGC-ballys-evansville",
+      "latitude": 37.972581893824,
+      "longitude": -87.57850700611
+    },
+    {
+      "key": "USA-IN-IGC-belterra-casino",
+      "latitude": 38.781538185458,
+      "longitude": -84.940459046408
+    },
+    {
+      "key": "USA-IN-IGC-blue-chip-casino",
+      "latitude": 41.718776974043,
+      "longitude": -86.891430253456
+    },
+    {
+      "key": "USA-IN-IGC-caesars-southern-indiana",
+      "latitude": 38.1789169,
+      "longitude": -85.9046683
+    },
+    {
+      "key": "USA-IN-IGC-french-lick-resort",
+      "latitude": 38.550993124181,
+      "longitude": -86.619480752287
+    },
+    {
+      "key": "USA-IN-IGC-hard-rock-casino-northern-indiana",
+      "latitude": 41.566315483341,
+      "longitude": -87.403521426675
+    },
+    {
+      "key": "USA-IN-IGC-harrahs-hoosier-park",
+      "latitude": 40.0679,
+      "longitude": -85.641
+    },
+    {
+      "key": "USA-IN-IGC-hollywood-lawrenceburg",
+      "latitude": 39.0973991,
+      "longitude": -84.8440636
+    },
+    {
+      "key": "USA-IN-IGC-horseshoe-hammond",
+      "latitude": 41.692681915464,
+      "longitude": -87.507449080342
+    },
+    {
+      "key": "USA-IN-IGC-horseshoe-indianapolis",
+      "latitude": 39.587909998332,
+      "longitude": -85.826873511019
+    },
+    {
+      "key": "USA-IN-IGC-rising-star-casino",
+      "latitude": 38.9533,
+      "longitude": -84.8476
+    },
+    {
+      "key": "USA-IN-IGC-terre-haute-casino",
+      "latitude": 39.433810860613,
+      "longitude": -87.347525598996
+    },
+    {
+      "key": "USA-MO-MGC-ameristar-st-charles",
+      "latitude": 38.767700874604,
+      "longitude": -90.485384906868
+    },
+    {
+      "key": "USA-MO-MGC-hollywood-st-louis",
+      "latitude": 38.754200394617,
+      "longitude": -90.482915179098
+    },
+    {
+      "key": "USA-MO-MGC-horseshoe-st-louis",
+      "latitude": 38.632865011987,
+      "longitude": -90.184099995617
+    },
+    {
+      "key": "USA-MO-MGC-river-city",
+      "latitude": 38.531311633313,
+      "longitude": -90.26428848983
+    },
+    {
+      "key": "USA-OH-OCCC-hard-rock-casino-cincinnati",
+      "latitude": 39.107751794675,
+      "longitude": -84.507546929879
+    },
+    {
+      "key": "USA-OH-OCCC-hollywood-casino-columbus",
+      "latitude": 39.949269979237,
+      "longitude": -83.10851014364
+    },
+    {
+      "key": "USA-OH-OCCC-hollywood-casino-toledo",
+      "latitude": 41.620865008617,
+      "longitude": -83.544510008555
+    },
+    {
+      "key": "USA-OH-OCCC-jack-cleveland-casino",
+      "latitude": 41.498192209517,
+      "longitude": -81.69299520631
+    },
+    {
+      "key": "USA-OH-OLC-belterra-park-cincinnati",
+      "latitude": 39.052325035004,
+      "longitude": -84.409969255519
+    },
+    {
+      "key": "USA-OH-OLC-eldorado-gaming-scioto-downs",
+      "latitude": 39.838992883376,
+      "longitude": -82.998087957035
+    },
+    {
+      "key": "USA-OH-OLC-hollywood-gaming-dayton-raceway",
+      "latitude": 39.816886619579,
+      "longitude": -84.172562996006
+    },
+    {
+      "key": "USA-OH-OLC-hollywood-mahoning-valley-race-course",
+      "latitude": 41.115927259026,
+      "longitude": -80.76097006945
+    },
+    {
+      "key": "USA-OH-OLC-jack-thistledown-racino",
+      "latitude": 41.436199988907,
+      "longitude": -81.531099500848
+    },
+    {
+      "key": "USA-OH-OLC-mgm-northfield-park",
+      "latitude": 41.347960760513,
+      "longitude": -81.52278532345
+    },
+    {
+      "key": "USA-OH-OLC-miami-valley-gaming",
+      "latitude": 39.440426821777,
+      "longitude": -84.323783241509
+    },
+    {
+      "key": "nein-allen-cbre",
+      "latitude": 41.0793,
+      "longitude": -85.1394
+    },
+    {
+      "key": "nein-dekalb-spectrum",
+      "latitude": 41.366594988558,
+      "longitude": -85.081528008488
+    },
+    {
+      "key": "nein-steuben-steinberg",
+      "latitude": 41.634989982301,
+      "longitude": -85.047872990858
+    }
+  ]
+}

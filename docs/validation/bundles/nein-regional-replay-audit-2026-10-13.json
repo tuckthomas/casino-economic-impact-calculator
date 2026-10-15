@@ -1,0 +1,29 @@
+{
+  "protocolHash": "71c749512e416f6935300c376a3778971f2e33972c2b9c5c53b2eab26ecc6943",
+  "sourceBundleHash": "7ee96dfc78453deb509213aa8d8fe894be95364910aa18da09aaca5aeb3653b0",
+  "resultHash": "c411e030c451711ad4b9246dbf493503b464071c15186300d8c8fee7686ebf36",
+  "scope": "Stored regional output replay after fixing cache precedence. Same frozen inputs/parameters/graph, distinct immutable run identities. No forecast-accuracy acceptance.",
+  "comparisons": [
+    {
+      "scenario": "nein-allen-cbre",
+      "originalRunId": "49998b9f-1b41-4170-b8d7-052542e8aa4d",
+      "replayRunId": "645ac7d1-1ee1-48d4-8ede-1205a2356145",
+      "numericOutputsIdentical": true
+    },
+    {
+      "scenario": "nein-dekalb-spectrum",
+      "originalRunId": "6627674a-ab05-4217-a7f9-e5b73ffb771e",
+      "replayRunId": "8097f8a0-c3bc-4c61-aeda-e867d8539690",
+      "numericOutputsIdentical": true
+    },
+    {
+      "scenario": "nein-steuben-steinberg",
+      "originalRunId": "78f559be-fcf9-4ad0-bbc7-1c1a292e60a2",
+      "replayRunId": "af028328-5847-4cb5-8df9-99c63e297b31",
+      "numericOutputsIdentical": true
+    }
+  ],
+  "sharedOriginBudgetChecks": 631,
+  "maximumSharedOriginBudgetDifference": 0,
+  "releaseAccepted": false
+}

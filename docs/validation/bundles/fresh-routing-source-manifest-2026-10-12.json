@@ -1,0 +1,88 @@
+{
+  "matrixCorrelationVersion": "target-radius100-cutoff500-v2",
+  "graphHash": "a0e711d461b574fbf685999566e114b72846322add48d4f3cd2e2e6254790d69",
+  "graphStatus": {
+    "version": "3.5.1-49b40b7f2",
+    "tileset_last_modified": 1791817435,
+    "available_actions": [
+      "status",
+      "centroid",
+      "expansion",
+      "transit_available",
+      "trace_attributes",
+      "trace_route",
+      "isochrone",
+      "optimized_route",
+      "sources_to_targets",
+      "height",
+      "route",
+      "locate"
+    ]
+  },
+  "container": "savenein-validation-routing-20261012",
+  "scope": "Private local validation graph. No traffic or elevation tiles. Mixed source capture dates: original five inputs copied from existing August graph inputs; border-state additions downloaded October 12. Kansas and unlisted areas not covered.",
+  "capturedAtUtc": "2026-10-12T17:43:50.4568183Z",
+  "files": [
+    {
+      "fileName": "illinois-latest.osm.pbf",
+      "bytes": 356083357,
+      "sha256": "e422d45e36e6f007cebb6a1af0197600b29b704f447c790d5c5821e6e4bf8646"
+    },
+    {
+      "fileName": "indiana-latest.osm.pbf",
+      "bytes": 196927546,
+      "sha256": "819bc32d57b66e6f57994d53c0ea934cd00859db66124321b86b14480a82cb18"
+    },
+    {
+      "fileName": "iowa-latest.osm.pbf",
+      "bytes": 133782824,
+      "sha256": "131108b8cf91c8ca0e847039edfac4890714fa7478ba18e1d0a65578211329eb"
+    },
+    {
+      "fileName": "kentucky-latest.osm.pbf",
+      "bytes": 153008939,
+      "sha256": "65f41372f8fbd67ae79616f7bfd46e4935af6c092c43ad2e9cfd449a735bf025"
+    },
+    {
+      "fileName": "michigan-latest.osm.pbf",
+      "bytes": 310633853,
+      "sha256": "4ed61574a42316af6e088d65c57cabe788ed2ad107de405cf196d981bdd4e158"
+    },
+    {
+      "fileName": "missouri-latest.osm.pbf",
+      "bytes": 198628830,
+      "sha256": "43e7da508a79eb5d9238236e706abf71c18dcc2ae91425fee11901fbfc71f6a4"
+    },
+    {
+      "fileName": "ohio-latest.osm.pbf",
+      "bytes": 321037440,
+      "sha256": "77dab79b8ce33a712f9e9e2d152255f877da9c2bbf1ca3b320a23a5333647fa3"
+    },
+    {
+      "fileName": "pennsylvania-latest.osm.pbf",
+      "bytes": 348516348,
+      "sha256": "871bcf0412113e6297467a64202d2c98595956ae8e2bd8f9e0f193db4d29fe97"
+    },
+    {
+      "fileName": "valhalla_tiles.tar",
+      "bytes": 5310187520,
+      "sha256": "e7f097c91240609c1716961b8eaefe7406d265b68b5396354575804e4c60095d"
+    },
+    {
+      "fileName": "valhalla.json",
+      "bytes": 9090,
+      "sha256": "4da280bb1a15ca78bd1aaff79af2b2877bd8f9534cb68ab3803f6201805731ce"
+    },
+    {
+      "fileName": "west-virginia-latest.osm.pbf",
+      "bytes": 99150358,
+      "sha256": "db2372e84f3539ea6a2cc66642e19e72a69bc750bb3268fd27166270970ee476"
+    },
+    {
+      "fileName": "wisconsin-latest.osm.pbf",
+      "bytes": 294089939,
+      "sha256": "822e104a9782dfa49c0464bb531fecd38e4a3074722b179d892bad6d94765d64"
+    }
+  ],
+  "image": "ghcr.io/nilsnolde/docker-valhalla/valhalla@sha256:4e7cca5db66e0c8d3a4ab6c3f83a748ef9b805fe227d3d4d4f496f161ac9b69f"
+}

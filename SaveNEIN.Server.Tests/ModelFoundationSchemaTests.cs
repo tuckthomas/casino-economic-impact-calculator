@@ -26,6 +26,11 @@ public sealed class ModelFoundationSchemaTests
         var runTable = StoreObjectIdentifier.Table("model_runs", null);
         Assert.Equal("finalized_at_utc", runEntity.FindProperty(nameof(ModelRun.FinalizedAtUtc))!.GetColumnName(runTable));
         Assert.Equal("jsonb", runEntity.FindProperty(nameof(ModelRun.ResolvedInputJson))!.GetColumnType());
+        var originResultEntity = db.Model.FindEntityType(typeof(ModelRunOriginResult))!;
+        var originResultTable = StoreObjectIdentifier.Table("model_run_origin_results", null);
+        var eligiblePopulation = originResultEntity.FindProperty(nameof(ModelRunOriginResult.EligiblePopulation))!;
+        Assert.Equal("eligible_population", eligiblePopulation.GetColumnName(originResultTable));
+        Assert.True(eligiblePopulation.IsNullable);
 
         var benchmarkEntity = db.Model.FindEntityType(typeof(BenchmarkStudy))!;
         Assert.Equal("'{}'::jsonb", benchmarkEntity.FindProperty(nameof(BenchmarkStudy.DevelopmentProgramJson))!.GetDefaultValueSql());

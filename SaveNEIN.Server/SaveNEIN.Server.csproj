@@ -85,6 +85,8 @@
                       Link="Data\Migrations\025_validation_geographic_residual_patterns.sql" />
     <EmbeddedResource Include="..\docs\migrations\026_other_gaming_revenue_charges.sql"
                       Link="Data\Migrations\026_other_gaming_revenue_charges.sql" />
+    <EmbeddedResource Include="..\docs\migrations\027_persisted_origin_eligible_population.sql"
+                      Link="Data\Migrations\027_persisted_origin_eligible_population.sql" />
   </ItemGroup>
 
 </Project>

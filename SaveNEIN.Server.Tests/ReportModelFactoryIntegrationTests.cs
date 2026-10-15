@@ -10,6 +10,25 @@ namespace SaveNEIN.Server.Tests;
 public sealed class ReportModelFactoryIntegrationTests
 {
     [Fact]
+    public async Task ReportsPreserveStoredInputSelectionWithoutInferringHistoricalChoices()
+    {
+        await using var db = CreateContext();
+        var runId = await SeedFinalizedRunAsync(db);
+        var factory = new CasinoImpactReportModelFactory(db);
+        var legacy = await factory.BuildAsync(runId, ReportArtifactService.TemplateVersion, DateTime.UtcNow, new());
+        Assert.Null(legacy.Scenario.SelectedFacilityFeatureKeys);
+        var run = await db.ModelRuns.SingleAsync(item => item.Id == runId);
+        var input = System.Text.Json.Nodes.JsonNode.Parse(run.ResolvedInputJson)!.AsObject();
+        input["selectedFacilityFeatureKeys"] = System.Text.Json.Nodes.JsonNode.Parse("[\"gaming-positions\",\"table-games\"]");
+        run.ResolvedInputJson = input.ToJsonString();
+        await db.SaveChangesAsync();
+        var model = await factory.BuildAsync(runId, ReportArtifactService.TemplateVersion, DateTime.UtcNow, new());
+        Assert.Equal(["gaming-positions", "table-games"], model.Scenario.SelectedFacilityFeatureKeys);
+        Assert.Contains("gaming-positions, table-games", new HtmlReportRenderer().Render(model, new()));
+        Assert.Contains("selected_facility_inputs,\"gaming-positions, table-games\"", new CsvReportRenderer().Render(model));
+    }
+
+    [Fact]
     public async Task StoredRun_GeneratesDynamicOriginsAndOneImmutableArtifactPerPresentation()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -42,7 +61,10 @@ public sealed class ReportModelFactoryIntegrationTests
         Assert.True(model.Origins[0].CandidateRouteFound);
         Assert.Equal(41.08, model.Facilities.Single(facility => facility.IsProposedFacility).Latitude, 6);
         Assert.Equal(-85.14, model.Facilities.Single(facility => facility.IsProposedFacility).Longitude, 6);
-        Assert.StartsWith("effective-rules@2026-08-11#", model.Identity.JurisdictionProfileVersion, StringComparison.Ordinal);
+        Assert.StartsWith("reconstructed-effective-rules@2026-01-01#", model.Identity.JurisdictionProfileVersion, StringComparison.Ordinal);
+        Assert.Equal(2030, model.Scenario.PopulationScenarioYear);
+        Assert.Equal(new DateOnly(2026, 1, 1), model.Scenario.EffectiveOn);
+        Assert.Equal(100, model.Origins[0].EligiblePopulation);
         Assert.Equal(["First warning.", "Second warning."], model.Warnings);
 
         var service = new ReportArtifactService(
@@ -58,7 +80,7 @@ public sealed class ReportModelFactoryIntegrationTests
 
         Assert.Equal(first.Id, second.Id);
         Assert.True(first.IsImmutable);
-        Assert.Equal("professional-v5", first.TemplateVersion);
+        Assert.Equal("professional-v7", first.TemplateVersion);
         Assert.Equal(64, first.ReportModelHash.Length);
         Assert.Equal(64, first.HtmlContentHash.Length);
         Assert.Equal(64, first.PdfContentHash.Length);
@@ -92,6 +114,22 @@ public sealed class ReportModelFactoryIntegrationTests
                 new ReportPresentationOptions()));
 
         Assert.Contains("finalized", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task FactoryUsesCapturedJurisdictionProfileWithoutReconstructingCurrentRules()
+    {
+        await using var db = CreateContext();
+        var runId = await SeedFinalizedRunAsync(db);
+        var run = await db.ModelRuns.SingleAsync(item => item.Id == runId);
+        var input = System.Text.Json.Nodes.JsonNode.Parse(run.ResolvedInputJson)!.AsObject();
+        input["jurisdictionProfileVersion"] = "captured-rules@2026-01-01#immutable-fixture";
+        run.ResolvedInputJson = input.ToJsonString();
+        await db.SaveChangesAsync();
+        var model = await new CasinoImpactReportModelFactory(db).BuildAsync(runId,
+            ReportArtifactService.TemplateVersion, DateTime.UtcNow, new());
+        Assert.Equal("captured-rules@2026-01-01#immutable-fixture", model.Identity.JurisdictionProfileVersion);
+        Assert.DoesNotContain(model.Limitations, value => value.Contains("reconstructed", StringComparison.Ordinal));
     }
 
     private static AppDbContext CreateContext()
@@ -136,6 +174,8 @@ public sealed class ReportModelFactoryIntegrationTests
             ResolvedInputJson = """
                 {
                   "ScenarioName": "Dynamic origin verification",
+                  "EffectiveOn": "2026-01-01",
+                  "PopulationScenarioYear": 2030,
                   "DemandSpecification": "agi-share",
                   "AttractionSpecification": "observed-ggr",
                   "FrictionForm": "inverse-power"
@@ -219,6 +259,7 @@ public sealed class ReportModelFactoryIntegrationTests
             OriginZoneId = originId,
             DemandSpecification = "agi-share",
             ResidentDemand = demand,
+            EligiblePopulation = 100,
             ProposedResidentGgr = redistributed,
             ProposedInducedResidentGgr = induced,
             TotalProposedResidentGgr = total,

@@ -45,6 +45,36 @@ public sealed class IllinoisGamingBoardProviderTests
             IllinoisGamingBoardRevenueProvider.ParseCasinoSummaryCsv(invalid));
     }
 
+    [Theory]
+    [InlineData("-1")]
+    [InlineData("1.5")]
+    [InlineData("NaN")]
+    [InlineData("2147483648")]
+    public void CapacityParserRejectsUnrepresentableReportedCounts(string count)
+    {
+        Assert.Throws<InvalidDataException>(() => IllinoisGamingBoardRevenueProvider.ParseGameCountsCsv(
+            EgdInventoryCsv.Replace("\"1100\"", $"\"{count}\"", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void CapacityParserRejectsDuplicateGameAndDoesNotCountReceiptAmounts()
+    {
+        var counts = IllinoisGamingBoardRevenueProvider.ParseGameCountsCsv(EgdInventoryCsv);
+        Assert.Equal(1200, counts["USA-IL-IGB-hard-rock-casino-rockford"].Total);
+        var duplicated = EgdInventoryCsv.Replace("\"Receipt Details\"",
+            "\"Hard Rock Casino Rockford\",\"Other\",\"100\"\n\"Receipt Details\"", StringComparison.Ordinal);
+        Assert.Throws<InvalidDataException>(() => IllinoisGamingBoardRevenueProvider.ParseGameCountsCsv(duplicated));
+    }
+
+    [Fact]
+    public async Task RevenueProviderRejectsResponseForWrongObservationYear()
+    {
+        var provider = new IllinoisGamingBoardRevenueProvider(new HttpClient(new IllinoisReportHandler(
+            CasinoSummaryCsv.Replace("January 2025 - December 2025", "January 2026 - December 2026", StringComparison.Ordinal))),
+            Options.Create(TestOptions()));
+        await Assert.ThrowsAsync<InvalidDataException>(() => provider.FetchAsync(new ProviderFetchRequest("US-IL", new(2025, 1, 1), new(2025, 12, 31))));
+    }
+
     [Fact]
     public void LicenseParser_UsesLicensedDbaAddressAndSkipsApplicants()
     {
@@ -57,6 +87,20 @@ public sealed class IllinoisGamingBoardProviderTests
         Assert.Equal("815 Entertainment, LLC", row.OperatorName);
         Assert.Equal("7801 East State Street, Rockford, IL 61108", row.FullAddress);
         Assert.False(row.IsOrganizationGaming);
+    }
+
+    [Fact]
+    public void Aurora2025UsesTheRiverboatAddressRatherThanTheCurrentSite()
+    {
+        var current = new IllinoisGamingLicense("USA-IL-IGB-hollywood-casino-aurora", "Hollywood Casino Aurora",
+            "HC Aurora LLC", "2500 N. Farnsworth Ave.", "Aurora", "60502", false);
+        var historical = IllinoisGamingBoardFacilityInventoryProvider.ResolveDatedAddress(current, new(2025, 1, 1), new(2025, 12, 31));
+        Assert.Equal("1 W. New York St., Aurora, IL 60506", historical.FullAddress);
+        Assert.Equal(current.StableVenueId, historical.StableVenueId);
+        Assert.Equal(current, IllinoisGamingBoardFacilityInventoryProvider.ResolveDatedAddress(current, new(2026, 6, 24), new(2026, 12, 31)));
+        Assert.Throws<InvalidDataException>(() => IllinoisGamingBoardFacilityInventoryProvider.ResolveDatedAddress(current, new(2026, 1, 1), new(2026, 12, 31)));
+        Assert.Throws<InvalidDataException>(() => IllinoisGamingBoardFacilityInventoryProvider.ResolveDatedAddress(current, new(2026, 6, 10), new(2026, 6, 23)));
+        Assert.Throws<InvalidDataException>(() => IllinoisGamingBoardFacilityInventoryProvider.ResolveDatedAddress(current, new(2023, 1, 1), new(2023, 12, 31)));
     }
 
     [Fact]
@@ -82,11 +126,16 @@ public sealed class IllinoisGamingBoardProviderTests
         Assert.Equal(67_000, row.GamingFloorSquareFeet);
         Assert.True(row.HasSlots);
         Assert.True(row.HasTableGames);
-        Assert.Null(row.SlotOrVltPositions);
+        Assert.Equal(1200, row.SlotOrVltPositions);
+        Assert.Equal(45, row.TableGameCount);
+        Assert.Equal(5, row.PokerTableCount);
+        Assert.Null(row.GamingPositions);
+        Assert.Contains("monthly-average", row.Notes);
+        Assert.Contains("2025-12", row.Notes);
         Assert.Equal(42.27054506646, row.Latitude, 10);
         Assert.Equal(-88.962631062121, row.Longitude, 10);
         Assert.Contains("score 100.0", row.Notes);
-        Assert.Single(dataset.Warnings);
+        Assert.Equal(2, dataset.Warnings.Count);
     }
 
     [Fact]
@@ -133,6 +182,31 @@ public sealed class IllinoisGamingBoardProviderTests
         "\"Casino\",\"Square Feet\",\"Admissions\",\"Operating Days\",\"Table Game AGR\",\"EGD AGR\",\"Total AGR\",\r\n" +
         "\"Hard Rock Casino Rockford\",\"67000\",\"1433251\",\"365\",\"20268849.8000\",\"125917827.7900\",\"146186677.5900\",\r\n";
 
+    private const string EgdInventoryCsv = """
+        "Casino EGD Summary"
+        "December 2025"
+        "Casino Details"
+        "Casino","Game","Average Number"
+        "Hard Rock Casino Rockford","1 Cent
+        ","1100"
+        "Hard Rock Casino Rockford","Other","100"
+        "Receipt Details"
+        "Game","Gross Receipts"
+        "Other","100000"
+        """;
+
+    private const string TableInventoryCsv = """
+        "Casino Table Game Summary"
+        "December 2025"
+        "Casino Details"
+        "Casino","Game","Average Number"
+        "Hard Rock Casino Rockford","BlackJack / 21","40"
+        "Hard Rock Casino Rockford","Poker","5"
+        "Receipt Details"
+        "Game","Gross Receipts"
+        "Poker","200000"
+        """;
+
     private const string OwnerLicenseJson = """
         {
           "listItems": [
@@ -163,9 +237,11 @@ public sealed class IllinoisGamingBoardProviderTests
             if (request.Method == HttpMethod.Post)
             {
                 PostBody = await request.Content!.ReadAsStringAsync(cancellationToken);
+                var body = PostBody.Contains("CasinoReportTypes=EGD+Summary", StringComparison.Ordinal) ? EgdInventoryCsv
+                    : PostBody.Contains("CasinoReportTypes=Table+Game+Summary", StringComparison.Ordinal) ? TableInventoryCsv : csv;
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(csv, Encoding.UTF8, "text/csv")
+                    Content = new StringContent(body, Encoding.UTF8, "text/csv")
                 };
             }
             const string form = "<input type=\"hidden\" name=\"__VIEWSTATE\" value=\"state\" />" +

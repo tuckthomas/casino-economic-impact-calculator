@@ -37,7 +37,8 @@ public static class ModelFoundationInitializer
         "023_capacity_productivity_benchmark_provenance.sql",
         "024_reported_casino_employment.sql",
         "025_validation_geographic_residual_patterns.sql",
-        "026_other_gaming_revenue_charges.sql"
+        "026_other_gaming_revenue_charges.sql",
+        "027_persisted_origin_eligible_population.sql"
     ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -97,6 +98,8 @@ public static class ModelFoundationInitializer
             parentJurisdictionId: national.Id,
             cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+
+        await MichiganCommercialGamingRulesSeeder.SeedAsync(db, cancellationToken);
 
         // Remove superseded development-only fiscal fixtures. The application is still in
         // development, so unsupported rules must not remain available to effective-rule selection.
@@ -800,6 +803,8 @@ public static class ModelFoundationInitializer
             "Zero-safe fallback prevents unsupported production forecasts until calibrated.");
         yield return Definition("demand.income_elasticity", "demand", "Income elasticity", "elasticity", 1.0, -5, 5, 0, 2, 0.05, "advanced", false,
             "Unit-elastic prior; requires validation.");
+        yield return Definition("demand.reference_income", "demand", "Regional reference income", "USD/year", 0, 0, 1_000_000, 0, null, 1000, "expert", false,
+            "A positive value fixes the common income reference across regional scenarios. Zero retains automatic median income for the selected origins. Use a declared income metric/vintage and retain the regional reference source; changing candidate origin selections must not silently redefine a deliberately shared reference.");
         yield return Definition("demand.income_adjustment_minimum", "demand", "Minimum income adjustment", "multiplier", 0.5, 0, 10, 0.25, 1, 0.05, "expert", false,
             "Numerical and model-risk bound pending market calibration.");
         yield return Definition("demand.income_adjustment_maximum", "demand", "Maximum income adjustment", "multiplier", 1.5, 0, 10, 1, 3, 0.05, "expert", false,
@@ -833,7 +838,7 @@ public static class ModelFoundationInitializer
         yield return Definition("facility.capital_cost_offset", "facility-attraction", "Development capital log offset", "USD", 500_000_000, 1, 100_000_000_000, 10_000_000, 5_000_000_000, 10_000_000, "expert", false, "Versioned zero-safe log transform offset for constant-dollar development capital.");
         yield return Definition("facility.highway_access_offset", "facility-attraction", "Highway access log offset", "indicator", 1, 0.01, 10, 0.1, 2, 0.1, "expert", false, "Versioned zero-safe log transform offset for the binary direct-access indicator.");
         yield return Definition("facility.proposed_scale_multiplier", "facility-attraction", "Proposed-property scale", "multiplier", 1.0, 0, 10, 0.25, 4, 0.05, "advanced", false, "Neutral proposed-property scale prior.");
-        yield return Definition("facility.comparable_scale_multiplier", "facility-attraction", "Comparable-property scale", "multiplier", 1.0, 0, 10, 0.25, 4, 0.05, "expert", false, "Neutral comparable-property scaling prior.");
+        yield return Definition("facility.comparable_scale_multiplier", "facility-attraction", "Comparable-property scale", "multiplier", 1.0, 0, 10, 0.25, 4, 0.05, "expert", false, "Maps all structural facility mass, including incumbent fallbacks and the proposal, onto the observed-GGR attraction scale; neutral prior is 1.");
         yield return Definition("market_expansion.accessibility_elasticity", "market-expansion", "Accessibility-induced demand elasticity", "elasticity", 0, 0, 10, 0, 1, 0.01, "expert", false, "Zero-safe fallback pending causal calibration.");
         yield return Definition("market_expansion.maximum_induced_demand_share", "market-expansion", "Maximum induced-demand share", "share", 0.25, 0, 1, 0, 0.5, 0.01, "advanced", false, "Sensitivity cap prior, not a calibrated estimate.");
         yield return Definition("tourism.participation_rate", "tourism", "Tourist gaming participation", "share", 0, 0, 1, 0, 0.5, 0.01, "advanced", false, "Zero-safe fallback pending tourism data.");

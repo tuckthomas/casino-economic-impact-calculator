@@ -1,0 +1,25 @@
+{
+  "protocolHash": "71c749512e416f6935300c376a3778971f2e33972c2b9c5c53b2eab26ecc6943",
+  "sourceBundleHash": "095480e4c8b6f2bbbccdaa3bd644bb7b665e4493208613288a35915ba71b28f4",
+  "resultHash": "7ee96dfc78453deb509213aa8d8fe894be95364910aa18da09aaca5aeb3653b0",
+  "scope": "Northeast Indiana common-origin-budget regression. Study forecasts are not observed revenues. No accuracy acceptance or parameter publication.",
+  "baseline": {
+    "varyingOrigins": 315,
+    "maximumBudgetDifference": 291413.81,
+    "measurement": "Read-only grouping of stored origin resident demand by stable origin ID across the three baseline run IDs; zero growth in every case."
+  },
+  "corrected": {
+    "sharedOriginBudgetChecks": 631,
+    "maximumBudgetDifference": 0,
+    "regionalReferenceIncome": 72664,
+    "observationYear": 2024
+  },
+  "routeWarming": {
+    "origins": 505,
+    "facilities": 81,
+    "routes": 40905,
+    "elapsedSeconds": 25.8947443,
+    "sourcePolicy": "Exact stable origin identity/coordinates, facility coordinates, graph and costing profile; original route calculation timestamps retained."
+  },
+  "releaseAccepted": false
+}

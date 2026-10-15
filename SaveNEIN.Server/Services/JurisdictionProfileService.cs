@@ -445,7 +445,8 @@ public sealed class GamingFiscalAllocationCalculator(
             .Select(rule => (Rule: rule, Payload: Deserialize<GamingTaxDistributionPayload>(rule)))
             .Where(item => RegimeMatches(item.Payload.FacilityRegime, request.FacilityRegime) &&
                            CountyMatches(item.Payload.EligibleCountyFips, location.CountyFips) &&
-                           VenueMatches(item.Payload.EligibleStableVenueIds, request.StableVenueId))
+                           VenueMatches(item.Payload.EligibleStableVenueIds, request.StableVenueId) &&
+                           MunicipalityMatches(item.Payload.EligibleMunicipalityGeoids, location.MunicipalityGeoid))
             .ToArray();
         var baseDistribution = SelectDistribution(
             distributionRules,
@@ -598,6 +599,7 @@ public sealed class GamingFiscalAllocationCalculator(
             .Where(item => RegimeMatches(item.Payload.FacilityRegime, request.FacilityRegime) &&
                            CountyMatches(item.Payload.EligibleCountyFips, location.CountyFips) &&
                            VenueMatches(item.Payload.EligibleStableVenueIds, request.StableVenueId) &&
+                           MunicipalityMatches(item.Payload.EligibleMunicipalityGeoids, location.MunicipalityGeoid) &&
                            item.Payload.Component.Equals(request.Component, StringComparison.OrdinalIgnoreCase))
             .ToArray();
         var selected = SelectSingleRule(
@@ -742,6 +744,9 @@ public sealed class GamingFiscalAllocationCalculator(
         }
         return selected;
     }
+
+    private static bool MunicipalityMatches(IReadOnlyCollection<string>? eligibleGeoids, string? municipalityGeoid) =>
+        eligibleGeoids is null or { Count: 0 } || municipalityGeoid is not null && eligibleGeoids.Contains(municipalityGeoid, StringComparer.Ordinal);
 
     private static GamingTaxAllocationBreakdown Allocate(
         decimal tax,
@@ -1055,7 +1060,9 @@ public sealed record GamingTaxDistributionPayload(
     string? PopulationSourceUrl = null,
     string? PopulationSourceSha256 = null,
     int? PopulationYear = null,
-    string? PopulationBasis = null);
+    string? PopulationBasis = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    IReadOnlyCollection<string>? EligibleMunicipalityGeoids = null);
 public sealed record GamingTaxRecipientPayload(
     string RecipientKey,
     string RecipientLabel,

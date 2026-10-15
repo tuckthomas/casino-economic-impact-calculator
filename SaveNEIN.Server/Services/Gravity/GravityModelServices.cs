@@ -177,6 +177,15 @@ public interface IFacilityAttractivenessService
 
 public sealed class FacilityAttractivenessService : IFacilityAttractivenessService
 {
+    internal static double NormalizeStructuralMass(double structuralMass, double comparableScale)
+    {
+        OriginDemandService.RequireNonNegativeFinite(structuralMass, nameof(structuralMass));
+        OriginDemandService.RequireNonNegativeFinite(comparableScale, nameof(comparableScale));
+        var result = structuralMass * comparableScale;
+        OriginDemandService.RequireFiniteResult(result, "structural-to-observed attraction normalization");
+        return result;
+    }
+
     public FacilityAttractivenessResult CalculateStructural(StructuralAttractivenessInput input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -406,6 +415,30 @@ public sealed class GravityModelService : IGravityModelService
             origin.Demand * outsideShare,
             shareSum,
             allocatedDemandSum);
+    }
+
+    // Revenue searches need one target's demand rather than allocating every
+    // evidence object. Use the same log-weight calculation and stable softmax.
+    internal static double AllocateTargetDemand(GravityOriginInput origin, GravityParameters parameters, string targetKey)
+    {
+        Validate(origin, parameters);
+        var alternatives = origin.Alternatives.ToArray();
+        Span<double> logs = alternatives.Length <= 128 ? stackalloc double[alternatives.Length] : new double[alternatives.Length];
+        var outside = origin.OutsideOptionWeight > 0 ? Math.Log(origin.OutsideOptionWeight) : double.NegativeInfinity;
+        var maximum = outside;
+        var targetIndex = -1;
+        for (var index = 0; index < alternatives.Length; index++)
+        {
+            logs[index] = CalculateLogWeight(alternatives[index], parameters) ?? double.NegativeInfinity;
+            maximum = Math.Max(maximum, logs[index]);
+            if (alternatives[index].FacilityKey == targetKey) targetIndex = index;
+        }
+        if (targetIndex < 0) throw new ArgumentException("Target is absent from the choice set.", nameof(targetKey));
+        if (!double.IsFinite(maximum)) throw new InvalidOperationException("No positive reachable choice or outside option.");
+        var denominator = double.IsFinite(outside) ? Math.Exp(outside - maximum) : 0d;
+        for (var index = 0; index < logs.Length; index++) denominator += double.IsFinite(logs[index]) ? Math.Exp(logs[index] - maximum) : 0d;
+        var target = double.IsFinite(logs[targetIndex]) ? Math.Exp(logs[targetIndex] - maximum) : 0d;
+        return origin.Demand * (target / denominator);
     }
 
     private static double? CalculateLogWeight(GravityAlternativeInput alternative, GravityParameters parameters)

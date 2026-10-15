@@ -17,6 +17,100 @@ namespace SaveNEIN.Server.Tests;
 public sealed class TravelMatrixServiceTests
 {
     [Fact]
+    public async Task CurrentSnapshotCandidateCacheTakesPrecedenceOverOlderSnapshotFallback()
+    {
+        await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"snapshot-cache-priority-{Guid.NewGuid():N}").Options);
+        var point = new NetTopologySuite.Geometries.Point(-85.14, 41.08) { SRID = 4326 };
+        db.OriginZones.AddRange(
+            new OriginZone { Id = 1, DatasetSnapshotId = Guid.NewGuid(), StableOriginId = "USA-ZCTA-46802", RepresentativePoint = point, AreaGeometry = point },
+            new OriginZone { Id = 2, DatasetSnapshotId = Guid.NewGuid(), StableOriginId = "USA-ZCTA-46802", RepresentativePoint = point, AreaGeometry = point });
+        await db.SaveChangesAsync();
+        var handler = new ValhallaMatrixHandler();
+        var service = new TravelMatrixService(db, new ValhallaClient(new HttpClient(handler)
+            { BaseAddress = new Uri("http://valhalla.test") }, NullLogger<ValhallaClient>.Instance));
+        var first = await service.ResolveAsync([new(1, "USA-ZCTA-46802", 41.08, -85.14)],
+            [new("old-snapshot", FacilityKinds.Scenario, null, Guid.NewGuid(), 41.0793, -85.1394)]);
+        db.CandidateLocationTravelCache.Add(new()
+        {
+            OriginZoneId = 2, CandidateCoordinateHash = TravelMatrixService.CandidateCoordinateHash(41.0793, -85.1394),
+            CandidateLatitude = 41.0793, CandidateLongitude = -85.1394, RoutingGraphHash = first.RoutingGraphHash,
+            CostingProfile = "auto", ValhallaVersion = "3.5.1", TravelTimeMinutes = 12.345,
+            RoutedDistanceMeters = 15_000, RouteFound = true
+        });
+        await db.SaveChangesAsync();
+        var second = await service.ResolveAsync([new(2, "USA-ZCTA-46802", 41.08, -85.14)],
+            [new("current-snapshot", FacilityKinds.Scenario, null, Guid.NewGuid(), 41.0793, -85.1394)]);
+        Assert.Equal(12.345, second.Routes.Single().TravelTimeMinutes);
+        Assert.Equal(1, handler.MatrixRequestCount);
+    }
+
+    [Theory]
+    [InlineData("unchanged", 1)]
+    [InlineData("origin-moved", 2)]
+    [InlineData("facility-moved", 2)]
+    [InlineData("graph-changed", 2)]
+    [InlineData("costing-changed", 2)]
+    public async Task RefreshedOriginSnapshotReusesOnlyIdenticalPhysicalRoutingEndpoints(string change, int expectedRequests)
+    {
+        await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"snapshot-route-reuse-{Guid.NewGuid():N}").Options);
+        var sourcePoint = new NetTopologySuite.Geometries.Point(-85.14, 41.08) { SRID = 4326 };
+        db.OriginZones.AddRange(
+            new OriginZone { Id = 1, DatasetSnapshotId = Guid.NewGuid(), StableOriginId = "USA-ZCTA-46802", RepresentativePoint = sourcePoint, AreaGeometry = sourcePoint },
+            new OriginZone { Id = 2, DatasetSnapshotId = Guid.NewGuid(), StableOriginId = "USA-ZCTA-46802", RepresentativePoint = sourcePoint, AreaGeometry = sourcePoint });
+        await db.SaveChangesAsync();
+        var handler = new ValhallaMatrixHandler();
+        var service = new TravelMatrixService(db, new ValhallaClient(new HttpClient(handler)
+            { BaseAddress = new Uri("http://valhalla.test") }, NullLogger<ValhallaClient>.Instance));
+        var first = await service.ResolveAsync([new(1, "USA-ZCTA-46802", 41.08, -85.14)],
+            [new("scenario:old", FacilityKinds.Scenario, null, Guid.NewGuid(), 41.0793, -85.1394)]);
+        if (change is "graph-changed" or "costing-changed")
+        {
+            var old = await db.OriginFacilityTravel.SingleAsync(row => row.OriginZoneId == 1);
+            if (change == "graph-changed") old.RoutingGraphHash = "different-graph";
+            else old.CostingProfile = "pedestrian";
+            await db.SaveChangesAsync();
+        }
+        var newRun = Guid.NewGuid();
+        var second = await service.ResolveAsync([new(2, "USA-ZCTA-46802", change == "origin-moved" ? 41.09 : 41.08, -85.14)],
+            [new("scenario:new", FacilityKinds.Scenario, null, newRun, change == "facility-moved" ? 41.1793 : 41.0793, -85.1394)]);
+        var reused = Assert.Single(second.Routes);
+        Assert.Equal(expectedRequests, handler.MatrixRequestCount);
+        Assert.Equal(2, reused.OriginZoneId);
+        Assert.Equal(newRun, reused.ModelRunId);
+        Assert.Equal("scenario:new", reused.FacilityKey);
+        if (change == "unchanged") Assert.Equal(first.Routes.Single().CalculatedAtUtc, reused.CalculatedAtUtc);
+        Assert.NotEqual(first.Routes.Single().Id, reused.Id);
+    }
+
+    [Fact]
+    public async Task RoutingCacheDoesNotAccumulateTrackedRowsOrDetachTheCallerRun()
+    {
+        await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"route-tracking-{Guid.NewGuid():N}").Options);
+        var callerRun = new ModelRun { Status = ModelRunStatuses.Draft };
+        db.ModelRuns.Add(callerRun);
+        await db.SaveChangesAsync();
+        var handler = new ValhallaMatrixHandler();
+        var service = new TravelMatrixService(db, new ValhallaClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://valhalla.test") }, NullLogger<ValhallaClient>.Instance));
+        var origin = new TravelMatrixOrigin(1, "USA-ZCTA-46802", 41.08, -85.14);
+        var first = await service.ResolveAsync([origin],
+            [new TravelMatrixFacility("scenario:first", FacilityKinds.Scenario, null, callerRun.Id, 41.0793, -85.1394)]);
+        var second = await service.ResolveAsync([origin],
+            [new TravelMatrixFacility("scenario:second", FacilityKinds.Scenario, null, Guid.NewGuid(), 41.0793, -85.1394)]);
+        Assert.Empty(db.ChangeTracker.Entries<OriginFacilityTravel>());
+        Assert.Empty(db.ChangeTracker.Entries<CandidateLocationTravelCache>());
+        Assert.Equal(EntityState.Unchanged, db.Entry(callerRun).State);
+        Assert.Equal(1, handler.MatrixRequestCount);
+        Assert.True(first.Routes.Single().Id > 0);
+        Assert.True(second.Routes.Single().Id > 0);
+        Assert.Equal(first.Routes.Single().TravelTimeMinutes, second.Routes.Single().TravelTimeMinutes);
+        Assert.Equal(2, await db.OriginFacilityTravel.CountAsync());
+    }
+
+    [Fact]
     public async Task ExactCandidateCoordinateHash_ReusesValhallaRouteAndMaterializesPerRunEvidence()
     {
         await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
@@ -108,7 +202,8 @@ public sealed class TravelMatrixServiceTests
             [origin],
             [new TravelMatrixFacility("USA-IN-stable", FacilityKinds.Incumbent, 10, null, 41.1, -84.9)]);
         var firstRouteId = first.Routes.Single().Id;
-        first.Routes.Single().FacilityCoordinateHash = $"legacy-{first.Routes.Single().Id}";
+        var legacyRoute = await db.OriginFacilityTravel.SingleAsync(route => route.Id == firstRouteId);
+        legacyRoute.FacilityCoordinateHash = $"legacy-{firstRouteId}";
         await db.SaveChangesAsync();
         var sameCoordinate = await service.ResolveAsync(
             [origin],

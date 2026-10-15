@@ -27,6 +27,98 @@ namespace SaveNEIN.Server.Controllers
             _taxAllocationOptions = taxAllocationOptions.Value;
         }
 
+        [HttpGet("municipality-at")]
+        public async Task<IActionResult> GetMunicipalityAt(double lat, double lon, string countyFips)
+        {
+            if (!double.IsFinite(lat) || !double.IsFinite(lon) || lat is < -90 or > 90 || lon is < -180 or > 180 ||
+                countyFips?.Length != 5 || countyFips.Any(character => character is < '0' or > '9'))
+                return BadRequest("A valid latitude, longitude, and five-digit county FIPS are required.");
+            try
+            {
+
+                var normalizedCountyFips = string.Concat((countyFips ?? string.Empty).Where(char.IsDigit));
+                var isEligibleCounty = _taxAllocationOptions.GetMunicipalEligibleCountyFips().Contains(normalizedCountyFips);
+
+                if (!isEligibleCounty)
+                {
+                    return Ok(new
+                    {
+                        countyFips = normalizedCountyFips,
+                        isEligibleCounty = false,
+                        isMunicipalSite = false,
+                        cityRevenueApplies = false,
+                        municipalityName = (string?)null,
+                        municipalityGeoid = (string?)null
+                    });
+                }
+
+                var stateFips = normalizedCountyFips[..2];
+
+                // Reuse the DbContext-owned connection. Reconstructing an NpgsqlConnection
+                // from Database.GetConnectionString() is unsafe because Npgsql may redact the
+                // password after the configured data source has been initialized.
+                var conn = _db.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                {
+                    await conn.OpenAsync();
+                }
+
+                await using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT geoid, name
+                    FROM tiger_places
+                    WHERE state_fp = @stateFips
+                      AND funcstat = 'A'
+                      AND ST_Covers(geom, ST_SetSRID(ST_Point(@lon, @lat), 4326))
+                    ORDER BY COALESCE(aland, 0) ASC, geoid
+                    LIMIT 1;
+                ";
+
+                var latParameter = cmd.CreateParameter();
+                latParameter.ParameterName = "lat";
+                latParameter.Value = lat;
+                cmd.Parameters.Add(latParameter);
+
+                var lonParameter = cmd.CreateParameter();
+                lonParameter.ParameterName = "lon";
+                lonParameter.Value = lon;
+                cmd.Parameters.Add(lonParameter);
+
+                var stateFipsParameter = cmd.CreateParameter();
+                stateFipsParameter.ParameterName = "stateFips";
+                stateFipsParameter.Value = stateFips;
+                cmd.Parameters.Add(stateFipsParameter);
+
+                await using var reader = await cmd.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    return Ok(new
+                    {
+                        countyFips = normalizedCountyFips,
+                        isEligibleCounty = true,
+                        isMunicipalSite = true,
+                        cityRevenueApplies = true,
+                        municipalityName = reader.GetString(1),
+                        municipalityGeoid = reader.GetString(0)
+                    });
+                }
+
+                return Ok(new
+                {
+                    countyFips = normalizedCountyFips,
+                    isEligibleCounty = true,
+                    isMunicipalSite = false,
+                    cityRevenueApplies = false,
+                    municipalityName = (string?)null,
+                    municipalityGeoid = (string?)null
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { error = "Municipality lookup failed." });
+            }
+        }
+
         [HttpGet("tax-allocation-scenarios")]
         public IActionResult GetTaxAllocationScenarios() => Ok(new
         {

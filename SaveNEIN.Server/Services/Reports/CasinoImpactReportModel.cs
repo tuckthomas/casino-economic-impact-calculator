@@ -4,6 +4,7 @@
 // Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
 
 using System.Security.Cryptography;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -70,7 +71,10 @@ public sealed record ReportScenario(
     string ComputationalOriginType,
     string ImpactScopeKind,
     string ImpactScopeCode,
-    IReadOnlyList<string> ParameterSets);
+    IReadOnlyList<string> ParameterSets,
+    DateOnly? EffectiveOn = null,
+    int? PopulationScenarioYear = null,
+    IReadOnlyList<string>? SelectedFacilityFeatureKeys = null);
 
 public sealed record ReportDevelopmentProgram(
     Guid Id,
@@ -152,7 +156,8 @@ public sealed record ReportOrigin(
     decimal ExternalJurisdictionCapture,
     decimal TribalOrOtherJurisdictionCapture,
     decimal OutsideOptionCapture,
-    double ShareOfProposedResidentGgr);
+    double ShareOfProposedResidentGgr,
+    double? EligiblePopulation = null);
 
 public sealed record ReportOriginGroup(
     string GeographyType,
@@ -378,10 +383,11 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
         }
         var jurisdiction = await db.Jurisdictions.AsNoTracking()
             .SingleAsync(item => item.Id == run.JurisdictionId, cancellationToken);
-        var jurisdictionProfileVersion = await BuildJurisdictionProfileVersionAsync(
-            jurisdiction,
-            DateOnly.FromDateTime(run.FinalizedAtUtc.Value),
-            cancellationToken);
+        var scenarioValues = ParseResolvedInput(run.ResolvedInputJson);
+        var jurisdictionProfileVersion = scenarioValues.JurisdictionProfileVersion.Length > 0
+            ? scenarioValues.JurisdictionProfileVersion
+            : "reconstructed-" + await BuildJurisdictionProfileVersionAsync(
+                jurisdiction, scenarioValues.EffectiveOn ?? DateOnly.FromDateTime(run.FinalizedAtUtc.Value), cancellationToken);
         var program = await db.DevelopmentPrograms.AsNoTracking()
             .SingleAsync(item => item.Id == run.DevelopmentProgramId, cancellationToken);
         var proposed = await db.ModelRunFacilityResults.AsNoTracking()
@@ -427,12 +433,12 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
                 item.result.ExternalJurisdictionCapture,
                 item.result.TribalOrOtherJurisdictionCapture,
                 item.result.OutsideOptionCapture,
-                Share(item.result.TotalProposedResidentGgr, residentTotal));
+                Share(item.result.TotalProposedResidentGgr, residentTotal),
+                item.result.EligiblePopulation);
         }).ToArray();
 
         var geographicAccountingEntity = await db.ModelRunGeographicAccounting.AsNoTracking()
             .SingleOrDefaultAsync(item => item.ModelRunId == modelRunId, cancellationToken);
-        var scenarioValues = ParseResolvedInput(run.ResolvedInputJson);
         var parameterSets = await db.ModelRunParameterSetReferences.AsNoTracking()
             .Where(reference => reference.ModelRunId == modelRunId)
             .Join(
@@ -781,7 +787,10 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
                 origins.Select(origin => origin.OriginType).Distinct().SingleOrDefault() ?? "unknown",
                 geographicAccounting?.ScopeKind ?? "not-configured",
                 geographicAccounting?.ScopeCode ?? "not-configured",
-                parameterSets),
+                parameterSets,
+                scenarioValues.EffectiveOn,
+                scenarioValues.PopulationScenarioYear,
+                scenarioValues.SelectedFacilityFeatureKeys),
             new ReportDevelopmentProgram(
                 program.Id,
                 program.StableProgramId,
@@ -828,12 +837,14 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
             sensitivity,
             benchmarks,
             warnings,
-            [
+            new[]
+            {
                 "Results are estimates conditioned on the cited data snapshots, routes, development program, and parameter values.",
                 "Public benchmark studies are validation anchors; reported outputs are not forced targets.",
                 "Capacity diagnostics flag implausible ranges and do not cap modeled demand.",
                 "Social-cost estimates depend on uncertain prevalence and per-case assumptions disclosed in the parameter appendix."
-            ]);
+            }.Concat(scenarioValues.JurisdictionProfileVersion.Length > 0 ? Array.Empty<string>() :
+                ["This historical run did not capture its jurisdiction rule snapshot; the labeled reconstructed profile uses the current catalog at the stored fiscal effective date."]).ToArray());
     }
 
     private static IReadOnlyList<ReportOriginGroup> GroupOrigins(
@@ -935,11 +946,22 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
+        DateOnly? effectiveOn = DateOnly.TryParseExact(ReadString(root, "effectiveOn", string.Empty), "yyyy-MM-dd",
+            CultureInfo.InvariantCulture, DateTimeStyles.None, out var effectiveDate) ? effectiveDate : null;
+        int? populationYear = null;
+        foreach (var property in root.EnumerateObject())
+            if (property.Name.Equals("populationScenarioYear", StringComparison.OrdinalIgnoreCase) &&
+                property.Value.ValueKind == JsonValueKind.Number && property.Value.TryGetInt32(out var year)) populationYear = year;
         return new ResolvedScenario(
             ReadString(root, "scenarioName", "Unnamed scenario"),
             ReadString(root, "demandSpecification", "unknown"),
             ReadString(root, "attractionSpecification", "unknown"),
-            ReadString(root, "frictionForm", "unknown"));
+            ReadString(root, "frictionForm", "unknown"),
+            effectiveOn,
+            populationYear ?? effectiveOn?.Year,
+            ReadString(root, "jurisdictionProfileVersion", string.Empty),
+            root.EnumerateObject().FirstOrDefault(item => item.Name.Equals("selectedFacilityFeatureKeys", StringComparison.OrdinalIgnoreCase)).Value is { ValueKind: JsonValueKind.Array } features
+                ? features.EnumerateArray().Select(item => item.GetString()!).ToArray() : null);
     }
 
     private static string ReadString(JsonElement root, string property, string fallback)
@@ -964,5 +986,9 @@ public sealed class CasinoImpactReportModelFactory(AppDbContext db) : ICasinoImp
         string ScenarioName,
         string DemandSpecification,
         string AttractionSpecification,
-        string FrictionForm);
+        string FrictionForm,
+        DateOnly? EffectiveOn,
+        int? PopulationScenarioYear,
+        string JurisdictionProfileVersion,
+        string[]? SelectedFacilityFeatureKeys);
 }

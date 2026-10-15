@@ -5,6 +5,7 @@ import path from 'node:path';
 const requiredHeaderPattern = /SPDX-License-Identifier:\s*PolyForm-Noncommercial-1\.0\.0/;
 
 const designatedFiles = [
+  'SaveNEIN.Client/Services/EconomicModelInterop.cs',
   'SaveNEIN.Server/Services/DataFoundationServices.cs',
   'SaveNEIN.Server/Services/DataProviderContracts.cs',
   'SaveNEIN.Server/Services/JurisdictionProfileService.cs',
@@ -12,6 +13,10 @@ const designatedFiles = [
   'SaveNEIN.Server/Services/ModelParameterService.cs',
   'SaveNEIN.Server/Services/ModelRunService.cs',
   'SaveNEIN.Server/Services/Providers/OhioCasinoControlCommissionProviders.cs',
+  'SaveNEIN.Server/Services/Providers/MissouriGamingCommissionProviders.cs',
+  'SaveNEIN.Server/Services/Providers/IllinoisVideoGamingProvider.cs',
+  'SaveNEIN.Server/Services/Providers/PennsylvaniaGamingFacilityProvider.cs',
+  'SaveNEIN.Server/Services/Providers/WisconsinBorderFacilityProvider.cs',
   'SaveNEIN.Server/Services/Providers/OhioLotteryVideoLotteryProviders.cs',
   'SaveNEIN.Server/Services/Providers/CompositeGamingProviders.cs',
   'SaveNEIN.Server/Controllers/GravityModelRunsController.cs',
@@ -32,6 +37,7 @@ const designatedFiles = [
   'SaveNEIN.Server/Data/Entities/SensitivityEntities.cs',
   'SaveNEIN.Server/Data/Entities/ValidationEntities.cs',
   'SaveNEIN.Server/Data/ModelFoundationInitializer.cs',
+  'SaveNEIN.Server/Data/MichiganCommercialGamingRulesSeeder.cs',
   'scripts/validation/validate-model-foundation-migrations.sh',
   'scripts/validation/run-gravity-model-integration.sh',
   'scripts/validation/run-incumbent-calibration.sh',
@@ -41,6 +47,7 @@ const designatedFiles = [
 ];
 
 const designatedDirectories = [
+  'SaveNEIN.Shared/Modeling',
   'SaveNEIN.Server/Services/Gravity',
   'SaveNEIN.Server/Services/Validation',
   'SaveNEIN.Server/Services/Reports'
@@ -66,7 +73,7 @@ function getMigrationFiles() {
   if (!existsSync(migrationsDir)) return [];
   const entries = readdirSync(migrationsDir);
   return entries
-    .filter(name => /^0(0[6-9]|1[0-7])_.*\.sql$/.test(name))
+    .filter(name => /^0(0[6-9]|[1-9][0-9])_.*\.sql$/.test(name))
     .map(name => path.join('docs/migrations', name));
 }
 

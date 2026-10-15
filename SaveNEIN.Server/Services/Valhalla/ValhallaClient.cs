@@ -7,6 +7,11 @@ namespace SaveNEIN.Server.Services.Valhalla;
 
 public class ValhallaClient
 {
+    // Facility geocodes may land inside parking areas. Correlate nearby access
+    // edges within a bounded radius while retaining the original coordinate.
+    internal const int FacilityCorrelationRadiusMeters = 100;
+    internal const int FacilitySearchCutoffMeters = 500;
+    internal const string MatrixCorrelationVersion = "target-radius100-cutoff500-v2";
     private readonly HttpClient _httpClient;
     private readonly ILogger<ValhallaClient> _logger;
 
@@ -28,7 +33,7 @@ public class ValhallaClient
             throw new InvalidOperationException("Valhalla status did not include a version.");
         }
 
-        var identity = $"{status.Version}|{status.TilesetLastModified}";
+        var identity = $"{status.Version}|{status.TilesetLastModified}|{MatrixCorrelationVersion}";
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity))).ToLowerInvariant();
         return new ValhallaRoutingGraphIdentity(status.Version, status.TilesetLastModified, hash);
     }
@@ -57,7 +62,7 @@ public class ValhallaClient
         var request = new
         {
             sources = sources.Select(source => new { lat = source.Latitude, lon = source.Longitude }),
-            targets = targets.Select(target => new { lat = target.Latitude, lon = target.Longitude }),
+            targets = targets.Select(target => new { lat = target.Latitude, lon = target.Longitude, radius = FacilityCorrelationRadiusMeters, search_cutoff = FacilitySearchCutoffMeters }),
             costing = costingProfile,
             units = "kilometers",
             verbose = true

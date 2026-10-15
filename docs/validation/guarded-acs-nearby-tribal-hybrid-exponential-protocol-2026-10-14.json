@@ -1,0 +1,218 @@
+{
+  "protocolVersion": "guarded-acs-nearby-tribal-hybrid-exponential-v5",
+  "frozenOn": "2026-10-14T06:18:53.1073521Z",
+  "sourceBundleSha256": "cc1b7411631380d850a0c7c3b3483d2386306dfe70e9d1dc6c29f07b69f1060c",
+  "observedYear": 2025,
+  "originSnapshotId": "256b239a-5473-4f7f-8868-459b9d14dab4",
+  "incomeSnapshotId": "57c7bf62-1935-480e-8a72-59f431f55e01",
+  "facilitySnapshotId": "d6e929db-e9f8-4ed4-acf1-2274c99a302d",
+  "performanceSnapshotId": "54f30d83-16cf-47a4-9ea7-53afd5b6bfc1",
+  "originRadiusMiles": 100,
+  "competitorRadiusMiles": 150,
+  "scope": "Same inspected 22-training/14-selection cohort and 40 declared candidates, with ACS 2024 legal-age population and median-household-income inputs. Every case meets the measured 99% independent eligible-population input-coverage gate. One common income reference and training-fitted expenditure coefficient preserve overlapping origin budgets; no target-jurisdiction multipliers. Income reference is the unweighted median of positive ZCTA median estimates, not an official household-level regional median. Growth remains zero. No new holdout, parameter publication, empirical Northeast Indiana accuracy claim or complete competitive/fiscal acceptance. Predeclared 2880-candidate joint search adds source-prior beta values and existing physical feature coefficients after replacing target-jurisdiction spending fits with one origin budget. Every unscored revenue-pool identity is excluded from observed competitor mass and retained as structural competition. No reserved target is scored or used as a fitting outcome. Matched structural/hybrid comparison: only the attraction specification and its declared normalization grid differ. V5 incorporates dated Gun Lake and Four Winds gaming inventories, removes unsupported historical South Bend gaming-floor precision, and preserves all observed revenue. The inverse-power candidate grid is unchanged; a separately frozen exponential comparison uses the same cohorts, snapshots, feature grids and guarded acceptance rules. Exponential decay is the server gravity.exponential_lambda in inverse minutes. Inverse-power beta 1.5 and regularization 1 are single inactive values in this form, not extra fitted dimensions.",
+  "selectionObjective": "WAPE; ties broken by MAPE, then candidate key",
+  "incomeShareFit": "One common training-only weighted-median USD per eligible adult across all training properties; no target-jurisdiction expenditure multipliers. Existing feasible property and bias constraints remain in force.",
+  "beta": [
+    1.5
+  ],
+  "alpha": [
+    1
+  ],
+  "positionsCoefficient": [
+    1,
+    2
+  ],
+  "tablesCoefficient": 0.2,
+  "comparableScale": [
+    1,
+    4,
+    8
+  ],
+  "outsideWeight": [
+    0.0001
+  ],
+  "training": [
+    "USA-IN-IGC-ameristar-casino",
+    "USA-IN-IGC-blue-chip-casino",
+    "USA-IN-IGC-hard-rock-casino-northern-indiana",
+    "USA-IN-IGC-harrahs-hoosier-park",
+    "USA-IN-IGC-horseshoe-hammond",
+    "USA-IN-IGC-horseshoe-indianapolis",
+    "USA-IN-IGC-terre-haute-casino",
+    "USA-IN-IGC-french-lick-resort",
+    "USA-IL-IGB-american-place",
+    "USA-IL-IGB-ballys-chicago",
+    "USA-IL-IGB-grand-victoria-casino",
+    "USA-IL-IGB-rivers-casino-des-plaines",
+    "USA-IL-IGB-draftkings-casino-queen",
+    "USA-MO-MGC-hollywood-st-louis",
+    "USA-MO-MGC-ameristar-st-charles",
+    "USA-MO-MGC-river-city",
+    "USA-OH-OCCC-hollywood-casino-columbus",
+    "USA-OH-OCCC-jack-cleveland-casino",
+    "USA-OH-OLC-jack-thistledown-racino",
+    "USA-OH-OLC-eldorado-gaming-scioto-downs",
+    "USA-OH-OLC-hollywood-gaming-dayton-raceway",
+    "USA-OH-OLC-miami-valley-gaming"
+  ],
+  "selection": [
+    "USA-IN-IGC-ballys-evansville",
+    "USA-IN-IGC-caesars-southern-indiana",
+    "USA-OH-OCCC-hollywood-casino-toledo",
+    "USA-OH-OLC-hollywood-mahoning-valley-race-course",
+    "USA-OH-OLC-mgm-northfield-park",
+    "USA-OH-OCCC-hard-rock-casino-cincinnati",
+    "USA-OH-OLC-belterra-park-cincinnati",
+    "USA-IN-IGC-belterra-casino",
+    "USA-IN-IGC-hollywood-lawrenceburg",
+    "USA-IN-IGC-rising-star-casino",
+    "USA-IL-IGB-harrahs-joliet",
+    "USA-IL-IGB-wind-creek-chicago-southland",
+    "USA-IL-IGB-argosy-casino-alton",
+    "USA-MO-MGC-horseshoe-st-louis"
+  ],
+  "holdout": {},
+  "gamingPositionsOffset": [
+    500,
+    2000
+  ],
+  "attractionSpecification": "hybrid-observed-ggr",
+  "selectionPolicyVersion": "gravity-development-selection-v1",
+  "developmentMarkets": {
+    "chicago-region": [
+      "USA-IL-IGB-american-place",
+      "USA-IL-IGB-ballys-chicago",
+      "USA-IL-IGB-grand-victoria-casino",
+      "USA-IL-IGB-harrahs-joliet",
+      "USA-IL-IGB-rivers-casino-des-plaines",
+      "USA-IL-IGB-wind-creek-chicago-southland",
+      "USA-IN-IGC-ameristar-casino",
+      "USA-IN-IGC-blue-chip-casino",
+      "USA-IN-IGC-hard-rock-casino-northern-indiana",
+      "USA-IN-IGC-horseshoe-hammond"
+    ],
+    "st-louis-region": [
+      "USA-IL-IGB-argosy-casino-alton",
+      "USA-IL-IGB-draftkings-casino-queen",
+      "USA-MO-MGC-hollywood-st-louis",
+      "USA-MO-MGC-ameristar-st-charles",
+      "USA-MO-MGC-river-city",
+      "USA-MO-MGC-horseshoe-st-louis"
+    ],
+    "cleveland-region": [
+      "USA-OH-OCCC-jack-cleveland-casino",
+      "USA-OH-OLC-jack-thistledown-racino",
+      "USA-OH-OLC-mgm-northfield-park"
+    ],
+    "central-ohio-corridor": [
+      "USA-OH-OCCC-hollywood-casino-columbus",
+      "USA-OH-OLC-eldorado-gaming-scioto-downs",
+      "USA-OH-OLC-hollywood-gaming-dayton-raceway"
+    ],
+    "cincinnati-tristate-region": [
+      "USA-OH-OCCC-hard-rock-casino-cincinnati",
+      "USA-OH-OLC-belterra-park-cincinnati",
+      "USA-OH-OLC-miami-valley-gaming",
+      "USA-IN-IGC-belterra-casino",
+      "USA-IN-IGC-hollywood-lawrenceburg",
+      "USA-IN-IGC-rising-star-casino"
+    ],
+    "central-indiana": [
+      "USA-IN-IGC-harrahs-hoosier-park",
+      "USA-IN-IGC-horseshoe-indianapolis"
+    ],
+    "terre-haute": [
+      "USA-IN-IGC-terre-haute-casino"
+    ],
+    "french-lick": [
+      "USA-IN-IGC-french-lick-resort"
+    ],
+    "evansville": [
+      "USA-IN-IGC-ballys-evansville"
+    ],
+    "louisville-region": [
+      "USA-IN-IGC-caesars-southern-indiana"
+    ],
+    "toledo": [
+      "USA-OH-OCCC-hollywood-casino-toledo"
+    ],
+    "mahoning-valley": [
+      "USA-OH-OLC-hollywood-mahoning-valley-race-course"
+    ]
+  },
+  "gamingFloorCoefficient": [
+    0,
+    0.5,
+    1
+  ],
+  "fitDemandScaleByJurisdiction": false,
+  "demandSpecification": "eligible-adult-per-capita",
+  "minimumDemandScale": 50,
+  "maximumDemandScale": 3000,
+  "agePopulationSnapshotId": "749fc459-6918-4939-96f7-24b9ecd72faf",
+  "eligibleAge": 21,
+  "tableGameCoefficient": [
+    0.2,
+    0.4
+  ],
+  "constrainTrainingScale": true,
+  "travelTimeRegularizationMinutes": [
+    1
+  ],
+  "incomeElasticity": [
+    -1,
+    0,
+    0.5,
+    1,
+    2
+  ],
+  "incomeAdjustmentMinimum": 0.5,
+  "incomeAdjustmentMaximum": 1.5,
+  "referenceIncome": 71488.0,
+  "demographicInputBundleSha256": "98e591a650d96c9c89b31549d2364caf6cfb83eb7698d1526f3b2ac94fac6f47",
+  "observedGgrExcludedVenueIds": [
+    "USA-IL-IGB-ballys-quad-cities",
+    "USA-IL-IGB-fairmount-park-casino-racing",
+    "USA-IL-IGB-golden-nugget-danville",
+    "USA-IL-IGB-hard-rock-casino-rockford",
+    "USA-IL-IGB-harrahs-metropolis",
+    "USA-IL-IGB-hollywood-casino-aurora",
+    "USA-IL-IGB-hollywood-casino-joliet",
+    "USA-IL-IGB-par-a-dice-hotel-casino",
+    "USA-IL-IGB-walkers-bluff-casino-resort",
+    "USA-MO-MGC-ameristar-kansas-city",
+    "USA-MO-MGC-argosy-riverside",
+    "USA-MO-MGC-ballys-kansas-city",
+    "USA-MO-MGC-century-cape-girardeau",
+    "USA-MO-MGC-century-caruthersville",
+    "USA-MO-MGC-harrahs-kansas-city",
+    "USA-MO-MGC-isle-of-capri-boonville",
+    "USA-MO-MGC-mark-twain",
+    "USA-MO-MGC-st-jo-frontier",
+    "USA-PA-PGCB-harrahs-philadelphia",
+    "USA-PA-PGCB-hollywood-meadows",
+    "USA-PA-PGCB-hollywood-morgantown",
+    "USA-PA-PGCB-hollywood-penn-national",
+    "USA-PA-PGCB-hollywood-york",
+    "USA-PA-PGCB-live-philadelphia",
+    "USA-PA-PGCB-live-pittsburgh",
+    "USA-PA-PGCB-mohegan-pennsylvania",
+    "USA-PA-PGCB-mount-airy",
+    "USA-PA-PGCB-nemacolin",
+    "USA-PA-PGCB-parx-bensalem",
+    "USA-PA-PGCB-parx-shippensburg",
+    "USA-PA-PGCB-presque-isle-downs",
+    "USA-PA-PGCB-rivers-philadelphia",
+    "USA-PA-PGCB-rivers-pittsburgh",
+    "USA-PA-PGCB-valley-forge",
+    "USA-PA-PGCB-wind-creek-bethlehem"
+  ],
+  "frictionForm": "exponential",
+  "exponentialLambda": [
+    0.005,
+    0.015,
+    0.03,
+    0.06,
+    0.1
+  ]
+}

@@ -1,0 +1,36 @@
+services:
+  validation-valhalla:
+    # Same immutable image as the existing router; separate local data and port.
+    image: ghcr.io/nilsnolde/docker-valhalla/valhalla@sha256:4e7cca5db66e0c8d3a4ab6c3f83a748ef9b805fe227d3d4d4f496f161ac9b69f
+    container_name: savenein-validation-routing-20261012
+    labels:
+      savenein.validation.owner: gravity-economic-model-completion
+    ports:
+      - "127.0.0.1:18004:8002"
+    cpus: 4
+    mem_limit: 10g
+    environment:
+      tile_urls: >-
+        https://download.geofabrik.de/north-america/us/indiana-latest.osm.pbf
+        https://download.geofabrik.de/north-america/us/ohio-latest.osm.pbf
+        https://download.geofabrik.de/north-america/us/michigan-latest.osm.pbf
+        https://download.geofabrik.de/north-america/us/illinois-latest.osm.pbf
+        https://download.geofabrik.de/north-america/us/kentucky-latest.osm.pbf
+        https://download.geofabrik.de/north-america/us/missouri-latest.osm.pbf
+        https://download.geofabrik.de/north-america/us/pennsylvania-latest.osm.pbf
+        https://download.geofabrik.de/north-america/us/wisconsin-latest.osm.pbf
+        https://download.geofabrik.de/north-america/us/west-virginia-latest.osm.pbf
+        https://download.geofabrik.de/north-america/us/iowa-latest.osm.pbf
+      build_admins: "Force"
+      build_time_zones: "True"
+      build_elevation: "False"
+      build_tar: "True"
+      force_rebuild: "False"
+      server_threads: "4"
+    volumes:
+      - "${SAVENEIN_VALIDATION_ROUTER_DIRECTORY:?Set the private validation data directory}/custom_files:/custom_files"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "2"

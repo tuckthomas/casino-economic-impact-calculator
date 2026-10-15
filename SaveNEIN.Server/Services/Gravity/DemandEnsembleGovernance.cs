@@ -7,6 +7,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Data.Entities;
+using SaveNEIN.Server.Services.Validation;
 
 namespace SaveNEIN.Server.Services.Gravity;
 
@@ -95,6 +96,11 @@ public static class DemandEnsembleGovernance
                 $"Parameter set '{sourceSetId}' was not published by a finalized immutable validation evaluation and cannot enable validated-ensemble demand.");
         }
 
+        if (!ModelReleaseAcceptance.HasAcceptedReport(evaluation.InclusionRulesJson))
+        {
+            throw new InvalidOperationException(
+                $"Validation evaluation '{evaluation.Id}' has no passing {ModelReleaseAcceptance.PolicyVersion} release assessment; the parameter set cannot enable validated-ensemble demand.");
+        }
         using var selectionDocument = JsonDocument.Parse(evaluation.SelectedParametersJson);
         var root = selectionDocument.RootElement;
         if (!TryReadString(root, "evaluationKind", out var kind) ||

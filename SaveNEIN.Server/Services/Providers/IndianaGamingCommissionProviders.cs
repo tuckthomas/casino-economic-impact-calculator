@@ -20,6 +20,7 @@ public sealed class IndianaGamingCommissionProviderOptions
     public string CasinoLocationsUrl { get; set; } =
         "https://www.in.gov/igc/about-us/casino-locations-and-information/";
     public string AnnualReportBaseUrl { get; set; } = "https://www.in.gov/igc/files";
+    public string AnnualReportPublicationUrl { get; set; } = "https://www.in.gov/igc/publications/annual-reports/";
 }
 
 public sealed class IndianaGamingCommissionMonthlyRevenueProvider(
@@ -297,7 +298,7 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
         var reportUri = new Uri(
             $"{configured.MonthlyReportBaseUrl.TrimEnd('/')}/{inventoryMonth.Year}/{inventoryMonth:yyyy-MM}-Revenue.xlsx");
         var locationsUri = new Uri(configured.CasinoLocationsUrl);
-        var annualReportUri = new Uri(
+        var configuredAnnualReportUri = new Uri(
             $"{configured.AnnualReportBaseUrl.TrimEnd('/')}/FY{inventoryMonth.Year}-Annual.pdf");
         var retrievedAt = DateTime.UtcNow;
         using var reportResponse = await http.GetAsync(reportUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -306,12 +307,8 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
         using var locationsResponse = await http.GetAsync(locationsUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         locationsResponse.EnsureSuccessStatusCode();
         var locationsHtml = await locationsResponse.Content.ReadAsStringAsync(cancellationToken);
-        using var annualReportResponse = await http.GetAsync(
-            annualReportUri,
-            HttpCompletionOption.ResponseHeadersRead,
-            cancellationToken);
-        annualReportResponse.EnsureSuccessStatusCode();
-        var annualReportBytes = await annualReportResponse.Content.ReadAsByteArrayAsync(cancellationToken);
+        var (annualReportUri, annualReportBytes) = await FetchAnnualReportAsync(
+            configuredAnnualReportUri, new Uri(configured.AnnualReportPublicationUrl), inventoryMonth.Year, cancellationToken);
 
         var locations = ParseLocations(locationsHtml);
         var unitCounts = ParseGamingUnits(OpenXmlWorksheetReader.ReadRows(workbookBytes, "1 Tax Summary"));
@@ -533,6 +530,44 @@ public sealed class IndianaGamingCommissionFacilityInventoryProvider(
             throw new InvalidDataException($"IGC {metric} for '{facility}' is not a nonnegative integer: '{raw}'.");
         }
         return (int)value;
+    }
+
+    private async Task<(Uri Uri, byte[] Bytes)> FetchAnnualReportAsync(
+        Uri configuredUri, Uri publicationUri, int fiscalYear, CancellationToken cancellationToken)
+    {
+        using var configuredResponse = await http.GetAsync(configuredUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        if (configuredResponse.StatusCode is not (HttpStatusCode.NotFound or HttpStatusCode.Gone))
+        {
+            configuredResponse.EnsureSuccessStatusCode();
+            return (configuredUri, await configuredResponse.Content.ReadAsByteArrayAsync(cancellationToken));
+        }
+
+        var publicationHtml = await http.GetStringAsync(publicationUri, cancellationToken);
+        var reportUri = DiscoverAnnualReportUri(publicationUri, publicationHtml, fiscalYear);
+        using var discoveredResponse = await http.GetAsync(reportUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        discoveredResponse.EnsureSuccessStatusCode();
+        return (reportUri, await discoveredResponse.Content.ReadAsByteArrayAsync(cancellationToken));
+    }
+
+    internal static Uri DiscoverAnnualReportUri(Uri publicationUri, string html, int fiscalYear)
+    {
+        var matches = Regex.Matches(html,
+            "<a\\b[^>]*href\\s*=\\s*[\"'](?<href>[^\"']+)[\"'][^>]*>(?<text>.*?)</a>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
+        var candidates = new HashSet<Uri>();
+        foreach (Match match in matches)
+        {
+            var text = PlainText(match.Groups["text"].Value);
+            if (!Regex.IsMatch(text, $@"\bFY\s*{fiscalYear}\b.*\bAnnual\s+Report\b",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))) continue;
+            if (!Uri.TryCreate(publicationUri, WebUtility.HtmlDecode(match.Groups["href"].Value), out var uri) ||
+                uri.Scheme != Uri.UriSchemeHttps || !uri.Authority.Equals(publicationUri.Authority, StringComparison.OrdinalIgnoreCase) ||
+                uri.UserInfo.Length > 0 ||
+                !uri.AbsolutePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) continue;
+            candidates.Add(uri);
+        }
+        return candidates.Count == 1 ? candidates.Single() : throw new InvalidDataException(
+            $"The IGC annual-report publication must contain exactly one trusted FY{fiscalYear} annual report; found {candidates.Count}.");
     }
 
     private static void RequireExactInventory(

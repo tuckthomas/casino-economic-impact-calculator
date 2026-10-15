@@ -20,6 +20,231 @@ using SaveNEIN.Server.Services.Validation;
 using SaveNEIN.Server.Services.Valhalla;
 using QuestPDF.Infrastructure;
 
+QuestPDF.Settings.License = LicenseType.Community;
+
+if (args is ["--warm-regional-travel-cache", var warmingDatabase, var warmingRoutingUrl, var warmingProtocolPath])
+{
+    if (!warmingDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        warmingDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe regional route-warming database name.");
+    var warmingProtocol = JsonSerializer.Deserialize<RegionalValidationProtocol>(await File.ReadAllBytesAsync(warmingProtocolPath),
+        new JsonSerializerOptions(JsonSerializerDefaults.Web)) ?? throw new InvalidDataException("Route-warming protocol is missing.");
+    var warmingConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Route-warming connection configuration is missing.")) { Database = warmingDatabase };
+    await using var warmingDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(warmingConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    foreach (var kind in new[] { DatasetSnapshotKinds.OriginGeography, DatasetSnapshotKinds.Competitors })
+    {
+        var input = warmingProtocol.Snapshots[kind];
+        if (!await warmingDb.DatasetSnapshots.AnyAsync(row => row.Id == input.Id && row.DatasetKey == kind && row.IsSealed && row.Checksum == input.Checksum))
+            throw new InvalidDataException("Route warming must use the exact declared sealed geometry/inventory.");
+    }
+    using var warmingHttp = new HttpClient { BaseAddress = new Uri(warmingRoutingUrl), Timeout = TimeSpan.FromMinutes(3) };
+    var warmingRouter = new ValhallaClient(warmingHttp, NullLogger<ValhallaClient>.Instance);
+    if ((await warmingRouter.GetRoutingGraphIdentityAsync()).GraphHash != warmingProtocol.RoutingGraphHash)
+        throw new InvalidDataException("Route warming cannot substitute a different graph.");
+    var warmingOrigins = await warmingDb.OriginZones.AsNoTracking().Where(row => row.DatasetSnapshotId == warmingProtocol.Snapshots[DatasetSnapshotKinds.OriginGeography].Id)
+        .OrderBy(row => row.StableOriginId).ToArrayAsync();
+    var warmingFacilities = await new CompetitiveUniverseService(warmingDb).SelectAsync(
+        warmingProtocol.Snapshots[DatasetSnapshotKinds.Competitors].Id, warmingOrigins, warmingProtocol.FiscalDate, warmingProtocol.CompetitorRadiusMiles);
+    var warmingTimer = System.Diagnostics.Stopwatch.StartNew();
+    var warmed = await new TravelMatrixService(warmingDb, warmingRouter).ResolveAsync(
+        warmingOrigins.Select(row => new TravelMatrixOrigin(row.Id, row.StableOriginId, row.RepresentativePoint.Y, row.RepresentativePoint.X)).ToArray(),
+        warmingFacilities.Select(row => new TravelMatrixFacility(row.StableVenueId, FacilityKinds.Incumbent, row.Id, null, row.Latitude, row.Longitude)).ToArray());
+    Console.WriteLine(JsonSerializer.Serialize(new { Origins = warmingOrigins.Length, Facilities = warmingFacilities.Count,
+        Routes = warmed.Routes.Count, ElapsedSeconds = warmingTimer.Elapsed.TotalSeconds, warmed.RoutingGraphHash,
+        Scope = "Exact physical route reuse/warming in the owned validation database; no model execution, synthetic times, publication or deployment." }));
+    return;
+}
+
+if (args is ["--seed-regional-validation-catalog", var regionalCatalogDatabase])
+{
+    if (!regionalCatalogDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        regionalCatalogDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe regional catalog validation database name.");
+    var regionalCatalogConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Regional catalog connection configuration is missing.")) { Database = regionalCatalogDatabase };
+    await using var regionalCatalogDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(regionalCatalogConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    await ModelFoundationInitializer.SeedAsync(regionalCatalogDb);
+    Console.WriteLine("Regional parameter catalog seeded in the owned validation database.");
+    return;
+}
+
+if (args is ["--capture-regional-demographics", var demographicDatabase, var demographicProtocolPath, var demographicYearText, var demographicOutputPath])
+{
+    if (!demographicDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        demographicDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_') || File.Exists(demographicOutputPath))
+        throw new ArgumentException("Regional demographics require an owned validation database and new output path.");
+    var demographicProtocolBytes = await File.ReadAllBytesAsync(demographicProtocolPath);
+    var demographicProtocol = JsonSerializer.Deserialize<DemographicCaptureScope>(demographicProtocolBytes, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+        ?? throw new InvalidDataException("Regional demographic protocol is missing.");
+    demographicProtocol.Validate();
+    var demographicYear = int.Parse(demographicYearText, System.Globalization.CultureInfo.InvariantCulture);
+    if (demographicYear is < 2020 or > 2024) throw new ArgumentException("Regional demographics require an explicitly supported published ACS vintage.");
+    var demographicConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Regional demographic connection configuration is missing.")) { Database = demographicDatabase };
+    await using var demographicDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(demographicConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    using var demographicHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(8) };
+    var geographyCaptures = new List<ProviderDataset<OriginZoneImportRow>>();
+    var providerEnvelopes = demographicProtocol.ProviderEnvelopes();
+    foreach (var envelope in providerEnvelopes)
+    {
+        Console.WriteLine($"Capturing Census envelope {geographyCaptures.Count + 1}/{providerEnvelopes.Count} ({envelope.RadiusMiles:F1} miles).");
+        geographyCaptures.Add(await new CensusZctaOriginProvider(demographicHttp, Options.Create(new CensusZctaOriginProviderOptions()))
+        .FetchAsync(new("US-ZCTA", new(2020, 1, 1), new(2020, 12, 31), new Dictionary<string, string>
+        {
+            ["center-latitude"] = envelope.Latitude.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            ["center-longitude"] = envelope.Longitude.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            ["radius-miles"] = envelope.RadiusMiles.ToString("R", System.Globalization.CultureInfo.InvariantCulture)
+        })));
+    }
+    var fullGeography = geographyCaptures[0];
+    if (geographyCaptures.Count > 1)
+    {
+        var groups = geographyCaptures.SelectMany(capture => capture.Rows).GroupBy(row => row.StableOriginId).ToArray();
+        if (groups.Any(group => group.Select(row => (row.RepresentativeLatitude, row.RepresentativeLongitude)).Distinct().Count() != 1))
+            throw new InvalidDataException("Overlapping Census captures disagree on origin representative points.");
+        var manifest = string.Join('\n', geographyCaptures.Select(capture => capture.ContentChecksum));
+        var combinedHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("census-zcta-multi-envelope-v1\n" + manifest))).ToLowerInvariant();
+        fullGeography = fullGeography with { Rows = groups.Select(group => group.First()).OrderBy(row => row.StableOriginId, StringComparer.Ordinal).ToArray(),
+            ContentChecksum = combinedHash, TransformVersion = "census-zcta-multi-envelope-v1",
+            Source = fullGeography.Source with { ContentHash = combinedHash, GeographicCoverage = "US-ZCTA union of declared capture envelopes",
+                Notes = fullGeography.Source.Notes + "\nCensus capture checksum manifest:\n" + manifest } };
+    }
+    var union = fullGeography.Rows.Where(origin => demographicProtocol.Scenarios.Any(scenario =>
+        CompetitiveUniverseService.IsWithinBroadPrefilter(origin.RepresentativeLatitude, origin.RepresentativeLongitude,
+            scenario.Latitude, scenario.Longitude, demographicProtocol.OriginRadiusMiles))).OrderBy(origin => origin.StableOriginId).ToArray();
+    Console.WriteLine($"Captured {union.Length} complete Census regional origins before income filtering.");
+    var demographicRequest = new ProviderFetchRequest("US-ZCTA", new(demographicYear, 1, 1), new(demographicYear, 12, 31),
+        new Dictionary<string, string> { ["zcta-codes"] = string.Join(',', union.Select(origin => origin.GeographyCode)) });
+    var acsOptions = Options.Create(new CensusAcsProviderOptions { ApiKey = Environment.GetEnvironmentVariable("CensusAcs__ApiKey") });
+    var ages = await new CensusAcsAgePopulationProvider(demographicHttp, acsOptions).FetchAsync(demographicRequest);
+    var medians = await new CensusAcsMedianIncomeProvider(demographicHttp, acsOptions).FetchAsync(demographicRequest);
+    var binsByOrigin = ages.Rows.GroupBy(row => row.StableOriginId).ToDictionary(group => group.Key, group => group.ToArray());
+    if (union.Any(origin => !binsByOrigin.ContainsKey(origin.StableOriginId)))
+        throw new InvalidDataException("Complete regional Census origins lack independent ACS age controls.");
+    var gamingAge = demographicProtocol.EligibleAge ?? await new GamingAgeResolver(new JurisdictionProfileService(demographicDb)).ResolveMinimumAgeAsync(
+        demographicProtocol.JurisdictionCode!, demographicProtocol.FacilityRegime!, demographicProtocol.FiscalDate);
+    var eligible = binsByOrigin.ToDictionary(pair => pair.Key, pair => EligiblePopulationCalculator.Calculate(pair.Value.Select(row =>
+        new AgeBinValue(row.MinimumAge, row.MaximumAge, row.Population)).ToArray(), gamingAge).Population);
+    var medianByOrigin = medians.Rows.Where(row => row.MedianHouseholdIncome is > 0).ToDictionary(row => row.StableOriginId);
+    var covered = medianByOrigin.Keys.ToHashSet(StringComparer.Ordinal);
+    var selected = union.Where(origin => covered.Contains(origin.StableOriginId)).ToArray();
+    var transform = "regional-census-acs-percapita-inputs-v1";
+    string DerivedHash(string source) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(transform + "\n" + source + "\n" +
+        string.Join('\n', selected.Select(origin => origin.StableOriginId))))).ToLowerInvariant();
+    var geographyHash = DerivedHash(fullGeography.ContentChecksum + "\n" + medians.ContentChecksum);
+    var demographicGeography = fullGeography with { Rows = selected, ContentChecksum = geographyHash, TransformVersion = transform,
+        Warnings = fullGeography.Warnings.Append("Regional union filtered only to positive published ACS median household income; no synthetic income is substituted. Separate controls retain all omitted population.").ToArray() };
+    var demographicIncome = medians with { Rows = selected.Select(origin => medianByOrigin[origin.StableOriginId]).ToArray(),
+        ContentChecksum = DerivedHash(medians.ContentChecksum + "\n" + geographyHash), TransformVersion = transform + "+median-income" };
+    var demographicAge = ages with { Rows = ages.Rows.Where(row => covered.Contains(row.StableOriginId)).ToArray(),
+        ContentChecksum = DerivedHash(ages.ContentChecksum + "\n" + geographyHash), TransformVersion = transform + "+age" };
+    var ingester = new ProviderSnapshotIngestionService(new DataSnapshotService(demographicDb), new ModelDataIngestionService(demographicDb));
+    var originId = await ingester.IngestOriginsAsync(new FrozenOriginProvider(demographicGeography), new("US-ZCTA", new(2020, 1, 1), new(2020, 12, 31)));
+    var incomeId = await ingester.IngestIncomeAsync(new FrozenOriginIncomeProvider(demographicIncome), demographicRequest, originId);
+    var ageId = await ingester.IngestAgePopulationAsync(new FrozenAgeProvider(demographicAge), demographicRequest, originId);
+    var sealedDemographicInputs = await demographicDb.DatasetSnapshots.AsNoTracking()
+        .Where(row => row.Id == originId || row.Id == incomeId || row.Id == ageId).ToDictionaryAsync(row => row.Id);
+    var coverage = demographicProtocol.Scenarios.Select(scenario =>
+    {
+        var circle = union.Where(origin => CompetitiveUniverseService.IsWithinBroadPrefilter(origin.RepresentativeLatitude,
+            origin.RepresentativeLongitude, scenario.Latitude, scenario.Longitude, demographicProtocol.OriginRadiusMiles)).ToArray();
+        var expected = circle.Sum(origin => eligible[origin.StableOriginId]);
+        var retained = circle.Where(origin => covered.Contains(origin.StableOriginId)).Sum(origin => eligible[origin.StableOriginId]);
+        return new { scenario.Key, ExpectedOrigins = circle.Length, CoveredOrigins = circle.Count(origin => covered.Contains(origin.StableOriginId)),
+            ExpectedEligiblePopulation = expected, CoveredEligiblePopulation = retained,
+            CoveragePercent = expected > 0 ? 100 * retained / expected : (double?)null,
+            PopulationCoverageGatePassed = expected > 0 && retained >= 0.99 * expected,
+            MissingOrigins = circle.Where(origin => !covered.Contains(origin.StableOriginId)).Select(origin => new { origin.StableOriginId, Population = eligible[origin.StableOriginId] }) };
+    }).ToArray();
+    var demographicCaptureResult = new
+    {
+        ProtocolHash = Convert.ToHexString(SHA256.HashData(demographicProtocolBytes)).ToLowerInvariant(),
+        Scope = "Regional input coverage and ACS median-household-income correction; not empirical model accuracy, fractional county controls or acceptance.",
+        ObservationYear = demographicYear, GamingAge = gamingAge, FullOrigins = union.Length, ModelOrigins = selected.Length,
+        GamingAgeBasis = demographicProtocol.EligibleAge.HasValue ? "explicit input-capture threshold; legal regime validation remains separate" : "effective jurisdiction/regime rule",
+        ProviderEnvelopes = providerEnvelopes,
+        SourceGeographyCaptures = geographyCaptures.Select(capture => new { capture.Source.Url, capture.Source.ContentHash, capture.ContentChecksum }),
+        SourceGeography = new { fullGeography.Source.Url, fullGeography.Source.ContentHash, fullGeography.ContentChecksum },
+        SourceAges = new { ages.Source.Url, ages.Source.ContentHash, ages.ContentChecksum },
+        SourceMedianIncome = new { medians.Source.Url, medians.Source.ContentHash, medians.ContentChecksum },
+        InputSnapshots = new { Origin = new { Id = originId, sealedDemographicInputs[originId].Checksum },
+            Income = new { Id = incomeId, sealedDemographicInputs[incomeId].Checksum }, Age = new { Id = ageId, sealedDemographicInputs[ageId].Checksum } },
+        Coverage = coverage,
+        Controls = union.Select(origin => new { origin.StableOriginId, origin.RepresentativeLatitude, origin.RepresentativeLongitude,
+            EligiblePopulation = eligible[origin.StableOriginId], MedianHouseholdIncome = medianByOrigin.GetValueOrDefault(origin.StableOriginId)?.MedianHouseholdIncome }),
+        Warnings = demographicGeography.Warnings.Concat(demographicAge.Warnings).Concat(demographicIncome.Warnings), ReleaseAccepted = false
+    };
+    await File.WriteAllTextAsync(demographicOutputPath, JsonSerializer.Serialize(demographicCaptureResult, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { originId, incomeId, ageId, Cases = coverage.Select(row => new { row.Key, row.CoveragePercent, row.PopulationCoverageGatePassed }) }));
+    return;
+}
+
+if (args is ["--execute-regional-suite", var regionalDatabase, var regionalRoutingUrl, var regionalProtocolPath, var regionalOutputPath])
+{
+    if (!regionalDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        regionalDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe regional validation database name.");
+    var regionalConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Regional validation connection configuration is missing.")) { Database = regionalDatabase };
+    await using var regionalDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(regionalConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    using var regionalHttp = new HttpClient { BaseAddress = new Uri(regionalRoutingUrl), Timeout = TimeSpan.FromMinutes(3) };
+    var regionalRouter = new ValhallaClient(regionalHttp, NullLogger<ValhallaClient>.Instance);
+    var regionalGraph = await regionalRouter.GetRoutingGraphIdentityAsync();
+    using var regionalProtocol = JsonDocument.Parse(await File.ReadAllBytesAsync(regionalProtocolPath));
+    if (regionalGraph.GraphHash != regionalProtocol.RootElement.GetProperty("routingGraphHash").GetString())
+        throw new InvalidDataException("Regional router differs from the frozen graph before execution.");
+    await new RegionalScenarioValidationService(regionalDb, ValidationExecutionFactory.Create(regionalDb, regionalRouter))
+        .RunAsync(Path.GetFullPath(regionalProtocolPath), Path.GetFullPath(regionalOutputPath));
+    return;
+}
+
+if (args is ["--supplement-border-competition", var borderBasePath, var borderPaPdfPath, var borderWiPdfPath, var borderOutputPath])
+{
+    if (File.Exists(borderOutputPath)) throw new ArgumentException("Border-supply capture output already exists.");
+    var baseBytes = await File.ReadAllBytesAsync(borderBasePath);
+    var borderBase = JsonSerializer.Deserialize<ProviderValidationBundle>(baseBytes) ?? throw new InvalidDataException("Border-supply base is invalid.");
+    if (borderBase.Facilities.ContentChecksum != "cc29854dcef635ae880558fbe9043538254aafa6adc08ee07879b55e725de8f4")
+        throw new InvalidDataException("Border supplement requires the retained five-state calendar-2025 inventory.");
+    using var borderHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+    var pa = await new PennsylvaniaGamingFacilityProvider(borderHttp).CaptureAsync(await File.ReadAllBytesAsync(borderPaPdfPath));
+    var wi = await new WisconsinBorderFacilityProvider(borderHttp).CaptureAsync(await File.ReadAllBytesAsync(borderWiPdfPath));
+    var facilityRows = borderBase.Facilities.Rows.Concat(pa.Rows).Concat(wi.Rows).ToArray();
+    if (facilityRows.Select(row => row.StableVenueId).Distinct(StringComparer.Ordinal).Count() != facilityRows.Length)
+        throw new InvalidDataException("Border supplement duplicates a stable venue identity.");
+    var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(borderBase.Facilities.ContentChecksum + "|" + pa.ContentChecksum + "|" + wi.ContentChecksum))).ToLowerInvariant();
+    var borderSource = new RegisterDataSourceRequest("Five-state inventory with sourced PA and partial WI border supply", "Gaming regulators and tribal operators",
+        PennsylvaniaGamingFacilityProvider.SourceUrl, "checksum-pinned-multi-source-facility-supplement", "US-IL,US-IN,US-MI,US-MO,US-OH,US-PA,US-WI", "2025 sources; 2026 geocodes",
+        DateTime.UtcNow, hash, true, "Component public-record and geocoder terms apply.",
+        $"Base bundle SHA-256 {Convert.ToHexString(SHA256.HashData(baseBytes)).ToLowerInvariant()}. Base inventory {borderBase.Facilities.ContentChecksum}.\n{pa.Source.Notes}\n{wi.Source.Notes}");
+    var facilities = new ProviderDataset<CasinoCompetitorImportRow>(borderSource, borderBase.Facilities.DatasetKey, "2025", new(2025, 1, 1), new(2025, 12, 31),
+        hash, "known-border-supply-supplement-v1", facilityRows, borderBase.Facilities.Warnings.Concat(pa.Warnings).Concat(wi.Warnings).ToArray());
+    await File.WriteAllTextAsync(borderOutputPath, JsonSerializer.Serialize(new ProviderValidationBundle(facilities, borderBase.Performance), new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { FacilityRows = facilityRows.Length, PennsylvaniaAdded = pa.Rows.Count, WisconsinAdded = wi.Rows.Count,
+        FacilitiesChecksum = hash, PerformanceChecksumUnchanged = borderBase.Performance.ContentChecksum, Scope = "Known physical supply supplement, not complete competitor/fiscal acceptance." }));
+    return;
+}
+
+if (args is ["--capture-illinois-video-gaming-2025", var videoRawPath, var videoOutputPath])
+{
+    if (File.Exists(videoOutputPath)) throw new ArgumentException("Video-gaming capture output already exists.");
+    var videoCapture = IllinoisVideoGamingProvider.ParseCapture(await File.ReadAllBytesAsync(videoRawPath), 2025, DateTime.UtcNow);
+    await File.WriteAllTextAsync(videoOutputPath, JsonSerializer.Serialize(videoCapture, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine($"Captured {videoCapture.Rows.Count} observations for {videoCapture.Rows.Where(row => row.StableLicenseId is not null).Select(row => row.StableLicenseId).Distinct().Count()} distinct licenses, {videoCapture.Rows.Sum(row => row.NetTerminalIncome)} reported NTI. Annual rows are not distinct physical supply; historical geocodes are not yet reconciled.");
+    return;
+}
+
+if (args is ["--inspect-mgc-source", var mgcInspectPdf, var mgcInspectOutput])
+{
+    await File.WriteAllTextAsync(mgcInspectOutput, JsonSerializer.Serialize(
+        MissouriGamingCommissionProvider.ExtractPages(await File.ReadAllBytesAsync(mgcInspectPdf)), new JsonSerializerOptions { WriteIndented = true }));
+    return;
+}
+
 if (args is ["--probe-census-cbp"])
 {
     using var providerProbeHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
@@ -635,6 +860,81 @@ if (args is ["--export-four-state-provider-bundle", var fourStateBundleOutputPat
     return;
 }
 
+if (args is ["--capture-missouri-2025", var missouriBasePath, var missouriOutputPath])
+{
+    var moBaseBytes = await File.ReadAllBytesAsync(Path.GetFullPath(missouriBasePath));
+    var moBase = JsonSerializer.Deserialize<ProviderValidationBundle>(moBaseBytes) ?? throw new InvalidDataException("Missouri capture base is invalid.");
+    if (moBase.Facilities.ContentChecksum != "9f6f1f01d9b88bf96d9dd8388e567f8eb191397c74a6c8b783877a4496f00e63")
+        throw new InvalidDataException("Missouri capture requires the retained Illinois-capacity inventory.");
+    var moOutput = Path.GetFullPath(missouriOutputPath);
+    var moSourcesPath = Path.GetFullPath(Path.Combine(".cache", "missouri-2025-sources-captured-2026-10-12"));
+    if (File.Exists(moOutput) || Directory.Exists(moSourcesPath) || Path.GetExtension(moOutput) != ".json")
+        throw new ArgumentException("Missouri output paths must be new.");
+    using var moHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+    var moCapture = await new MissouriGamingCommissionProvider(moHttp).CaptureAsync();
+    var moBaseHash = Convert.ToHexString(SHA256.HashData(moBaseBytes)).ToLowerInvariant();
+    string MoHash(string text) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant();
+    ProviderDataset<T> MoMerge<T>(ProviderDataset<T> prior, ProviderDataset<T> added) => new(
+        new RegisterDataSourceRequest($"Five-state regulator {prior.DatasetKey} capture", "Multiple jurisdiction gaming regulators",
+            $"urn:savenein:five-state-2025:{MoHash(prior.ContentChecksum + "|" + added.ContentChecksum)}", "checksum-pinned-regulator-bundle",
+            "US-IL,US-IN,US-MI,US-MO,US-OH", "2025", DateTime.UtcNow, MoHash(prior.ContentChecksum + "|" + added.ContentChecksum), true,
+            "Component regulator public-record terms and geocoder terms apply.",
+            $"Base bundle {moBaseHash}; retained dataset {prior.ContentChecksum}; Missouri dataset {added.ContentChecksum}. {added.Source.Notes}"),
+        prior.DatasetKey, prior.Period, prior.PeriodStart, prior.PeriodEnd, MoHash(prior.ContentChecksum + "|" + added.ContentChecksum),
+        "frozen-five-state-mgc-refresh-v1", prior.Rows.Concat(added.Rows).ToArray(), prior.Warnings.Concat(added.Warnings).ToArray());
+    var moMerged = new ProviderValidationBundle(MoMerge(moBase.Facilities, moCapture.Facilities), MoMerge(moBase.Performance, moCapture.Performance));
+    Directory.CreateDirectory(moSourcesPath);
+    foreach (var pair in moCapture.SourcePdfs) await File.WriteAllBytesAsync(Path.Combine(moSourcesPath, pair.Key), pair.Value);
+    await File.WriteAllTextAsync(moOutput, JsonSerializer.Serialize(moMerged, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { BundlePath = moOutput, BaseSha256 = moBaseHash, FacilityRows = moMerged.Facilities.Rows.Count,
+        PerformanceRows = moMerged.Performance.Rows.Count, FacilityChecksum = moMerged.Facilities.ContentChecksum, PerformanceChecksum = moMerged.Performance.ContentChecksum,
+        MissouriFacilities = moCapture.Facilities.Rows.Select(row => new { row.StableVenueId, row.Latitude, row.Longitude, row.SlotOrVltPositions, row.TableGameCount }),
+        Sources = moCapture.SourcePdfs.Select(pair => new { File = pair.Key, Sha256 = Convert.ToHexString(SHA256.HashData(pair.Value)).ToLowerInvariant() }) }));
+    return;
+}
+
+if (args is ["--refresh-four-state-illinois-facilities", var illinoisBasePath, var illinoisOutputPath])
+{
+    var fullBasePath = Path.GetFullPath(illinoisBasePath);
+    var fullOutputPath = Path.GetFullPath(illinoisOutputPath);
+    var egdOutput = Path.ChangeExtension(fullOutputPath, "egd.csv");
+    var tableOutput = Path.ChangeExtension(fullOutputPath, "tables.csv");
+    if (!File.Exists(fullBasePath) || Path.GetExtension(fullOutputPath) != ".json" || !Directory.Exists(Path.GetDirectoryName(fullOutputPath)) ||
+        new[] { fullOutputPath, egdOutput, tableOutput }.Any(File.Exists))
+        throw new ArgumentException("Illinois refresh requires an existing base bundle and new output JSON/CSV paths.");
+    var baseBytes = await File.ReadAllBytesAsync(fullBasePath);
+    var baseHash = Convert.ToHexString(SHA256.HashData(baseBytes)).ToLowerInvariant();
+    if (baseHash != "0118ab5489982d889b81d584bc3dbf023d21fe65b1021b0ffa727c1f267abb75")
+        throw new InvalidDataException("Illinois refresh base does not match the retained four-state calibration bundle.");
+    var bundle = JsonSerializer.Deserialize<ProviderValidationBundle>(baseBytes) ?? throw new InvalidDataException("Base bundle is invalid.");
+    using var refreshHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(8) };
+    var configured = Options.Create(new IllinoisGamingBoardProviderOptions());
+    var provider = new IllinoisGamingBoardFacilityInventoryProvider(refreshHttp,
+        new IllinoisGamingBoardRevenueProvider(refreshHttp, configured), configured);
+    var (dataset, illinoisCapturedCapacity) = await provider.FetchWithCapacityAsync(new ProviderFetchRequest("US-IL", new(2025, 1, 1), new(2025, 12, 31)));
+    var expectedIds = bundle.Facilities.Rows.Where(row => row.State == "IL").Select(row => row.StableVenueId).ToHashSet(StringComparer.Ordinal);
+    if (!expectedIds.SetEquals(dataset.Rows.Select(row => row.StableVenueId)))
+        throw new InvalidDataException("Illinois refresh changed the frozen facility universe.");
+    var rows = bundle.Facilities.Rows.Where(row => row.State != "IL").Concat(dataset.Rows).OrderBy(row => row.StableVenueId, StringComparer.Ordinal).ToArray();
+    var manifest = $"frozen-base|{baseHash}\nillinois-capacity-inventory|{dataset.ContentChecksum}";
+    var checksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(manifest))).ToLowerInvariant();
+    var illinoisRefreshedSource = new RegisterDataSourceRequest("Four-state inventory with sourced Illinois monthly-average capacity", "Multiple jurisdiction gaming regulators",
+        $"urn:savenein:frozen-four-state-illinois-refresh:{checksum}", "checksum-pinned-regulator-bundle-refresh", "US-IL,US-IN,US-MI,US-OH", "2025",
+        DateTime.UtcNow, checksum, true, "Each regulator's public-record terms apply.",
+        $"Base bundle SHA-256 {baseHash}; Illinois inventory SHA-256 {dataset.ContentChecksum}. Illinois December 2025 EGD/table reports provide explicitly labeled monthly-average physical proxies. Other facilities and all performance rows retain the frozen base data. Illinois source: {dataset.Source.Url}. {dataset.Source.Notes}");
+    var refreshed = new ProviderDataset<CasinoCompetitorImportRow>(illinoisRefreshedSource, DatasetSnapshotKinds.Competitors, "2025", new(2025, 1, 1), new(2025, 12, 31),
+        checksum, "frozen-four-state-illinois-capacity-refresh-v1", rows, bundle.Facilities.Warnings.Concat(dataset.Warnings).Distinct().ToArray());
+    await File.WriteAllBytesAsync(egdOutput, illinoisCapturedCapacity.EgdCsvBytes);
+    await File.WriteAllBytesAsync(tableOutput, illinoisCapturedCapacity.TableCsvBytes);
+    await File.WriteAllTextAsync(fullOutputPath, JsonSerializer.Serialize(new ProviderValidationBundle(refreshed, bundle.Performance), new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { BundlePath = fullOutputPath, BaseBundleSha256 = baseHash, IllinoisChecksum = dataset.ContentChecksum,
+        FacilityChecksum = checksum, IllinoisRows = dataset.Rows.Count, FacilityRows = rows.Length, bundle.Performance.ContentChecksum,
+        EGD = new { Path = egdOutput, Sha256 = Convert.ToHexString(SHA256.HashData(illinoisCapturedCapacity.EgdCsvBytes)).ToLowerInvariant() },
+        Tables = new { Path = tableOutput, Sha256 = Convert.ToHexString(SHA256.HashData(illinoisCapturedCapacity.TableCsvBytes)).ToLowerInvariant() }, illinoisCapturedCapacity.PeriodLabel,
+        Counts = dataset.Rows.Select(row => new { row.StableVenueId, row.SlotOrVltPositions, row.TableGameCount, row.PokerTableCount }) }));
+    return;
+}
+
 if (args is ["--refresh-four-state-indiana-facilities", var baseBundlePath, var refreshedBundleOutputPath])
 {
     var fullBasePath = Path.GetFullPath(baseBundlePath);
@@ -818,7 +1118,389 @@ if (args is ["--export-ohio-provider-bundle", var ohioBundleOutputPath])
     return;
 }
 
-if (args is ["--ingest-four-state-provider-bundle", var fourStateDatabase, var fourStateBundlePath])
+if (args is ["--supplement-nearby-tribal-gaming", var nearbyTribalBasePath, var nearbyTribalSourcePrefix, var nearbyTribalOutputPath])
+{
+    var gunLakeSourcePath = nearbyTribalSourcePrefix + "-gun-lake.pdf";
+    var fourWindsSourcePath = nearbyTribalSourcePrefix + "-four-winds.html";
+    if (File.Exists(nearbyTribalOutputPath) || File.Exists(gunLakeSourcePath) || File.Exists(fourWindsSourcePath))
+        throw new ArgumentException("Historical nearby tribal capture requires new source/output files.");
+    var nearbyTribalBundle = JsonSerializer.Deserialize<ProviderValidationBundle>(await File.ReadAllBytesAsync(nearbyTribalBasePath))
+        ?? throw new InvalidDataException("Base gaming bundle is missing.");
+    using var nearbyTribalHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+    nearbyTribalHttp.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
+    var gunLakeSourceTask = nearbyTribalHttp.GetByteArrayAsync(MichiganHistoricalFacilityAttributes.GunLakeSourceUrl);
+    var fourWindsSourceTask = nearbyTribalHttp.GetByteArrayAsync(MichiganHistoricalFacilityAttributes.FourWindsSourceUrl);
+    await Task.WhenAll(gunLakeSourceTask, fourWindsSourceTask);
+    var nearbyTribalInventory = MichiganHistoricalFacilityAttributes.SupplementNearbyTribalFacilities(
+        nearbyTribalBundle.Facilities, await gunLakeSourceTask, await fourWindsSourceTask);
+    await File.WriteAllBytesAsync(gunLakeSourcePath, await gunLakeSourceTask);
+    await File.WriteAllBytesAsync(fourWindsSourcePath, await fourWindsSourceTask);
+    await File.WriteAllTextAsync(nearbyTribalOutputPath, JsonSerializer.Serialize(new ProviderValidationBundle(nearbyTribalInventory, nearbyTribalBundle.Performance),
+        new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { FacilityRows = nearbyTribalInventory.Rows.Count, nearbyTribalInventory.ContentChecksum,
+        Updated = nearbyTribalInventory.Rows.Where(row => row.StableVenueId is "USA-MI-TRIBAL-gun-lake-casino" or "USA-MI-TRIBAL-four-winds-casino-new-buffalo" or "USA-IN-TRIBAL-four-winds-casino-south-bend")
+            .Select(row => new { row.StableVenueId, row.SlotOrVltPositions, row.TableGameCount, row.PokerTableCount, row.GamingFloorSquareFeet }) }));
+    return;
+}
+
+if (args is ["--supplement-firekeepers-historical-capacity", var fireKeepersBasePath, var fireKeepersSourcePath, var fireKeepersOutputPath])
+{
+    if (File.Exists(fireKeepersOutputPath) || File.Exists(fireKeepersSourcePath))
+        throw new ArgumentException("Historical capacity capture requires new source/output files.");
+    var fireKeepersBundle = JsonSerializer.Deserialize<ProviderValidationBundle>(await File.ReadAllBytesAsync(fireKeepersBasePath))
+        ?? throw new InvalidDataException("Base gaming bundle is missing.");
+    using var fireKeepersHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+    fireKeepersHttp.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
+    var fireKeepersBytes = await fireKeepersHttp.GetByteArrayAsync(MichiganHistoricalFacilityAttributes.FireKeepersSourceUrl);
+    var fireKeepersInventory = MichiganHistoricalFacilityAttributes.SupplementFireKeepers(fireKeepersBundle.Facilities, fireKeepersBytes);
+    await File.WriteAllBytesAsync(fireKeepersSourcePath, fireKeepersBytes);
+    await File.WriteAllTextAsync(fireKeepersOutputPath, JsonSerializer.Serialize(new ProviderValidationBundle(fireKeepersInventory, fireKeepersBundle.Performance),
+        new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { FacilityRows = fireKeepersInventory.Rows.Count, fireKeepersInventory.ContentChecksum,
+        Updated = fireKeepersInventory.Rows.Single(row => row.StableVenueId == MichiganHistoricalFacilityAttributes.FireKeepersVenueId) }));
+    return;
+}
+
+if (args is ["--extend-gaming-bundle-pennsylvania-revenue", var paRevenueBasePath, var paRevenueSourcePath, var paRevenueOutputPath])
+{
+    if (File.Exists(paRevenueOutputPath) || File.Exists(paRevenueSourcePath))
+        throw new ArgumentException("Pennsylvania revenue capture requires new source/output files.");
+    var paBaseBytes = await File.ReadAllBytesAsync(paRevenueBasePath);
+    var paBaseBundle = JsonSerializer.Deserialize<ProviderValidationBundle>(paBaseBytes)
+        ?? throw new InvalidDataException("Base gaming bundle is missing.");
+    using var paRevenueHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+    var paRevenueBytes = await paRevenueHttp.GetByteArrayAsync(PennsylvaniaGamingRevenueProvider.SourceUrl);
+    var paPerformance = PennsylvaniaGamingRevenueProvider.Capture(paRevenueBytes);
+    var paKeys = paPerformance.Rows.Select(row => row.StableVenueId).Distinct(StringComparer.Ordinal).ToArray();
+    if (paKeys.Any(key => !paBaseBundle.Facilities.Rows.Any(row => row.StableVenueId == key)) ||
+        paBaseBundle.Performance.Rows.Any(row => paKeys.Contains(row.StableVenueId, StringComparer.Ordinal)))
+        throw new InvalidDataException("Pennsylvania observations require a matching, previously unscored inventory without duplicate performance.");
+    var paBaseHash = Convert.ToHexString(SHA256.HashData(paBaseBytes)).ToLowerInvariant();
+    var paPerformanceHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+        "pgcb-calendar2025-composite-v2\n" + paBaseHash + "\n" + paBaseBundle.Performance.ContentChecksum + "\n" + paPerformance.ContentChecksum))).ToLowerInvariant();
+    var extendedPerformance = paBaseBundle.Performance with
+    {
+        ContentChecksum = paPerformanceHash,
+        TransformVersion = "pgcb-calendar2025-composite-v2",
+        Source = paBaseBundle.Performance.Source with
+        {
+            Name = "Calendar-2025 observed gaming performance with PGCB retail revenue",
+            ContentHash = paPerformanceHash,
+            RetrievedAtUtc = DateTime.UtcNow,
+            SourceType = "state-regulator-multi-source-observed-performance",
+            GeographicCoverage = string.Join(',', paBaseBundle.Performance.Source.GeographicCoverage.Split(',').Append("US-PA").Distinct(StringComparer.Ordinal)),
+            Notes = paBaseBundle.Performance.Source.Notes + $"\nBase bundle bytes {paBaseHash}; PGCB source {paPerformance.Source.Url}; dataset {paPerformance.ContentChecksum}. " + paPerformance.Source.Notes
+        },
+        Rows = paBaseBundle.Performance.Rows.Concat(paPerformance.Rows).ToArray(),
+        Warnings = paBaseBundle.Performance.Warnings.Concat(paPerformance.Warnings).ToArray()
+    };
+    await File.WriteAllBytesAsync(paRevenueSourcePath, paRevenueBytes);
+    await File.WriteAllTextAsync(paRevenueOutputPath, JsonSerializer.Serialize(new ProviderValidationBundle(paBaseBundle.Facilities, extendedPerformance),
+        new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(JsonSerializer.Serialize(new { FacilityRows = paBaseBundle.Facilities.Rows.Count,
+        PerformanceRows = extendedPerformance.Rows.Count, AddedProperties = paKeys.Length,
+        AddedComparableRevenue = paPerformance.Rows.Where(row => row.ReportedMetricKey == GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue).Sum(row => row.ReportedAmount),
+        extendedPerformance.ContentChecksum, SourceHash = Convert.ToHexString(SHA256.HashData(paRevenueBytes)).ToLowerInvariant() }));
+    return;
+}
+
+if (args is [var calibrationMode, var calibrationDatabase, var calibrationRoutingUrl, var calibrationProtocolPath, var calibrationOutputPath] &&
+    calibrationMode is "--calibrate-multimarket-revenue" or "--calibrate-multimarket-development" or "--register-multimarket-inspection" or "--replay-inspected-multimarket")
+{
+    if (!calibrationDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        calibrationDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe multi-market calibration database name.");
+    var multiConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.")) { Database = calibrationDatabase };
+    await using var multiDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(multiConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    using var multiHttp = new HttpClient { BaseAddress = new Uri(calibrationRoutingUrl), Timeout = TimeSpan.FromMinutes(2) };
+    var multiCalibration = new MultimarketRevenueCalibration(multiDb, new ValhallaClient(multiHttp, NullLogger<ValhallaClient>.Instance));
+    if (calibrationMode == "--register-multimarket-inspection")
+        await multiCalibration.RegisterInspectionAsync(Path.GetFullPath(calibrationProtocolPath), Path.GetFullPath(calibrationOutputPath));
+    else
+        await multiCalibration.RunAsync(Path.GetFullPath(calibrationProtocolPath), Path.GetFullPath(calibrationOutputPath),
+            evaluateFinalHoldout: calibrationMode != "--calibrate-multimarket-development",
+            diagnosticReplay: calibrationMode == "--replay-inspected-multimarket");
+    return;
+}
+
+if (args is ["--validate-michigan-commercial-fiscal", var michiganFiscalDatabase])
+{
+    if (!michiganFiscalDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        michiganFiscalDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe Michigan fiscal validation database name.");
+    var fiscalConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.")) { Database = michiganFiscalDatabase };
+    await using var michiganFiscalDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(fiscalConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    await MichiganCommercialGamingRulesSeeder.SeedAsync(michiganFiscalDb);
+    await MichiganCommercialGamingRulesSeeder.SeedAsync(michiganFiscalDb);
+    var michiganProfiles = new JurisdictionProfileService(michiganFiscalDb);
+    var fiscalDate = new DateOnly(2025, 12, 31);
+    var legalAge = await new GamingAgeResolver(michiganProfiles).ResolveMinimumAgeAsync("US-MI", "commercial-casino", fiscalDate);
+    var reportedTax = await new GamingTaxCalculator(michiganProfiles).CalculateAsync(new GamingTaxRequest(
+        "US-MI", "commercial-casino", fiscalDate, 0m, 100_000_000m));
+    var reportedAllocation = await new GamingFiscalAllocationCalculator(michiganProfiles, new CandidateFiscalLocationResolver(michiganFiscalDb))
+        .CalculateAsync(new GamingFiscalAllocationRequest("US-MI", "commercial-casino", fiscalDate, 100_000_000m,
+            reportedTax.GamingTax, 42.3319, -83.0461));
+    if (legalAge != 21 || reportedTax.GamingTax != 19_000_000m || reportedAllocation.HostMunicipalityShare != 10_900_000m ||
+        reportedAllocation.HostStateShare != 8_100_000m || reportedAllocation.Location.MunicipalityGeoid != "2622000")
+        throw new InvalidOperationException("Michigan reported levy or exact Detroit containment did not reconcile.");
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        MinimumGamingAge = legalAge, TaxableAgr = 100_000_000m, reportedTax.GamingTax,
+        reportedAllocation.HostMunicipalityShare, reportedAllocation.HostStateShare,
+        reportedAllocation.SupplementalGamingTax, reportedAllocation.Location,
+        Source = MichiganCommercialGamingRulesSeeder.TaxSourceUrl,
+        Scope = "Detroit commercial land-based reported levy only; excludes tribal, sports, online and additional fees; no empirical forecast acceptance."
+    }));
+    return;
+}
+
+if (args is ["--render-validation-run", var renderDatabase, var renderRunId])
+{
+    if (!renderDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        renderDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe report validation database name.");
+    var renderConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.")) { Database = renderDatabase };
+    await using var renderDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(renderConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    var savedRunId = Guid.Parse(renderRunId);
+    var artifact = await new ReportArtifactService(renderDb, new CasinoImpactReportModelFactory(renderDb),
+        new HtmlReportRenderer(), new PdfReportRenderer(), new CsvReportRenderer()).GetOrCreateAsync(savedRunId,
+        new("Execution verification using real inputs", "Engineering validation"));
+    Console.WriteLine(JsonSerializer.Serialize(new { ModelRunId = savedRunId, artifact.Id, artifact.TemplateVersion, artifact.PdfContentHash }));
+    return;
+}
+
+if (args is ["--measure-validation-income-coverage", var coverageDatabase, var coverageLatitude, var coverageLongitude, var coverageRadius, var coverageOutputPath, .. var coverageSnapshotArguments] &&
+    coverageSnapshotArguments.Length <= 1)
+{
+    if (!coverageDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        coverageDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe coverage validation database name.");
+    var outputPath = Path.GetFullPath(coverageOutputPath);
+    if (File.Exists(outputPath) || !string.Equals(Path.GetExtension(outputPath), ".json", StringComparison.OrdinalIgnoreCase))
+        throw new ArgumentException("Coverage evidence requires a new JSON output file.");
+    var connection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.")) { Database = coverageDatabase };
+    await using var coverageDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(connection.ConnectionString, provider => provider.UseNetTopologySuite()).Options);
+    var coverageSnapshots = coverageDb.DatasetSnapshots.AsNoTracking().Where(row => row.DatasetKey == DatasetSnapshotKinds.Income && row.IsSealed);
+    var incomeSnapshot = coverageSnapshotArguments.Length == 1
+        ? await coverageSnapshots.SingleAsync(row => row.Id == Guid.Parse(coverageSnapshotArguments[0]))
+        : await coverageSnapshots.OrderByDescending(row => row.IngestedAtUtc).FirstAsync();
+    var coveredOriginIds = (await (from coverageIncomeRow in coverageDb.OriginZoneIncomePeriods.AsNoTracking()
+                                  join origin in coverageDb.OriginZones.AsNoTracking() on coverageIncomeRow.OriginZoneId equals origin.Id
+                                  where coverageIncomeRow.DatasetSnapshotId == incomeSnapshot.Id
+                                  select origin.StableOriginId).Distinct().ToArrayAsync()).ToHashSet(StringComparer.Ordinal);
+    using var coverageHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(8) };
+    Console.WriteLine("Reading the complete Census study geography for independent population controls.");
+    var completeOrigins = await new CensusZctaOriginProvider(coverageHttp, Options.Create(new CensusZctaOriginProviderOptions()))
+        .FetchAsync(new("US-ZCTA", new(2020, 1, 1), new(2020, 12, 31), new Dictionary<string, string>
+        {
+            ["center-latitude"] = coverageLatitude, ["center-longitude"] = coverageLongitude, ["radius-miles"] = coverageRadius
+        }));
+    var completeCodes = string.Join(',', completeOrigins.Rows.Select(row => row.GeographyCode).Order(StringComparer.Ordinal));
+    Console.WriteLine($"Reading ACS age controls for all {completeOrigins.Rows.Count} origins, including those missing IRS income.");
+    var ageControls = await new CensusAcsAgePopulationProvider(coverageHttp,
+        Options.Create(new CensusAcsProviderOptions { ApiKey = Environment.GetEnvironmentVariable("CensusAcs__ApiKey") }))
+        .FetchAsync(new("US-ZCTA", new(2022, 1, 1), new(2022, 12, 31), new Dictionary<string, string> { ["zcta-codes"] = completeCodes }));
+    var effectiveOn = new DateOnly(2026, 10, 11);
+    var minimumAge = await new GamingAgeResolver(new JurisdictionProfileService(coverageDb))
+        .ResolveMinimumAgeAsync("US-IN", "commercial-casino", effectiveOn);
+    var populationById = ageControls.Rows.GroupBy(row => row.StableOriginId, StringComparer.Ordinal)
+        .ToDictionary(group => group.Key, group => EligiblePopulationCalculator.Calculate(
+            group.Select(row => new AgeBinValue(row.MinimumAge, row.MaximumAge, row.Population)).ToArray(), minimumAge).Population,
+            StringComparer.Ordinal);
+    if (completeOrigins.Rows.Any(row => !populationById.ContainsKey(row.StableOriginId)))
+        throw new InvalidDataException("Some full-study origins lack ACS controls; coverage cannot be claimed.");
+    var expectedPopulation = completeOrigins.Rows.Sum(row => populationById[row.StableOriginId]);
+    var coveredPopulation = completeOrigins.Rows.Where(row => coveredOriginIds.Contains(row.StableOriginId)).Sum(row => populationById[row.StableOriginId]);
+    var output = new
+    {
+        Scope = "Input coverage diagnostic only; no model-accuracy or county/state control acceptance.",
+        StudyLatitude = coverageLatitude, StudyLongitude = coverageLongitude, RadiusMiles = coverageRadius,
+        AgeObservationYear = 2022, FiscalEffectiveOn = effectiveOn, MinimumGamingAge = minimumAge,
+        IncomeSnapshotId = incomeSnapshot.Id, IncomeChecksum = incomeSnapshot.Checksum,
+        SnapshotSelection = coverageSnapshotArguments.Length == 1 ? "explicit immutable snapshot" : "legacy latest-snapshot selection; not frozen acceptance evidence",
+        GeographyChecksum = completeOrigins.ContentChecksum, AgeChecksum = ageControls.ContentChecksum,
+        FullOriginCount = completeOrigins.Rows.Count, CoveredOriginCount = completeOrigins.Rows.Count(row => coveredOriginIds.Contains(row.StableOriginId)),
+        ExpectedEligiblePopulation = expectedPopulation, CoveredEligiblePopulation = coveredPopulation,
+        CoveragePercent = expectedPopulation > 0 ? 100 * coveredPopulation / expectedPopulation : (double?)null,
+        PopulationCoverageGatePassed = expectedPopulation > 0 && coveredPopulation >= expectedPopulation * 0.99,
+        ByState = completeOrigins.Rows.GroupBy(row => row.StateOrTerritoryCode).Select(group => new
+        {
+            State = group.Key, Expected = group.Sum(row => populationById[row.StableOriginId]),
+            Covered = group.Where(row => coveredOriginIds.Contains(row.StableOriginId)).Sum(row => populationById[row.StableOriginId])
+        }).OrderBy(row => row.State),
+        MissingOrigins = completeOrigins.Rows.Where(row => !coveredOriginIds.Contains(row.StableOriginId))
+            .Select(row => new { row.StableOriginId, EligiblePopulation = populationById[row.StableOriginId] }).OrderBy(row => row.StableOriginId)
+    };
+    await File.WriteAllTextAsync(outputPath, JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine($"Income coverage: {(expectedPopulation > 0 ? 100 * coveredPopulation / expectedPopulation : 0):F4}%; evidence saved to {outputPath}.");
+    return;
+}
+
+if (args is ["--execute-validation-case", var caseDatabase, var caseRoutingUrl, var caseLatitude, var caseLongitude, var casePopulationYear])
+{
+    if (!caseDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        caseDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe scenario validation database name.");
+    var caseConfiguredConnection = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.");
+    var caseConnection = new NpgsqlConnectionStringBuilder(caseConfiguredConnection) { Database = caseDatabase };
+    var caseOptions = new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(caseConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options;
+    await using var caseDb = new AppDbContext(caseOptions);
+    await ModelFoundationInitializer.ApplySchemaAsync(caseDb);
+    async Task<DatasetSnapshot> CaseSnapshot(string kind) => await caseDb.DatasetSnapshots.AsNoTracking()
+        .Where(snapshot => snapshot.DatasetKey == kind && snapshot.IsSealed).OrderByDescending(snapshot => snapshot.IngestedAtUtc).FirstAsync();
+    var caseOrigins = await CaseSnapshot(DatasetSnapshotKinds.OriginGeography);
+    var caseAges = await CaseSnapshot(DatasetSnapshotKinds.AgePopulation);
+    var caseIncome = await CaseSnapshot(DatasetSnapshotKinds.Income);
+    var caseFacilities = await CaseSnapshot(DatasetSnapshotKinds.Competitors);
+    var casePerformance = await CaseSnapshot(DatasetSnapshotKinds.ObservedPerformance);
+    var caseProgram = await new DevelopmentProgramService(caseDb).CreateAsync(new(
+        "real-input-validation-program", Guid.NewGuid().ToString("N"), "Assumed validation proposal",
+        2000, 50, 0, false, 200, 60000, 5, 0, 0, null, null, null, 3,
+        "Assumed program for execution verification; not a sourced proposal or forecasting acceptance."));
+    var caseOriginIds = await caseDb.OriginZones.AsNoTracking().Where(origin => origin.DatasetSnapshotId == caseOrigins.Id)
+        .OrderBy(origin => origin.StableOriginId).Select(origin => origin.StableOriginId).ToArrayAsync();
+    using var caseHttp = new HttpClient { BaseAddress = new Uri(caseRoutingUrl), Timeout = TimeSpan.FromMinutes(3) };
+    var caseValhalla = new ValhallaClient(caseHttp, NullLogger<ValhallaClient>.Instance);
+    var caseRequest = new GravityModelRunRequest(
+        "Real-input execution verification", "US-IN", caseProgram.Id,
+        double.Parse(caseLatitude, System.Globalization.CultureInfo.InvariantCulture),
+        double.Parse(caseLongitude, System.Globalization.CultureInfo.InvariantCulture),
+        caseOrigins.Id, caseAges.Id, caseIncome.Id, caseFacilities.Id, casePerformance.Id,
+        caseOriginIds, [], caseAges.PeriodEnd!.Value.Year, caseIncome.PeriodEnd!.Value.Year,
+        DateOnly.FromDateTime(DateTime.UtcNow), "commercial-casino", GravityDemandSpecifications.AgiShare,
+        FacilityAttractionSpecifications.HybridObservedGgr, "inverse-power", GamingRevenueMetricKeys.ComparableLandBasedGamingRevenue,
+        casePerformance.PeriodStart!.Value, casePerformance.PeriodEnd!.Value, null, null, null,
+        [new ParameterOverride("demographics.population_annual_growth_rate", 0.01)],
+        CompetitorPrefilterMiles: 300, ImpactGeography: new(ImpactScopeKinds.HostState, "US-IN"),
+        MissingRoutePolicy: MissingRoutePolicies.ExcludeFacility,
+        PopulationScenarioYear: int.Parse(casePopulationYear, System.Globalization.CultureInfo.InvariantCulture));
+    var caseResult = await ValidationExecutionFactory.Create(caseDb, caseValhalla).ExecuteAsync(caseRequest);
+    var casePopulations = await caseDb.ModelRunOriginResults.AsNoTracking().Where(row => row.ModelRunId == caseResult.ModelRunId)
+        .Select(row => row.EligiblePopulation).ToArrayAsync();
+    if (casePopulations.Length != caseOriginIds.Length || casePopulations.Any(population => population is null || !double.IsFinite(population.Value)))
+        throw new InvalidOperationException("The finalized run did not persist all eligible origin populations.");
+    var caseReport = await new ReportArtifactService(caseDb, new CasinoImpactReportModelFactory(caseDb),
+        new HtmlReportRenderer(), new PdfReportRenderer(), new CsvReportRenderer()).GetOrCreateAsync(caseResult.ModelRunId,
+        new("Execution verification using real inputs", "Engineering validation"));
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        caseResult.ModelRunId, caseResult.Status, caseResult.OriginCount, caseResult.IncumbentCount,
+        caseResult.StabilizedTotalGgr, EligiblePopulation = casePopulations.Sum(value => value!.Value),
+        caseReport.Id, caseReport.TemplateVersion, caseReport.PdfContentHash,
+        PopulationYear = caseRequest.PopulationScenarioYear, FiscalDate = caseRequest.EffectiveOn,
+        VerificationScope = "Execution and immutable-input/output validation only; no empirical forecast acceptance."
+    }));
+    return;
+}
+
+if (args is ["--complete-validation-study-area", var resumedStudyDatabase, var resumedOriginText])
+{
+    if (!resumedStudyDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) || resumedStudyDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe resumed study database name.");
+    var resumedConnection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.")) { Database = resumedStudyDatabase };
+    await using var resumedDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(resumedConnection.ConnectionString,
+        provider => provider.UseNetTopologySuite()).Options);
+    var resumedOriginId = Guid.Parse(resumedOriginText);
+    if (!await resumedDb.DatasetSnapshots.AnyAsync(row => row.Id == resumedOriginId && row.IsSealed && row.DatasetKey == DatasetSnapshotKinds.OriginGeography))
+        throw new InvalidDataException("Resumed origins must be a sealed geography snapshot.");
+    var resumedOrigins = await resumedDb.OriginZones.AsNoTracking().Where(row => row.DatasetSnapshotId == resumedOriginId).ToArrayAsync();
+    if (resumedOrigins.Length == 0) throw new InvalidDataException("Resumed origin snapshot is empty.");
+    var resumedIds = resumedOrigins.Select(row => row.StableOriginId).ToHashSet(StringComparer.Ordinal);
+    var resumedStateCodes = string.Join(',', resumedOrigins.Select(row => row.StateOrTerritoryCode).Distinct().Order());
+    using var resumedHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(8) };
+    var resumedIncomeRequest = new ProviderFetchRequest("US-STATES", new(2022, 1, 1), new(2022, 12, 31),
+        new Dictionary<string, string> { ["state-codes"] = resumedStateCodes });
+    var resumedIncome = await new IrsSoiExactCodeZctaIncomeProvider(resumedHttp, Options.Create(new IrsSoiProviderOptions())).FetchAsync(resumedIncomeRequest);
+    resumedIncome = resumedIncome with { Rows = resumedIncome.Rows.Where(row => resumedIds.Contains(row.StableOriginId)).ToArray(),
+        ContentChecksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(resumedIncome.ContentChecksum + "|" + string.Join(',', resumedIds.Order())))).ToLowerInvariant(),
+        TransformVersion = resumedIncome.TransformVersion + "+study-area-filter-v1" };
+    if (!resumedIncome.Rows.Select(row => row.StableOriginId).ToHashSet().SetEquals(resumedIds)) throw new InvalidDataException("IRS income no longer covers the retained origins.");
+    var resumedIngestion = new ProviderSnapshotIngestionService(new DataSnapshotService(resumedDb), new ModelDataIngestionService(resumedDb));
+    var resumedIncomeId = await resumedIngestion.IngestIncomeAsync(new FrozenOriginIncomeProvider(resumedIncome), resumedIncomeRequest, resumedOriginId);
+    var resumedAgeId = await resumedIngestion.IngestAgePopulationAsync(new CensusAcsAgePopulationProvider(resumedHttp,
+        Options.Create(new CensusAcsProviderOptions { ApiKey = Environment.GetEnvironmentVariable("CensusAcs__ApiKey") })),
+        new("US-ZCTA", new(2022, 1, 1), new(2022, 12, 31), new Dictionary<string, string>
+            { ["zcta-codes"] = string.Join(',', resumedIds.Order().Select(id => id["USA-ZCTA-".Length..])) }), resumedOriginId);
+    Console.WriteLine(JsonSerializer.Serialize(new { OriginSnapshotId = resumedOriginId, IncomeSnapshotId = resumedIncomeId,
+        AgeSnapshotId = resumedAgeId, OriginCount = resumedOrigins.Length, SourceIncomeChecksum = resumedIncome.ContentChecksum }));
+    return;
+}
+
+if (args is ["--prepare-validation-study-area", var studyDatabase, var studyLatitude, var studyLongitude, var studyRadius])
+{
+    if (!studyDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
+        studyDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
+        throw new ArgumentException("Unsafe study-area validation database name.");
+    var studyConfiguredConnection = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? throw new InvalidOperationException("Validation connection configuration is missing.");
+    var studyConnection = new NpgsqlConnectionStringBuilder(studyConfiguredConnection) { Database = studyDatabase };
+    var studyOptions = new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(studyConnection.ConnectionString, provider => provider.UseNetTopologySuite()).Options;
+    await using var studyDb = new AppDbContext(studyOptions);
+    await ModelFoundationInitializer.ApplySchemaAsync(studyDb);
+    await ModelFoundationInitializer.SeedAsync(studyDb);
+    using var studyHttp = new HttpClient { Timeout = TimeSpan.FromMinutes(8) };
+    var studyOrigins = await new CensusZctaOriginProvider(studyHttp, Options.Create(new CensusZctaOriginProviderOptions()))
+        .FetchAsync(new("US-ZCTA", new(2020, 1, 1), new(2020, 12, 31), new Dictionary<string, string>
+        {
+            ["center-latitude"] = studyLatitude, ["center-longitude"] = studyLongitude, ["radius-miles"] = studyRadius
+        }));
+    var studyStates = string.Join(',', studyOrigins.Rows.Select(row => row.StateOrTerritoryCode).Distinct().Order(StringComparer.Ordinal));
+    var studyIncomePeriod = new ProviderFetchRequest("US-STATES", new(2022, 1, 1), new(2022, 12, 31),
+        new Dictionary<string, string> { ["state-codes"] = studyStates });
+    var studyIncome = await new IrsSoiExactCodeZctaIncomeProvider(studyHttp, Options.Create(new IrsSoiProviderOptions()))
+        .FetchAsync(studyIncomePeriod);
+    var studyIncomeIds = studyIncome.Rows.Select(row => row.StableOriginId).ToHashSet(StringComparer.Ordinal);
+    var studyMatchedOrigins = studyOrigins.Rows.Where(row => studyIncomeIds.Contains(row.StableOriginId)).ToArray();
+    var studyExcludedOrigins = studyOrigins.Rows.Where(row => !studyIncomeIds.Contains(row.StableOriginId))
+        .Select(row => row.StableOriginId).Order(StringComparer.Ordinal).ToArray();
+    if (studyMatchedOrigins.Length == 0) throw new InvalidDataException("No study-area origins have exact-code IRS income coverage.");
+    var studyIds = studyMatchedOrigins.Select(row => row.StableOriginId).ToHashSet(StringComparer.Ordinal);
+    var studyIdentity = string.Join(',', studyIds.Order(StringComparer.Ordinal));
+    var studyCoverageWarning = $"Verification study excludes {studyExcludedOrigins.Length} Census origin(s) without exact-code IRS income; full population-control acceptance remains pending.";
+    studyOrigins = studyOrigins with
+    {
+        Rows = studyMatchedOrigins,
+        ContentChecksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(studyOrigins.ContentChecksum + "|" + studyIdentity))).ToLowerInvariant(),
+        TransformVersion = studyOrigins.TransformVersion + "+income-coverage-filter-v1",
+        Warnings = studyOrigins.Warnings.Append(studyCoverageWarning).ToArray()
+    };
+    studyIncome = studyIncome with
+    {
+        Rows = studyIncome.Rows.Where(row => studyIds.Contains(row.StableOriginId)).ToArray(),
+        ContentChecksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(studyIncome.ContentChecksum + "|" + studyIdentity))).ToLowerInvariant(),
+        TransformVersion = studyIncome.TransformVersion + "+study-area-filter-v1"
+    };
+    var studyIngestion = new ProviderSnapshotIngestionService(new DataSnapshotService(studyDb), new ModelDataIngestionService(studyDb));
+    var studyOriginSnapshotId = await studyIngestion.IngestOriginsAsync(new FrozenOriginProvider(studyOrigins),
+        new("US-ZCTA", new(2020, 1, 1), new(2020, 12, 31)));
+    var studyIncomeSnapshotId = await studyIngestion.IngestIncomeAsync(new FrozenOriginIncomeProvider(studyIncome), studyIncomePeriod, studyOriginSnapshotId);
+    var studyCodes = string.Join(',', studyIds.Order(StringComparer.Ordinal).Select(id => id["USA-ZCTA-".Length..]));
+    var studyAgeSnapshotId = await studyIngestion.IngestAgePopulationAsync(new CensusAcsAgePopulationProvider(studyHttp,
+        Options.Create(new CensusAcsProviderOptions { ApiKey = Environment.GetEnvironmentVariable("CensusAcs__ApiKey") })),
+        new("US-ZCTA", new(2022, 1, 1), new(2022, 12, 31), new Dictionary<string, string> { ["zcta-codes"] = studyCodes }), studyOriginSnapshotId);
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        studyOriginSnapshotId, studyIncomeSnapshotId, studyAgeSnapshotId,
+        OriginCount = studyMatchedOrigins.Length, ExcludedOrigins = studyExcludedOrigins,
+        studyCoverageWarning, studyOrigins.ContentChecksum, IncomeChecksum = studyIncome.ContentChecksum
+    }));
+    return;
+}
+
+if (args is [var gamingIngestMode, var fourStateDatabase, var fourStateBundlePath] &&
+    gamingIngestMode is "--ingest-four-state-provider-bundle" or "--ingest-gaming-provider-bundle")
 {
     if (!fourStateDatabase.StartsWith("savenein_ui_validation_", StringComparison.Ordinal) ||
         fourStateDatabase.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '_'))
@@ -849,19 +1531,23 @@ if (args is ["--ingest-four-state-provider-bundle", var fourStateDatabase, var f
         new DataSnapshotService(bundleDb),
         new ModelDataIngestionService(bundleDb));
     var request = new ProviderFetchRequest(
-        "US-IL,US-IN,US-MI,US-OH",
+        bundle.Facilities.Source.GeographicCoverage,
         new DateOnly(2025, 1, 1),
         new DateOnly(2025, 12, 31));
-    var facilitySnapshotId = await fourStateIngestion.IngestGamingFacilitiesAsync(
+    var existingFacilitySnapshot = await bundleDb.DatasetSnapshots.AsNoTracking().SingleOrDefaultAsync(snapshot =>
+        snapshot.DatasetKey == DatasetSnapshotKinds.Competitors && snapshot.Checksum == bundle.Facilities.ContentChecksum);
+    if (existingFacilitySnapshot is not null && (!existingFacilitySnapshot.IsSealed || existingFacilitySnapshot.ValidationState == DatasetValidationStates.Rejected))
+        throw new InvalidDataException("An existing matching facility snapshot is not sealed and usable.");
+    var facilitySnapshotId = existingFacilitySnapshot?.Id ?? await fourStateIngestion.IngestGamingFacilitiesAsync(
         new FrozenGamingFacilityProvider(
             bundle.Facilities,
-            "frozen-official-four-state-facilities-validation",
+            "frozen-official-gaming-facilities-validation",
             request.GeographicCoverage),
         request);
     var performanceSnapshotId = await fourStateIngestion.IngestGamingPerformanceAsync(
         new FrozenGamingPerformanceProvider(
             bundle.Performance,
-            "frozen-official-four-state-performance-validation",
+            "frozen-official-gaming-performance-validation",
             request.GeographicCoverage),
         request,
         facilitySnapshotId);
@@ -1981,9 +2667,11 @@ if (validateProviderIngestion)
             item.CaseKey.StartsWith("live-2025-reference-shift-v3-"));
         var finalizedRunCount = await db.ModelRuns.CountAsync(run =>
             run.Status == ModelRunStatuses.Finalized) - finalizedBeforeCalibration;
+        var developmentTargetCount = targets.Count(target => target.DatasetPartition != ValidationPartitions.Holdout);
+        var holdoutTargetCount = targets.Count(target => target.DatasetPartition == ValidationPartitions.Holdout);
         if (evaluation.Status != ValidationEvaluationStatuses.Finalized || !evaluation.IsImmutable ||
-            calibration.Evaluation.PublishedParameterSetId is null || caseCount != targets.Length ||
-            finalizedRunCount != targets.Length * candidates.Length)
+            calibration.Evaluation.PublishedParameterSetId.HasValue != calibration.Evaluation.ReleaseAcceptance.Accepted || caseCount != targets.Length ||
+            finalizedRunCount != developmentTargetCount * candidates.Length + holdoutTargetCount)
         {
             throw new InvalidOperationException("Live incumbent calibration did not persist complete immutable evidence.");
         }
@@ -2005,6 +2693,7 @@ if (validateProviderIngestion)
                 calibration.Evaluation.HoldoutMetrics,
                 calibration.Evaluation.ComparableTrainingMetrics,
                 calibration.Evaluation.ComparableHoldoutMetrics,
+                calibration.Evaluation.ReleaseAcceptance,
                 caseCount,
                 finalizedRunCount,
                 indianaOriginCount,
@@ -2461,7 +3150,6 @@ var employment = await db.ModelRunEmploymentImpacts.AsNoTracking().SingleAsync(r
 var fiscal = await db.ModelRunFiscalImpacts.AsNoTracking().SingleAsync(row => row.ModelRunId == result.ModelRunId);
 var socialCosts = await db.ModelRunSocialCosts.AsNoTracking().Where(row => row.ModelRunId == result.ModelRunId).ToArrayAsync();
 var netImpact = await db.ModelRunNetImpacts.AsNoTracking().SingleAsync(row => row.ModelRunId == result.ModelRunId);
-QuestPDF.Settings.License = LicenseType.Community;
 var reportArtifacts = new ReportArtifactService(
     db,
     new CasinoImpactReportModelFactory(db),
@@ -2806,6 +3494,29 @@ static JurisdictionRule DisposableDistribution(
     ProvenanceNotes = "Disposable integration impact-accounting fixture only."
 };
 
+file static class ValidationExecutionFactory
+{
+    public static GravityModelExecutionService Create(AppDbContext db, ValhallaClient valhalla)
+    {
+        var profiles = new JurisdictionProfileService(db);
+        return new(db, new ModelParameterService(db), new GamingAgeResolver(profiles), new CompetitiveUniverseService(db),
+            new OriginDemandService(), new FacilityAttractivenessService(), new TravelMatrixService(db, valhalla),
+            new MarketEquilibriumService(new GravityModelService()), new AccessibilityExpansionService(), new TourismDemandService(),
+            new TrafficInterceptService(), new CapacityDiagnosticService(), new CapacityProductivityBenchmarkService(), new RampScheduleService(),
+            new GamingTaxCalculator(profiles), new GamingFiscalAllocationCalculator(profiles, new CandidateFiscalLocationResolver(db)),
+            new GeneralFiscalRuleResolver(profiles), new ProblemGamblingPrevalenceResolver(profiles), new CannibalizationAccountingService(),
+            new LocalEconomicInventoryWeightService(), new DisplacementModelService(), new EmploymentImpactService(),
+            new EmploymentProductivityBenchmarkService(), new FiscalImpactService(), new SocialCostService(), new NetImpactService());
+    }
+}
+
+file sealed class FrozenOriginProvider(ProviderDataset<OriginZoneImportRow> dataset) : IOriginGeographyProvider
+{
+    public string ProviderKey => "frozen-study-area-origins-validation";
+    public Task<ProviderDataset<OriginZoneImportRow>> FetchAsync(ProviderFetchRequest request,
+        CancellationToken cancellationToken = default) => Task.FromResult(dataset);
+}
+
 file sealed class FrozenOriginIncomeProvider(
     ProviderDataset<OriginIncomeImportRow> dataset) : IOriginIncomeProvider
 {
@@ -2813,6 +3524,13 @@ file sealed class FrozenOriginIncomeProvider(
 
     public Task<ProviderDataset<OriginIncomeImportRow>> FetchAsync(
         ProviderFetchRequest request,
+        CancellationToken cancellationToken = default) => Task.FromResult(dataset);
+}
+
+file sealed class FrozenAgeProvider(ProviderDataset<OriginAgeBinImportRow> dataset) : IAgePopulationProvider
+{
+    public string ProviderKey => "frozen-regional-acs-age-validation";
+    public Task<ProviderDataset<OriginAgeBinImportRow>> FetchAsync(ProviderFetchRequest request,
         CancellationToken cancellationToken = default) => Task.FromResult(dataset);
 }
 

@@ -31,14 +31,13 @@
                             Distance-Based Risk Modeling
                         </h4>
                         <p class="mb-3">
-                            Populations living closer to a casino experience significantly higher rates of gambling
-                            addiction.
-                            Our model applies distance-decay multipliers based on peer-reviewed research:
+                            The visualization applies the following scenario assumptions to the selected impact zones.
+                            Zone boundaries follow your radius or drive-time settings; disabled zones are excluded.
                         </p>
                         <ul class="list-disc pl-5 space-y-1">
-                            <li><strong>&lt; 10 Miles:</strong> 2.0x Risk Multiplier</li>
-                            <li><strong>10 - 20 Miles:</strong> 1.5x Risk Multiplier</li>
-                            <li><strong>&gt; 20 Miles:</strong> 1.0x (Baseline State Average)</li>
+                            <li><strong>First zone:</strong> 2.0x baseline prevalence</li>
+                            <li><strong>Second zone:</strong> 1.5x baseline prevalence</li>
+                            <li><strong>Third zone:</strong> 1.0x baseline prevalence</li>
                         </ul>
                     </div>
 
@@ -50,15 +49,18 @@
                         </h4>
                         <div
                             class="bg-slate-100 dark:bg-slate-800 p-3 rounded font-mono text-sm border border-slate-200 dark:border-slate-700 mb-2">
-                            New Addicts = Σ (Pop × Base_Rate × Multiplier)
+                            Incremental cases = Σ (Zone adults × (Baseline rate × (Multiplier − 1) + Baseline increase) / 100)
                         </div>
+                        <p class="mt-2">Rates and increases are expressed in percentage points. Total estimated cases also
+                            include baseline cases. Fractional expected cases are retained for cost calculations; displayed
+                            counts in the cost breakdown are rounded to three decimal places. These assumptions do not establish a causal effect.</p>
                         <p class="text-sm italic text-slate-500 mb-2">
                             *Population data sourced from <strong>US Census Bureau (2020 Decennial)</strong> at
                             Block
                             Group level.
                         </p>
                         <p class="text-sm italic text-slate-500">
-                            *Baseline rate derived from National Council on Problem Gambling (NCPG) surveys.
+                            *Baseline prevalence and baseline increase use your selected location assumptions.
                         </p>
                     </div>
 
@@ -69,14 +71,13 @@
                             Social Cost Valuation
                         </h4>
                         <p>
-                            We calculate the economic impact (bankruptcy, crime, divorce, job loss) per addict using
-                            inflation-adjusted values.
+                            Annual social cost equals expected incremental cases multiplied by the sum of your selected
+                            per-case costs. Cost overrides apply to both the host county and same-state spillover counties.
                         </p>
                         <div
                             class="mt-2 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded-lg inline-block">
-                            <span class="font-semibold text-slate-900 dark:text-white">~$13,203 per
-                                addict/year</span>
-                            <span class="text-slate-500 text-sm block mt-1">(Adjusted from ~$9,393 in 2011)</span>
+                            <span class="font-semibold text-slate-900 dark:text-white">Use the active per-case cost values
+                                shown in the analysis.</span>
                         </div>
                     </div>
                 </div>

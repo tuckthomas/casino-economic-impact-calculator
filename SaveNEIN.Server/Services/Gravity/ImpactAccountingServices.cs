@@ -439,42 +439,23 @@ public sealed class SocialCostService : ISocialCostService
         RequireNonnegative(input.ExposedEligiblePopulation, nameof(input.ExposedEligiblePopulation));
         RequireShare(input.Prevalence, nameof(input.Prevalence));
         RequireNonnegative(input.ExposureResponse, nameof(input.ExposureResponse));
-        RequireNonnegative(input.LowCaseMultiplier, nameof(input.LowCaseMultiplier));
-        RequireNonnegative(input.HighCaseMultiplier, nameof(input.HighCaseMultiplier));
-        if (input.LowCaseMultiplier > input.HighCaseMultiplier)
-        {
-            throw new InvalidOperationException("The low social-cost multiplier cannot exceed the high multiplier.");
-        }
-        if (input.Domains.Select(domain => domain.DomainKey).Distinct(StringComparer.Ordinal).Count() != input.Domains.Count)
-        {
-            throw new ArgumentException("Social-cost domain keys must be unique.", nameof(input));
-        }
-
+        ArgumentNullException.ThrowIfNull(input.Domains);
         var cases = input.ExposedEligiblePopulation * input.Prevalence * input.ExposureResponse;
-        var domains = input.Domains.Select(domain =>
-        {
-            if (string.IsNullOrWhiteSpace(domain.DomainKey))
-            {
-                throw new ArgumentException("A social-cost domain key is required.", nameof(input));
-            }
-            RequireNonnegative(domain.PerCaseCost, nameof(domain.PerCaseCost));
-            RequireNonnegative(domain.Scale, nameof(domain.Scale));
-            var annualCost = cases * domain.PerCaseCost * domain.Scale;
-            return new SocialCostDomainResult(
-                domain.DomainKey,
+        var costs = SaveNEIN.Shared.Modeling.SocialCostArithmetic.Calculate(
+            new SaveNEIN.Shared.Modeling.SocialCostCalculationRequest(
                 cases,
-                domain.PerCaseCost,
-                annualCost,
-                annualCost * input.LowCaseMultiplier,
-                annualCost * input.HighCaseMultiplier);
-        }).ToArray();
+                input.Domains.Select(domain => new SaveNEIN.Shared.Modeling.SocialCostDomainValue(
+                    domain.DomainKey, domain.PerCaseCost, domain.Scale)).ToArray(),
+                input.LowCaseMultiplier,
+                input.HighCaseMultiplier));
         return new SocialCostResult(
             input.ExposedEligiblePopulation,
             cases,
-            domains.Sum(domain => domain.AnnualCost),
-            domains.Sum(domain => domain.LowAnnualCost),
-            domains.Sum(domain => domain.HighAnnualCost),
-            domains);
+            costs.AnnualCost,
+            costs.LowAnnualCost,
+            costs.HighAnnualCost,
+            costs.Domains.Select(domain => new SocialCostDomainResult(
+                domain.DomainKey, cases, domain.PerCaseCost, domain.AnnualCost, domain.LowAnnualCost, domain.HighAnnualCost)).ToArray());
     }
 
     private static void RequireShare(double value, string name)

@@ -4,6 +4,7 @@
 // Governed by PolyForm Noncommercial License 1.0.0 (LICENSE-MODEL.md)
 
 using System.Text.Json;
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using SaveNEIN.Server.Data;
 using SaveNEIN.Server.Data.Entities;
@@ -28,7 +29,8 @@ public sealed record DemandSpecificationValidationEvaluationRequest(
     string ObjectiveFunction,
     IReadOnlyCollection<DemandSpecificationValidationCasePair> Pairs,
     DemandSpecificationEnsembleCandidate? EnsembleCandidate = null,
-    int LargestOriginDifferenceCount = 25);
+    int LargestOriginDifferenceCount = 25,
+    ReleaseAcceptanceEvidence? AcceptanceEvidence = null);
 
 public sealed record DemandSpecificationMetricBundle(
     ValidationMetrics? AgiShare,
@@ -57,7 +59,8 @@ public sealed record DemandSpecificationValidationEvaluationResult(
     long? PublishedEnsembleParameterSetId,
     bool EnsembleAcceptedOnSelection,
     string? EnsembleDecision,
-    IReadOnlyList<PersistedDemandOriginDifference> LargestOriginDifferences);
+    IReadOnlyList<PersistedDemandOriginDifference> LargestOriginDifferences,
+    ReleaseAcceptanceReport ReleaseAcceptance);
 
 public interface IDemandSpecificationValidationEvaluationService
 {
@@ -343,6 +346,11 @@ public sealed class DemandSpecificationValidationEvaluationService(
         long? publishedParameterSetId = null;
         var ensembleAcceptedOnSelection = false;
         string? ensembleDecision = null;
+        var previousProperties = await ModelReleaseAcceptance.PreviouslyEvaluatedPropertyIdsAsync(db, cancellationToken);
+        var propertyIdentityMap = await ModelReleaseAcceptance.PropertyIdentityMapAsync(db, cancellationToken);
+        var releaseAcceptance = ModelReleaseAcceptance.Evaluate(cases,
+            selectedBase == DemandSpecification.AgiShare ? agiObservations : perCapitaObservations,
+            request.AcceptanceEvidence, runs.Values.Min(item => item.CreatedAtUtc), previousProperties, propertyIdentityMap);
         if (request.EnsembleCandidate is { } candidate)
         {
             ValidateEnsembleCandidate(candidate);
@@ -361,7 +369,15 @@ public sealed class DemandSpecificationValidationEvaluationService(
                 ? $"Accepted on selection partition: {objective} {ensembleSelectionObjective:G6} was no worse than primitive-base {selectedBaseSelectionObjective:G6}. Independent holdout was not consulted for selection."
                 : $"Rejected on selection partition: {objective} {ensembleSelectionObjective:G6} exceeded primitive-base {selectedBaseSelectionObjective:G6}. Independent holdout was not consulted for selection.";
 
+            // The holdout is a pass/fail release gate, never a weight-selection objective.
             if (ensembleAcceptedOnSelection)
+            {
+                releaseAcceptance = ModelReleaseAcceptance.Evaluate(cases, ensembleObservations,
+                    request.AcceptanceEvidence, runs.Values.Min(item => item.CreatedAtUtc), previousProperties, propertyIdentityMap);
+                if (!releaseAcceptance.Accepted)
+                    ensembleDecision += " Publication blocked by release acceptance policy; see persisted gate reasons.";
+            }
+            if (ensembleAcceptedOnSelection && releaseAcceptance.Accepted)
             {
                 var clone = await parameterSetService.CreateVersionAsync(
                     candidate.SourceParameterSetId,
@@ -486,6 +502,8 @@ public sealed class DemandSpecificationValidationEvaluationService(
             FinalizedAtUtc = DateTime.UtcNow,
             IsImmutable = true
         };
+        evaluation.InclusionRulesJson = ModelReleaseAcceptance.Persist(
+            evaluation.InclusionRulesJson, releaseAcceptance, request.AcceptanceEvidence);
         db.ValidationEvaluations.Add(evaluation);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -501,7 +519,8 @@ public sealed class DemandSpecificationValidationEvaluationService(
             publishedParameterSetId,
             ensembleAcceptedOnSelection,
             ensembleDecision,
-            largestDifferences);
+            largestDifferences,
+            releaseAcceptance);
     }
 
     private ValidationMetrics? MetricsForPartition(
@@ -682,9 +701,32 @@ public sealed class DemandSpecificationValidationEvaluationService(
             ReadString(root, "ObservedPeriodEnd"),
             ReadString(root, "CostingProfile"),
             ReadString(root, "EffectiveOn"),
+            ReadString(root, "jurisdictionProfileVersion"),
             ReadString(root, "PopulationObservationYear"),
+            ReadPopulationScenarioYear(root),
             ReadString(root, "IncomeTaxYear"),
-            ReadString(root, "computationalOriginType"));
+            ReadString(root, "computationalOriginType"),
+            ReadHybridScalingVersion(root),
+            ReadObservedExclusions(root));
+    }
+
+    internal static string ReadHybridScalingVersion(JsonElement root)
+    {
+        var version = ReadString(root, "hybridStructuralScalingVersion");
+        return string.IsNullOrEmpty(version) ? "legacy-proposed-only-v1" : version;
+    }
+
+    private static string ReadObservedExclusions(JsonElement root)
+    {
+        foreach (var property in root.EnumerateObject())
+        {
+            if (string.Equals(property.Name, "observedGgrExcludedCompetitorIds", StringComparison.OrdinalIgnoreCase))
+            {
+                if (property.Value.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("Observed-GGR exclusions must be an array.");
+                return string.Join(",", property.Value.EnumerateArray().Select(item => item.GetInt32()).Distinct().Order());
+            }
+        }
+        return string.Empty;
     }
 
     private static string ReadString(JsonElement root, string propertyName)
@@ -699,6 +741,14 @@ public sealed class DemandSpecificationValidationEvaluationService(
             }
         }
         return string.Empty;
+    }
+
+    private static string ReadPopulationScenarioYear(JsonElement root)
+    {
+        var value = ReadString(root, "PopulationScenarioYear");
+        if (value.Length > 0 && value != "null") return value;
+        return DateOnly.TryParseExact(ReadString(root, "EffectiveOn"), "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var effectiveDate) ? effectiveDate.Year.ToString(CultureInfo.InvariantCulture) : string.Empty;
     }
 
     private static void RequireSpecification(ModelRun run, string expected)
@@ -822,7 +872,11 @@ public sealed class DemandSpecificationValidationEvaluationService(
         string ObservedPeriodEnd,
         string CostingProfile,
         string EffectiveOn,
+        string JurisdictionProfileVersion,
         string PopulationObservationYear,
+        string PopulationScenarioYear,
         string IncomeTaxYear,
-        string ComputationalOriginType);
+        string ComputationalOriginType,
+        string HybridStructuralScalingVersion,
+        string ObservedGgrExcludedCompetitorIds);
 }

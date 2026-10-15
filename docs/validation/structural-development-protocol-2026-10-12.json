@@ -1,0 +1,84 @@
+{
+  "protocolVersion": "resident-revenue-structural-development-v1",
+  "frozenOn": "2026-10-12",
+  "sourceBundleSha256": "c38b499ae3ef2f62cbc84125d6f1499ab90d790edb1cb8b4594d31e10d8203d7",
+  "observedYear": 2025,
+  "originSnapshotId": "921f0c42-62d9-4289-b0c2-dc7382d3499e",
+  "incomeSnapshotId": "0c237148-a4ef-40ea-b22f-87e508bb0460",
+  "facilitySnapshotId": "2b130a21-5e47-43c5-b51e-2693ce29c4ee",
+  "performanceSnapshotId": "9c3f1155-14cb-4423-a5ff-3ed84102432a",
+  "originRadiusMiles": 100,
+  "competitorRadiusMiles": 150,
+  "scope": "Development-only comparison of the existing server structural attraction mode. Fit on the same eight training properties and select on the same four development properties. The twelve freshly inspected Chicago/St. Louis cases are not scored or used for specification selection. This is a diagnostic search, not untouched acceptance or publication.",
+  "selectionObjective": "WAPE; ties broken by MAPE, then candidate key",
+  "incomeShareFit": "Median observed/unit-share prediction on training properties only, bounded to [0.001, 0.03].",
+  "beta": [
+    0.8,
+    1.2,
+    1.6,
+    2.0,
+    2.4,
+    2.8
+  ],
+  "alpha": [
+    0.75,
+    1.0,
+    1.25
+  ],
+  "positionsCoefficient": [
+    0.5,
+    0.75,
+    1.25
+  ],
+  "tablesCoefficient": 0.2,
+  "comparableScale": [
+    1,
+    4,
+    8
+  ],
+  "outsideWeight": [
+    1E-08,
+    0.0001,
+    0.01
+  ],
+  "training": [
+    "USA-IN-IGC-ameristar-casino",
+    "USA-IN-IGC-blue-chip-casino",
+    "USA-IN-IGC-hard-rock-casino-northern-indiana",
+    "USA-IN-IGC-harrahs-hoosier-park",
+    "USA-IN-IGC-horseshoe-hammond",
+    "USA-IN-IGC-horseshoe-indianapolis",
+    "USA-IN-IGC-terre-haute-casino",
+    "USA-IN-IGC-french-lick-resort"
+  ],
+  "selection": [
+    "USA-IN-IGC-ballys-evansville",
+    "USA-IN-IGC-caesars-southern-indiana",
+    "USA-OH-OCCC-hollywood-casino-toledo",
+    "USA-OH-OLC-hollywood-mahoning-valley-race-course"
+  ],
+  "holdout": {
+    "chicago-region": [
+      "USA-IL-IGB-american-place",
+      "USA-IL-IGB-ballys-chicago",
+      "USA-IL-IGB-grand-victoria-casino",
+      "USA-IL-IGB-harrahs-joliet",
+      "USA-IL-IGB-rivers-casino-des-plaines",
+      "USA-IL-IGB-wind-creek-chicago-southland"
+    ],
+    "st-louis-region": [
+      "USA-IL-IGB-argosy-casino-alton",
+      "USA-IL-IGB-draftkings-casino-queen",
+      "USA-MO-MGC-hollywood-st-louis",
+      "USA-MO-MGC-ameristar-st-charles",
+      "USA-MO-MGC-river-city",
+      "USA-MO-MGC-horseshoe-st-louis"
+    ]
+  },
+  "gamingPositionsOffset": [
+    0,
+    500,
+    2000
+  ],
+  "attractionSpecification": "structural"
+}

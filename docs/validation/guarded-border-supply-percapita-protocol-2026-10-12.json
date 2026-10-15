@@ -1,0 +1,169 @@
+{
+  "protocolVersion": "guarded-border-supply-percapita-v1",
+  "frozenOn": "2026-10-12",
+  "sourceBundleSha256": "3320f1cdbb6a3972f11f500472b217123943c77550bdb96398c53443c9ff7dd9",
+  "observedYear": 2025,
+  "originSnapshotId": "921f0c42-62d9-4289-b0c2-dc7382d3499e",
+  "incomeSnapshotId": "0c237148-a4ef-40ea-b22f-87e508bb0460",
+  "facilitySnapshotId": "ae189b80-7885-449b-86cc-5087bd9ac43f",
+  "performanceSnapshotId": "03ae05ca-c96c-427c-9e04-f9d0f7f78d1a",
+  "originRadiusMiles": 100,
+  "competitorRadiusMiles": 150,
+  "scope": "Inspected development cases only. Compare existing server AGI-share and eligible-adult per-capita demand, regional training-only scales, and physical-size/floor response. No untouched holdout or parameter publication. Flat population growth and income elasticity are predeclared diagnostics; age/source/missing-competitor audits remain independent requirements. Add all seventeen sourced Pennsylvania FY2025 casino profiles and three known Wisconsin border facilities. Wisconsin historical capacities remain unknown and use existing reference priors; this is not complete competitive/input acceptance. Fit spending only on training labels, constraining feasible scalar fits to training property/bias bounds; empty feasible intervals remain rejected diagnostics. This is the same inspected 22/14 cohort, not a fresh holdout.",
+  "selectionObjective": "WAPE; ties broken by MAPE, then candidate key",
+  "incomeShareFit": "Training-only weighted median USD per eligible adult in each jurisdiction, with feasible 40% property-error and 10% jurisdiction-bias bounds; no selection/holdout labels used.",
+  "beta": [
+    1.6,
+    1.8,
+    2,
+    2.2,
+    2.4
+  ],
+  "alpha": [
+    1
+  ],
+  "positionsCoefficient": [
+    0.5,
+    1,
+    1.5,
+    2,
+    3
+  ],
+  "tablesCoefficient": 0.2,
+  "comparableScale": [
+    1
+  ],
+  "outsideWeight": [
+    1E-06,
+    0.0001,
+    0.01
+  ],
+  "training": [
+    "USA-IN-IGC-ameristar-casino",
+    "USA-IN-IGC-blue-chip-casino",
+    "USA-IN-IGC-hard-rock-casino-northern-indiana",
+    "USA-IN-IGC-harrahs-hoosier-park",
+    "USA-IN-IGC-horseshoe-hammond",
+    "USA-IN-IGC-horseshoe-indianapolis",
+    "USA-IN-IGC-terre-haute-casino",
+    "USA-IN-IGC-french-lick-resort",
+    "USA-IL-IGB-american-place",
+    "USA-IL-IGB-ballys-chicago",
+    "USA-IL-IGB-grand-victoria-casino",
+    "USA-IL-IGB-rivers-casino-des-plaines",
+    "USA-IL-IGB-draftkings-casino-queen",
+    "USA-MO-MGC-hollywood-st-louis",
+    "USA-MO-MGC-ameristar-st-charles",
+    "USA-MO-MGC-river-city",
+    "USA-OH-OCCC-hollywood-casino-columbus",
+    "USA-OH-OCCC-jack-cleveland-casino",
+    "USA-OH-OLC-jack-thistledown-racino",
+    "USA-OH-OLC-eldorado-gaming-scioto-downs",
+    "USA-OH-OLC-hollywood-gaming-dayton-raceway",
+    "USA-OH-OLC-miami-valley-gaming"
+  ],
+  "selection": [
+    "USA-IN-IGC-ballys-evansville",
+    "USA-IN-IGC-caesars-southern-indiana",
+    "USA-OH-OCCC-hollywood-casino-toledo",
+    "USA-OH-OLC-hollywood-mahoning-valley-race-course",
+    "USA-OH-OLC-mgm-northfield-park",
+    "USA-OH-OCCC-hard-rock-casino-cincinnati",
+    "USA-OH-OLC-belterra-park-cincinnati",
+    "USA-IN-IGC-belterra-casino",
+    "USA-IN-IGC-hollywood-lawrenceburg",
+    "USA-IN-IGC-rising-star-casino",
+    "USA-IL-IGB-harrahs-joliet",
+    "USA-IL-IGB-wind-creek-chicago-southland",
+    "USA-IL-IGB-argosy-casino-alton",
+    "USA-MO-MGC-horseshoe-st-louis"
+  ],
+  "holdout": {},
+  "gamingPositionsOffset": [
+    1,
+    100,
+    500,
+    2000
+  ],
+  "attractionSpecification": "structural",
+  "selectionPolicyVersion": "gravity-development-selection-v1",
+  "developmentMarkets": {
+    "chicago-region": [
+      "USA-IL-IGB-american-place",
+      "USA-IL-IGB-ballys-chicago",
+      "USA-IL-IGB-grand-victoria-casino",
+      "USA-IL-IGB-harrahs-joliet",
+      "USA-IL-IGB-rivers-casino-des-plaines",
+      "USA-IL-IGB-wind-creek-chicago-southland",
+      "USA-IN-IGC-ameristar-casino",
+      "USA-IN-IGC-blue-chip-casino",
+      "USA-IN-IGC-hard-rock-casino-northern-indiana",
+      "USA-IN-IGC-horseshoe-hammond"
+    ],
+    "st-louis-region": [
+      "USA-IL-IGB-argosy-casino-alton",
+      "USA-IL-IGB-draftkings-casino-queen",
+      "USA-MO-MGC-hollywood-st-louis",
+      "USA-MO-MGC-ameristar-st-charles",
+      "USA-MO-MGC-river-city",
+      "USA-MO-MGC-horseshoe-st-louis"
+    ],
+    "cleveland-region": [
+      "USA-OH-OCCC-jack-cleveland-casino",
+      "USA-OH-OLC-jack-thistledown-racino",
+      "USA-OH-OLC-mgm-northfield-park"
+    ],
+    "central-ohio-corridor": [
+      "USA-OH-OCCC-hollywood-casino-columbus",
+      "USA-OH-OLC-eldorado-gaming-scioto-downs",
+      "USA-OH-OLC-hollywood-gaming-dayton-raceway"
+    ],
+    "cincinnati-tristate-region": [
+      "USA-OH-OCCC-hard-rock-casino-cincinnati",
+      "USA-OH-OLC-belterra-park-cincinnati",
+      "USA-OH-OLC-miami-valley-gaming",
+      "USA-IN-IGC-belterra-casino",
+      "USA-IN-IGC-hollywood-lawrenceburg",
+      "USA-IN-IGC-rising-star-casino"
+    ],
+    "central-indiana": [
+      "USA-IN-IGC-harrahs-hoosier-park",
+      "USA-IN-IGC-horseshoe-indianapolis"
+    ],
+    "terre-haute": [
+      "USA-IN-IGC-terre-haute-casino"
+    ],
+    "french-lick": [
+      "USA-IN-IGC-french-lick-resort"
+    ],
+    "evansville": [
+      "USA-IN-IGC-ballys-evansville"
+    ],
+    "louisville-region": [
+      "USA-IN-IGC-caesars-southern-indiana"
+    ],
+    "toledo": [
+      "USA-OH-OCCC-hollywood-casino-toledo"
+    ],
+    "mahoning-valley": [
+      "USA-OH-OLC-hollywood-mahoning-valley-race-course"
+    ]
+  },
+  "gamingFloorCoefficient": [
+    0,
+    0.5,
+    1
+  ],
+  "fitDemandScaleByJurisdiction": true,
+  "demandSpecification": "eligible-adult-per-capita",
+  "minimumDemandScale": 50,
+  "maximumDemandScale": 3000,
+  "agePopulationSnapshotId": "5af8f9fa-7cf6-46be-a5df-2375b14f4fd3",
+  "eligibleAge": 21,
+  "tableGameCoefficient": [
+    0.2,
+    0.5,
+    1
+  ],
+  "constrainTrainingScale": true
+}

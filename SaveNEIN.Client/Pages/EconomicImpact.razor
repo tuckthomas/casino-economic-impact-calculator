@@ -3,6 +3,7 @@
 @using System.Globalization
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components.Rendering
+@using SaveNEIN.Shared.Modeling
 
 @if (!Embedded)
 {
@@ -71,7 +72,7 @@
 
                         <label class="model-field">
                             <span>Development program</span>
-                            <select @bind="_form.DevelopmentProgramId">
+                            <select @bind="_form.DevelopmentProgramId" @bind:after="LoadFacilityInputsAsync">
                                 <option value="">Select program</option>
                                 @foreach (var program in _configuration.DevelopmentPrograms)
                                 {
@@ -97,9 +98,19 @@
                             <input type="number" min="-180" max="180" step="0.000001" @bind="_form.CandidateLongitude" />
                         </label>
                         <label class="model-field">
+                            <span>Host county FIPS (optional)</span>
+                            <input @bind="_form.HostCountyFips" inputmode="numeric" maxlength="5" placeholder="Five-digit county code" />
+                            <small>Uses the county selected on the location map. Leave blank to assess the whole host state.</small>
+                        </label>
+                        <label class="model-field">
                             <span>Fiscal rule effective date</span>
-                            <input type="date" @bind="_form.EffectiveOn" />
+                            <input type="date" @bind="_form.EffectiveOn" @bind:after="LoadFacilityInputsAsync" />
                             <small>Use the date when the proposed facility's tax rules should apply.</small>
+                        </label>
+                        <label class="model-field">
+                            <span>Population scenario year</span>
+                            <input type="number" min="1900" max="2200" step="1" @bind="_form.PopulationScenarioYear" placeholder="Fiscal date year when blank" />
+                            <small>Projects eligible population to this year while keeping the fiscal rule date above.</small>
                         </label>
                     </div>
 
@@ -218,7 +229,7 @@
                             </label>
                             <label class="model-field">
                                 <span>Casino competitors</span>
-                                <select @bind="_form.CompetitorSnapshotId">
+                                <select @bind="_form.CompetitorSnapshotId" @bind:after="LoadFacilityInputsAsync">
                                     <option value="">Select snapshot</option>
                                     @foreach (var snapshot in Snapshots("competitors"))
                                     {
@@ -314,6 +325,52 @@
                             </label>
                         </div>
 
+                        <fieldset class="model-facility-inputs" aria-describedby="facility-input-help">
+                            <legend>Inputs used to compare facilities</legend>
+                            <p id="facility-input-help">Choose the physical inputs used in facility attraction. Unavailable inputs are inactive; missing values are never replaced with a typical facility value.</p>
+                            <p>Selecting an input with a zero weight starts its weight at 1. You can change that weight below; it is a scenario assumption unless supplied by a validated parameter set.</p>
+                            @if (_facilityInputsLoading)
+                            {
+                                <p role="status">Checking input availability for the selected data…</p>
+                            }
+                            @if (_facilityInputError is not null)
+                            {
+                                <p role="alert">@_facilityInputError</p>
+                                <button type="button" class="model-secondary-button" @onclick="LoadFacilityInputsAsync">Check inputs again</button>
+                            }
+                            @if (_facilityInputNotice is not null)
+                            {
+                                <p role="status">@_facilityInputNotice</p>
+                            }
+                            @foreach (var input in _facilityInputs)
+                            {
+                                <div class="model-facility-input @(!input.Available ? "is-unavailable" : "")">
+                                    <label>
+                                        <input type="checkbox" checked="@(_selectedFacilityFeatures?.Contains(input.Key) == true)"
+                                               disabled="@(!input.Available || _facilityInputsLoading)"
+                                               aria-describedby="@($"facility-input-{input.Key}-status")"
+                                               @onchange="args => ToggleFacilityInput(input, args.Value is true)" />
+                                        <span>@input.DisplayName</span>
+                                    </label>
+                                    <p id="@($"facility-input-{input.Key}-status")">@(input.UnavailableReason ?? "Available for the facilities that require this input.")</p>
+                                    @if (input.Available && FindParameter(input.CoefficientKey) is { } weight)
+                                    {
+                                        <label class="model-facility-weight">
+                                            <span>@input.DisplayName weight</span>
+                                            <input type="number" step="@(weight.UiStep ?? 0.01)" min="@weight.ComputationalMinimum" max="@weight.ComputationalMaximum"
+                                                   disabled="@(_selectedFacilityFeatures?.Contains(input.Key) != true || _facilityInputsLoading || !weight.IsUserOverridable)"
+                                                   value="@ParameterValue(weight).ToString(CultureInfo.InvariantCulture)"
+                                                   @oninput="args => SetOverride(weight, args.Value?.ToString())" />
+                                        </label>
+                                    }
+                                </div>
+                            }
+                            @if (!_facilityInputsLoading && _facilityInputError is null && _selectedFacilityFeatures is not { Count: > 0 })
+                            {
+                                <p role="status">No physical inputs are selected. Physical facility attraction is neutral; demand, travel and any observed-revenue attraction still apply.</p>
+                            }
+                        </fieldset>
+
                         <div class="model-section-toolbar">
                             <p>Common decisions use plain-language controls. Exact coefficients remain available below.</p>
                             <button type="button" class="model-link-button" @onclick="ResetStandardOverrides">Reset this section</button>
@@ -348,7 +405,7 @@
                                     </label>
                                     <label class="model-field">
                                         <span>Facility attraction</span>
-                                        <select @bind="_form.AttractionSpecification">
+                                        <select @bind="_form.AttractionSpecification" @bind:after="LoadFacilityInputsAsync">
                                             <option value="observed-ggr">Observed-GGR mass</option>
                                             <option value="structural">Structural facility mass</option>
                                         </select>
@@ -575,8 +632,12 @@
                                 <span class="model-count">@SelectedSensitivityRunCount full runs</span>
                             </div>
                             <p class="model-muted">
-                                Test different assumptions to see which factors have the biggest effect on the estimate.
+                                Test up to 12 assumptions from the saved result above to see which factors have the biggest effect on the estimate.
                             </p>
+
+                            <button type="button" class="model-secondary-button" aria-expanded="@(_showAllSensitivity ? "true" : "false")" @onclick="ToggleSensitivityOptions">
+                                @(_showAllSensitivity ? "Show common assumptions" : "Show all available assumptions")
+                            </button>
 
                             <label class="model-field model-sensitivity-metric">
                                 <span>Tornado output metric</span>
@@ -592,7 +653,7 @@
                             </label>
 
                             <div class="model-sensitivity-ranges">
-                                @foreach (var range in _sensitivityRanges)
+                                @foreach (var range in _sensitivityRanges.Where(range => _showAllSensitivity || range.Selected || SensitivityParameterKeys.Contains(range.ParameterKey, StringComparer.Ordinal)))
                                 {
                                     <div class="model-sensitivity-range">
                                         <label class="model-sensitivity-toggle">
@@ -728,6 +789,12 @@
     [Parameter]
     public string? ScenarioToken { get; set; }
 
+    [Parameter]
+    public EventCallback<(Guid ModelRunId, string? ScenarioToken)> ModelRunCompleted { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> ModelRunInvalidated { get; set; }
+
     private static readonly string[] StandardParameterKeys =
     [
         "demand.regional_intensity_multiplier",
@@ -777,6 +844,14 @@
     private readonly List<SensitivityRangeForm> _sensitivityRanges = [];
     private readonly List<RunOriginSummaryRow> _runOrigins = [];
     private readonly List<RunFacilityResult> _runFacilities = [];
+    private int _originLoadVersion;
+    private int _facilityInputLoadVersion;
+    private bool _facilityInputsLoading;
+    private string? _facilityInputError;
+    private string? _facilityInputNotice;
+    private FacilityInputAvailability[] _facilityInputs = [];
+    private HashSet<string>? _selectedFacilityFeatures;
+    private readonly Dictionary<string, double> _runParameterValues = new(StringComparer.Ordinal);
     private int _runOriginTotal;
     private RunResult? _latestRun;
     private RunRequest? _lastRunRequest;
@@ -788,6 +863,7 @@
     private bool _comparing;
     private bool _generatingReport;
     private bool _runningSensitivity;
+    private bool _showAllSensitivity;
     private string? _error;
     private string _parameterSearch = string.Empty;
     private string _scenarioJson = string.Empty;
@@ -832,46 +908,46 @@
 
     private async Task ApplyClientScenarioAsync()
     {
-        if (_configuration is null || string.IsNullOrWhiteSpace(ScenarioToken))
+        if (_configuration is null || ScenarioToken is null)
         {
             return;
         }
 
-        try
+        if (string.IsNullOrWhiteSpace(ScenarioToken))
+            throw new InvalidDataException("The saved Part 1 scenario token is empty. Return to location selection and save it again.");
+
+        using var response = await Http.GetAsync(
+            $"api/economic-scenarios/{Uri.EscapeDataString(ScenarioToken)}");
+        if (!response.IsSuccessStatusCode)
         {
-            using var response = await Http.GetAsync(
-                $"api/economic-scenarios/{Uri.EscapeDataString(ScenarioToken)}");
-            if (!response.IsSuccessStatusCode)
-            {
-                return;
-            }
-
-            var scenario = await response.Content.ReadFromJsonAsync<ClientScenarioSnapshot>();
-            if (scenario is null)
-            {
-                return;
-            }
-
-            _form.CandidateLatitude = scenario.MarkerLatitude;
-            _form.CandidateLongitude = scenario.MarkerLongitude;
-            _form.ScenarioName = string.IsNullOrWhiteSpace(scenario.CountyFips)
-                ? "Economic impact scenario"
-                : $"Economic impact scenario — county {scenario.CountyFips}";
-
-            var stateCode = StateCodeFromFips(scenario.StateFips);
-            var jurisdiction = _configuration.Jurisdictions.FirstOrDefault(item =>
-                StateCode(item.Code).Equals(stateCode, StringComparison.OrdinalIgnoreCase));
-            if (jurisdiction is not null)
-            {
-                _form.JurisdictionCode = jurisdiction.Code;
-                _form.OriginStateCode = stateCode;
-                ApplyJurisdictionParameterSet();
-            }
+            throw new InvalidOperationException("The saved Part 1 scenario is unavailable or expired. Return to location selection and save it again.");
         }
-        catch (Exception exception)
+
+        var scenario = await response.Content.ReadFromJsonAsync<EconomicScenarioSnapshot>()
+            ?? throw new InvalidDataException("The saved Part 1 scenario response was empty.");
+        scenario.Validate();
+        var stateCode = StateCodeFromFips(scenario.StateFips);
+        var jurisdiction = _configuration.Jurisdictions.FirstOrDefault(item =>
+            StateCode(item.Code).Equals(stateCode, StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrEmpty(stateCode) || jurisdiction is null)
         {
-            _error = $"The saved Part 1 location could not be loaded: {exception.Message}";
+            throw new InvalidDataException("The selected location has no supported model jurisdiction. Select a supported location before running the model.");
         }
+
+        _form.CandidateLatitude = scenario.MarkerLatitude;
+        _form.CandidateLongitude = scenario.MarkerLongitude;
+        _form.ScenarioName = string.IsNullOrWhiteSpace(scenario.CountyFips)
+            ? "Economic impact scenario"
+            : $"Economic impact scenario — county {scenario.CountyFips}";
+        _form.JurisdictionCode = jurisdiction.Code;
+        _form.OriginStateCode = stateCode;
+        _form.HostCountyFips = scenario.CountyFips;
+        ApplyJurisdictionParameterSet();
+        var projection = scenario.ReadPopulationProjection();
+        var growthDefinition = FindParameter("demographics.population_annual_growth_rate")
+            ?? throw new InvalidDataException("The model catalog does not support the selected population-growth assumption.");
+        _form.PopulationScenarioYear = projection.ScenarioYear;
+        _overrides[growthDefinition.Key] = projection.AnnualGrowthRate;
     }
 
     private static string StateCodeFromFips(string? stateFips) => stateFips switch
@@ -917,6 +993,7 @@
     private async Task OnJurisdictionChangedAsync()
     {
         _form.OriginStateCode = StateCode(_form.JurisdictionCode);
+        _form.HostCountyFips = null;
         ApplyJurisdictionParameterSet();
         await LoadOriginsAsync();
     }
@@ -966,6 +1043,7 @@
                           ?? throw new InvalidOperationException("The development program was stored without a response body.");
             _configuration.DevelopmentPrograms.Insert(0, program);
             _form.DevelopmentProgramId = program.Id;
+            await LoadFacilityInputsAsync();
             _showProgramEditor = false;
             _programMessage = $"Stored and selected {program.Name} v{program.Version}.";
             _programForm.Reset();
@@ -994,7 +1072,9 @@
 
     private async Task LoadOriginsAsync()
     {
+        var loadVersion = ++_originLoadVersion;
         _origins.Clear();
+        InvalidateFacilityInputs();
         if (_form.OriginGeographySnapshotId is not { } snapshotId)
         {
             return;
@@ -1004,10 +1084,23 @@
         {
             url += $"&stateCode={Uri.EscapeDataString(_form.OriginStateCode.Trim().ToUpperInvariant())}";
         }
-        var response = await Http.GetFromJsonAsync<OriginResponse>(url);
-        if (response is not null)
+        try
         {
-            _origins.AddRange(response.Origins);
+            var selected = await SaveNEIN.Shared.Modeling.CompleteOriginSelection.LoadAsync(async (skip, cancellationToken) =>
+            {
+                var response = await Http.GetFromJsonAsync<OriginResponse>($"{url}&skip={skip}", cancellationToken)
+                    ?? throw new InvalidDataException("The origin selection response was empty.");
+                return new SaveNEIN.Shared.Modeling.OriginSelectionPage(response.Total,
+                    response.Origins.Select(origin => origin.StableOriginId).ToArray());
+            });
+            if (loadVersion != _originLoadVersion) return;
+            _origins.AddRange(selected.Select(id => new OriginOption { StableOriginId = id }));
+            await LoadFacilityInputsAsync();
+        }
+        catch (Exception exception)
+        {
+            if (loadVersion != _originLoadVersion) return;
+            _error = $"The complete origin selection could not be loaded: {exception.Message}";
         }
     }
 
@@ -1024,6 +1117,68 @@
         {
             _tourism.AddRange(rows);
         }
+    }
+
+    private void InvalidateFacilityInputs()
+    {
+        ++_facilityInputLoadVersion;
+        _facilityInputs = [];
+        _facilityInputsLoading = false;
+        _facilityInputError = "Select a facility program, study origins and competitor data to check supported inputs.";
+    }
+
+    private async Task LoadFacilityInputsAsync()
+    {
+        var version = ++_facilityInputLoadVersion;
+        _facilityInputs = [];
+        _facilityInputError = null;
+        _facilityInputNotice = null;
+        if (_form.DevelopmentProgramId is not { } program || _form.CompetitorSnapshotId is not { } competitors ||
+            _form.OriginGeographySnapshotId is not { } origins || _origins.Count == 0)
+        {
+            _facilityInputsLoading = false;
+            _facilityInputError = "Select a facility program, study origins and competitor data to check supported inputs.";
+            return;
+        }
+        _facilityInputsLoading = true;
+        try
+        {
+            using var response = await Http.PostAsJsonAsync("api/gravity-model-configuration/facility-input-availability",
+                new FacilityInputAvailabilityRequest(program, competitors, origins, _origins.Select(item => item.StableOriginId).ToArray(),
+                    _form.EffectiveOn, _form.AttractionSpecification));
+            if (!response.IsSuccessStatusCode) throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+            var inputs = await response.Content.ReadFromJsonAsync<FacilityInputAvailability[]>()
+                ?? throw new InvalidDataException("Input availability response was empty.");
+            if (version != _facilityInputLoadVersion) return;
+            _facilityInputs = inputs;
+            if (_selectedFacilityFeatures is null)
+                _selectedFacilityFeatures = inputs.Where(item => item.Available && FindParameter(item.CoefficientKey) is { } definition && ParameterValue(definition) != 0)
+                    .Select(item => item.Key).ToHashSet(StringComparer.Ordinal);
+            else
+            {
+                var removed = _selectedFacilityFeatures.Except(inputs.Where(item => item.Available).Select(item => item.Key), StringComparer.Ordinal).ToArray();
+                _selectedFacilityFeatures.IntersectWith(inputs.Where(item => item.Available).Select(item => item.Key));
+                if (removed.Length > 0) _facilityInputNotice = $"Disabled inputs that are unavailable in this selection: {string.Join(", ", removed)}. Review the remaining inputs before running.";
+            }
+        }
+        catch (Exception exception)
+        {
+            if (version == _facilityInputLoadVersion) _facilityInputError = $"Input availability could not be checked: {exception.Message}";
+        }
+        finally { if (version == _facilityInputLoadVersion) _facilityInputsLoading = false; }
+    }
+
+    private void ToggleFacilityInput(FacilityInputAvailability input, bool selected)
+    {
+        if (!input.Available || _facilityInputsLoading) return;
+        _selectedFacilityFeatures ??= new(StringComparer.Ordinal);
+        if (selected)
+        {
+            _selectedFacilityFeatures.Add(input.Key);
+            if (FindParameter(input.CoefficientKey) is { } definition && ParameterValue(definition) == 0)
+                _overrides[input.CoefficientKey] = 1;
+        }
+        else _selectedFacilityFeatures.Remove(input.Key);
     }
 
     private async Task LoadTrafficAsync()
@@ -1053,6 +1208,7 @@
 
     private async Task LoadRunOutputDetailsAsync(Guid modelRunId)
     {
+        _runParameterValues.Clear();
         _runFacilities.Clear();
         _runOrigins.Clear();
         _runOriginTotal = 0;
@@ -1066,6 +1222,7 @@
         if (details is not null)
         {
             _runFacilities.AddRange(details.Facilities);
+            foreach (var parameter in details.Parameters) _runParameterValues.Add(parameter.Key, parameter.Value);
         }
         var origins = await originsTask;
         if (origins is not null)
@@ -1104,11 +1261,13 @@
                 StableOriginIds = _origins.Select(origin => origin.StableOriginId).ToArray(),
                 CompetitorIds = [],
                 PopulationObservationYear = FindSnapshot(_form.AgePopulationSnapshotId!.Value)?.PeriodEnd.Year ?? observedSnapshot.PeriodEnd.Year,
+                PopulationScenarioYear = _form.PopulationScenarioYear,
                 IncomeTaxYear = FindSnapshot(_form.IncomeSnapshotId!.Value)?.PeriodEnd.Year ?? observedSnapshot.PeriodEnd.Year,
                 EffectiveOn = _form.EffectiveOn,
                 FacilityRegime = _form.FacilityRegime,
                 DemandSpecification = _form.DemandSpecification,
                 AttractionSpecification = _form.AttractionSpecification,
+                SelectedFacilityFeatureKeys = _selectedFacilityFeatures?.Order(StringComparer.Ordinal).ToArray(),
                 FrictionForm = _form.FrictionForm,
                 ObservedMetricKey = _form.ObservedMetricKey,
                 ObservedPeriodStart = observedSnapshot.PeriodStart,
@@ -1125,7 +1284,9 @@
                 TrafficCorridors = _traffic.Count == 0
                     ? null
                     : _traffic.Select(item => new TrafficSelectionRequest(item.StableObservationId, 0.5, 1)).ToArray(),
-                ImpactGeography = new ImpactGeographyRequest("host-state", _form.JurisdictionCode),
+                ImpactGeography = string.IsNullOrWhiteSpace(_form.HostCountyFips)
+                    ? new ImpactGeographyRequest("host-state", _form.JurisdictionCode)
+                    : new ImpactGeographyRequest("host-county", _form.HostCountyFips.Trim()),
                 LocalEconomicInventorySnapshotId = _form.LocalEconomicInventorySnapshotId
             };
             using var response = await Http.PostAsJsonAsync("api/gravity-model-runs", request);
@@ -1139,6 +1300,7 @@
             await LoadRunOutputDetailsAsync(_latestRun.ModelRunId);
             _lastRunRequest = request;
             ResetSensitivityRanges();
+            await ModelRunCompleted.InvokeAsync((_latestRun.ModelRunId, ScenarioToken));
             _sensitivityResult = null;
             await LoadRecentRunsAsync();
             _comparisonSelection.Add(_latestRun.ModelRunId);
@@ -1174,7 +1336,7 @@
                 selected.Select(range => new SensitivityParameterRangeRequest(
                     range.ParameterKey,
                     range.LowValue,
-                    range.HighValue)).ToArray());
+                    range.HighValue)).ToArray(), new Dictionary<string, double>(_runParameterValues, StringComparer.Ordinal));
             using var response = await Http.PostAsJsonAsync("api/model-sensitivity", request);
             if (!response.IsSuccessStatusCode)
             {
@@ -1202,14 +1364,13 @@
         {
             return;
         }
-        foreach (var key in SensitivityParameterKeys)
+        foreach (var definition in _configuration.ParameterDefinitions.Where(item => item.IsUserOverridable)
+                     .OrderBy(item => item.Category, StringComparer.Ordinal).ThenBy(item => item.DisplayName, StringComparer.Ordinal))
         {
-            var definition = _configuration.ParameterDefinitions.FirstOrDefault(item => item.Key == key);
-            if (definition is null)
-            {
-                continue;
-            }
-            var baseline = ParameterValue(definition);
+            var key = definition.Key;
+            var input = _facilityInputs.FirstOrDefault(item => item.ParameterKeys.Contains(key));
+            if (input is not null && _lastRunRequest?.SelectedFacilityFeatureKeys?.Contains(input.Key) != true) continue;
+            if (!_runParameterValues.TryGetValue(key, out var baseline)) continue;
             var step = definition.UiStep ?? Math.Max(Math.Abs(baseline) * 0.1, 0.01);
             var low = definition.RecommendedMinimum ?? baseline - step * 2;
             var high = definition.RecommendedMaximum ?? baseline + step * 2;
@@ -1236,13 +1397,15 @@
         }
     }
 
+    private void ToggleSensitivityOptions() => _showAllSensitivity = !_showAllSensitivity;
+
     private async Task GenerateReportAsync()
     {
         if (_latestRun is null)
         {
             return;
         }
-        await GenerateReportForRunAsync(_latestRun.ModelRunId, null, _form.ScenarioName.Trim());
+        await GenerateReportForRunAsync(_latestRun.ModelRunId, null, _lastRunRequest?.ScenarioName ?? _form.ScenarioName.Trim());
     }
 
     private async Task GenerateSensitivityReportAsync()
@@ -1419,10 +1582,12 @@
             ScenarioName = _form.ScenarioName,
             JurisdictionCode = _form.JurisdictionCode,
             OriginStateCode = _form.OriginStateCode,
+            HostCountyFips = _form.HostCountyFips,
             DevelopmentProgramId = _form.DevelopmentProgramId,
             CandidateLatitude = _form.CandidateLatitude,
             CandidateLongitude = _form.CandidateLongitude,
             EffectiveOn = _form.EffectiveOn,
+            PopulationScenarioYear = _form.PopulationScenarioYear,
             OriginGeographySnapshotId = _form.OriginGeographySnapshotId,
             AgePopulationSnapshotId = _form.AgePopulationSnapshotId,
             IncomeSnapshotId = _form.IncomeSnapshotId,
@@ -1437,6 +1602,7 @@
             FacilityRegime = _form.FacilityRegime,
             DemandSpecification = _form.DemandSpecification,
             AttractionSpecification = _form.AttractionSpecification,
+            SelectedFacilityFeatureKeys = _selectedFacilityFeatures?.Order(StringComparer.Ordinal).ToArray(),
             FrictionForm = _form.FrictionForm,
             ObservedMetricKey = _form.ObservedMetricKey,
             UserOverrides = new Dictionary<string, double>(_overrides, StringComparer.Ordinal)
@@ -1463,10 +1629,12 @@
             _form.ScenarioName = document.ScenarioName.Trim();
             _form.JurisdictionCode = document.JurisdictionCode;
             _form.OriginStateCode = document.OriginStateCode;
+            _form.HostCountyFips = document.HostCountyFips;
             _form.DevelopmentProgramId = document.DevelopmentProgramId;
             _form.CandidateLatitude = document.CandidateLatitude;
             _form.CandidateLongitude = document.CandidateLongitude;
             _form.EffectiveOn = document.EffectiveOn;
+            _form.PopulationScenarioYear = document.PopulationScenarioYear;
             _form.OriginGeographySnapshotId = document.OriginGeographySnapshotId;
             _form.AgePopulationSnapshotId = document.AgePopulationSnapshotId;
             _form.IncomeSnapshotId = document.IncomeSnapshotId;
@@ -1481,6 +1649,7 @@
             _form.FacilityRegime = document.FacilityRegime;
             _form.DemandSpecification = document.DemandSpecification;
             _form.AttractionSpecification = document.AttractionSpecification;
+            _selectedFacilityFeatures = document.SelectedFacilityFeatureKeys?.ToHashSet(StringComparer.Ordinal);
             _form.FrictionForm = document.FrictionForm;
             _form.ObservedMetricKey = document.ObservedMetricKey;
             _overrides.Clear();
@@ -1496,6 +1665,7 @@
             _lastRunRequest = null;
             _sensitivityResult = null;
             _reportArtifact = null;
+            await ModelRunInvalidated.InvokeAsync(ScenarioToken);
             _scenarioJsonMessage = $"Imported {document.UserOverrides.Count} override(s). Run the scenario to create a new immutable result.";
         }
         catch (Exception exception) when (exception is JsonException or InvalidDataException or InvalidOperationException or ArgumentException)
@@ -1509,7 +1679,9 @@
         ScenarioDefinitionDocument document,
         ModelConfiguration configuration)
     {
-        if (!string.Equals(document.SchemaVersion, ScenarioDefinitionDocument.CurrentSchemaVersion, StringComparison.Ordinal))
+        if (!string.Equals(document.SchemaVersion, ScenarioDefinitionDocument.CurrentSchemaVersion, StringComparison.Ordinal) &&
+            !string.Equals(document.SchemaVersion, "savenein.gravity-scenario.v3", StringComparison.Ordinal) &&
+            !string.Equals(document.SchemaVersion, "savenein.gravity-scenario.v2", StringComparison.Ordinal))
         {
             throw new InvalidDataException($"Unsupported scenario schema '{document.SchemaVersion}'. Expected '{ScenarioDefinitionDocument.CurrentSchemaVersion}'.");
         }
@@ -1527,6 +1699,9 @@
         {
             throw new InvalidDataException("The imported development program is not available in the current catalog.");
         }
+        if (!IsValidHostCounty(document.HostCountyFips, document.JurisdictionCode) ||
+            (document.SchemaVersion != ScenarioDefinitionDocument.CurrentSchemaVersion && document.HostCountyFips is not null))
+            throw new InvalidDataException("The host county must be a five-digit FIPS code in the selected state and use scenario schema v4.");
         if (document.CandidateLatitude is not (>= -90 and <= 90) || document.CandidateLongitude is not (>= -180 and <= 180))
         {
             throw new InvalidDataException("Imported candidate coordinates are missing or outside valid latitude/longitude bounds.");
@@ -1535,6 +1710,9 @@
         {
             throw new InvalidDataException("The fiscal rule effective date must be between 1900 and 2200.");
         }
+        if (document.PopulationScenarioYear is < 1900 or > 2200 ||
+            (document.SchemaVersion == "savenein.gravity-scenario.v2" && document.PopulationScenarioYear is not null))
+            throw new InvalidDataException("An explicit population scenario year must be between 1900 and 2200 and use scenario schema v3.");
         if (document.UserOverrides is null)
         {
             throw new InvalidDataException("Imported userOverrides must be a JSON object.");
@@ -1638,6 +1816,12 @@
         var outside = Definition.RecommendedMinimum is { } minimum && value < minimum ||
                       Definition.RecommendedMaximum is { } maximum && value > maximum;
         var inputId = $"model-parameter-{Definition.Key.Replace('.', '-')}";
+        var facilityInput = _facilityInputs.FirstOrDefault(item => item.ParameterKeys.Contains(Definition.Key));
+        var facilityDisabled = facilityInput is not null && (!facilityInput.Available || _selectedFacilityFeatures?.Contains(facilityInput.Key) != true);
+        var unavailableReason = Definition.Key.StartsWith("tourism.", StringComparison.Ordinal) && _tourism.Count == 0
+            ? "Inactive — no tourism observations are selected."
+            : Definition.Key.StartsWith("traffic.", StringComparison.Ordinal) && _traffic.Count == 0
+                ? "Inactive — no traffic observations are selected." : null;
         builder.OpenElement(sequence++, "article");
         builder.AddAttribute(sequence++, "class", $"model-parameter{(overridden ? " is-overridden" : "")}{(outside ? " is-outside-range" : "")}");
 
@@ -1662,7 +1846,7 @@
         builder.AddAttribute(sequence++, "id", inputId);
         builder.AddAttribute(sequence++, "type", "number");
         builder.AddAttribute(sequence++, "step", Definition.UiStep ?? 0.01);
-        builder.AddAttribute(sequence++, "disabled", !Definition.IsUserOverridable);
+        builder.AddAttribute(sequence++, "disabled", !Definition.IsUserOverridable || facilityDisabled || unavailableReason is not null || ((_facilityInputsLoading || _facilityInputError is not null) && Definition.Key.StartsWith("facility.", StringComparison.Ordinal)));
         if (Definition.ComputationalMinimum is { } hardMinimum) builder.AddAttribute(sequence++, "min", hardMinimum);
         if (Definition.ComputationalMaximum is { } hardMaximum) builder.AddAttribute(sequence++, "max", hardMaximum);
         builder.AddAttribute(sequence++, "value", value.ToString(CultureInfo.InvariantCulture));
@@ -1671,11 +1855,13 @@
 
         builder.OpenElement(sequence++, "span");
         builder.AddAttribute(sequence++, "class", "model-parameter-state");
-        builder.AddContent(sequence++, outside
+        builder.AddContent(sequence++, unavailableReason ?? (facilityDisabled
+            ? facilityInput!.UnavailableReason ?? "Inactive — select this facility input above to use it."
+            : outside
             ? "Outside recommended range — the backend run will preserve and report this warning."
             : overridden
                 ? "Custom override — the next backend run will store this exact value."
-                : $"{ParameterSource(Definition.Key)} value.");
+                : $"{ParameterSource(Definition.Key)} value."));
         builder.CloseElement();
 
         builder.OpenElement(sequence++, "small");
@@ -1862,15 +2048,18 @@
     private bool CanRun =>
         !string.IsNullOrWhiteSpace(_form.ScenarioName) &&
         !string.IsNullOrWhiteSpace(_form.JurisdictionCode) &&
+        IsValidHostCounty(_form.HostCountyFips, _form.JurisdictionCode) &&
         _form.DevelopmentProgramId.HasValue &&
         _form.CandidateLatitude is >= -90 and <= 90 &&
         _form.CandidateLongitude is >= -180 and <= 180 &&
+        _form.PopulationScenarioYear is null or (>= 1900 and <= 2200) &&
         _form.OriginGeographySnapshotId.HasValue &&
         _form.AgePopulationSnapshotId.HasValue &&
         _form.IncomeSnapshotId.HasValue &&
         _form.CompetitorSnapshotId.HasValue &&
         _form.ObservedPerformanceSnapshotId.HasValue &&
-        _origins.Count > 0;
+        _origins.Count > 0 && !_facilityInputsLoading && _facilityInputError is null &&
+        _selectedFacilityFeatures is not null && _facilityInputs.Length > 0;
 
     private bool CanCreateProgram =>
         !string.IsNullOrWhiteSpace(_programForm.Name) &&
@@ -1889,6 +2078,7 @@
 
     private bool CanRunSensitivity =>
         _latestRun is not null && _lastRunRequest is not null &&
+        _runParameterValues.Count > 0 && _sensitivityRanges.Count(range => range.Selected) <= 12 &&
         _sensitivityRanges.Any(range => range.Selected) &&
         _sensitivityRanges.Where(range => range.Selected).All(range =>
             double.IsFinite(range.LowValue) && double.IsFinite(range.HighValue) &&
@@ -1898,7 +2088,17 @@
 
     private string RunReadiness => CanRun
         ? "Ready to calculate your estimate."
-        : "Select required snapshots, a program, valid coordinates, and at least one origin.";
+        : !IsValidHostCounty(_form.HostCountyFips, _form.JurisdictionCode)
+            ? "Enter a five-digit host county FIPS code belonging to the selected state, or leave it blank."
+            : "Select required snapshots, a program, valid coordinates, and at least one origin.";
+
+    private static bool IsValidHostCounty(string? county, string jurisdictionCode)
+    {
+        if (string.IsNullOrWhiteSpace(county)) return true;
+        var normalized = county.Trim();
+        return normalized.Length == 5 && normalized.All(character => character is >= '0' and <= '9') &&
+            StateCodeFromFips(normalized[..2]) == StateCode(jurisdictionCode);
+    }
 
     private static string Money(decimal? value) => value.HasValue ? value.Value.ToString("C0", CultureInfo.CurrentCulture) : "—";
     private static string Number(double? value) => value.HasValue ? value.Value.ToString("N1", CultureInfo.CurrentCulture) : "—";
@@ -1928,6 +2128,7 @@
 
     private sealed class ScenarioForm
     {
+        public string? HostCountyFips { get; set; }
         public string ScenarioName { get; set; } = $"Scenario {DateTime.Now:yyyy-MM-dd HH:mm}";
         public string JurisdictionCode { get; set; } = string.Empty;
         public string OriginStateCode { get; set; } = string.Empty;
@@ -1935,6 +2136,7 @@
         public double? CandidateLatitude { get; set; }
         public double? CandidateLongitude { get; set; }
         public DateOnly EffectiveOn { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+        public int? PopulationScenarioYear { get; set; }
         public Guid? OriginGeographySnapshotId { get; set; }
         public Guid? AgePopulationSnapshotId { get; set; }
         public Guid? IncomeSnapshotId { get; set; }
@@ -1951,14 +2153,6 @@
         public string AttractionSpecification { get; set; } = "observed-ggr";
         public string FrictionForm { get; set; } = "inverse-power";
         public string ObservedMetricKey { get; set; } = "casino-win";
-    }
-
-    private sealed class ClientScenarioSnapshot
-    {
-        public string? StateFips { get; set; }
-        public string? CountyFips { get; set; }
-        public double? MarkerLatitude { get; set; }
-        public double? MarkerLongitude { get; set; }
     }
 
     private sealed class DevelopmentProgramForm
@@ -2061,17 +2255,19 @@
 
     private sealed class ScenarioDefinitionDocument
     {
-        public const string CurrentSchemaVersion = "savenein.gravity-scenario.v2";
+        public const string CurrentSchemaVersion = "savenein.gravity-scenario.v4";
 
         public string SchemaVersion { get; set; } = CurrentSchemaVersion;
         public string ModelVersion { get; set; } = string.Empty;
         public string ScenarioName { get; set; } = string.Empty;
         public string JurisdictionCode { get; set; } = string.Empty;
         public string OriginStateCode { get; set; } = string.Empty;
+        public string? HostCountyFips { get; set; }
         public Guid? DevelopmentProgramId { get; set; }
         public double? CandidateLatitude { get; set; }
         public double? CandidateLongitude { get; set; }
         public DateOnly EffectiveOn { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+        public int? PopulationScenarioYear { get; set; }
         public Guid? OriginGeographySnapshotId { get; set; }
         public Guid? AgePopulationSnapshotId { get; set; }
         public Guid? IncomeSnapshotId { get; set; }
@@ -2089,6 +2285,7 @@
         public string FrictionForm { get; set; } = "inverse-power";
         public string ObservedMetricKey { get; set; } = "casino-win";
         public Dictionary<string, double> UserOverrides { get; set; } = new(StringComparer.Ordinal);
+        public string[]? SelectedFacilityFeatureKeys { get; set; }
     }
 
     private sealed record ParameterOverrideRequest(string Key, double Value);
@@ -2134,7 +2331,8 @@
         string Name,
         string OutputMetric,
         RunRequest BaseRunRequest,
-        IReadOnlyCollection<SensitivityParameterRangeRequest> ParameterRanges);
+        IReadOnlyCollection<SensitivityParameterRangeRequest> ParameterRanges,
+        IReadOnlyDictionary<string, double> ExpectedBaselineParameters);
 
     private sealed class SensitivityRangeForm
     {
@@ -2187,11 +2385,13 @@
         public IReadOnlyCollection<string> StableOriginIds { get; set; } = [];
         public IReadOnlyCollection<int> CompetitorIds { get; set; } = [];
         public int PopulationObservationYear { get; set; }
+        public int? PopulationScenarioYear { get; set; }
         public int IncomeTaxYear { get; set; }
         public DateOnly EffectiveOn { get; set; }
         public string FacilityRegime { get; set; } = string.Empty;
         public string DemandSpecification { get; set; } = string.Empty;
         public string AttractionSpecification { get; set; } = string.Empty;
+        public string[]? SelectedFacilityFeatureKeys { get; set; }
         public string FrictionForm { get; set; } = string.Empty;
         public string ObservedMetricKey { get; set; } = string.Empty;
         public DateOnly ObservedPeriodStart { get; set; }
@@ -2234,7 +2434,10 @@
     private sealed class RunDetails
     {
         public List<RunFacilityResult> Facilities { get; set; } = [];
+        public List<RunParameterValue> Parameters { get; set; } = [];
     }
+
+    private sealed record RunParameterValue(string Key, double Value);
 
     private sealed class RunFacilityResult
     {

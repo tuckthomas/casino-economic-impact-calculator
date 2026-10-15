@@ -105,6 +105,7 @@ window.MapLibreImpactMap = (function ()
     // Radius mode keeps public previews fully client-side after cached population data loads.
     let riskZoneMode = 'radius';
     let zoneCount = 3;
+    let lastVisualizationBreakdown = null;
     let drawingOverlaysSuppressed = false;
 
     // In-map guidance card state
@@ -316,8 +317,13 @@ window.MapLibreImpactMap = (function ()
         const annualGrowthRate = Number.isFinite(rawAnnualGrowthRate) ? rawAnnualGrowthRate : 0;
         const yearsFromBase = Math.max(0, targetYear - ADULT_POPULATION_BASE_YEAR);
 
-        let multiplier = Math.pow(1 + (annualGrowthRate / 100), yearsFromBase);
-        if (!Number.isFinite(multiplier) || multiplier <= 0) multiplier = 1;
+        const projection = DotNet.invokeMethod('SaveNEIN.Client', 'ProjectPopulation', {
+            observedPopulation: 1,
+            observationYear: ADULT_POPULATION_BASE_YEAR,
+            scenarioYear: targetYear,
+            annualGrowthRate: annualGrowthRate / 100
+        });
+        const multiplier = projection.projectedPopulation;
 
         return {
             baseYear: ADULT_POPULATION_BASE_YEAR,
@@ -325,7 +331,7 @@ window.MapLibreImpactMap = (function ()
             annualGrowthRate,
             yearsFromBase,
             multiplier,
-            usesProjectedAdults: yearsFromBase > 0 && Math.abs(annualGrowthRate) > 0.0001
+            usesProjectedAdults: yearsFromBase > 0 && annualGrowthRate !== 0
         };
     }
 
@@ -333,7 +339,7 @@ window.MapLibreImpactMap = (function ()
     {
         const numericValue = Number(value || 0);
         if (!Number.isFinite(numericValue) || numericValue <= 0) return 0;
-        return Math.max(0, Math.round(numericValue * multiplier));
+        return window.EconomicScenarioVisualization.scalePopulation(numericValue, multiplier);
     }
 
     function updateAdultPopulationProjectionDisplay(settings)
@@ -416,7 +422,7 @@ window.MapLibreImpactMap = (function ()
                 { ...createCircleGeoJSON([lngLat.lng, lngLat.lat], CIRCLE_RADII.tier3), properties: { tier: 3 } },
                 { ...createCircleGeoJSON([lngLat.lng, lngLat.lat], CIRCLE_RADII.tier2), properties: { tier: 2 } },
                 { ...createCircleGeoJSON([lngLat.lng, lngLat.lat], CIRCLE_RADII.tier1), properties: { tier: 1 } }
-            ]
+            ].filter(feature => feature.properties.tier <= zoneCount)
         };
         const source = map.getSource('impact-circles');
         if (source) source.setData(circles);
@@ -852,6 +858,7 @@ window.MapLibreImpactMap = (function ()
         // Only run radius summation if NOT in grid mode
         if (riskZoneMode === 'radius')
         {
+            const zones = window.EconomicZones.radiusConfiguration(zoneCount, CIRCLE_RADII);
             byCounty = {}; // Reset global for Radius calculation
             for (const entry of currentCalcFeatures)
             {
@@ -869,19 +876,20 @@ window.MapLibreImpactMap = (function ()
                 const dist = distanceMiles(centerLng, centerLat, entry.lng, entry.lat);
                 const bucket = byCounty[effectiveCountyFips] || (byCounty[effectiveCountyFips] = { fips: effectiveCountyFips, t1Pop: 0, t2Pop: 0, t3Pop: 0 });
 
-                if (dist <= 10)
+                const tier = window.EconomicZones.tierForDistance(dist, zones);
+                if (tier === 1)
                 {
                     baseAdultsWithin50 += basePopAdult;
                     t1PopRegional += popAdult;
                     if (isSameCounty) t1PopCounty += popAdult;
                     bucket.t1Pop += popAdult;
-                } else if (dist <= 20)
+                } else if (tier === 2)
                 {
                     baseAdultsWithin50 += basePopAdult;
                     t2PopRegional += popAdult;
                     if (isSameCounty) t2PopCounty += popAdult;
                     bucket.t2Pop += popAdult;
-                } else if (dist <= 50)
+                } else if (tier === 3)
                 {
                     baseAdultsWithin50 += basePopAdult;
                     t3PopRegional += popAdult;
@@ -937,33 +945,25 @@ window.MapLibreImpactMap = (function ()
 
         const preRate = baselineRate;
         const baselineIncrease = parseFloat(els.inputBaselineIncrease ? els.inputBaselineIncrease.value : 0);
-        const r1 = preRate * 2.0, r2 = preRate * 1.5, r3 = preRate * 1.0;
-        // Delta rates
-        const d1 = Math.max(0, r1 - preRate) + baselineIncrease;
-        const d2 = Math.max(0, r2 - preRate) + baselineIncrease;
-        const d3 = baselineIncrease;
+        const exposure = window.EconomicScenarioVisualization;
+        const countyExposure = exposure.calculateExposure([t1PopCounty, t2PopCounty, t3PopCounty], preRate, baselineIncrease);
+        const regionalExposure = exposure.calculateExposure([t1PopRegional, t2PopRegional, t3PopRegional], preRate, baselineIncrease);
+        const [r1, r2, r3] = countyExposure.prevalenceRates;
+        const [d1, d2, d3] = countyExposure.incrementalRates;
 
         const t1PopOther = Math.max(0, t1PopRegional - t1PopCounty);
         const t2PopOther = Math.max(0, t2PopRegional - t2PopCounty);
         const t3PopOther = Math.max(0, t3PopRegional - t3PopCounty);
 
-        const v1Total = t1PopRegional * (r1 / 100);
-        const v2Total = t2PopRegional * (r2 / 100);
-        const v3Total = t3PopRegional * (r3 / 100);
-        const v1County = t1PopCounty * (r1 / 100);
-        const v2County = t2PopCounty * (r2 / 100);
-        const v3County = t3PopCounty * (r3 / 100);
-        const totalEstimatedCounty = v1County + v2County + v3County;
-        const totalEstimatedRegional = v1Total + v2Total + v3Total;
+        const [v1Total, v2Total, v3Total] = regionalExposure.estimatedCases;
+        const [v1County, v2County, v3County] = countyExposure.estimatedCases;
+        const totalEstimatedCounty = countyExposure.totalEstimatedCases;
+        const totalEstimatedRegional = regionalExposure.totalEstimatedCases;
 
-        const n1Total = t1PopRegional * (d1 / 100);
-        const n2Total = t2PopRegional * (d2 / 100);
-        const n3Total = t3PopRegional * (d3 / 100);
-        const n1County = t1PopCounty * (d1 / 100);
-        const n2County = t2PopCounty * (d2 / 100);
-        const n3County = t3PopCounty * (d3 / 100);
-        const totalNetNewCounty = n1County + n2County + n3County;
-        const totalNetNewRegional = n1Total + n2Total + n3Total;
+        const [n1Total, n2Total, n3Total] = regionalExposure.incrementalCases;
+        const [n1County, n2County, n3County] = countyExposure.incrementalCases;
+        const totalNetNewCounty = countyExposure.totalIncrementalCases;
+        const totalNetNewRegional = regionalExposure.totalIncrementalCases;
 
         // Update UI
         animateValue(els.t1, t1PopRegional);
@@ -1092,9 +1092,8 @@ window.MapLibreImpactMap = (function ()
             t3Pop: data.t3Pop
         })).filter(c => c.t1Pop + c.t2Pop + c.t3Pop > 0);
 
-        // Dispatch events
-        window.dispatchEvent(new CustomEvent('impact-breakdown-updated', {
-            detail: {
+        lastVisualizationBreakdown = {
+                zoneConfiguration: window.EconomicZones.snapshot(riskZoneMode, zoneCount, CIRCLE_RADII),
                 countyFips: currentCountyFips,
                 stateFips,
                 stateName,
@@ -1102,6 +1101,7 @@ window.MapLibreImpactMap = (function ()
                 markerLat: centerLat,
                 markerLng: centerLng,
                 baselineRate,
+                baselineIncrease,
                 populationProjection: adultPopulationProjection,
                 county: {
                     adults: countyAdults,
@@ -1123,8 +1123,8 @@ window.MapLibreImpactMap = (function ()
                     victimsWithin50: totalNetNewRegional
                 },
                 byCounty: byCountyArray
-            }
-        }));
+            };
+        window.dispatchEvent(new CustomEvent('impact-breakdown-updated', { detail: lastVisualizationBreakdown }));
 
         const triggerInput = document.getElementById('input-revenue');
         if (triggerInput) triggerInput.dispatchEvent(new Event('input'));
@@ -4915,19 +4915,18 @@ window.MapLibreImpactMap = (function ()
         },
         getScenarioSnapshot: () =>
         {
-            const read = id => document.getElementById(id)?.value ?? null;
+            if (!lastVisualizationBreakdown || lastVisualizationBreakdown.markerLat !== markerPosition?.lat ||
+                lastVisualizationBreakdown.markerLng !== markerPosition?.lng || lastVisualizationBreakdown.countyFips !== currentCountyFips ||
+                JSON.stringify(lastVisualizationBreakdown.zoneConfiguration) !== JSON.stringify(window.EconomicZones.snapshot(riskZoneMode, zoneCount, CIRCLE_RADII)))
+                throw new Error('Wait for the selected location population to finish calculating before continuing.');
             return {
+                visualizationContext: { version: window.EconomicScenarioVisualization.version, impactBreakdown: lastVisualizationBreakdown },
                 version: 'economic-impact-client-v1',
                 stateFips: currentStateFips,
                 countyFips: currentCountyFips,
                 markerLatitude: markerPosition?.lat ?? null,
                 markerLongitude: markerPosition?.lng ?? null,
-                zoneConfiguration: {
-                    count: 3,
-                    tiers: [15, 30, 60],
-                    unit: 'minutes-drive-time',
-                    mode: riskZoneMode
-                },
+                zoneConfiguration: window.EconomicZones.snapshot(riskZoneMode, zoneCount, CIRCLE_RADII),
                 previewOutputs: {
                     tier1Adults: t1PopRegional,
                     tier2Adults: t2PopRegional,

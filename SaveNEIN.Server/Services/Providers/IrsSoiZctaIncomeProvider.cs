@@ -129,12 +129,13 @@ public sealed class IrsSoiExactCodeZctaIncomeProvider(
                 $"{sourceHash}\n{TransformVersion}\n{marketDescriptor}")))
             .ToLowerInvariant();
         var stateLabel = string.Join(", ", states.Select(state => state.Name));
+        var stateCodeLabel = string.Join(",", states.Select(state => state.Abbreviation));
         var workbookList = string.Join(", ", workbooks.OrderBy(workbook => workbook.State.Abbreviation).Select(workbook => workbook.Uri));
         var sourceUrl = workbooks.Length == 1 ? workbooks[0].Uri.ToString() : providerOptions.PublicationUrl;
 
         return new ProviderDataset<OriginIncomeImportRow>(
             new RegisterDataSourceRequest(
-                $"IRS SOI {SupportedTaxYear} ZIP income reconciled to Census 2022 ZCTA codes ({stateLabel})",
+                $"IRS SOI {SupportedTaxYear} ZIP income reconciled to Census 2022 ZCTA codes ({stateCodeLabel})",
                 "Internal Revenue Service and United States Census Bureau",
                 sourceUrl,
                 workbooks.Length == 1
@@ -148,7 +149,7 @@ public sealed class IrsSoiExactCodeZctaIncomeProvider(
                 sourceHash,
                 true,
                 "IRS and Census terms and conditions apply.",
-                $"IRS publication: {providerOptions.PublicationUrl}; source workbooks: {workbookList}; Census ZCTA gazetteer: {gazetteerUri}. " +
+                $"States: {stateLabel}. IRS publication: {providerOptions.PublicationUrl}; source workbooks: {workbookList}; Census ZCTA gazetteer: {gazetteerUri}. " +
                 "Unmatched USPS ZIPs are excluded, never silently converted to ZCTAs."),
             DatasetSnapshotKinds.Income,
             SupportedTaxYear.ToString(CultureInfo.InvariantCulture),

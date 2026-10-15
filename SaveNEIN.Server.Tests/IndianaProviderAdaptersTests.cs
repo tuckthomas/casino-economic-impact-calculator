@@ -143,6 +143,34 @@ public sealed class IndianaProviderAdaptersTests
     }
 
     [Fact]
+    public async Task GamingCommissionFacilityProvider_DiscoversMovedAnnualReportForExactRequestedYear()
+    {
+        const string links = """
+            <a href="/igc/files/reports/2026/FY2026-Annual.pdf">FY 2026 Annual Report</a>
+            <a href="/igc/files/reports/2025/FY2025-Annual.pdf">FY&nbsp;2025 <strong>Annual Report</strong></a>
+            """;
+        var handler = new IgcResponseHandler(BuildIgcWorkbook(), BuildIgcLocationsHtml(), BuildIgcAnnualReportPdf(), links);
+        var provider = new IndianaGamingCommissionFacilityInventoryProvider(new HttpClient(handler),
+            Options.Create(new IndianaGamingCommissionProviderOptions()));
+        var dataset = await provider.FetchAsync(new("US-IN", new(2025, 1, 1), new(2025, 12, 31)));
+        Assert.Equal(13, dataset.Rows.Count);
+        Assert.Equal(5, handler.RequestUris.Count);
+        Assert.Contains("/reports/2025/FY2025-Annual.pdf", dataset.Source.Notes, StringComparison.Ordinal);
+        Assert.DoesNotContain(handler.RequestUris, uri => uri.AbsolutePath.Contains("2026", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("<a href='/igc/files/reports/2026/FY2026-Annual.pdf'>FY 2026 Annual Report</a>")]
+    [InlineData("<a href='https://untrusted.test/report.pdf'>FY 2025 Annual Report</a>")]
+    [InlineData("<a href='http://www.in.gov/igc/files/report.pdf'>FY 2025 Annual Report</a>")]
+    [InlineData("<a href='/igc/files/a.pdf'>FY 2025 Annual Report</a><a href='/igc/files/b.pdf'>FY 2025 Annual Report</a>")]
+    public void GamingCommissionAnnualDiscovery_RejectsWrongYearUntrustedAndAmbiguousSources(string links)
+    {
+        Assert.Throws<InvalidDataException>(() => IndianaGamingCommissionFacilityInventoryProvider.DiscoverAnnualReportUri(
+            new("https://www.in.gov/igc/publications/annual-reports/"), links, 2025));
+    }
+
+    [Fact]
     public void GamingCommissionAnnualFacilityParser_RejectsIncompleteInventory()
     {
         var partial = new[]
@@ -444,7 +472,7 @@ public sealed class IndianaProviderAdaptersTests
         }
     }
 
-    private sealed class IgcResponseHandler(byte[] workbook, string locationsHtml, byte[] annualReportPdf) : HttpMessageHandler
+    private sealed class IgcResponseHandler(byte[] workbook, string locationsHtml, byte[] annualReportPdf, string? annualLinksHtml = null) : HttpMessageHandler
     {
         public List<Uri> RequestUris { get; } = [];
 
@@ -453,6 +481,10 @@ public sealed class IndianaProviderAdaptersTests
             CancellationToken cancellationToken)
         {
             RequestUris.Add(request.RequestUri!);
+            if (annualLinksHtml is not null && request.RequestUri!.AbsolutePath == "/igc/files/FY2025-Annual.pdf")
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            if (annualLinksHtml is not null && request.RequestUri!.AbsolutePath.EndsWith("/annual-reports/", StringComparison.Ordinal))
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(annualLinksHtml) });
             HttpContent content = request.RequestUri!.AbsolutePath.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
                 ? new ByteArrayContent(workbook)
                 : request.RequestUri.AbsolutePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)

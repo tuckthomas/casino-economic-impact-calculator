@@ -7,6 +7,15 @@
 @using SaveNEIN.Client.Pages
 @using System.Text.Json
 
+@if (_scenarioError is not null)
+{
+    <div role="alert" class="mx-auto max-w-4xl p-6 text-base text-white">
+        <p>@_scenarioError</p>
+        <a href="/economic-impact/location" class="mt-4 inline-block underline">Return to location selection</a>
+    </div>
+}
+else
+{
     <section class="bg-[#0f172a] relative overflow-hidden" id="economic-analysis">
         <div class="economic-analysis-body mx-auto max-w-7xl px-0 pt-24 pb-24 sm:pt-28 sm:pb-28 lg:px-8">
             <div class="economic-analysis-section-content">
@@ -292,7 +301,7 @@
                                     class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                     <div class="flex flex-col items-center">
                                         <span class="text-slate-500 uppercase font-bold mb-1 text-center">Total
-                                            Population</span>
+                                                Adult Population</span>
                                         <span class="text-white font-mono font-bold" id="calc-pop">-</span>
                                     </div>
                                     <div class="text-slate-500 font-bold mb-3">×</div>
@@ -552,7 +561,8 @@
 
                                 <div
                                     class="text-sm text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
-                                    Detailed Social Cost Breakdown — Other Counties (Same State, ≤50 mi)
+                                    Detailed Social Cost Breakdown — Other Counties (Same State,
+                                    <span id="other-counties-zone-footprint">selected impact zones</span>)
                                 </div>
 
                                 <div class="space-y-6">
@@ -801,8 +811,8 @@
                         </h3>
                         <button id="btn-generate-pdf" @onclick="GeneratePdf" 
                                 class="bg-red-600 hover:bg-red-500 text-white p-2 rounded-lg shadow-md transition-all transform active:scale-95 border border-red-400/20 flex items-center justify-center w-10 h-10 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:hover:bg-slate-600 disabled:shadow-none disabled:active:scale-100" 
-                                aria-label="Download PDF Report"
-                                disabled="@_isGeneratingPdf">
+                                aria-label="Generate saved model PDF report"
+                                disabled="@(_isGeneratingPdf || !_savedModelRunId.HasValue)">
                             @if (_isGeneratingPdf)
                             {
                                 <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -812,8 +822,21 @@
                                 <span class="material-symbols-outlined text-2xl">picture_as_pdf</span>
                             }
                         </button>
-        <AppTooltip TargetId="btn-generate-pdf" Text="Download PDF Report" />
+        <AppTooltip TargetId="btn-generate-pdf" Text="Generate a report from the saved model calculation below" />
                     </div>
+
+                    @if (_savedReportPdfUrl is not null)
+                    {
+                        <a class="text-sm font-semibold text-blue-300 underline" href="@_savedReportPdfUrl" target="_blank" rel="noopener">Download saved model PDF</a>
+                    }
+                    else if (!_savedModelRunId.HasValue)
+                    {
+                        <p class="text-sm text-slate-400">Calculate and save the model below to generate its report.</p>
+                    }
+                    @if (_savedReportError is not null)
+                    {
+                        <p class="text-sm text-red-300" role="alert">@_savedReportError</p>
+                    }
 
 
 
@@ -1033,51 +1056,81 @@
 
 	    </section>
 
-<EconomicImpact Embedded="true" ScenarioToken="@_scenarioToken" />
+<EconomicImpact @key="_scenarioToken" Embedded="true" ScenarioToken="@_scenarioToken" ModelRunCompleted="OnModelRunCompleted" ModelRunInvalidated="OnModelRunInvalidated" />
 
 <EconomicModals />
+}
 @code {
-    private ClientScenarioSnapshot? _scenario;
+    private EconomicScenarioSnapshot? _scenario;
     private string? _scenarioToken;
+    private Guid? _savedModelRunId;
+    private string? _savedReportPdfUrl;
+    private string? _savedReportError;
 
-    protected override async Task OnInitializedAsync()
+    [SupplyParameterFromQuery(Name = "scenario")]
+    public string? ScenarioToken { get; set; }
+
+    private string? _scenarioError;
+    private string? _loadedScenarioToken;
+    private bool _scenarioLoaded;
+    private bool _initializeVisualization;
+
+    protected override async Task OnParametersSetAsync()
     {
-        var marker = "?scenario=";
-        var queryIndex = NavigationManager.Uri.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-        if (queryIndex < 0)
+        if (_scenarioLoaded && _loadedScenarioToken == ScenarioToken) return;
+        _scenarioLoaded = true;
+        _loadedScenarioToken = ScenarioToken;
+        _scenario = null;
+        _savedModelRunId = null;
+        _savedReportPdfUrl = null;
+        _savedReportError = null;
+        _scenarioError = null;
+        _initializeVisualization = false;
+        _scenarioToken = ScenarioToken;
+        var requestedToken = ScenarioToken;
+        if (ScenarioToken is null)
         {
+            _initializeVisualization = true;
             return;
         }
-
-        var token = NavigationManager.Uri[(queryIndex + marker.Length)..].Split('&', 2)[0];
-        if (!string.IsNullOrWhiteSpace(token))
+        try
         {
-            _scenarioToken = token;
-            using var response = await Http.GetAsync($"api/economic-scenarios/{Uri.EscapeDataString(token)}");
-            if (response.IsSuccessStatusCode)
-            {
-                _scenario = await response.Content.ReadFromJsonAsync<ClientScenarioSnapshot>();
-            }
+            if (string.IsNullOrWhiteSpace(ScenarioToken))
+                throw new InvalidDataException("The saved location token is empty. Return to location selection and save it again.");
+            using var response = await Http.GetAsync($"api/economic-scenarios/{Uri.EscapeDataString(ScenarioToken)}");
+            if (!response.IsSuccessStatusCode)
+                throw new InvalidOperationException("The saved location is unavailable or expired. Return to location selection and save it again.");
+            var snapshot = await response.Content.ReadFromJsonAsync<EconomicScenarioSnapshot>()
+                ?? throw new InvalidDataException("The saved location response was empty.");
+            snapshot.Validate();
+            if (_loadedScenarioToken != requestedToken) return;
+            _scenario = snapshot;
+            _initializeVisualization = true;
         }
-    }
-
-    private sealed class ClientScenarioSnapshot
-    {
-        public string? StateFips { get; set; }
-        public string? CountyFips { get; set; }
-        public double? MarkerLatitude { get; set; }
-        public double? MarkerLongitude { get; set; }
-        public JsonElement ZoneConfiguration { get; set; }
+        catch (Exception exception)
+        {
+            if (_loadedScenarioToken != requestedToken) return;
+            _scenario = null;
+            _scenarioError = exception.Message;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (_initializeVisualization && _scenarioError is null)
         {
+            _initializeVisualization = false;
             // OnAfterRenderAsync runs after the markup exists. No artificial timer needed.
             if (await JSRuntime.InvokeAsync<bool>("window.ensureEconomicCalculator"))
             {
-                try { await JSRuntime.InvokeVoidAsync("window.EconomicCalculator.init"); } catch (Exception e) { Console.WriteLine($"Calc Init: {e.Message}"); }
+                try { await JSRuntime.InvokeVoidAsync("window.EconomicCalculator.init", _scenario); }
+                catch (Exception exception)
+                {
+                    var detail = exception.Message.Split('\n', 2)[0];
+                    _scenarioError = $"The saved visualization could not be restored: {detail}";
+                    StateHasChanged();
+                    return;
+                }
             }
             try { await JSRuntime.InvokeVoidAsync("window.initSubstitutionCharts"); } catch (Exception e) { Console.WriteLine($"Chart Init: {e.Message}"); }
         }
@@ -1092,49 +1145,41 @@
 
     private bool _isGeneratingPdf = false;
 
+    private void OnModelRunCompleted((Guid ModelRunId, string? ScenarioToken) result)
+    {
+        if (result.ScenarioToken != _scenarioToken) return;
+        _savedModelRunId = result.ModelRunId;
+        _savedReportPdfUrl = null;
+        _savedReportError = null;
+    }
+
+    private void OnModelRunInvalidated(string? scenarioToken)
+    {
+        if (scenarioToken != _scenarioToken) return;
+        _savedModelRunId = null;
+        _savedReportPdfUrl = null;
+        _savedReportError = null;
+    }
+
     private async Task GeneratePdf()
     {
-        if (_isGeneratingPdf) return;
+        if (_isGeneratingPdf || _savedModelRunId is not { } savedRunId) return;
         _isGeneratingPdf = true;
+        _savedReportError = null;
         StateHasChanged();
 
         try 
         {
-            // 1. Capture Map Image
-            var base64Map = await JSRuntime.InvokeAsync<string>("window.PdfHelper.captureMapAndGenerate", "impact-map");
-            
-            // 2. Scrape Data
-            var data = await JSRuntime.InvokeAsync<ReportDataScraped>("window.PdfHelper.getReportData");
-            
-            if (data == null) data = new ReportDataScraped();
-
-            // 3. Send to Server
-            var request = new 
-            {
-                MapImageBase64 = base64Map,
-                AnalysisText = data.AnalysisText,
-                MainTable = data.MainTable,
-                BreakdownTable = data.BreakdownTable,
-                BreakdownOtherTable = data.BreakdownOtherTable,
-                SubjectCountyName = data.SubjectCountyName
-            };
-            
-            var response = await Http.PostAsJsonAsync("api/report/generate", request);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var fileStream = await response.Content.ReadAsStreamAsync();
-                using var streamRef = new DotNetStreamReference(fileStream);
-                await JSRuntime.InvokeVoidAsync("window.PdfHelper.downloadFileFromStream", "SaveNEIN_Analysis.pdf", streamRef);
-            }
-            else
-            {
-                Console.WriteLine("PDF Generation failed: " + response.StatusCode);
-            }
+            using var response = await Http.PostAsJsonAsync($"api/model-runs/{savedRunId:D}/reports", new { TopOriginCount = 20, CurrencyCode = "USD" });
+            response.EnsureSuccessStatusCode();
+            var artifact = await response.Content.ReadFromJsonAsync<SavedReportArtifact>() ?? throw new InvalidDataException("The report response is empty.");
+            if (_savedModelRunId != savedRunId) return;
+            if (artifact.ModelRunId != savedRunId || string.IsNullOrWhiteSpace(artifact.PdfUrl)) throw new InvalidDataException("The report does not match the saved calculation.");
+            _savedReportPdfUrl = artifact.PdfUrl;
         }
         catch (Exception ex)
         {
-             Console.WriteLine($"PDF Error: {ex.Message}");
+            if (_savedModelRunId == savedRunId) _savedReportError = ex.Message;
         }
         finally
         {
@@ -1143,18 +1188,5 @@
         }
     }
 
-    public class ReportDataScraped 
-    {
-        public string? SubjectCountyName { get; set; }
-        public string? AnalysisText { get; set; }
-        public TableData? MainTable { get; set; }
-        public List<List<string>> BreakdownTable { get; set; } = new();
-        public List<List<string>> BreakdownOtherTable { get; set; } = new();
-    }
-
-    public class TableData
-    {
-        public List<string> Headers { get; set; } = new();
-        public List<List<string>> Rows { get; set; } = new();
-    }
+    private sealed record SavedReportArtifact(Guid ModelRunId, string PdfUrl);
 }

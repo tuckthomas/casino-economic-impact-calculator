@@ -1002,6 +1002,64 @@ summary:focus-visible {
     color: #bfdbfe;
 }
 
+.model-facility-inputs {
+    border: 1px solid #475569;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin: 1rem 0;
+    font-size: 1rem;
+}
+
+.model-facility-input label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+}
+
+.model-facility-input input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: 0 0 auto;
+}
+
+.model-facility-input .model-facility-weight {
+    flex-wrap: wrap;
+    margin: 0.25rem 0 1rem 2rem;
+    font-size: 0.875rem;
+}
+
+.model-facility-weight input[type="number"] {
+    width: 7rem;
+    padding: 0.5rem;
+    border: 1px solid #64748b;
+    border-radius: 0.25rem;
+    color: #f8fafc;
+    background: #0f172a;
+}
+
+.model-facility-weight input:disabled {
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.model-facility-input p {
+    color: #cbd5e1;
+    margin: 0.25rem 0 0.75rem 2rem;
+    font-size: 0.875rem;
+}
+
+.model-facility-input.is-unavailable label {
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.model-parameter input:disabled {
+    color: #94a3b8;
+    background: #1e293b;
+    cursor: not-allowed;
+}
+
 .model-comparison-table tbody th {
     background: #0b1323;
     color: #cbd5e1;

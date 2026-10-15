@@ -100,6 +100,34 @@ public sealed class IllinoisGamingBoardRevenueProvider(
         ProviderFetchRequest request,
         CancellationToken cancellationToken)
     {
+        var report = await FetchReportCsvAsync(request, "Casino Summary", cancellationToken);
+        var rows = ParseCasinoSummaryCsv(Encoding.UTF8.GetString(report.CsvBytes));
+        if (rows.Count == 0) throw new InvalidDataException("The Illinois Gaming Board Casino Summary CSV contained no facility rows.");
+        return new IllinoisCasinoSummary(report.PeriodLabel, report.PeriodGranularity, report.RetrievedAtUtc, report.CsvBytes, rows);
+    }
+
+    public async Task<IllinoisCasinoCapacityReport> FetchCapacityAsync(ProviderFetchRequest request, CancellationToken cancellationToken = default)
+    {
+        // Use the last complete month of the requested observation period. Do
+        // not substitute today's capacity for historical observations.
+        var capacityRequest = request with { PeriodStart = new DateOnly(request.PeriodEnd.Year, request.PeriodEnd.Month, 1) };
+        _ = RequireIllinoisPeriod(request);
+        var egdTask = FetchReportCsvAsync(capacityRequest, "EGD Summary", cancellationToken);
+        var tablesTask = FetchReportCsvAsync(capacityRequest, "Table Game Summary", cancellationToken);
+        await Task.WhenAll(egdTask, tablesTask);
+        var egd = await egdTask;
+        var tables = await tablesTask;
+        var devices = ParseGameCountsCsv(Encoding.UTF8.GetString(egd.CsvBytes));
+        var tableCounts = ParseGameCountsCsv(Encoding.UTF8.GetString(tables.CsvBytes));
+        if (!devices.Keys.ToHashSet(StringComparer.Ordinal).SetEquals(tableCounts.Keys))
+            throw new InvalidDataException("IGB EGD and table-game reports have different facility universes.");
+        return new IllinoisCasinoCapacityReport(egd.PeriodLabel, egd.RetrievedAtUtc > tables.RetrievedAtUtc ? egd.RetrievedAtUtc : tables.RetrievedAtUtc,
+            egd.CsvBytes, tables.CsvBytes, devices.ToDictionary(item => item.Key,
+                item => new IllinoisCasinoGameCounts(item.Value.Total, tableCounts[item.Key].Total, tableCounts[item.Key].Poker), StringComparer.Ordinal));
+    }
+
+    private async Task<IllinoisCsvReport> FetchReportCsvAsync(ProviderFetchRequest request, string reportType, CancellationToken cancellationToken)
+    {
         var (periodLabel, periodGranularity) = RequireIllinoisPeriod(request);
         var configured = options.Value;
         using var landingResponse = await http.GetAsync(
@@ -113,7 +141,7 @@ public sealed class IllinoisGamingBoardRevenueProvider(
             ["__VIEWSTATE"] = HiddenField(landingHtml, "__VIEWSTATE"),
             ["__VIEWSTATEGENERATOR"] = HiddenField(landingHtml, "__VIEWSTATEGENERATOR"),
             ["__EVENTVALIDATION"] = HiddenField(landingHtml, "__EVENTVALIDATION"),
-            ["CasinoReportTypes"] = "Casino Summary",
+            ["CasinoReportTypes"] = reportType,
             ["SearchStartMonth"] = request.PeriodStart.ToString("MMMM", CultureInfo.InvariantCulture),
             ["SearchStartYear"] = request.PeriodStart.Year.ToString(CultureInfo.InvariantCulture),
             ["SearchEndMonth"] = request.PeriodEnd.ToString("MMMM", CultureInfo.InvariantCulture),
@@ -125,17 +153,38 @@ public sealed class IllinoisGamingBoardRevenueProvider(
         using var csvResponse = await http.PostAsync(configured.ReportsApplicationUrl, form, cancellationToken);
         csvResponse.EnsureSuccessStatusCode();
         var csvBytes = await csvResponse.Content.ReadAsByteArrayAsync(cancellationToken);
-        var rows = ParseCasinoSummaryCsv(Encoding.UTF8.GetString(csvBytes));
-        if (rows.Count == 0)
+        var records = CsvRecordReader.Read(Encoding.UTF8.GetString(csvBytes));
+        var expectedTitle = reportType == "Casino Summary" ? "Casino Summary" : $"Casino {reportType}";
+        var expectedPeriod = periodGranularity == "annual"
+            ? $"January {request.PeriodStart.Year} - December {request.PeriodEnd.Year}"
+            : request.PeriodStart.ToString("MMMM yyyy", CultureInfo.InvariantCulture);
+        if (records.Count < 2 || records[0][0].Trim() != expectedTitle || records[1][0].Trim() != expectedPeriod)
+            throw new InvalidDataException($"IGB returned a different report type or observation period than requested ({expectedTitle}, {expectedPeriod}).");
+        return new IllinoisCsvReport(periodLabel, periodGranularity, DateTime.UtcNow, csvBytes);
+    }
+
+    internal static IReadOnlyDictionary<string, (int Total, int Poker)> ParseGameCountsCsv(string csv)
+    {
+        var records = CsvRecordReader.Read(csv);
+        var header = records.FindIndex(row => row.Count >= 3 && row[0] == "Casino" && row[1] == "Game" && row[2] == "Average Number");
+        if (header < 0) throw new InvalidDataException("IGB game inventory omitted the Casino/Game/Average Number header.");
+        var result = new Dictionary<string, (int Total, int Poker)>(StringComparer.Ordinal);
+        var games = new HashSet<(string Venue, string Game)>();
+        foreach (var row in records.Skip(header + 1))
         {
-            throw new InvalidDataException("The Illinois Gaming Board Casino Summary CSV contained no facility rows.");
+            if (row.All(string.IsNullOrWhiteSpace)) continue;
+            if (row[0].Trim() == "Receipt Details") break;
+            if (row.Count < 3 || string.IsNullOrWhiteSpace(row[0]) || string.IsNullOrWhiteSpace(row[1]))
+                throw new InvalidDataException("IGB game inventory contains an incomplete facility/game row.");
+            var key = IllinoisGamingFacilityIds.FromReportedName(row[0]);
+            var game = row[1].Trim();
+            if (!games.Add((key, game.ToUpperInvariant()))) throw new InvalidDataException($"IGB repeats game '{game}' for '{key}'.");
+            var count = WholeNumber(row[2], key, "reported average game count");
+            var previous = result.GetValueOrDefault(key);
+            result[key] = (checked(previous.Total + count), checked(previous.Poker + (game.Equals("Poker", StringComparison.OrdinalIgnoreCase) ? count : 0)));
         }
-        return new IllinoisCasinoSummary(
-            periodLabel,
-            periodGranularity,
-            DateTime.UtcNow,
-            csvBytes,
-            rows);
+        if (result.Count == 0) throw new InvalidDataException("IGB game inventory has no facility rows.");
+        return result;
     }
 
     internal static IReadOnlyList<IllinoisCasinoSummaryRow> ParseCasinoSummaryCsv(string csv)
@@ -247,19 +296,27 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
     IllinoisGamingBoardRevenueProvider revenueProvider,
     IOptions<IllinoisGamingBoardProviderOptions> options) : IGamingFacilityInventoryProvider
 {
+    internal const string TransformVersion = "igb-licensed-operating-facilities-v3";
+    internal const string AuroraHistoricalAddressSource = "https://igb.illinois.gov/content/dam/soi/en/web/igb/documents/reports/annual-reports/igb-annual-reports/2024-igb-annual-report.pdf";
+    internal const string AuroraRelocationSource = "https://pennnationalgaming.gcs-web.com/news-releases/news-release-details/penn-entertainment-celebrates-grand-opening-hollywood-casino-and";
     public string ProviderKey => "illinois-gaming-board-facility-inventory";
     public string GeographicCoverage => "US-IL";
 
-    public async Task<ProviderDataset<CasinoCompetitorImportRow>> FetchAsync(
+    public async Task<ProviderDataset<CasinoCompetitorImportRow>> FetchAsync(ProviderFetchRequest request, CancellationToken cancellationToken = default) =>
+        (await FetchWithCapacityAsync(request, cancellationToken)).Dataset;
+
+    public async Task<(ProviderDataset<CasinoCompetitorImportRow> Dataset, IllinoisCasinoCapacityReport Capacity)> FetchWithCapacityAsync(
         ProviderFetchRequest request,
         CancellationToken cancellationToken = default)
     {
         var configured = options.Value;
         var reportTask = revenueProvider.FetchSummaryAsync(request, cancellationToken);
+        var capacityTask = revenueProvider.FetchCapacityAsync(request, cancellationToken);
         var organizationTask = GetBytesAsync(configured.OrganizationLicenseesJsonUrl, cancellationToken);
         var ownersTask = GetBytesAsync(configured.OwnerLicenseesJsonUrl, cancellationToken);
-        await Task.WhenAll(reportTask, organizationTask, ownersTask);
+        await Task.WhenAll(reportTask, capacityTask, organizationTask, ownersTask);
         var report = await reportTask;
+        var capacity = await capacityTask;
         var organizationBytes = await organizationTask;
         var ownerBytes = await ownersTask;
         var licenses = ParseLicensedFacilities(organizationBytes)
@@ -274,14 +331,23 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
 
         var rows = new List<CasinoCompetitorImportRow>(report.Rows.Count);
         var canonicalGeocodes = new List<string>(report.Rows.Count);
+        var temporalWarnings = new List<string>();
         foreach (var summary in report.Rows.OrderBy(row => row.Name, StringComparer.Ordinal))
         {
             var stableVenueId = IllinoisGamingFacilityIds.FromReportedName(summary.Name);
+            if (!capacity.Counts.TryGetValue(stableVenueId, out var counts))
+                throw new InvalidDataException($"IGB Casino Summary facility '{summary.Name}' is missing from the dated capacity reports.");
             if (!licenses.TryGetValue(stableVenueId, out var license))
             {
                 throw new InvalidDataException(
                     $"IGB Casino Summary facility '{summary.Name}' has no matching active licensed-facility record.");
             }
+            var currentAddress = license.FullAddress;
+            license = ResolveDatedAddress(license, request.PeriodStart, request.PeriodEnd);
+            var historicalAddressNote = license.FullAddress != currentAddress
+                ? $"Historical address replaces current license address {currentAddress}. Source {AuroraHistoricalAddressSource}; replacement site opened June 24, 2026 ({AuroraRelocationSource}). " : "";
+            if (stableVenueId == "USA-IL-IGB-hollywood-casino-joliet" && request.PeriodStart < new DateOnly(2025, 8, 11) && request.PeriodEnd >= new DateOnly(2025, 8, 11))
+                temporalWarnings.Add("Hollywood Joliet relocated August 11, 2025. This static inventory retains its end-period site; annual demand/travel needs separate effective-dated sites before release acceptance.");
             var geocode = await GeocodeAsync(license, cancellationToken);
             canonicalGeocodes.Add($"{stableVenueId}|{geocode.Latitude:R}|{geocode.Longitude:R}|{geocode.MatchAddress}|{geocode.Score:R}");
             rows.Add(new CasinoCompetitorImportRow(
@@ -317,9 +383,9 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
                 HasLoyaltyProgram: null,
                 HasResortAmenities: null,
                 GamingPositions: null,
-                SlotOrVltPositions: null,
-                TableGameCount: null,
-                PokerTableCount: null,
+                SlotOrVltPositions: counts.EgdDevices,
+                TableGameCount: counts.TableGames,
+                PokerTableCount: counts.PokerTables,
                 GamingFloorSquareFeet: summary.GamingFloorSquareFeet,
                 HotelRoomCount: null,
                 EventCapacity: null,
@@ -331,7 +397,7 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
                 HasInterchangeAccess: null,
                 MarketOrientation: null,
                 IsBorderMarket: null,
-                Notes: $"IGB licensed address: {license.FullAddress}. Coordinate match: {geocode.MatchAddress} (score {geocode.Score.ToString("0.0", CultureInfo.InvariantCulture)}). Gaming floor square feet and game-presence flags derive from the {report.PeriodLabel} IGB Casino Summary; unreported attributes remain null."));
+                Notes: $"IGB licensed address: {license.FullAddress}. {historicalAddressNote}Coordinate match: {geocode.MatchAddress} (score {geocode.Score.ToString("0.0", CultureInfo.InvariantCulture)}). Gaming floor and presence derive from the {report.PeriodLabel} Casino Summary. Slot/table fields are sums of reported {capacity.PeriodLabel} Average Number values by game: monthly-average EGD device and table proxies, not exact year-end seats or legal gaming positions. Table count includes the separately retained Poker category. EGD SHA-256 {Convert.ToHexString(SHA256.HashData(capacity.EgdCsvBytes)).ToLowerInvariant()}; table SHA-256 {Convert.ToHexString(SHA256.HashData(capacity.TableCsvBytes)).ToLowerInvariant()}. Unreported attributes remain null."));
         }
 
         var expectedIds = report.Rows.Select(row => IllinoisGamingFacilityIds.FromReportedName(row.Name)).ToHashSet(StringComparer.Ordinal);
@@ -341,12 +407,15 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
         }
 
         using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        hasher.AppendData(Encoding.UTF8.GetBytes(TransformVersion));
         hasher.AppendData(report.CsvBytes);
+        hasher.AppendData(capacity.EgdCsvBytes);
+        hasher.AppendData(capacity.TableCsvBytes);
         hasher.AppendData(organizationBytes);
         hasher.AppendData(ownerBytes);
         hasher.AppendData(Encoding.UTF8.GetBytes(string.Join('\n', canonicalGeocodes)));
         var checksum = Convert.ToHexString(hasher.GetHashAndReset()).ToLowerInvariant();
-        return new ProviderDataset<CasinoCompetitorImportRow>(
+        var dataset = new ProviderDataset<CasinoCompetitorImportRow>(
             new RegisterDataSourceRequest(
                 $"Illinois Gaming Board licensed operating casino inventory {report.PeriodLabel}",
                 "Illinois Gaming Board",
@@ -364,9 +433,24 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
             request.PeriodStart,
             request.PeriodEnd,
             checksum,
-            "igb-licensed-operating-facilities-v1",
+            TransformVersion,
             rows,
-            ["Facility coordinates are derived address geocodes rather than regulator-published coordinates; amenities and gaming-position counts absent from the selected IGB sources remain null."]);
+            ["Facility coordinates are derived address geocodes; unreported amenities and legal gaming-position counts remain null.",
+             $"Slot/table counts are {capacity.PeriodLabel} reported monthly averages, used as explicitly labeled physical proxies. They are not exact year-end capacity and require review before forecast acceptance.",
+             .. temporalWarnings]);
+        return (dataset, capacity);
+    }
+
+    internal static IllinoisGamingLicense ResolveDatedAddress(IllinoisGamingLicense license, DateOnly start, DateOnly end)
+    {
+        if (end < start) throw new InvalidDataException("Inventory address period is reversed.");
+        if (license.StableVenueId != "USA-IL-IGB-hollywood-casino-aurora") return license;
+        var closure = new DateOnly(2026, 6, 10);
+        var opening = new DateOnly(2026, 6, 24);
+        if (start >= new DateOnly(2024, 1, 1) && end < closure)
+            return license with { Street = "1 W. New York St.", City = "Aurora", PostalCode = "60506" };
+        if (start >= opening) return license;
+        throw new InvalidDataException("Aurora inventory spans unsupported history or the June 2026 relocation/closure. Split the observation into sourced effective-dated sites.");
     }
 
     internal static IReadOnlyList<IllinoisGamingLicense> ParseLicensedFacilities(byte[] jsonBytes)
@@ -477,6 +561,13 @@ public sealed class IllinoisGamingBoardFacilityInventoryProvider(
     private static string PlainText(string html) =>
         WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]+>", string.Empty, RegexOptions.CultureInvariant)).Trim();
 }
+
+public sealed record IllinoisCasinoGameCounts(int EgdDevices, int TableGames, int PokerTables);
+
+public sealed record IllinoisCasinoCapacityReport(string PeriodLabel, DateTime RetrievedAtUtc,
+    byte[] EgdCsvBytes, byte[] TableCsvBytes, IReadOnlyDictionary<string, IllinoisCasinoGameCounts> Counts);
+
+internal sealed record IllinoisCsvReport(string PeriodLabel, string PeriodGranularity, DateTime RetrievedAtUtc, byte[] CsvBytes);
 
 internal sealed record IllinoisCasinoSummary(
     string PeriodLabel,

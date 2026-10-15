@@ -21,7 +21,8 @@ public sealed record ValidationEvaluationRequest(
     string InclusionRulesJson,
     long? SourceParameterSetId = null,
     string? PublishedParameterSetVersion = null,
-    double ComparableRidgePenalty = 1e-8);
+    double ComparableRidgePenalty = 1e-8,
+    ReleaseAcceptanceEvidence? AcceptanceEvidence = null);
 
 public sealed record ValidationEvaluationResult(
     Guid ValidationEvaluationId,
@@ -34,7 +35,8 @@ public sealed record ValidationEvaluationResult(
     ValidationMetrics? ComparableBenchmarkMetrics,
     ComparableMarketModel ComparableModel,
     IReadOnlyCollection<GeographicResidualPattern> GravityGeographicResidualPatterns,
-    IReadOnlyCollection<GeographicResidualPattern> ComparableGeographicResidualPatterns);
+    IReadOnlyCollection<GeographicResidualPattern> ComparableGeographicResidualPatterns,
+    ReleaseAcceptanceReport ReleaseAcceptance);
 
 public interface IValidationEvaluationService
 {
@@ -149,6 +151,11 @@ public sealed class ValidationEvaluationService(
         var comparableGeographicResidualPatterns = residualPatternService.Calculate(
             BuildGeographicObservations(cases, comparableObservations));
 
+        var releaseAcceptance = ModelReleaseAcceptance.Evaluate(
+            cases, gravityObservations, request.AcceptanceEvidence,
+            runs.Values.Min(item => item.CreatedAtUtc),
+            await ModelReleaseAcceptance.PreviouslyEvaluatedPropertyIdsAsync(db, cancellationToken),
+            await ModelReleaseAcceptance.PropertyIdentityMapAsync(db, cancellationToken));
         var evaluation = new ValidationEvaluation
         {
             EvaluationKey = request.EvaluationKey.Trim(),
@@ -156,7 +163,7 @@ public sealed class ValidationEvaluationService(
             ModelVersion = "gravity-v1",
             ObjectiveFunction = request.ObjectiveFunction,
             Status = ValidationEvaluationStatuses.Draft,
-            InclusionRulesJson = CanonicalJson(request.InclusionRulesJson),
+            InclusionRulesJson = ModelReleaseAcceptance.Persist(CanonicalJson(request.InclusionRulesJson), releaseAcceptance, request.AcceptanceEvidence),
             SelectedParametersJson = JsonSerializer.Serialize(request.SelectedParameters, JsonOptions),
             TrainingMetricsJson = JsonSerializer.Serialize(gravityTraining, JsonOptions),
             HoldoutMetricsJson = JsonSerializer.Serialize(gravityHoldout, JsonOptions),
@@ -187,7 +194,7 @@ public sealed class ValidationEvaluationService(
         await db.SaveChangesAsync(cancellationToken);
 
         long? publishedParameterSetId = null;
-        if (request.SelectedParameters.Count > 0)
+        if (request.SelectedParameters.Count > 0 && releaseAcceptance.Accepted)
         {
             var clone = await parameterSetService.CreateVersionAsync(
                 request.SourceParameterSetId!.Value,
@@ -243,7 +250,8 @@ public sealed class ValidationEvaluationService(
             comparableBenchmark,
             comparableModel,
             gravityGeographicResidualPatterns,
-            comparableGeographicResidualPatterns);
+            comparableGeographicResidualPatterns,
+            releaseAcceptance);
     }
 
     private ValidationMetrics? MetricsForPartition(
