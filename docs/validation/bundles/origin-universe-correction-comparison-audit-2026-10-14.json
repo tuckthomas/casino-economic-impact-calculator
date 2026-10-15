@@ -1,0 +1,969 @@
+{
+  "version": "origin-universe-correction-audit-v1",
+  "scope": "Fixed-coefficient comparison on the same inspected development observations. Only training expenditure refits. No fresh holdout or empirical Northeast Indiana accuracy claim.",
+  "previousResultHash": "3d1066a639750490ed84bc587a2d6d79668a4cf92a030792f2eb76913e1aba4c",
+  "protocolHash": "897e77de47a317c402e7e68d218744040dabcf8297b1afde8cb13aeab82d55c0",
+  "resultHash": "bd117281fa8aa9d46f84b83d00b6ee3cae752039877ec6d7fb40c888c20668a2",
+  "graphHash": "a0e711d461b574fbf685999566e114b72846322add48d4f3cd2e2e6254790d69",
+  "candidateCount": 1,
+  "admittedCandidateCount": 0,
+  "previousTrainingExpenditure": 296.77343701746406,
+  "correctedTrainingExpenditure": 326.17790402088895,
+  "finalHoldoutScored": false,
+  "releaseAccepted": false,
+  "partitions": [
+    {
+      "partition": "training",
+      "previous": {
+        "properties": 22,
+        "mape": 18.42788889738474,
+        "wape": 18.937147569892232,
+        "normalizedBias": -5.527720761508794,
+        "maximumPropertyApe": 66.22042854187973,
+        "fractionWithin30Percent": 0.8636363636363636
+      },
+      "corrected": {
+        "properties": 22,
+        "mape": 19.374454231866107,
+        "wape": 18.698312866854536,
+        "normalizedBias": 0.3409554777146547,
+        "maximumPropertyApe": 82.48143777316375,
+        "fractionWithin30Percent": 0.7727272727272727
+      },
+      "groups": [
+        {
+          "kind": "market",
+          "key": "central-indiana",
+          "previous": {
+            "properties": 2,
+            "mape": 5.749791351661483,
+            "wape": 4.926559042557053,
+            "normalizedBias": -4.926559042557053,
+            "maximumPropertyApe": 11.499582703322966,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 2,
+            "mape": 5.526496895449545,
+            "wape": 4.735235000496657,
+            "normalizedBias": -4.735235000496657,
+            "maximumPropertyApe": 11.05299379089909,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "market",
+          "key": "central-ohio-corridor",
+          "previous": {
+            "properties": 3,
+            "mape": 18.362323264080374,
+            "wape": 18.88703651248475,
+            "normalizedBias": 12.753810202952106,
+            "maximumPropertyApe": 23.93511969771543,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 3,
+            "mape": 20.34907584886648,
+            "wape": 21.598057033263252,
+            "normalizedBias": 16.913976699214434,
+            "maximumPropertyApe": 27.739208338757244,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "market",
+          "key": "chicago-region",
+          "previous": {
+            "properties": 8,
+            "mape": 27.18686659933427,
+            "wape": 26.46948765337624,
+            "normalizedBias": -7.019785304321645,
+            "maximumPropertyApe": 66.22042854187973,
+            "fractionWithin30Percent": 0.75
+          },
+          "corrected": {
+            "properties": 8,
+            "mape": 30.203090841326294,
+            "wape": 26.264685083983245,
+            "normalizedBias": 1.5129047534186533,
+            "maximumPropertyApe": 82.48143777316375,
+            "fractionWithin30Percent": 0.625
+          }
+        },
+        {
+          "kind": "market",
+          "key": "cincinnati-tristate-region",
+          "previous": {
+            "properties": 1,
+            "mape": 1.9263405686982404,
+            "wape": 1.9263405686982404,
+            "normalizedBias": 1.9263405686982404,
+            "maximumPropertyApe": 1.9263405686982404,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 1,
+            "mape": 8.250248024139982,
+            "wape": 8.250248024139982,
+            "normalizedBias": 8.250248024139982,
+            "maximumPropertyApe": 8.250248024139982,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "market",
+          "key": "cleveland-region",
+          "previous": {
+            "properties": 2,
+            "mape": 13.484893143026543,
+            "wape": 12.453777345925637,
+            "normalizedBias": 4.218004133934673,
+            "maximumPropertyApe": 19.877862537187777,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 2,
+            "mape": 15.871627076468796,
+            "wape": 13.493753520712751,
+            "normalizedBias": 13.493753520712751,
+            "maximumPropertyApe": 30.614561776795288,
+            "fractionWithin30Percent": 0.5
+          }
+        },
+        {
+          "kind": "market",
+          "key": "french-lick",
+          "previous": {
+            "properties": 1,
+            "mape": 6.41084727553499,
+            "wape": 6.41084727553499,
+            "normalizedBias": -6.41084727553499,
+            "maximumPropertyApe": 6.41084727553499,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 1,
+            "mape": 0.7615307501968139,
+            "wape": 0.7615307501968139,
+            "normalizedBias": -0.7615307501968139,
+            "maximumPropertyApe": 0.7615307501968139,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "market",
+          "key": "st-louis-region",
+          "previous": {
+            "properties": 4,
+            "mape": 21.365152357844174,
+            "wape": 24.33697413930802,
+            "normalizedBias": -24.33697413930802,
+            "maximumPropertyApe": 40.90291463063407,
+            "fractionWithin30Percent": 0.75
+          },
+          "corrected": {
+            "properties": 4,
+            "mape": 15.408841902072474,
+            "wape": 18.312756973318127,
+            "normalizedBias": -18.144179152845037,
+            "maximumPropertyApe": 36.49332527898859,
+            "fractionWithin30Percent": 0.75
+          }
+        },
+        {
+          "kind": "market",
+          "key": "terre-haute",
+          "previous": {
+            "properties": 1,
+            "mape": 0.5644868905630072,
+            "wape": 0.5644868905630072,
+            "normalizedBias": 0.5644868905630072,
+            "maximumPropertyApe": 0.5644868905630072,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 1,
+            "mape": 10.122644497381232,
+            "wape": 10.122644497381232,
+            "normalizedBias": -10.122644497381232,
+            "maximumPropertyApe": 10.122644497381232,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "IL",
+          "previous": {
+            "properties": 5,
+            "mape": 23.187197709669363,
+            "wape": 20.684275814653812,
+            "normalizedBias": 3.137476746468355,
+            "maximumPropertyApe": 66.22042854187973,
+            "fractionWithin30Percent": 0.8
+          },
+          "corrected": {
+            "properties": 5,
+            "mape": 27.980203700867897,
+            "wape": 20.909577287048773,
+            "normalizedBias": 13.069567377869873,
+            "maximumPropertyApe": 82.48143777316375,
+            "fractionWithin30Percent": 0.8
+          }
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "IN",
+          "previous": {
+            "properties": 8,
+            "mape": 15.8338841200468,
+            "wape": 18.631936793222913,
+            "normalizedBias": -11.301423392535124,
+            "maximumPropertyApe": 40.13023112055519,
+            "fractionWithin30Percent": 0.875
+          },
+          "corrected": {
+            "properties": 8,
+            "mape": 15.57290826687095,
+            "wape": 18.475236423244898,
+            "normalizedBias": -8.022321658428226,
+            "maximumPropertyApe": 36.762380159137955,
+            "fractionWithin30Percent": 0.75
+          }
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "MO",
+          "previous": {
+            "properties": 3,
+            "mape": 26.274465862250196,
+            "wape": 26.117064518139284,
+            "normalizedBias": -26.117064518139284,
+            "maximumPropertyApe": 40.90291463063407,
+            "fractionWithin30Percent": 0.6666666666666666
+          },
+          "corrected": {
+            "properties": 3,
+            "mape": 20.237659579356777,
+            "wape": 20.061731136319235,
+            "normalizedBias": -20.061731136319235,
+            "maximumPropertyApe": 36.49332527898859,
+            "fractionWithin30Percent": 0.6666666666666666
+          }
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "OH",
+          "previous": {
+            "properties": 6,
+            "mape": 13.997182774498741,
+            "wape": 13.783083808840805,
+            "normalizedBias": 8.07673835397876,
+            "maximumPropertyApe": 23.93511969771543,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 6,
+            "mape": 16.840121620612837,
+            "wape": 16.607016197567347,
+            "normalizedBias": 14.263877875600597,
+            "maximumPropertyApe": 30.614561776795288,
+            "fractionWithin30Percent": 0.8333333333333334
+          }
+        }
+      ]
+    },
+    {
+      "partition": "selection",
+      "previous": {
+        "properties": 14,
+        "mape": 17.48752758199428,
+        "wape": 17.05770325545806,
+        "normalizedBias": 1.5769279383839996,
+        "maximumPropertyApe": 49.72989808018676,
+        "fractionWithin30Percent": 0.7142857142857143
+      },
+      "corrected": {
+        "properties": 14,
+        "mape": 21.372537497057913,
+        "wape": 19.75417674471352,
+        "normalizedBias": 9.238097951433494,
+        "maximumPropertyApe": 62.76646596196269,
+        "fractionWithin30Percent": 0.7857142857142857
+      },
+      "groups": [
+        {
+          "kind": "market",
+          "key": "chicago-region",
+          "previous": {
+            "properties": 2,
+            "mape": 21.98303424709531,
+            "wape": 26.071555356642385,
+            "normalizedBias": 21.1662837375895,
+            "maximumPropertyApe": 37.269875962169685,
+            "fractionWithin30Percent": 0.5
+          },
+          "corrected": {
+            "properties": 2,
+            "mape": 25.728179735652457,
+            "wape": 32.15570439068652,
+            "normalizedBias": 32.15570439068652,
+            "maximumPropertyApe": 49.76047635063278,
+            "fractionWithin30Percent": 0.5
+          }
+        },
+        {
+          "kind": "market",
+          "key": "cincinnati-tristate-region",
+          "previous": {
+            "properties": 5,
+            "mape": 22.327463961100456,
+            "wape": 20.481354105867897,
+            "normalizedBias": 20.481354105867897,
+            "maximumPropertyApe": 49.72989808018676,
+            "fractionWithin30Percent": 0.6
+          },
+          "corrected": {
+            "properties": 5,
+            "mape": 32.547226001487154,
+            "wape": 30.494467745605515,
+            "normalizedBias": 30.494467745605515,
+            "maximumPropertyApe": 62.76646596196269,
+            "fractionWithin30Percent": 0.6
+          }
+        },
+        {
+          "kind": "market",
+          "key": "cleveland-region",
+          "previous": {
+            "properties": 1,
+            "mape": 25.92115798090942,
+            "wape": 25.92115798090942,
+            "normalizedBias": -25.92115798090942,
+            "maximumPropertyApe": 25.92115798090942,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 1,
+            "mape": 19.265445219499078,
+            "wape": 19.265445219499078,
+            "normalizedBias": -19.265445219499078,
+            "maximumPropertyApe": 19.265445219499078,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "market",
+          "key": "evansville",
+          "previous": {
+            "properties": 1,
+            "mape": 1.9842632306757395,
+            "wape": 1.9842632306757395,
+            "normalizedBias": -1.9842632306757395,
+            "maximumPropertyApe": 1.9842632306757395,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 1,
+            "mape": 1.9341388861434168,
+            "wape": 1.9341388861434168,
+            "normalizedBias": 1.9341388861434168,
+            "maximumPropertyApe": 1.9341388861434168,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "market",
+          "key": "louisville-region",
+          "previous": {
+            "properties": 1,
+            "mape": 0.14884370321731694,
+            "wape": 0.14884370321731694,
+            "normalizedBias": 0.14884370321731694,
+            "maximumPropertyApe": 0.14884370321731694,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 1,
+            "mape": 8.271159491785529,
+            "wape": 8.271159491785529,
+            "normalizedBias": 8.271159491785529,
+            "maximumPropertyApe": 8.271159491785529,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "market",
+          "key": "mahoning-valley",
+          "previous": {
+            "properties": 1,
+            "mape": 15.112027326084895,
+            "wape": 15.112027326084895,
+            "normalizedBias": -15.112027326084895,
+            "maximumPropertyApe": 15.112027326084895,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 1,
+            "mape": 7.0400213038718364,
+            "wape": 7.0400213038718364,
+            "normalizedBias": -7.0400213038718364,
+            "maximumPropertyApe": 7.0400213038718364,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "market",
+          "key": "st-louis-region",
+          "previous": {
+            "properties": 2,
+            "mape": 21.18718932458859,
+            "wape": 28.30314361746921,
+            "normalizedBias": -24.69309141404172,
+            "maximumPropertyApe": 32.241403778727786,
+            "fractionWithin30Percent": 0.5
+          },
+          "corrected": {
+            "properties": 2,
+            "mape": 21.271542723721737,
+            "wape": 24.754891324666183,
+            "normalizedBias": -19.104354154994642,
+            "maximumPropertyApe": 26.682718915773712,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "market",
+          "key": "toledo",
+          "previous": {
+            "properties": 1,
+            "mape": 3.6813269581624195,
+            "wape": 3.6813269581624195,
+            "normalizedBias": 3.6813269581624195,
+            "maximumPropertyApe": 3.6813269581624195,
+            "fractionWithin30Percent": 1
+          },
+          "corrected": {
+            "properties": 1,
+            "mape": 5.969185131326795,
+            "wape": 5.969185131326795,
+            "normalizedBias": 5.969185131326795,
+            "maximumPropertyApe": 5.969185131326795,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "IL",
+          "previous": {
+            "properties": 3,
+            "mape": 18.033014454880007,
+            "wape": 24.456535092936,
+            "normalizedBias": 20.048303537809563,
+            "maximumPropertyApe": 37.269875962169685,
+            "fractionWithin30Percent": 0.6666666666666666
+          },
+          "corrected": {
+            "properties": 3,
+            "mape": 22.438908667658225,
+            "wape": 30.504534710359493,
+            "normalizedBias": 30.504534710359493,
+            "maximumPropertyApe": 49.76047635063278,
+            "fractionWithin30Percent": 0.6666666666666666
+          }
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "IN",
+          "previous": {
+            "properties": 5,
+            "mape": 11.99049344887188,
+            "wape": 11.01871402264256,
+            "normalizedBias": 10.034003599278002,
+            "maximumPropertyApe": 39.17686013922975,
+            "fractionWithin30Percent": 0.8
+          },
+          "corrected": {
+            "properties": 5,
+            "mape": 19.49453895999215,
+            "wape": 17.99746817655338,
+            "normalizedBias": 17.99746817655338,
+            "maximumPropertyApe": 50.39969020639113,
+            "fractionWithin30Percent": 0.8
+          }
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "MO",
+          "previous": {
+            "properties": 1,
+            "mape": 32.241403778727786,
+            "wape": 32.241403778727786,
+            "normalizedBias": -32.241403778727786,
+            "maximumPropertyApe": 32.241403778727786,
+            "fractionWithin30Percent": 0
+          },
+          "corrected": {
+            "properties": 1,
+            "mape": 26.682718915773712,
+            "wape": 26.682718915773712,
+            "normalizedBias": -26.682718915773712,
+            "maximumPropertyApe": 26.682718915773712,
+            "fractionWithin30Percent": 1
+          }
+        },
+        {
+          "kind": "jurisdiction",
+          "key": "OH",
+          "previous": {
+            "properties": 5,
+            "mape": 19.70649435203854,
+            "wape": 16.164317977876824,
+            "normalizedBias": -4.62076975812271,
+            "maximumPropertyApe": 49.72989808018676,
+            "fractionWithin30Percent": 0.8
+          },
+          "corrected": {
+            "properties": 5,
+            "mape": 21.548677048020334,
+            "wape": 16.32437996671363,
+            "normalizedBias": 2.261902731064629,
+            "maximumPropertyApe": 62.76646596196269,
+            "fractionWithin30Percent": 0.8
+          }
+        }
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "key": "USA-IN-IGC-ameristar-casino",
+      "partition": "training",
+      "jurisdiction": "IN",
+      "market": "chicago-region",
+      "observed": 153244503.63,
+      "previousPrediction": 132656961.81162137,
+      "correctedPrediction": 144258215.79189104,
+      "previousApe": 13.434440603550819,
+      "correctedApe": 5.8640196713389665
+    },
+    {
+      "key": "USA-IN-IGC-blue-chip-casino",
+      "partition": "training",
+      "jurisdiction": "IN",
+      "market": "chicago-region",
+      "observed": 123264071.1,
+      "previousPrediction": 87314483.17967254,
+      "correctedPrediction": 92347072.17624214,
+      "previousApe": 29.164693003821657,
+      "correctedApe": 25.08192261366731
+    },
+    {
+      "key": "USA-IN-IGC-hard-rock-casino-northern-indiana",
+      "partition": "training",
+      "jurisdiction": "IN",
+      "market": "chicago-region",
+      "observed": 431768158.02000004,
+      "previousPrediction": 258498598.30161008,
+      "correctedPrediction": 280917971.9503862,
+      "previousApe": 40.13023112055519,
+      "correctedApe": 34.937774652346235
+    },
+    {
+      "key": "USA-IN-IGC-harrahs-hoosier-park",
+      "partition": "training",
+      "jurisdiction": "IN",
+      "market": "central-indiana",
+      "observed": 252330767.79999998,
+      "previousPrediction": 223313782.47090915,
+      "correctedPrediction": 224440663.70253798,
+      "previousApe": 11.499582703322966,
+      "correctedApe": 11.05299379089909
+    },
+    {
+      "key": "USA-IN-IGC-horseshoe-hammond",
+      "partition": "training",
+      "jurisdiction": "IN",
+      "market": "chicago-region",
+      "observed": 250364832.32,
+      "previousPrediction": 314124721.8133237,
+      "correctedPrediction": 342404903.7622667,
+      "previousApe": 25.466791363025763,
+      "correctedApe": 36.762380159137955
+    },
+    {
+      "key": "USA-IN-IGC-horseshoe-indianapolis",
+      "partition": "training",
+      "jurisdiction": "IN",
+      "market": "central-indiana",
+      "observed": 336660150.17,
+      "previousPrediction": 336660150.17,
+      "correctedPrediction": 336660150.17,
+      "previousApe": 0,
+      "correctedApe": 0
+    },
+    {
+      "key": "USA-IN-IGC-terre-haute-casino",
+      "partition": "training",
+      "jurisdiction": "IN",
+      "market": "terre-haute",
+      "observed": 139382091.89000002,
+      "previousPrediction": 140168885.52651155,
+      "correctedPrediction": 125272938.23496208,
+      "previousApe": 0.5644868905630072,
+      "correctedApe": 10.122644497381232
+    },
+    {
+      "key": "USA-IN-IGC-french-lick-resort",
+      "partition": "training",
+      "jurisdiction": "IN",
+      "market": "french-lick",
+      "observed": 74026694.67000002,
+      "previousPrediction": 69280956.33157972,
+      "correctedPrediction": 73462958.62673366,
+      "previousApe": 6.41084727553499,
+      "correctedApe": 0.7615307501968139
+    },
+    {
+      "key": "USA-IL-IGB-american-place",
+      "partition": "training",
+      "jurisdiction": "IL",
+      "market": "chicago-region",
+      "observed": 121732450.29,
+      "previousPrediction": 202344200.54656872,
+      "correctedPrediction": 222139125.52569386,
+      "previousApe": 66.22042854187973,
+      "correctedApe": 82.48143777316375
+    },
+    {
+      "key": "USA-IL-IGB-ballys-chicago",
+      "partition": "training",
+      "jurisdiction": "IL",
+      "market": "chicago-region",
+      "observed": 124666210.16,
+      "previousPrediction": 146510676.88913763,
+      "correctedPrediction": 160169474.17374876,
+      "previousApe": 17.52236367906095,
+      "correctedApe": 28.478658305392386
+    },
+    {
+      "key": "USA-IL-IGB-grand-victoria-casino",
+      "partition": "training",
+      "jurisdiction": "IL",
+      "market": "chicago-region",
+      "observed": 142187327.07,
+      "previousPrediction": 155908254.021927,
+      "correctedPrediction": 171218992.57586756,
+      "previousApe": 9.649894427772793,
+      "correctedApe": 20.417899473962994
+    },
+    {
+      "key": "USA-IL-IGB-rivers-casino-des-plaines",
+      "partition": "training",
+      "jurisdiction": "IL",
+      "market": "chicago-region",
+      "observed": 503053034.76,
+      "previousPrediction": 423036966.0266275,
+      "correctedPrediction": 464817814.35150445,
+      "previousApe": 15.906090055007247,
+      "correctedApe": 7.600634081600774
+    },
+    {
+      "key": "USA-IL-IGB-draftkings-casino-queen",
+      "partition": "training",
+      "jurisdiction": "IL",
+      "market": "st-louis-region",
+      "observed": 83748020.63,
+      "previousPrediction": 78189487.08510572,
+      "correctedPrediction": 84520503.0513203,
+      "previousApe": 6.63721184462611,
+      "correctedApe": 0.922388870219564
+    },
+    {
+      "key": "USA-MO-MGC-hollywood-st-louis",
+      "partition": "training",
+      "jurisdiction": "MO",
+      "market": "st-louis-region",
+      "observed": 259471615.03000003,
+      "previousPrediction": 213198570.22966033,
+      "correctedPrediction": 231249152.680045,
+      "previousApe": 17.833567188067807,
+      "correctedApe": 10.876897785791309
+    },
+    {
+      "key": "USA-MO-MGC-ameristar-st-charles",
+      "partition": "training",
+      "jurisdiction": "MO",
+      "market": "st-louis-region",
+      "observed": 303932512.11999995,
+      "previousPrediction": 242881844.41874114,
+      "correctedPrediction": 263379539.61613452,
+      "previousApe": 20.086915768048705,
+      "correctedApe": 13.342755673290432
+    },
+    {
+      "key": "USA-MO-MGC-river-city",
+      "partition": "training",
+      "jurisdiction": "MO",
+      "market": "st-louis-region",
+      "observed": 269317669.13,
+      "previousPrediction": 159158892.84054255,
+      "correctedPrediction": 171034696.10059884,
+      "previousApe": 40.90291463063407,
+      "correctedApe": 36.49332527898859
+    },
+    {
+      "key": "USA-OH-OCCC-hollywood-casino-columbus",
+      "partition": "training",
+      "jurisdiction": "OH",
+      "market": "central-ohio-corridor",
+      "observed": 294712983,
+      "previousPrediction": 349514456.7538076,
+      "correctedPrediction": 364612921.4026375,
+      "previousApe": 18.59486243054572,
+      "correctedApe": 23.71797051188528
+    },
+    {
+      "key": "USA-OH-OCCC-jack-cleveland-casino",
+      "partition": "training",
+      "jurisdiction": "OH",
+      "market": "cleveland-region",
+      "observed": 257877052,
+      "previousPrediction": 239588608.10633826,
+      "correctedPrediction": 260787690.62574452,
+      "previousApe": 7.091923748865307,
+      "correctedApe": 1.1286923761423027
+    },
+    {
+      "key": "USA-OH-OLC-jack-thistledown-racino",
+      "partition": "training",
+      "jurisdiction": "OH",
+      "market": "cleveland-region",
+      "observed": 186245034,
+      "previousPrediction": 223266565.84085864,
+      "correctedPrediction": 243263134.9901434,
+      "previousApe": 19.877862537187777,
+      "correctedApe": 30.614561776795288
+    },
+    {
+      "key": "USA-OH-OLC-eldorado-gaming-scioto-downs",
+      "partition": "training",
+      "jurisdiction": "OH",
+      "market": "central-ohio-corridor",
+      "observed": 229436268,
+      "previousPrediction": 284352113.37577116,
+      "correctedPrediction": 293080072.3851894,
+      "previousApe": 23.93511969771543,
+      "correctedApe": 27.739208338757244
+    },
+    {
+      "key": "USA-OH-OLC-hollywood-gaming-dayton-raceway",
+      "partition": "training",
+      "jurisdiction": "OH",
+      "market": "central-ohio-corridor",
+      "observed": 169367709,
+      "previousPrediction": 148100226.6741045,
+      "correctedPrediction": 153125263.2316734,
+      "previousApe": 12.556987663979967,
+      "correctedApe": 9.59004869595692
+    },
+    {
+      "key": "USA-OH-OLC-miami-valley-gaming",
+      "partition": "training",
+      "jurisdiction": "OH",
+      "market": "cincinnati-tristate-region",
+      "observed": 248744815,
+      "previousPrediction": 253536487.2838784,
+      "correctedPrediction": 269266879.18468815,
+      "previousApe": 1.9263405686982404,
+      "correctedApe": 8.250248024139982
+    },
+    {
+      "key": "USA-IN-IGC-ballys-evansville",
+      "partition": "selection",
+      "jurisdiction": "IN",
+      "market": "evansville",
+      "observed": 167708757.96999997,
+      "previousPrediction": 164380974.7509783,
+      "correctedPrediction": 170952478.27336589,
+      "previousApe": 1.9842632306757395,
+      "correctedApe": 1.9341388861434168
+    },
+    {
+      "key": "USA-IN-IGC-caesars-southern-indiana",
+      "partition": "selection",
+      "jurisdiction": "IN",
+      "market": "louisville-region",
+      "observed": 233631819.68,
+      "previousPrediction": 233979565.93230572,
+      "correctedPrediction": 252955880.10929358,
+      "previousApe": 0.14884370321731694,
+      "correctedApe": 8.271159491785529
+    },
+    {
+      "key": "USA-OH-OCCC-hollywood-casino-toledo",
+      "partition": "selection",
+      "jurisdiction": "OH",
+      "market": "toledo",
+      "observed": 237706322,
+      "previousPrediction": 246457068.91304237,
+      "correctedPrediction": 251895452.4290478,
+      "previousApe": 3.6813269581624195,
+      "correctedApe": 5.969185131326795
+    },
+    {
+      "key": "USA-OH-OLC-hollywood-mahoning-valley-race-course",
+      "partition": "selection",
+      "jurisdiction": "OH",
+      "market": "mahoning-valley",
+      "observed": 177111007,
+      "previousPrediction": 150345943.22465587,
+      "correctedPrediction": 164642354.37569806,
+      "previousApe": 15.112027326084895,
+      "correctedApe": 7.0400213038718364
+    },
+    {
+      "key": "USA-OH-OLC-mgm-northfield-park",
+      "partition": "selection",
+      "jurisdiction": "OH",
+      "market": "cleveland-region",
+      "observed": 326354929,
+      "previousPrediction": 241759952.27542523,
+      "correctedPrediction": 263481198.9323699,
+      "previousApe": 25.92115798090942,
+      "correctedApe": 19.265445219499078
+    },
+    {
+      "key": "USA-OH-OCCC-hard-rock-casino-cincinnati",
+      "partition": "selection",
+      "jurisdiction": "OH",
+      "market": "cincinnati-tristate-region",
+      "observed": 243624009,
+      "previousPrediction": 253583508.10923773,
+      "correctedPrediction": 274569782.61813664,
+      "previousApe": 4.088061414849195,
+      "correctedApe": 12.70226762344127
+    },
+    {
+      "key": "USA-OH-OLC-belterra-park-cincinnati",
+      "partition": "selection",
+      "jurisdiction": "OH",
+      "market": "cincinnati-tristate-region",
+      "observed": 86741577,
+      "previousPrediction": 129878074.83524671,
+      "correctedPrediction": 141186199.40257466,
+      "previousApe": 49.72989808018676,
+      "correctedApe": 62.76646596196269
+    },
+    {
+      "key": "USA-IN-IGC-belterra-casino",
+      "partition": "selection",
+      "jurisdiction": "IN",
+      "market": "cincinnati-tristate-region",
+      "observed": 83248243.81000002,
+      "previousPrediction": 92995053.86257252,
+      "correctedPrediction": 100851203.34930047,
+      "previousApe": 11.70812693036257,
+      "correctedApe": 21.14514220801609
+    },
+    {
+      "key": "USA-IN-IGC-hollywood-lawrenceburg",
+      "partition": "selection",
+      "jurisdiction": "IN",
+      "market": "cincinnati-tristate-region",
+      "observed": 148209841.22,
+      "previousPrediction": 206273803.4273339,
+      "correctedPrediction": 222907142.05026418,
+      "previousApe": 39.17686013922975,
+      "correctedApe": 50.39969020639113
+    },
+    {
+      "key": "USA-IN-IGC-rising-star-casino",
+      "partition": "selection",
+      "jurisdiction": "IN",
+      "market": "cincinnati-tristate-region",
+      "observed": 43092064.19,
+      "previousPrediction": 46080228.758131616,
+      "correctedPrediction": 49867241.56447942,
+      "previousApe": 6.934373240874026,
+      "correctedApe": 15.72256400762458
+    },
+    {
+      "key": "USA-IL-IGB-harrahs-joliet",
+      "partition": "selection",
+      "jurisdiction": "IL",
+      "market": "chicago-region",
+      "observed": 114410296.55,
+      "previousPrediction": 106749162.81655589,
+      "correctedPrediction": 116350561.45750238,
+      "previousApe": 6.696192532020938,
+      "correctedApe": 1.695883120672134
+    },
+    {
+      "key": "USA-IL-IGB-wind-creek-chicago-southland",
+      "partition": "selection",
+      "jurisdiction": "IL",
+      "market": "chicago-region",
+      "observed": 197952986.4,
+      "previousPrediction": 271729818.89469063,
+      "correctedPrediction": 296455335.38294333,
+      "previousApe": 37.269875962169685,
+      "correctedApe": 49.76047635063278
+    },
+    {
+      "key": "USA-IL-IGB-argosy-casino-alton",
+      "partition": "selection",
+      "jurisdiction": "IL",
+      "market": "st-louis-region",
+      "observed": 35219807.35,
+      "previousPrediction": 38788621.57819619,
+      "correctedPrediction": 40805797.88745797,
+      "previousApe": 10.132974870449393,
+      "correctedApe": 15.860366531669758
+    },
+    {
+      "key": "USA-MO-MGC-horseshoe-st-louis",
+      "partition": "selection",
+      "jurisdiction": "MO",
+      "market": "st-louis-region",
+      "observed": 162495573.32,
+      "previousPrediction": 110104719.40334013,
+      "correctedPrediction": 119137336.24044941,
+      "previousApe": 32.241403778727786,
+      "correctedApe": 26.682718915773712
+    }
+  ],
+  "failures": [
+    "training: WAPE exceeds 15%.",
+    "training: property error exceeds 40%.",
+    "training: fewer than 90% of properties are within 30% error.",
+    "training/market:chicago-region: WAPE exceeds 20%.",
+    "training/market:terre-haute: absolute normalized bias exceeds 10%.",
+    "training/market:st-louis-region: absolute normalized bias exceeds 10%.",
+    "training/market:central-ohio-corridor: WAPE exceeds 20%.",
+    "training/market:central-ohio-corridor: absolute normalized bias exceeds 10%.",
+    "training/market:cleveland-region: absolute normalized bias exceeds 10%.",
+    "training/jurisdiction:IL: WAPE exceeds 20%.",
+    "training/jurisdiction:IL: absolute normalized bias exceeds 10%.",
+    "training/jurisdiction:MO: WAPE exceeds 20%.",
+    "training/jurisdiction:MO: absolute normalized bias exceeds 10%.",
+    "training/jurisdiction:OH: absolute normalized bias exceeds 10%.",
+    "selection: MAPE exceeds 20%.",
+    "selection: WAPE exceeds 15%.",
+    "selection: absolute normalized bias exceeds 5%.",
+    "selection: property error exceeds 40%.",
+    "selection: fewer than 90% of properties are within 30% error.",
+    "selection/market:cleveland-region: absolute normalized bias exceeds 10%.",
+    "selection/market:cincinnati-tristate-region: WAPE exceeds 20%.",
+    "selection/market:cincinnati-tristate-region: absolute normalized bias exceeds 10%.",
+    "selection/market:chicago-region: WAPE exceeds 20%.",
+    "selection/market:chicago-region: absolute normalized bias exceeds 10%.",
+    "selection/market:st-louis-region: WAPE exceeds 20%.",
+    "selection/market:st-louis-region: absolute normalized bias exceeds 10%.",
+    "selection/jurisdiction:IN: absolute normalized bias exceeds 10%.",
+    "selection/jurisdiction:IL: WAPE exceeds 20%.",
+    "selection/jurisdiction:IL: absolute normalized bias exceeds 10%.",
+    "selection/jurisdiction:MO: WAPE exceeds 20%.",
+    "selection/jurisdiction:MO: absolute normalized bias exceeds 10%."
+  ]
+}
