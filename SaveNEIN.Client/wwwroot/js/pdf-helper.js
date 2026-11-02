@@ -97,7 +97,7 @@ window.PdfHelper = {
         // Preserve each of the three statements shown by the browser calculator.
         const mainTableData = { headers: ['Statement / item', 'Amount'], rows: [] };
         const statements = [
-            ['net-impact-host-table', 'Host Government Fiscal View'],
+            ['net-impact-host-table', 'Host-Area Tax Revenue vs Social Costs'],
             ['net-impact-regional-table', 'Regional Revenue vs County Costs'],
             ['net-impact-consolidated-table', 'Consolidated Statement']
         ];

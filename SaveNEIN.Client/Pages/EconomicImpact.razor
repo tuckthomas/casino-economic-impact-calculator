@@ -186,6 +186,20 @@
                             <input type="hidden" value="0" id="input-allocation" aria-hidden="true">
                         </div>
 
+                        <div class="mt-10 mb-8 rounded-2xl border border-amber-700/40 bg-slate-900/60 p-5">
+                            <h3 class="mb-4 text-lg font-bold text-white">Business sales displacement</h3>
+                            <PresetInput Id="displacement" Label="Displaced business sales per $1,000 AGR" Value="243"
+                                         MinValue="0" MaxValue="1000" Step="1" InputType="Currency" DecimalPlaces="0"
+                                         MajorTickInterval="250"
+                                         Tooltip="A sales-displacement scenario, not a cost per problem gambler. Annual displaced sales = AGR × this amount / 1,000. Set to $0 to exclude it."
+                                         Markers='@(new List<SliderMarker> { new() { Label="Research reference", Value=243, TooltipDescription="Historical Illinois estimate reported by Grinols (2004), p. 77; not a Northeast Indiana calibration." }, new() { Label="Exclude", Value=0 } })' />
+                            <p class="mt-3 text-sm leading-relaxed text-slate-300">
+                                The $243 reference is reported in <a class="underline text-blue-300" href="https://walkerd.people.charleston.edu/360/BookChapters/Grinols4.pdf#page=23" target="_blank" rel="noopener noreferrer">Grinols (2004), p. 77</a>.
+                                Changing it affects the separate sales scenario, not the Grinols per-person costs or tax allocation.
+                                The consolidated statement shows it once; no county distribution is assumed. The $0–$1,000 range is an editing bound, not a confidence interval.
+                            </p>
+                        </div>
+
                         <!-- Social Cost Input -->
                         <div class="pb-10">
                             <div class="mb-4 mt-10">
@@ -196,8 +210,8 @@
                                     <span class="text-red-500 font-bold font-mono text-lg"
                                         id="val-cost-total">$13,203</span>
                                 </div>
-                                <p class="text-sm text-slate-400 italic mb-4">Default values based on Grinols (2011)
-                                    ($9,393) adjusted for 2025 inflation ($13,205).</p>
+                                <p class="text-sm text-slate-400 italic mb-4">Legacy Grinols-based annual assumptions, rounded by category.
+                                    These starting values are editable and are not a local cost study.</p>
                             </div>
 
                             <div class="space-y-12 pl-2">
@@ -839,7 +853,7 @@
                             </div>
 
                             <p class="text-sm text-slate-400 leading-relaxed mb-6 px-4 text-left">
-                                The statements below use the active tax-allocation scenario to distribute public revenue, while the social-cost model stays fixed. Public-health and other host-area burdens are shown where they are incurred, and same-state spillover costs are shown separately.
+                                These scenario comparisons combine public tax revenue with assumed public and private social costs; they are not government budgets. The consolidated view separately shows displaced business sales and an illustrative balance including that assumption. Sales turnover is not the same measure as profit or net social welfare, and potential overlap with other costs is not quantified.
                             </p>
 
                             <div class="economic-chart-card mt-5">
@@ -847,7 +861,7 @@
                                     <div class="max-w-2xl">
                                         <h4 class="flex items-center gap-2 text-lg font-bold text-white">
                                             <span class="material-symbols-outlined text-emerald-400">location_city</span>
-                                            Host Government Fiscal View
+                                            Host-Area Tax Revenue vs Social Costs
                                         </h4>
                                         <p id="net-impact-host-subtitle" class="mt-2 text-sm leading-relaxed text-slate-400">
                                             Shows host-local revenue against the selected county’s direct modeled costs.
@@ -892,7 +906,7 @@
                                             Consolidated Statement
                                         </h4>
                                         <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                                            Lists every revenue source and one consolidated cost row per county without repeating the detailed breakout shown above.
+                                            Lists tax revenue and social costs by county, followed by the separate, unallocated business-sales scenario. Its additional balance is illustrative, not a government deficit or a validated welfare estimate.
                                         </p>
                                     </div>
                                 </div>
@@ -910,7 +924,7 @@
                                             AGR Sensitivity Curve
                                         </h4>
                                         <p class="text-sm leading-relaxed text-slate-400">
-                                            This curve applies Indiana’s tiered tax schedule plus non-linear social-cost scaling, so the breakeven crossing and current scenario are easier to interpret.
+                                            This is an illustrative sensitivity exercise: tax brackets, an assumed nonlinear social-cost response, and linear sales displacement in the consolidated series. A crossing is not a validated revenue target.
                                         </p>
                                     </div>
                                     <div class="economic-chart-toggle-group" role="tablist" aria-label="Sensitivity series mode">
@@ -924,7 +938,7 @@
                                         </button>
                                         <button type="button" id="sensitivity-series-mode-consolidated" data-sensitivity-series-mode="consolidated"
                                             class="economic-chart-toggle" aria-pressed="false">
-                                            Consolidated Net
+                                            Consolidated + Sales
                                         </button>
                                     </div>
                                 </div>
@@ -1189,11 +1203,9 @@
 
                         <!-- Data Callout -->
                         <div class="bg-red-900/20 border-l-4 border-red-500 p-6 rounded-r-xl mb-8">
-                            <h4 class="text-lg font-bold text-red-500 mb-2">"243" Coefficient</h4>
+                            <h4 class="text-lg font-bold text-red-500 mb-2">The "243" sales-displacement assumption</h4>
                             <p class="text-slate-300 text-base">
-                                For every <strong>$1,000 increase</strong> in casino revenue, businesses within a
-                                10-30 mile
-                                radius experience a <strong>loss of approximately $243</strong> in sales.
+                                A historical Illinois study reported about <strong>$243 in displaced business sales per $1,000 of casino gross revenue</strong> for businesses 10–30 miles away. This calculator uses that finding as an adjustable scenario assumption, not a measured local effect. The figures below follow your current inputs.
                             </p>
                         </div>
 
@@ -1209,15 +1221,15 @@
                                 <tbody class="divide-y divide-slate-700 bg-slate-800">
                                     <tr>
                                         <td class="px-6 py-4 font-medium text-white">Projected Casino AGR</td>
-                                        <td class="px-6 py-4 text-emerald-400 font-bold">$204.3M</td>
+                                        <td id="displacement-example-agr" class="px-6 py-4 text-emerald-400 font-bold">$204.3MM</td>
                                     </tr>
                                     <tr>
                                         <td class="px-6 py-4 font-medium text-white">Displacement Coefficient</td>
-                                        <td class="px-6 py-4 text-orange-400 font-bold">24.3%</td>
+                                        <td id="displacement-example-coefficient" class="px-6 py-4 text-orange-400 font-bold">$243 per $1,000</td>
                                     </tr>
                                     <tr class="bg-red-900/10">
-                                        <td class="px-6 py-4 font-bold text-white">Projected Local Loss</td>
-                                        <td class="px-6 py-4 text-red-500 font-black">($49.6M)</td>
+                                        <td class="px-6 py-4 font-bold text-white">Illustrative Displaced Sales</td>
+                                        <td id="displacement-example-sales" class="px-6 py-4 text-red-500 font-black">$49.6MM</td>
                                     </tr>
                                 </tbody>
                             </table>

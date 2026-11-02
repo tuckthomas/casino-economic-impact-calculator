@@ -1,145 +1,57 @@
 @namespace SaveNEIN.Client.Components
 
-    <!-- Methodology Modal -->
-    <div id="methodology-modal"
-        class="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-4"
-        onclick="if(event.target === this) closeMethodologyModal()">
-        <div
-            class="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto overscroll-contain shadow-2xl border border-slate-200 dark:border-slate-800 relative">
-            <!-- Header -->
-            <div
-                class="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between z-10">
-                <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <span class="material-symbols-outlined text-blue-500">science</span>
-                    Research Methodology
-                </h3>
-                <button onclick="closeMethodologyModal()"
-                    class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                    <span class="material-symbols-outlined text-slate-500">close</span>
-                </button>
-            </div>
-
-            <!-- Content -->
-            <div class="p-6 space-y-8 text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-
-                <!-- Section 1: Methodology -->
-                <div class="space-y-6">
-                    <div>
-                        <h4
-                            class="text-base font-bold text-slate-900 dark:text-white mb-2 uppercase tracking-wider flex items-center gap-2">
-                            <span class="material-symbols-outlined text-blue-500 text-[18px]">travel_explore</span>
-                            Distance-Based Risk Modeling
-                        </h4>
-                        <p class="mb-3">
-                            Populations living closer to a casino experience significantly higher rates of gambling
-                            addiction.
-                            Our model applies distance-decay multipliers based on peer-reviewed research:
-                        </p>
-                        <ul class="list-disc pl-5 space-y-1">
-                            <li><strong>&lt; 10 Miles:</strong> 2.0x Risk Multiplier</li>
-                            <li><strong>10 - 20 Miles:</strong> 1.5x Risk Multiplier</li>
-                            <li><strong>&gt; 20 Miles:</strong> 1.0x (Baseline State Average)</li>
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h4
-                            class="text-base font-bold text-slate-900 dark:text-white mb-2 uppercase tracking-wider flex items-center gap-2">
-                            <span class="material-symbols-outlined text-blue-500 text-[18px]">calculate</span>
-                            Problem Gambler Estimation
-                        </h4>
-                        <div
-                            class="bg-slate-100 dark:bg-slate-800 p-3 rounded font-mono text-sm border border-slate-200 dark:border-slate-700 mb-2">
-                            New Addicts = Σ (Pop × Base_Rate × Multiplier)
-                        </div>
-                        <p class="text-sm italic text-slate-500 mb-2">
-                            *Population data sourced from <strong>US Census Bureau (2020 Decennial)</strong> at
-                            Block
-                            Group level.
-                        </p>
-                        <p class="text-sm italic text-slate-500">
-                            *Baseline rate derived from National Council on Problem Gambling (NCPG) surveys.
-                        </p>
-                    </div>
-
-                    <div>
-                        <h4
-                            class="text-base font-bold text-slate-900 dark:text-white mb-2 uppercase tracking-wider flex items-center gap-2">
-                            <span class="material-symbols-outlined text-blue-500 text-[18px]">attach_money</span>
-                            Social Cost Valuation
-                        </h4>
-                        <p>
-                            We calculate the economic impact (bankruptcy, crime, divorce, job loss) per addict using
-                            inflation-adjusted values.
-                        </p>
-                        <div
-                            class="mt-2 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded-lg inline-block">
-                            <span class="font-semibold text-slate-900 dark:text-white">~$13,203 per
-                                addict/year</span>
-                            <span class="text-slate-500 text-sm block mt-1">(Adjusted from ~$9,393 in 2011)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Divider -->
-                <div class="border-t border-slate-200 dark:border-slate-700"></div>
-
-                <!-- Section 2: Citations -->
-                <div>
-                    <h4 class="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider">
-                        Citations
-                        & Sources</h4>
-                    <div class="space-y-4 text-sm">
-                        <!-- Welte -->
-                        <div
-                            class="bg-slate-50 dark:bg-slate-800/30 p-3 rounded border border-slate-100 dark:border-slate-800">
-                            <a href="https://pubmed.ncbi.nlm.nih.gov/26615561/" target="_blank"
-                                class="font-bold text-blue-600 hover:underline mb-1 block">
-                                Welte JW, Barnes GM, Tidwell MO, Hoffman JH, Wieczorek WF.
-                            </a>
-                            <p class="text-slate-500 mb-1">
-                                The Relationship Between Distance from Gambling Venues and Gambling Participation
-                                and
-                                Problem Gambling Among U.S. Adults. J Gambl Stud. 2016 Dec;32(4):1055-1063.
-                            </p>
-                            <span class="text-slate-400">doi: 10.1007/s10899-015-9583-5. PMID: 26615561.</span>
-                        </div>
-
-                        <!-- Grimsley -->
-                        <div
-                            class="bg-slate-50 dark:bg-slate-800/30 p-3 rounded border border-slate-100 dark:border-slate-800">
-                            <a href="https://www.senate.ga.gov/committees/Documents/HiddenCostsofGam.pdf"
-                                target="_blank" class="font-bold text-blue-600 hover:underline mb-1 block">
-                                Grimsley (2011) / Grinols
-                            </a>
-                            <p class="text-slate-500">
-                                Inflation-adjusted valuation of social costs per problem gambler (bankruptcy, crime,
-                                divorce, job loss).
-                            </p>
-                        </div>
-
-                        <!-- Data Sources -->
-                        <div
-                            class="bg-slate-50 dark:bg-slate-800/30 p-3 rounded border border-slate-100 dark:border-slate-800">
-                            <span class="font-bold text-slate-700 dark:text-slate-200 mb-1 block">Geospatial Data
-                                Sources</span>
-                            <p class="text-slate-500">
-                                Population and boundary data aggregated via <a href="https://censusreporter.org"
-                                    target="_blank"
-                                    class="font-bold text-blue-600 hover:underline">CensusReporter.org</a> (Source:
-                                U.S.
-                                Census Bureau, 2020 Decennial Block Groups). Data files were processed, merged, and
-                                simplified using <a href="https://mapshaper.org" target="_blank"
-                                    class="font-bold text-blue-600 hover:underline">Mapshaper.org</a>. Map
-                                visualization
-                                © OpenStreetMap contributors.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Native dialog provides modal focus handling and Escape-to-close. -->
+    <dialog id="methodology-modal" aria-labelledby="methodology-title" aria-describedby="methodology-intro"
+            class="m-auto w-[calc(100%-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-0 text-slate-200 shadow-2xl backdrop:bg-black/80"
+            onclick="if(event.target === this) closeMethodologyModal()">
+        <header class="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-700 bg-slate-900 px-6 py-4">
+            <h2 id="methodology-title" class="text-xl font-bold text-white">How this calculator works</h2>
+            <button type="button" onclick="closeMethodologyModal()" aria-label="Close methodology"
+                    class="rounded-lg p-2 text-slate-300 hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400">
+                <span aria-hidden="true" class="material-symbols-outlined">close</span>
+            </button>
+        </header>
+        <div class="space-y-7 p-6 text-base leading-relaxed">
+            <p id="methodology-intro">This is an adjustable scenario calculator. It shows what follows from your chosen revenue, population, exposure and cost assumptions. Its outputs are conditional estimates, not predictions of what a casino will cause.</p>
+            <section aria-labelledby="methodology-inputs">
+                <h3 id="methodology-inputs" class="mb-2 text-lg font-bold text-white">What you provide</h3>
+                <p>Select a location and impact zones, then choose annual adjusted gross gaming revenue (AGR). AGR is the casino revenue assumption, not total wagers and not a forecast produced by this calculator. Consultant benchmarks are starting scenarios, not validation of these results.</p>
+                <p class="mt-3">The map uses census-derived population and geographic data supplied by the site. Its exposure denominator is adults aged 18+, not a count of legally eligible casino customers. Optional population projections compound the selected annual growth rate; they are assumptions rather than official local forecasts.</p>
+            </section>
+            <section aria-labelledby="methodology-harm">
+                <h3 id="methodology-harm" class="mb-2 text-lg font-bold text-white">How social costs are estimated</h3>
+                <p>Adult population is allocated to the selected radius or drive-time bands. The calculator applies baseline prevalence, proximity multipliers of 2.0, 1.5 and 1.0, and your background increase. The incremental rate is the amount above baseline plus that background increase; it is not the full post-exposure prevalence.</p>
+                <p class="mt-3">Estimated additional cases are multiplied by the editable per-person cost assumptions for health, crime, social services, civil legal costs, employment and abused dollars. Defaults retain the legacy Grinols-based valuations; they are not measured Northeast Indiana costs. Rounding and geographic approximation affect totals. Neighboring-county costs are limited to the selected same-state footprint.</p>
+                <p class="mt-3">Research on proximity motivates exploring exposure. It does not establish that these exact multipliers, background increases, or time bands are causal estimates for a proposed site. The calculator does not resolve overlap among cost categories, and its labels do not establish that every cost would be paid by government.</p>
+            </section>
+            <section aria-labelledby="methodology-sales">
+                <h3 id="methodology-sales" class="mb-2 text-lg font-bold text-white">What the adjustable $243 coefficient means</h3>
+                <p>The default comes from Grinols’s <em>Gambling in America</em> (2004), chapter 4, p. 77: a historical Illinois estimate of displaced sales among businesses 10–30 miles from casinos. It is a research reference, not a universal coefficient or a local calibration.</p>
+                <p class="mt-3 rounded-lg border border-amber-700/50 bg-slate-950 p-4 font-mono text-sm">Displaced sales = annual AGR × selected dollars per $1,000 ÷ 1,000</p>
+                <p class="mt-3">At $100 million AGR and $243 per $1,000, the scenario is $24.3 million in displaced business sales. Change the coefficient under Economic Inputs, or choose $0 to exclude it. The editing bounds are not a statistical confidence interval.</p>
+                <p class="mt-3">Sales are turnover, not profit, tax revenue or net social welfare. No visitor-share adjustment, county allocation or 10–30-mile sales map is estimated. The consolidated view shows the sales scenario once and an additional illustrative balance; potential overlap with other cost assumptions is not quantified.</p>
+            </section>
+            <section aria-labelledby="methodology-statements">
+                <h3 id="methodology-statements" class="mb-2 text-lg font-bold text-white">How to read the statements and charts</h3>
+                <p>Gaming taxes follow the calculator’s configured Indiana schedule and tax-allocation scenario, with incorporated-place containment used for the municipal branch. A preset is not confirmation that a proposal qualifies for that legal treatment.</p>
+                <p class="mt-3">The host and regional views compare their assigned tax receipts with modeled social costs. The consolidated view first shows tax receipts less social costs, then separately subtracts the sales-displacement scenario. These are not government budgets, audited financial statements, or complete social cost-benefit accounts. A negative balance does not directly measure a funding requirement.</p>
+                <p class="mt-3">The AGR sensitivity curve applies an assumed nonlinear social-cost response. Displaced sales change linearly with AGR in the consolidated series. Neither the curve nor a crossing provides a calibrated break-even target, probability or confidence interval.</p>
+            </section>
+            <section aria-labelledby="methodology-exclusions">
+                <h3 id="methodology-exclusions" class="mb-2 text-lg font-bold text-white">What this model does not establish</h3>
+                <p>It does not independently forecast casino revenue, patron origins, tourism, competitor losses, induced jobs, wages, net value added, economic multipliers, displaced-business tax losses or the overall welfare effect of a casino. It does not prove that a particular proposal will cause the displayed harm or benefit. Changing assumptions changes the scenario, not the quality of the underlying evidence.</p>
+            </section>
+            <section aria-labelledby="methodology-references">
+                <h3 id="methodology-references" class="mb-2 text-lg font-bold text-white">Research and data references</h3>
+                <ul class="list-disc space-y-3 pl-6 text-sm">
+                    <li><a class="text-blue-300 underline" href="https://walkerd.people.charleston.edu/360/BookChapters/Grinols4.pdf#page=23" target="_blank" rel="noopener noreferrer">Grinols (2004), chapter 4, p. 77</a>: reference for the $243 sales scenario; study context differs from this proposal.</li>
+                    <li><a class="text-blue-300 underline" href="https://pubmed.ncbi.nlm.nih.gov/26615561/" target="_blank" rel="noopener noreferrer">Welte et al. (2016), distance from gambling venues</a>: evidence of association, not validation of this calculator’s exact exposure rules.</li>
+                    <li><a class="text-blue-300 underline" href="https://www.senate.ga.gov/committees/Documents/HiddenCostsofGam.pdf" target="_blank" rel="noopener noreferrer">Legacy Grinols social-cost reference</a>: background for the inherited, editable monetary assumptions.</li>
+                    <li><a class="text-blue-300 underline" href="https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html" target="_blank" rel="noopener noreferrer">U.S. Census population data</a> and TIGER/Line geography: source data are estimates or historical counts, not individual gambling behavior.</li>
+                </ul>
+            </section>
         </div>
-    </div>
+    </dialog>
 
     <!-- Sources Modal -->
     <div id="sources-modal"

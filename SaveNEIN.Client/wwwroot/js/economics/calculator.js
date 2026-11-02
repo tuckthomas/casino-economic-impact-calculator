@@ -594,6 +594,7 @@ window.EconomicCalculator = (function ()
             inCostIllness: document.getElementById('input-cost-illness'),
             inCostServices: document.getElementById('input-cost-services'),
             inCostAbused: document.getElementById('input-cost-abused'),
+            inDisplacement: document.getElementById('input-displacement'),
 
             valRevenue: document.getElementById('val-revenue'),
             valAGR: document.getElementById('val-agr'),
@@ -1008,7 +1009,9 @@ window.EconomicCalculator = (function ()
     {
         const countyBalance = Number(row && row.countyBalance || 0);
         const otherCost = Number(row && row.otherCost || 0);
-        return mode === 'state' ? countyBalance - otherCost : countyBalance;
+        return mode === 'state'
+            ? countyBalance - otherCost - Number(row?.key === 'total' ? row.displacedSales || 0 : 0)
+            : countyBalance;
     }
 
     function getChartRowSubset(rows)
@@ -1020,6 +1023,7 @@ window.EconomicCalculator = (function ()
             'legal',
             'abused',
             'employment',
+            'displacement',
             'total'
         ];
 
@@ -1077,6 +1081,17 @@ window.EconomicCalculator = (function ()
         return pivotScale * Math.pow(ratio / 1.75, 1.3);
     }
 
+    function calculateDisplacementScenario(agr, coefficientPerThousand = 243, baseBalance = 0)
+    {
+        if (!Number.isFinite(agr) || agr < 0 || !Number.isFinite(coefficientPerThousand) ||
+            coefficientPerThousand < 0 || coefficientPerThousand > 1000 || !Number.isFinite(baseBalance))
+        {
+            throw new RangeError('Displacement requires nonnegative finite AGR and a coefficient from $0 to $1,000.');
+        }
+        const displacedSales = agr * coefficientPerThousand / 1000;
+        return { agr, coefficientPerThousand, displacedSales, baseBalance, adjustedBalance: baseBalance - displacedSales };
+    }
+
     function createSensitivityNetEvaluator(options)
     {
         const revenueShare = Number(options && options.revenueShare || 0);
@@ -1089,7 +1104,8 @@ window.EconomicCalculator = (function ()
             const revenue = calculateTax(agr * 1000000).total * revenueShare;
             const costScale = getSensitivityCostScale(agr, anchorAgrM);
             const scaledCost = baseCost * costScale;
-            return revenue - scaledCost;
+            return calculateDisplacementScenario(agr * 1000000,
+                options.displacementCoefficient ?? 0, revenue - scaledCost).adjustedBalance;
         };
     }
 
@@ -1223,8 +1239,11 @@ window.EconomicCalculator = (function ()
         destroyChartInstance(netImpactBarChart);
         netImpactBarChart = null;
 
-        const chartRows = getChartRowSubset(model.rows);
-        const labels = chartRows.map(row => String(row.label || ''));
+        const chartRows = getChartRowSubset(model.rows)
+            .filter(row => activeNetChartMode === 'state' || row.key !== 'displacement');
+        const labels = chartRows.map(row => row.key === 'total'
+            ? (activeNetChartMode === 'state' ? 'Illustrative Balance Including Displaced Sales' : 'Tax Revenue Less Host Social Costs')
+            : String(row.label || ''));
         const values = chartRows.map(row => getNetValueForMode(row, activeNetChartMode));
 
         netImpactBarChart = new Chart(canvas.getContext('2d'), {
@@ -1314,7 +1333,7 @@ window.EconomicCalculator = (function ()
 
         setSummaryCards('net-impact-balance-summary', [
             {
-                label: activeNetChartMode === 'state' ? 'Indiana Total Net' : 'County Total Net',
+                label: activeNetChartMode === 'state' ? 'Illustrative Sales-Adjusted Balance' : 'Host Social-Cost Balance',
                 value: fmtSignedCompactCurrency(totalValue),
                 valueClassValue: totalValue
             },
@@ -1366,7 +1385,8 @@ window.EconomicCalculator = (function ()
         const consolidatedNetAtAgr = createSensitivityNetEvaluator({
             revenueShare: consolidatedRevenueShare,
             baseCost: Number(model.consolidatedCost || 0),
-            anchorAgrM: currentAgrM
+            anchorAgrM: currentAgrM,
+            displacementCoefficient: model.displacementCoefficient
         });
         const maxBreakEvenAgrM = Math.max(sliderMax * 6, 500);
         const hostSeries = [];
@@ -1482,7 +1502,7 @@ window.EconomicCalculator = (function ()
                 breakEvenAgr: estimateBreakEvenAgrFromNetFn(hostNetAtAgr, maxBreakEvenAgrM, currentAgrM),
                 currentNet: hostNetAtAgr(currentAgrM),
                 label: 'Host Net',
-                summaryLabel: 'Host Governments',
+                summaryLabel: 'Host Area',
                 color: 'rgba(52, 211, 153, 1)',
                 fill: 'rgba(52, 211, 153, 0.18)'
             },
@@ -1499,8 +1519,8 @@ window.EconomicCalculator = (function ()
                 series: consolidatedSeries,
                 breakEvenAgr: estimateBreakEvenAgrFromNetFn(consolidatedNetAtAgr, maxBreakEvenAgrM, currentAgrM),
                 currentNet: consolidatedNetAtAgr(currentAgrM),
-                label: 'Consolidated Net',
-                summaryLabel: 'Consolidated',
+                label: 'Consolidated + Sales Scenario',
+                summaryLabel: 'Sales Scenario',
                 color: 'rgba(251, 191, 36, 1)',
                 fill: 'rgba(251, 191, 36, 0.18)'
             }
@@ -2176,6 +2196,11 @@ window.EconomicCalculator = (function ()
         const regionalNetAfterSpillover = revenueRda - spilloverTotalCost;
         const consolidatedTotalCost = totalCost + spilloverTotalCost;
         const statewideNet = totalRevenue - consolidatedTotalCost;
+        const displacement = calculateDisplacementScenario(agrM * 1000000, Number(els.inDisplacement.value), statewideNet);
+        lastCalculationResult.displacement = displacement;
+        setTxt('displacement-example-agr', fmtM(displacement.agr));
+        setTxt('displacement-example-coefficient', `$${displacement.coefficientPerThousand.toLocaleString()} per $1,000`);
+        setTxt('displacement-example-sales', fmtM(displacement.displacedSales));
         const fmtVictims = Math.round(victims).toLocaleString();
         setTxt('calc-pop', Math.round(currentPop).toLocaleString());
         setTxt('calc-rate', gamblerGrowthRate.toFixed(2) + '%');
@@ -2380,7 +2405,7 @@ window.EconomicCalculator = (function ()
             ...(isHostCountySelection ? [{
                 key: 'host_local_total',
                 kind: 'total',
-                label: 'Net Impact: Host Governments',
+                label: 'Host Tax Revenue Less Social Costs',
                 labelClass: 'text-white',
                 tooltip: cityRevenueApplies
                     ? `Combined revenue to ${municipalityName} and ${hostCountyName} County government, less total modeled direct and private-sector costs.`
@@ -2391,9 +2416,14 @@ window.EconomicCalculator = (function ()
                 otherCost: 0
             }] : []),
             {
+                key: 'displacement', kind: 'detail', label: 'Displaced Business Sales (Unallocated Scenario)',
+                revenue: 0, countyCost: 0, countyBalance: 0, otherCost: displacement.displacedSales
+            },
+            {
                 key: 'total',
                 kind: 'total',
-                label: 'Total Net Economic Impact (Indiana)',
+                label: 'Tax Revenue Less Social Costs',
+                displacedSales: displacement.displacedSales,
                 labelClass: 'text-white',
                 revenue: totalRevenue,
                 countyCost: totalCost,
@@ -2413,6 +2443,7 @@ window.EconomicCalculator = (function ()
             displayedTaxScenario,
             taxScenarioValidation: activeTaxScenarioValidation,
             baselineRate: rate,
+            displacement,
             rows: hasImpact ? netImpactRows : [],
             otherCounties: hasImpact && otherCosts ? otherCosts.counties : [],
             expanded: otherCountiesExpanded
@@ -2432,7 +2463,8 @@ window.EconomicCalculator = (function ()
             consolidatedCost: totalCost + otherTotals.total,
             currentHostNet: hostLocalNetBalance,
             currentRegionalNet: regionalNetAfterSpillover,
-            currentConsolidatedNet: statewideNet
+            displacementCoefficient: displacement.coefficientPerThousand,
+            currentConsolidatedNet: displacement.adjustedBalance
         });
 
         if (hasImpact)
@@ -2595,40 +2627,13 @@ window.EconomicCalculator = (function ()
 
             let analysisHTML = '';
 
-            // 1. Disclaimer (Sub-header + Bullet)
-            analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Disclaimers</div>`;
-            analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
-            analysisHTML += `<li><strong>Open-Source Transparency:</strong> In an effort to encourage community involvement and transparency, SaveNEIN has published the source code for this Economic Impact Calculator as free and open-source software (FOSS) under the AGPL-3.0 License, available on GitHub at <a href="https://github.com/tuckthomas/casino-economic-impact-calculator.git" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">https://github.com/tuckthomas/casino-economic-impact-calculator.git</a>.</li>`;
-            analysisHTML += `<li><strong>Substitution Effect:</strong> SaveNEIN's current analysis (v0.9.2 Beta) does not yet account for the <em>Substitution Effect</em>, also known as the displacement coefficient. This economic phenomenon describes how local casino spending displaces consumer expenditures that would otherwise circulate through existing local businesses—particularly in discretionary sectors such as retail, dining, and entertainment. Research indicates that for every $1,000 increase in casino revenue, businesses within a 10–30 mile radius may experience approximately $243 in lost sales (the "243 coefficient"). Because this displacement represents a net reduction in local economic activity, incorporating it would produce a more negative Net Economic Impact than currently reported.
-                                            <ul class="list-[circle] pl-8 mt-2 space-y-3">
-                                                <li><strong>Planned Methodology:</strong> Prior to SaveNEIN's 1.0.0 release, this analysis will implement a <em>Sector-Weighted Casino Displacement Model</em>. This enhanced approach will:
-                                                    <ul class="list-[square] pl-8 mt-2 space-y-2">
-                                                        <li>Apply the displacement coefficient only to local casino spending (excluding tourism/export dollars), using a configurable Local Share % slider;</li>
-                                                        <li>Allocate displaced revenue across at-risk discretionary sectors (Retail NAICS 44–45, Dining/Hospitality NAICS 72, Entertainment NAICS 71) using either fixed baseline weights or data-driven weights based on local business inventory; and</li>
-                                                        <li>Compute lost tax revenue using sector-specific assumptions for taxable sales share and profit margins derived from IRS Statistics of Income data.</li>
-                                                    </ul>
-                                                </li>
-                                                <li><strong>Tax Waterfall:</strong> The model will calculate both lost sales tax (sector loss × taxability factor × sales tax rate) and lost income tax (sector loss × net income margin × effective income tax rate), providing a comprehensive picture of fiscal displacement.</li>
-                                                <li><strong>Current Status:</strong> This enhancement is scheduled for implementation before the Casino Economic Net Impact Calculator reaches version 1.0.0. Users should be aware that current deficit projections may <em>understate</em> the true fiscal impact by not accounting for this substitution effect.</li>
-                                            </ul>
-                                        </li>`;
-            analysisHTML += `<li><strong>Economic Multipliers:</strong> SaveNEIN's Economic Impact Calculator does not currently include positive economic multipliers often cited by proponents (the "Economic Engine" model). SaveNEIN is currently evaluating the methodological appropriateness of such multipliers in a "convenience casino" market context. This classification is corroborated by the State's Spectrum Study (2025), which indicates that for a Northeast Indiana location, approximately 95% of projected revenue is sourced from the primary catchment area (residents within a 90-minute radius). This metric suggests that the project primarily facilitates a reallocation of local capital to external corporate entities, rather than introducing new capital via external tourism. Given this context, SaveNEIN is assessing academic literature before making a determination regarding:
-                                            <ul class="list-[circle] pl-8 mt-2 space-y-3">
-                                                <li><strong>Leakage Rates:</strong> The extent to which revenue is retained locally versus exported to external corporate entities. Research from the <a href="https://www.civiceconomics.com/indie-impact.html" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">Civic Economics "Indie Impact" Series</a> establishes that national corporate chains often return significantly less revenue to the local economy (approx. 14%) compared to independent local businesses (approx. 48%).</li>
-                                                <li><strong>Multiplier Magnitudes:</strong> Determining accurate local multipliers for gaming revenues. While independent local businesses typically generate multipliers of <a href="https://www.civiceconomics.com/indie-impact.html" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">~1.7–2.0</a> (recirculating ~$48–$53 per $100 spent), research from the <a href="https://massgaming.com/wp-content/uploads/Social-and-Economic-Impacts-of-Casino-Introduction-to-Massachusetts_Report.pdf" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">Massachusetts Gaming Commission</a> indicates that regional "convenience" casinos may yield multipliers as low as 0.5–0.7 in scenarios where local retail cannibalization is factored into the economic model.</li>
-                                                <li><strong>Net Fiscal Impact:</strong> The necessity of balancing indirect tax revenue against local expenditure substitution. Systematic reviews such as <a href="https://www.greo.ca/Modules/EvidenceCentre/Details/social-and-economic-impacts-gambling" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">The Social and Economic Impacts of Gambling (2011)</a> and <a href="https://www.researchgate.net/publication/343114919_Does_Gambling_Harm_or_Benefit_Other_Industries_A_Systematic_Review" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">"Does Gambling Harm or Benefit Other Industries? A Systematic Review"</a> conclude that while destination gambling can be beneficial, "convenience" gambling often substitutes for other local industries (retail and merchandise) rather than introducing new capital into the market.</li>
-                                            </ul>
-                                        </li>`;
-            analysisHTML += `<li><strong>Revenue Forecasting Methodology:</strong> A future version of the model may incorporate an optional gravity-model layer to estimate casino demand and Gross Gaming Revenue (GGR) before converting that forecast into the taxable revenue base used in the tax calculation. That forecasting layer is intended to remain optional. Users may continue to input AGR directly when relying on a third-party market-feasibility study or another external revenue estimate rather than SaveNEIN's internal forecasting method.</li>`;
-            analysisHTML += `<li><strong>Deterministic Methodology:</strong> This analysis is generated from deterministic, rule-based calculations and cited data sources rather than an artificial intelligence (AI) model or probabilistic simulation. The output is therefore reproducible: identical inputs produce identical results. Comparable deterministic methods are commonly used in regulated analytical contexts, including finance, taxation, and compliance modeling. A future version of SaveNEIN may add supplementary probabilistic or AI-assisted layers, but the present analysis remains formula-driven. To distinguish the methodologies currently contemplated in the development pipeline, SaveNEIN outlines them below:
-                                            <ul class="list-[circle] pl-8 mt-2 space-y-3">
-                                                <li><strong>Programmatic (Deterministic) Analysis:</strong> This methodology operates on fixed inputs and explicit mathematical formulas in which the relationship between variables is constant. Given a specific set of parameters, the model produces the same result in every iteration. It is used to derive exact, reproducible figures from predefined causal relationships.</li>
-                                                <li><strong>Probabilistic (Stochastic) Analysis:</strong> This methodology treats variables as probability distributions rather than fixed point estimates in order to account for uncertainty and market volatility. Through random sampling techniques such as Monte Carlo simulation, it estimates a range of outcomes and their associated likelihoods, typically expressed as confidence intervals or percentile bands.</li>
-                                                <li><strong>AI (Machine Learning) Analysis:</strong> This methodology uses algorithms that infer non-linear relationships within higher-dimensional datasets by training internal weights on observed data. Unlike rule-based systems, the logic is derived from statistical pattern recognition rather than explicit hand-coded formulas, allowing the model to update its predictive weighting as additional data becomes available.</li>
-                                            </ul>
-                                        </li>`;
-            analysisHTML += `<li><strong>Model Responsibility:</strong> Individuals and entities should recognize that all economic models are projections subject to data limitations and inherent variability. The responsibility for any actions or decisions made based on this analysis rests solely with the individual or entity, and SaveNEIN assumes no liability for the application or interpretation of these results.</li>`;
-            analysisHTML += `</ul>`;
+            analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Model Scope and Limitations</div>`;
+            analysisHTML += `<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">`;
+            analysisHTML += `<li><strong>Scenario calculator:</strong> These are deterministic results of selected inputs, not an independently validated revenue forecast, government budget, clinical forecast or complete cost-benefit assessment.</li>`;
+            analysisHTML += `<li><strong>Adjustable displacement:</strong> The coefficient is $${displacement.coefficientPerThousand.toLocaleString()} per $1,000 annual AGR. At ${fmtM(displacement.agr)} AGR, this gives ${fmtM(displacement.displacedSales)} in illustrative displaced business sales. Set it to zero to exclude this scenario.</li>`;
+            analysisHTML += `<li><strong>Research reference:</strong> The $243 default follows <a href="https://walkerd.people.charleston.edu/360/BookChapters/Grinols4.pdf#page=23" target="_blank" rel="noopener noreferrer" class="underline text-blue-400">Grinols (2004), chapter 4, p. 77</a>, a historical Illinois finding for businesses 10–30 miles from casinos. Applying it here is an assumption. Sales losses are not mapped to that ring or assigned to counties.</li>`;
+            analysisHTML += `<li><strong>Additional balance:</strong> Sales are turnover, not profit, tax revenue or net social welfare. Subtracting displaced sales from the tax/social-cost balance is an illustrative comparison. Potential overlap with employment and other social costs is not quantified.</li>`;
+            analysisHTML += `<li><strong>Excluded:</strong> Induced jobs, net value added, economic multipliers, independently modeled visitor demand, competitor revenue changes, displaced-business tax losses and statistical confidence intervals. Public and private social costs are not all government spending. Sensitivity curves impose an illustrative cost response, not a fitted local relationship.</li></ul>`;
 
             // 2. Assumptions (Sub-header + Bullets)
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Assumptions</div>`;
@@ -2711,8 +2716,8 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<li><strong>Branch Trigger Result:</strong> ${escapeHtml(branchResultSummary)}</li>`;
             analysisHTML += `<li><strong>Scenario Results:</strong> Under the active ${escapeHtml(scenarioNameWithBill)} allocation scenario, this run yields approximately ${fmtM(revenueState)} to ${scenarioRecipients.stateRecipient}, ${fmtM(revenueCounty)} to ${scenarioRecipients.countyRecipient}, ${fmtM(revenueCity)} to ${cityRevenueApplies ? scenarioRecipients.municipalityRecipient : 'the municipality branch recipient'}, and ${fmtM(revenueRda)} to ${scenarioRecipients.regionalRecipient}.</li>`;
             analysisHTML += isHostCountySelection
-                ? `<li><strong>Statement Revenue Rows:</strong> The Host Government Fiscal View (${formattedCountyName}) reports ${fmtM(hostLocalRevenue)} in direct host tax revenue, the Regional Revenue vs County Costs view reports ${fmtM(revenueRda)} in regional revenue, and the Consolidated Statement reports ${fmtM(totalRevenue)} in total tax revenue.</li>`
-                : `<li><strong>Statement Revenue Rows:</strong> The Host Government Fiscal View is inactive for ${formattedCountyName} under the active scenario. The Regional Revenue vs County Costs view reports ${fmtM(revenueRda)} in regional revenue, and the Consolidated Statement reports ${fmtM(totalRevenue)} in total tax revenue.</li>`;
+                ? `<li><strong>Statement Revenue Rows:</strong> The Host-Area Tax Revenue vs Social Costs (${formattedCountyName}) reports ${fmtM(hostLocalRevenue)} in direct host tax revenue, the Regional Revenue vs County Costs view reports ${fmtM(revenueRda)} in regional revenue, and the Consolidated Statement reports ${fmtM(totalRevenue)} in total tax revenue.</li>`
+                : `<li><strong>Statement Revenue Rows:</strong> The Host-Area Tax Revenue vs Social Costs is inactive for ${formattedCountyName} under the active scenario. The Regional Revenue vs County Costs view reports ${fmtM(revenueRda)} in regional revenue, and the Consolidated Statement reports ${fmtM(totalRevenue)} in total tax revenue.</li>`;
             analysisHTML += '</ul>';
 
             // B. SOCIAL COSTS
@@ -2732,18 +2737,12 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Net Economic Impact Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 text-slate-300">';
             analysisHTML += isHostCountySelection
-                ? `<li><strong>Host Government Fiscal View (${formattedCountyName}):</strong> The host statement compares ${fmtM(hostLocalRevenue)} in direct host tax revenue against ${fmtM(subjectTotalCost)} in ${formattedCountyName} social costs, producing a host net impact of ${fmtDiffM(hostLocalNetBalance)}.</li>`
-                : `<li><strong>Host Government Fiscal View (${formattedCountyName}):</strong> This statement is inactive for ${formattedCountyName} because the active tax-allocation scenario does not assign host-local revenue there.</li>`;
+                ? `<li><strong>Host-Area Tax Revenue vs Social Costs (${formattedCountyName}):</strong> The host statement compares ${fmtM(hostLocalRevenue)} in direct host tax revenue against ${fmtM(subjectTotalCost)} in ${formattedCountyName} social costs, producing a host net impact of ${fmtDiffM(hostLocalNetBalance)}.</li>`
+                : `<li><strong>Host-Area Tax Revenue vs Social Costs (${formattedCountyName}):</strong> This statement is inactive for ${formattedCountyName} because the active tax-allocation scenario does not assign host-local revenue there.</li>`;
             analysisHTML += `<li><strong>Regional Revenue vs County Costs:</strong> The regional statement offsets ${fmtM(revenueRda)} in regional revenue against ${fmtM(spilloverTotalCost)} in spillover social costs across ${otherCountiesCount} neighboring counties, producing a regional net impact of ${fmtDiffM(regionalNetAfterSpillover)}.</li>`;
-            analysisHTML += `<li><strong>Consolidated Statement:</strong> The consolidated statement offsets ${fmtM(totalRevenue)} in total tax revenue against ${fmtM(stateWideSocialCost)} in total modeled social costs across all ${otherCountiesCount + 1} assessed counties, producing a consolidated net impact of ${fmtDiffM(stateWideNetBalance)}.</li>`;
-
-            if (stateWideNetBalance < 0)
-            {
-                analysisHTML += `<li><strong>Fiscal Conclusion:</strong> Under this configuration, the consolidated statement remains in deficit. Total modeled social costs (${fmtM(stateWideSocialCost)}) exceed total tax revenue (${fmtM(totalRevenue)}) by ${fmtM(Math.abs(stateWideNetBalance))}, so any positive case for the project would need to rely on effects not presently included in the deterministic model.</li>`;
-            } else
-            {
-                analysisHTML += `<li><strong>Fiscal Conclusion:</strong> Under this configuration, the consolidated statement remains in surplus. Total modeled tax revenue (${fmtM(totalRevenue)}) exceeds total modeled social costs (${fmtM(stateWideSocialCost)}), leaving a positive consolidated balance of ${fmtM(Math.abs(stateWideNetBalance))}.</li>`;
-            }
+            analysisHTML += `<li><strong>Tax/social-cost balance:</strong> ${fmtM(totalRevenue)} in tax revenue less ${fmtM(stateWideSocialCost)} in modeled social costs gives ${fmtDiffM(stateWideNetBalance)} before sales displacement.</li>`;
+            analysisHTML += `<li><strong>Separate sales scenario:</strong> ${fmtM(displacement.agr)} AGR × $${displacement.coefficientPerThousand.toLocaleString()} / $1,000 gives ${fmtM(displacement.displacedSales)} in displaced sales, counted once without county attribution.</li>`;
+            analysisHTML += `<li><strong>Illustrative balance including displaced sales:</strong> ${fmtDiffM(displacement.adjustedBalance)}. This combines different economic measures; it is not a government funding requirement or a demonstrated net welfare effect.</li>`;
 
             const hostRatioVal = (isHostCountySelection && hostLocalRevenue > 0) ? (subjectTotalCost / hostLocalRevenue) : null;
             const regionalRatioVal = (revenueRda > 0) ? (spilloverTotalCost / revenueRda) : null;
@@ -3002,6 +3001,7 @@ window.EconomicCalculator = (function ()
         const spilloverTotalCost = otherCounties.reduce((sum, county) => sum + Number(county && county.costs && county.costs.total || 0), 0);
         const regionalNetAfterSpillover = Number(rdaRevenueRow && rdaRevenueRow.revenue || 0) - spilloverTotalCost;
         const statewideNet = Number(statewideTotalRow && statewideTotalRow.countyBalance || 0) - Number(statewideTotalRow && statewideTotalRow.otherCost || 0);
+        const displacement = model.displacement;
 
         const headerMoneyCellClass = 'w-[8.5rem]';
         const moneyCell = (value, formatter = fmtM, forceClass = 'text-slate-100') =>
@@ -3196,7 +3196,7 @@ window.EconomicCalculator = (function ()
                 ${sectionRow('Expenses')}
                 ${hostCostBreakout}
                 <tr ${headerToneRowAttrs}>
-                    <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Net Impact: Host Governments</td>
+                    <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Host Tax Revenue Less Social Costs</td>
                     ${netCell(Number(hostNetRow && hostNetRow.countyBalance || 0))}
                 </tr>
             </tbody>`
@@ -3274,8 +3274,17 @@ window.EconomicCalculator = (function ()
                 ${moneyCell(subjectTotalCost + spilloverTotalCost, fmtM, 'text-red-400')}
             </tr>
             <tr ${headerToneRowAttrs}>
-                <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Consolidated Net Impact</td>
+                <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Tax Revenue Less Modeled Social Costs</td>
                 ${netCell(statewideNet)}
+            </tr>
+            ${sectionRow('Separate Business-Sales Scenario')}
+            <tr ${stripedRowAttrs(0)}>
+                <td class="px-3 py-2 text-slate-100 font-semibold">Displaced business sales ($${escapeText(String(displacement.coefficientPerThousand))} per $1,000 AGR; unallocated)</td>
+                ${moneyCell(displacement.displacedSales, fmtM, 'text-amber-300')}
+            </tr>
+            <tr ${headerToneRowAttrs}>
+                <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Illustrative Balance Including Displaced Sales</td>
+                ${netCell(displacement.adjustedBalance)}
             </tr>
         </tbody>`;
 
@@ -3322,7 +3331,7 @@ window.EconomicCalculator = (function ()
         const inputs = [
             els.inRevenue, els.inAGR, els.inAllocation,
             els.inCostCrime, els.inCostBusiness, els.inCostBankruptcy,
-            els.inCostIllness, els.inCostServices, els.inCostAbused,
+            els.inCostIllness, els.inCostServices, els.inCostAbused, els.inDisplacement,
             els.inRate
         ];
 
@@ -3601,6 +3610,8 @@ window.EconomicCalculator = (function ()
 
     return {
         init: init,
+        calculateDisplacementScenario,
+        createSensitivityNetEvaluator,
         calculate: calculate,
         selectCounty: selectCounty,
         updateCounties: updateCounties,

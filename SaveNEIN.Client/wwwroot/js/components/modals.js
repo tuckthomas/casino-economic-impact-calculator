@@ -107,23 +107,26 @@ window.Modals = (function ()
     /* --- METHODOLOGY MODAL --- */
     function initMethodologyModal()
     {
+        let returnFocus = null;
+        let previousOverflow = '';
         window.openMethodologyModal = function ()
         {
-            const m = document.getElementById('methodology-modal');
-            if (m)
+            const modal = document.getElementById('methodology-modal');
+            if (!modal || modal.open) return;
+            returnFocus = document.activeElement;
+            previousOverflow = document.body.style.overflow;
+            modal.onclose = () =>
             {
-                m.classList.remove('opacity-0', 'pointer-events-none');
-                document.body.classList.add('overflow-hidden');
-            }
+                document.body.style.overflow = previousOverflow;
+                if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+            };
+            document.body.style.overflow = 'hidden';
+            modal.showModal();
+            modal.scrollTop = 0;
         };
         window.closeMethodologyModal = function ()
         {
-            const m = document.getElementById('methodology-modal');
-            if (m)
-            {
-                m.classList.add('opacity-0', 'pointer-events-none');
-                document.body.classList.remove('overflow-hidden');
-            }
+            document.getElementById('methodology-modal')?.close();
         };
     }
 
@@ -136,3 +139,6 @@ window.Modals = (function ()
         }
     };
 })();
+
+// These handlers resolve their elements when invoked, including on direct route loads.
+window.Modals.init();

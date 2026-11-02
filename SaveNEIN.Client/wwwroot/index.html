@@ -169,9 +169,10 @@
     <!-- Custom Modules -->
     <script src="js/components/slot-machine.js" defer></script>
     <script src="js/components/adaptive-toast.js" defer></script>
-    <script src="js/pdf-helper.js?v=20261101-browser-calculator" defer></script>
+    <script src="js/pdf-helper.js?v=20261101-sales-displacement" defer></script>
     <script src="js/components/legislators.js" defer></script>
     <script src="js/components/image-modal.js" defer></script>
+    <script src="js/components/modals.js?v=20261101-sales-displacement" defer></script>
     <script src="js/components/flipbook.js" defer></script>
     <script src="js/components/toc.js" defer></script>
     <script src="js/components/reveal.js?v=20260808-tribal-repeat-1" defer></script>
@@ -190,7 +191,7 @@
             if (window.__economicCalculatorLoad) return window.__economicCalculatorLoad;
             window.__economicCalculatorLoad = new Promise(function (resolve, reject) {
                 const script = document.createElement('script');
-                script.src = '/js/economics/calculator.js?v=20261101-browser-calculator';
+                script.src = '/js/economics/calculator.js?v=20261101-sales-displacement';
                 script.onload = function () { resolve(!!window.EconomicCalculator); };
                 script.onerror = function () { reject(new Error('Calculator script could not load')); };
                 document.head.appendChild(script);
@@ -218,7 +219,7 @@
             const loadScript = function (url) {
                 return new Promise(function (resolve, reject) {
                     const script = document.createElement('script');
-                    script.src = url + '?v=20261101-browser-calculator';
+                    script.src = url + '?v=20261101-sales-displacement';
                     script.onload = resolve;
                     script.onerror = function () { reject(new Error('Could not load ' + url)); };
                     document.head.appendChild(script);
