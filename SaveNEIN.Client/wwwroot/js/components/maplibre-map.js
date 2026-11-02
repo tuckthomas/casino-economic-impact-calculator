@@ -4075,6 +4075,7 @@ window.MapLibreImpactMap = (function ()
 
             toggleLoading(true, "Loading Population Data...");
             const contextLoaded = await loadCountyContext(countyFips, true, "Loading Population Data...", false);
+            if (!contextLoaded || !countyFeature || typeof turf === 'undefined') return false;
 
             console.log('[SelectCounty] Context load result:', {
                 success: contextLoaded,
@@ -4129,10 +4130,12 @@ window.MapLibreImpactMap = (function ()
             window.dispatchEvent(new CustomEvent('county-selected-map', { detail: { geoid: countyFips, name: countyName } }));
 
             updateMapNavUI(3, countyName);
+            return true;
         }
         catch (err)
         {
             console.error('Error selecting county:', err);
+            return false;
         }
         finally
         {
@@ -4891,12 +4894,12 @@ window.MapLibreImpactMap = (function ()
         {
             const targetCountyFips = countyFips || '18003';
             const stateFips = targetCountyFips.substring(0, 2);
-            if (!map) return;
+            if (!map) return false;
             if (currentStateFips !== stateFips)
             {
                 await drillToState(stateFips);
             }
-            await selectCounty(targetCountyFips);
+            if (!await selectCounty(targetCountyFips)) return false;
             if (typeof lat === 'number' && typeof lng === 'number')
             {
                 markerPosition = { lng: lng, lat: lat };
@@ -4905,6 +4908,7 @@ window.MapLibreImpactMap = (function ()
                 await updateIsochrones(markerPosition);
                 calculateImpact();
             }
+            return true;
         },
         recalculate: () => calculateImpact(),
         setIsochroneVisibility: (v) => { toggleLayerVisibility('valhalla', v); const cb = document.getElementById('toggle-valhalla'); if (cb) cb.checked = v; },

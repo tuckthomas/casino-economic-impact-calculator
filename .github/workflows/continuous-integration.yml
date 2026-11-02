@@ -34,8 +34,8 @@ jobs:
           npm run check:tooltips
           npm run check:model-license
 
-      - name: Test calculator displacement accounting
-        run: node --test scripts/validation/legacy-displacement.test.mjs
+      - name: Test calculator accounting and benchmark locations
+        run: node --test scripts/validation/legacy-displacement.test.mjs scripts/validation/legacy-benchmarks.test.mjs
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4

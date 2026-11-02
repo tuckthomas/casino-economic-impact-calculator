@@ -3653,6 +3653,50 @@ const benchmarkAgrPresets = {
     steubenHigh: 214.0
 };
 
+// Steinberg (2026), pp. 12 and 20, centers on the I-69/I-80/I-90 interchange.
+// This app-chosen interchange point is approximate, not a study-published parcel coordinate.
+// OSM exit-356 nodes 27336003 and 181766469 locate the interchange approaches.
+const steubenBenchmarkLocation = { latitude: 41.7321, longitude: -85.0003, countyFips: '18151' };
+let steubenBenchmarkPending = false;
+
+window.applySteubenAgrPreset = async function(presetKey)
+{
+    if (steubenBenchmarkPending || !Object.hasOwn(benchmarkAgrPresets, presetKey)) return;
+    const status = document.getElementById('steuben-benchmark-status');
+    const buttons = document.querySelectorAll('[data-agr-preset]');
+    const showStatus = (message, failed = false) =>
+    {
+        if (!status) return;
+        status.textContent = message;
+        status.classList.toggle('text-red-400', failed);
+        status.classList.toggle('text-slate-300', !failed);
+    };
+    steubenBenchmarkPending = true;
+    buttons.forEach(button => { button.disabled = true; button.setAttribute('aria-busy', 'true'); });
+    showStatus('Moving casino marker to the Steinberg study area in Steuben County…');
+    try
+    {
+        const impactMap = window.MapLibreImpactMap;
+        if (!impactMap?.getMap() || typeof impactMap.setCasinoLocation !== 'function')
+            throw new Error('Map is still loading. Try the benchmark again in a moment.');
+        const moved = await impactMap.setCasinoLocation(steubenBenchmarkLocation.latitude,
+            steubenBenchmarkLocation.longitude, steubenBenchmarkLocation.countyFips);
+        if (moved === false) throw new Error('Could not load the study-area location. Try the benchmark again.');
+        const label = { steubenLow: 'Steuben Low', steubenBase: 'Steuben Base', steubenHigh: 'Steuben High' }[presetKey];
+        window.applyAgrPreset(benchmarkAgrPresets[presetKey], label, presetKey);
+        showStatus(`${label} applied at the approximate I-69/I-80/I-90 study-area point in Steuben County.`);
+    }
+    catch (error)
+    {
+        showStatus(error?.message || 'Could not apply the Steuben benchmark. Please try again.', true);
+    }
+    finally
+    {
+        steubenBenchmarkPending = false;
+        buttons.forEach(button => { button.disabled = false; button.setAttribute('aria-busy', 'false'); });
+    }
+};
+
 function setActiveAgrPresetButton(presetKey)
 {
     const buttons = document.querySelectorAll('[data-agr-preset]');
