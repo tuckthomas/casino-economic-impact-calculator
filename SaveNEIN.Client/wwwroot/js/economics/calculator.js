@@ -1082,6 +1082,51 @@ window.EconomicCalculator = (function ()
         return pivotScale * Math.pow(ratio / 1.75, 1.3);
     }
 
+    function describeExposure(exposure) {
+        const radius = exposure?.mode === 'radius';
+        const known = radius || exposure?.mode === 'isochrone' || exposure?.mode === 'grid';
+        return {
+            known, radius,
+            footprint: !known ? 'selected map footprint' : radius ? '50-mile radius footprint' : '60-minute drive-time footprint',
+            bands: !known ? ['inner selected band', 'middle selected band', 'outer selected band']
+                : radius ? ['0–10 miles', '10–20 miles', '20–50 miles'] : ['0–15 minutes', '15–30 minutes', '30–60 minutes'],
+            methodology: !known
+                ? 'Map exposure metadata is not yet available. Select a casino site and allow the population calculation to finish before relying on geographic results.'
+                : radius
+                    ? 'Radius mode measures straight-line distance from the casino marker, with 10-, 20- and 50-mile cutoffs. Loaded census block-group adult populations are assigned to bands using a representative point in each block group. A whole block group can therefore fall on one side of a cutoff even when its boundary crosses it; these are not driving distances.'
+                    : `${exposure.mode === 'grid' ? 'Cached' : 'Live'} drive-time mode uses Valhalla automobile-routing isochrones for 15, 30 and 60 minutes from the casino marker. The routing request produces road-network reachability polygons (polygons=true, denoise=0.1), rather than circles. It does not request live traffic or a departure time. PostGIS intersects each polygon with census block groups and apportions adult population by the fraction of each block group’s area covered, assuming uniform population within that block group. The 15-minute population forms band 1; cumulative 30-minute minus 15-minute population forms band 2; cumulative 60-minute minus 30-minute population forms band 3, avoiding repeated counts across nested contours.`
+        };
+    }
+
+    function renderSocialCostAssumptions(entries, annualCases) {
+        const money = value => '$' + Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        const selectedTotal = entries.reduce((sum, entry) => sum + entry.selected, 0);
+        const referenceTotal = entries.reduce((sum, entry) => sum + entry.reference, 0);
+        const changed = entries.filter(entry => entry.selected !== entry.reference);
+        let html = `<li><strong>Annual valuation per additional case:</strong> The six selected cost categories total ${money(selectedTotal)} per additional problem gambler per year; the research-derived defaults total ${money(referenceTotal)}. Each category is multiplied by the modeled additional cases in the relevant county. These are annual costs, not lifetime costs or costs per casino visitor.</li>`;
+        html += `<li><strong>Applied per-person rates:</strong> ${entries.map(entry => `${escapeHtml(entry.label)} ${money(entry.selected)}`).join('; ')}. The same selected rates are applied to host and spillover cases.</li>`;
+        if (!changed.length) {
+            return html + '<li><strong>Research defaults in use:</strong> All six social-cost valuations match the calculator’s Grinols-based reference values. No user adjustment to these monetary valuations is applied in this run.</li>';
+        }
+        html += '<li><strong>User-adjusted social costs — departures from research defaults:</strong> This run replaces the following Grinols-based, inflation-adjusted reference values with user-selected amounts (all amounts are per additional problem gambler per year):<ul class="list-[circle] pl-8 mt-2 space-y-2">';
+        for (const entry of changed) {
+            const delta = entry.selected - entry.reference;
+            const percent = entry.reference > 0 ? `; ${Math.abs(delta / entry.reference * 100).toFixed(1)}% ${delta < 0 ? 'lower' : 'higher'}` : '';
+            html += `<li><strong>${escapeHtml(entry.label)}:</strong> Selected ${money(entry.selected)} versus research-derived default ${money(entry.reference)} — ${money(Math.abs(delta))} ${delta < 0 ? 'lower' : 'higher'}${percent}.</li>`;
+        }
+        html += '</ul></li><li><strong>Supporting evidence for adjustments:</strong> These adjustments are user assumptions, not findings established by the cited research. Anyone presenting this adjusted result should supply supporting research or data, identify the price year and population studied, and explain why the replacement value is appropriate. This requirement applies to increases as well as reductions; entering zero assumes no cost in that category.</li>';
+        const difference = (selectedTotal - referenceTotal) * annualCases;
+        html += `<li><strong>Effect of the monetary adjustments:</strong> Holding the location, exposed population and additional-case estimate fixed, the selected values ${difference < 0 ? 'reduce' : difference > 0 ? 'increase' : 'leave unchanged'} the combined host-and-spillover annual social-cost total${difference === 0 ? '' : ` by ${money(Math.abs(difference))}`} relative to using all six research-derived defaults. Offsetting adjustments can leave the total unchanged while changing its category composition.</li>`;
+        return html;
+    }
+
+    function describeHostDisplacement(displacement, countyName, hostBalance) {
+        const share = displacement.hostSharePercent;
+        const host = escapeHtml(countyName);
+        if (share === 100) return `This scenario assumes all ${fmtM(displacement.displacedSales)} of displaced business sales occur in ${host}, concentrating the substitution effect in the casino’s host county. The host comparison therefore falls from ${fmtDiffM(hostBalance)} before displacement to ${fmtDiffM(hostBalance - displacement.hostDisplacedSales)} after displacement. This represents lost turnover at host-area businesses, not a ${fmtM(displacement.displacedSales)} expense to county government. The 100% share is an editable geographic assumption; the historical study does not establish that county allocation.`;
+        return `This scenario assigns ${share}% of displaced business sales (${fmtM(displacement.hostDisplacedSales)}) to businesses in ${host}, changing the host comparison from ${fmtDiffM(hostBalance)} to ${fmtDiffM(hostBalance - displacement.hostDisplacedSales)}. The remaining ${fmtM(displacement.unallocatedDisplacedSales)} stays in the consolidated displacement total without being assigned to individual other counties. Changing this share changes the host comparison, not the total sales loss. It is an editable assumption about where businesses lose sales, not a county-government expense or a measured county distribution.`;
+    }
+
     function calculateDisplacementScenario(agr, coefficientPerThousand = 243, baseBalance = 0, hostSharePercent = 100)
     {
         if (!Number.isFinite(agr) || agr < 0 || !Number.isFinite(coefficientPerThousand) ||
@@ -2577,6 +2622,15 @@ window.EconomicCalculator = (function ()
             const t3Rate = `${(rate + baselineIncrease).toFixed(2)}%`;
             const effRateDisplay = `${gamblerGrowthRate.toFixed(2)}%`;
 
+            const exposure = describeExposure(lastImpactBreakdown?.exposure);
+            const costAssumptions = [
+                { label: 'Crime / Law Enforcement', selected: cCrime, reference: Number(els.inCostCrime.dataset.default) },
+                { label: 'Lost Employment', selected: cBusiness, reference: Number(els.inCostBusiness.dataset.default) },
+                { label: 'Bankruptcy / Civil Legal', selected: cBankruptcy, reference: Number(els.inCostBankruptcy.dataset.default) },
+                { label: 'Illness / Public Health and Treatment', selected: cIllness, reference: Number(els.inCostIllness.dataset.default) },
+                { label: 'Social Services', selected: cServices, reference: Number(els.inCostServices.dataset.default) },
+                { label: 'Abused Dollars', selected: cAbused, reference: Number(els.inCostAbused.dataset.default) }
+            ];
             const regionalImpact = lastImpactBreakdown && lastImpactBreakdown.regional ? lastImpactBreakdown.regional : {};
             const regionalAdults = Number(regionalImpact.adultsWithin50 || 0);
             const populationProjection = lastImpactBreakdown && lastImpactBreakdown.populationProjection ? lastImpactBreakdown.populationProjection : null;
@@ -2627,15 +2681,19 @@ window.EconomicCalculator = (function ()
             const hostFiscalViewSummary = isHostCountySelection
                 ? `${fmtM(hostLocalRevenue)} in host-government revenue compared with ${fmtM(subjectTotalCost)} in ${formattedCountyName} social costs.`
                 : `Inactive for ${formattedCountyName} under the active tax-allocation scenario.`;
-            const regionalFiscalViewSummary = `${fmtM(revenueRda)} in regional revenue compared with ${fmtM(spilloverTotalCost)} in spillover social costs across the ${otherCountiesCount} neighboring counties outside ${formattedCountyName}.`;
-            const consolidatedFiscalViewSummary = `${fmtM(totalRevenue)} in total statewide revenue compared with ${fmtM(stateWideSocialCost)} in total statewide social costs across all ${otherCountiesCount + 1} assessed counties.`;
+            const regionalFiscalViewSummary = `${fmtM(revenueRda)} in regional revenue compared with ${fmtM(spilloverTotalCost)} in spillover social costs across the ${otherCountiesCount} other assessed same-state counties outside ${formattedCountyName}.`;
+            const consolidatedFiscalViewSummary = `${fmtM(totalRevenue)} in total statewide revenue compared with ${fmtM(stateWideSocialCost)} in social costs within the selected same-state footprint across all ${otherCountiesCount + 1} assessed counties.`;
 
             let analysisHTML = '';
 
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Model Scope and Limitations</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">`;
-            analysisHTML += `<li><strong>Scenario calculator:</strong> These are deterministic results of selected inputs, not an independently validated revenue forecast, government budget, clinical forecast or complete cost-benefit assessment.</li>`;
-            analysisHTML += `<li><strong>Excluded:</strong> Induced jobs, net value added, economic multipliers, independently modeled visitor demand, competitor revenue changes, displaced-business tax losses and statistical confidence intervals. Public and private social costs are not all government spending. Sensitivity curves impose an illustrative cost response, not a fitted local relationship.</li></ul>`;
+            analysisHTML += `<li><strong>Research-based social-cost framework:</strong> At the default monetary settings, this calculator digitally applies its Grinols-based, inflation-adjusted social-cost values to estimated additional problem-gambling cases. The cost categories and reference amounts come from that research framework; changing them creates a user-defined departure from it. The geographic implementation, revenue scenarios and allocation rules are additional parts of this application, rather than a claim that Grinols authored or validated this entire local model.</li>`;
+            analysisHTML += `<li><strong>Calculation chain:</strong> The selected casino location determines exposed adult population by proximity band. Baseline prevalence and proximity multipliers determine additional cases; annual per-person cost assumptions convert those cases into social costs. Separately, the selected annual AGR produces gaming taxes, the allocation scenario distributes those taxes, and the displacement coefficient estimates business-sales substitution. The statements bring these calculations together by jurisdiction.</li>`;
+            analysisHTML += `<li><strong>Meaning of a result:</strong> Each figure is conditional on the selected inputs. This is a reproducible scenario calculation, not an independently validated local revenue forecast or a clinical prediction of which individuals will develop gambling disorder. Associations in the source literature motivate the framework but do not establish that this particular site will cause the exact displayed increase.</li>`;
+            analysisHTML += `<li><strong>Accounting scope:</strong> Social costs include burdens on households and businesses as well as public services. The taxpayer/private grouping does not establish which agency pays each dollar, and tax receipts do not automatically compensate the people experiencing the losses. A tax-minus-social-cost balance is therefore broader than a government budget balance.</li>`;
+            analysisHTML += `<li><strong>Unmodeled benefits and costs:</strong> The calculator does not independently estimate induced jobs, wages, tourism, net value added, construction effects, economic multipliers, competitor revenue changes or displaced-business tax losses. It does not estimate a complete social cost-benefit or welfare account. Imported visitor spending, existing gambling participation and interactions among cost categories are not separately calibrated here.</li>`;
+            analysisHTML += `<li><strong>Uncertainty and sensitivity:</strong> Census vintage, geographic allocation, prevalence transferability, future population and per-person valuations all introduce uncertainty. The outputs have no fitted confidence interval. The AGR sensitivity curves impose an illustrative nonlinear social-cost response; they do not rerun a locally estimated demand model or establish a statistically validated break-even point.</li></ul>`;
 
             // 2. Assumptions (Sub-header + Bullets)
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Assumptions</div>`;
@@ -2645,13 +2703,18 @@ window.EconomicCalculator = (function ()
             analysisHTML += selectedTaxScenarioId === TAX_ALLOCATION_SCENARIO_CUSTOM_ID
                 ? `<li><strong>Custom Mode:</strong> Because this analysis uses the Custom scenario, the active branch percentages shown above are user-specified values, and each regular-tax and supplemental-tax branch must sum to 100% before those allocations are applied.</li>`
                 : `<li><strong>Preset Scenario Behavior:</strong> Because this analysis uses the preset ${escapeHtml(scenarioNameWithBill)} scenario, the active branch percentages shown above are preset allocation values rather than user-specified inputs.</li>`;
+            analysisHTML += `<li><strong>Prevalence and incremental cases:</strong> The selected baseline is ${rate.toFixed(2)}% of adults aged 18+. Proximity multipliers are 2.0×, 1.5× and 1.0× baseline in the inner, middle and outer bands. The separately selected baseline increase is ${baselineIncrease.toFixed(2)} percentage points. Additional cases equal band adults × [max(0, multiplied prevalence − baseline prevalence) + selected increase] / 100. Thus the outer band adds no cases when the selected increase is zero; existing baseline cases are not charged again as casino-induced cases.</li>`;
+            analysisHTML += `<li><strong>Transfer of research to local conditions:</strong> The exposure-band boundaries and multipliers are scenario rules informed by proximity research, not locally estimated causal coefficients. Adults aged 18+ provide a population denominator, not a count of casino customers or legally eligible Indiana patrons. Any selected changes to prevalence or population growth need their own justification, separately from the monetary cost assumptions documented below.</li>`;
+            analysisHTML += `<li><strong>Revenue is an input:</strong> Annual AGR of ${fmtM(agrM * 1000000)} is supplied by the selected benchmark or user; the map does not forecast it. Moving the marker changes population exposure and local allocation eligibility, but does not independently recalculate casino demand or visitor origins.</li>`;
             analysisHTML += `<li><strong>Private Sector Burden:</strong> The Local Economy category represents private sector losses (productivity, debt) borne directly by households and businesses.</li>`;
             analysisHTML += `</ul>`;
 
             // Geographic Analysis
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Geographic Analysis</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-1 mb-4 text-slate-300">`;
-            analysisHTML += `<li><strong>Geospatial Data:</strong> Population data is sourced directly from the <a href="https://www.census.gov/data/developers/data-sets/decennial-census.html" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">U.S. Census Bureau's 2020 Decennial Census API</a>, seeded into the SaveNEIN database in January 2026. Geographic boundaries utilize high-precision 2020 TIGER/Line Shapefiles processed via PostGIS.</li>`;
+            analysisHTML += `<li><strong>Geospatial Data:</strong> Population data is sourced from the <a href="https://www.census.gov/data/developers/data-sets/decennial-census.html" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">U.S. Census Bureau's 2020 Decennial Census API</a>. The model uses census block-group adult counts and TIGER/Line geographic boundaries processed in PostGIS. These are historical population data, not observations of present-day gambling behavior.</li>`;
+            analysisHTML += `<li><strong>How the exposure footprint is produced:</strong> ${exposure.methodology}</li>`;
+            analysisHTML += `<li><strong>Geographic coverage and boundaries:</strong> Counts and costs include the selected host county and other counties in the same state reached by the selected footprint. Cross-border populations are excluded from the cost statements even if a map contour crosses a state line. The consolidated tax row includes all modeled state and local gaming-tax receipts; its social-cost row covers the assessed footprint, not every resident of the state. Block-group area weighting and representative-point assignments are spatial approximations, not household-level observations.</li>`;
             analysisHTML += `<li><strong>Fiscal View Comparisons:</strong> Each view compares the public revenue assigned to that jurisdictional scope with the social costs attributed to the same scope.
                                             <ul class="list-[circle] pl-8 mt-2 space-y-2">
                                                 <li><strong>Host Government:</strong> ${escapeHtml(hostFiscalViewSummary)}</li>
@@ -2678,32 +2741,32 @@ window.EconomicCalculator = (function ()
             if (projectionUsesProjectedAdults)
             {
                 analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${formattedCountyName}, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) used in this run is ${adultPopStr}, projected from the ${Math.round(countyBaseAdults).toLocaleString()} baseline to ${populationProjection.targetYear}.</li>`;
-                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 60-minute drive-time footprint, representing a projected regional adult population of ${regionalAdults.toLocaleString()} (up from a ${Math.round(regionalBaseAdults).toLocaleString()} baseline).</li>`;
+                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} other assessed counties within the same state under the ${exposure.footprint}, with ${regionalAdults.toLocaleString()} projected adults across the full same-state footprint, including the host county (up from ${Math.round(regionalBaseAdults).toLocaleString()} at baseline). The county count here includes other counties with additional modeled cases.</li>`;
             } else if (projectionHasFutureYear)
             {
                 analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${formattedCountyName}, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area remains ${adultPopStr} because the selected projection settings do not change the baseline adult count.</li>`;
-                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 60-minute drive-time footprint, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
+                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} other assessed counties within the same state under the ${exposure.footprint}, with ${regionalAdults.toLocaleString()} adults across the full same-state footprint, including the host county. The county count here includes other counties with additional modeled cases.</li>`;
             } else
             {
                 analysisHTML += `<li><strong>Assessed Area:</strong> This analysis focuses on ${formattedCountyName}, with a total population of ${countyInfo.pop.toLocaleString()}. The Adult Population (18+) for this area is ${adultPopStr}.</li>`;
-                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} adjacent counties within the same state under the 60-minute drive-time footprint, representing a total regional adult population of ${regionalAdults.toLocaleString()}.</li>`;
+                analysisHTML += `<li><strong>Regional Footprint:</strong> The model identifies ${otherCountiesCount} other assessed counties within the same state under the ${exposure.footprint}, with ${regionalAdults.toLocaleString()} adults across the full same-state footprint, including the host county. The county count here includes other counties with additional modeled cases.</li>`;
             }
 
             analysisHTML += `<li><strong>Impact Distribution:</strong> This distribution models the increased statistical likelihood of residents developing problem gambling behaviors (Gambling Disorder) based on their geographic proximity to the casino site.
                                             <ul class="list-[circle] pl-8 mt-2 space-y-2">
-                                                <li><strong>High Risk Zone (0-15 minutes):</strong> A total of ${t1Pop} ${formattedCountyName} residents are subject to a ${t1Rate} prevalence rate due to immediate proximity.</li>
-                                                <li><strong>Elevated Risk Zone (15-30 minutes):</strong> A total of ${t2Pop} ${formattedCountyName} residents are subject to a ${t2Rate} prevalence rate.</li>`;
+                                                <li><strong>High Risk Zone (${exposure.bands[0]}):</strong> A total of ${t1Pop} ${formattedCountyName} adults are modeled at a ${t1Rate} prevalence rate due to immediate proximity.</li>
+                                                <li><strong>Elevated Risk Zone (${exposure.bands[1]}):</strong> A total of ${t2Pop} ${formattedCountyName} adults are modeled at a ${t2Rate} prevalence rate.</li>`;
 
             if (Math.round(t3AdultsCounty) <= 0)
             {
-                analysisHTML += `<li><strong>Baseline Risk Zone (30-60 minutes):</strong> ${formattedCountyName} has effectively zero residents in the baseline band under the 60-minute model cutoff.</li>`;
+                analysisHTML += `<li><strong>Outer Zone (${exposure.bands[2]}):</strong> ${formattedCountyName} has effectively zero adults in the outer band under the selected cutoff.</li>`;
             } else
             {
-                analysisHTML += `<li><strong>Baseline Risk Zone (30-60 minutes):</strong> A total of ${t3Pop} ${formattedCountyName} residents are subject to the baseline ${t3Rate} rate.</li>`;
+                analysisHTML += `<li><strong>Outer Zone (${exposure.bands[2]}):</strong> A total of ${t3Pop} ${formattedCountyName} adults are modeled at a ${t3Rate} rate (baseline plus the selected increase).</li>`;
             }
             analysisHTML += `</ul></li>`;
             // Updated conclusion to be clearer
-            analysisHTML += `<li><strong>Prevalence Outcome:</strong> The resulting net effective problem gambler growth rate for ${formattedCountyName} is ${effRateDisplay} (of the adult population), projecting ${victims.toLocaleString()} new problem gamblers within ${formattedCountyName} (within the 60-minute drive-time footprint). Regionally, an additional ${Math.round(otherVictims).toLocaleString()} new problem gamblers are projected across the ${otherCountiesCount} adjacent counties.</li>`;
+            analysisHTML += `<li><strong>Prevalence Outcome:</strong> The additional-case estimate for ${formattedCountyName} equals ${effRateDisplay} of its full adult population, rather than only the adults inside the footprint, representing ${victims.toLocaleString()} additional modeled cases within ${formattedCountyName} (within the ${exposure.footprint}). Regionally, an additional ${Math.round(otherVictims).toLocaleString()} new problem gamblers are projected across the ${otherCountiesCount} other assessed same-state counties.</li>`;
             analysisHTML += `</ul>`;
 
             // 4. Analysis (Split into sections)
@@ -2725,12 +2788,14 @@ window.EconomicCalculator = (function ()
             // B. SOCIAL COSTS
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Social Cost Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
-            analysisHTML += `<li><strong>Data Source:</strong> Baseline social cost valuations are derived from peer-reviewed research by <a href="https://www.senate.ga.gov/committees/Documents/HiddenCostsofGam.pdf" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">Grinols</a> (2011), with values adjusted for 2025 inflation to reflect current economic conditions.</li>`;
+            analysisHTML += `<li><strong>Data Source:</strong> Baseline social cost valuations follow the research framework summarized by <a href="https://www.senate.ga.gov/committees/Documents/HiddenCostsofGam.pdf" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">Grinols</a> (2011), with the calculator’s default values inflation-adjusted to a 2025 price basis and rounded by category. These are research-derived reference assumptions applied locally, rather than a new local cost survey. The selected values and any departures from those references are documented below.</li>`;
+            analysisHTML += renderSocialCostAssumptions(costAssumptions, victims + Number(o.victims || 0));
+            analysisHTML += `<li><strong>Additional-case basis:</strong> This run applies the selected cost valuations to ${victims.toLocaleString()} additional host-county cases and ${Math.round(otherVictims).toLocaleString()} additional same-state spillover cases. The host count is rounded for its cost calculation; spillover costs use the underlying county estimates. Reported case counts are statistical expectations, not identified people or diagnoses.</li>`;
             analysisHTML += `<li><strong>${formattedCountyName} Cost Stack:</strong> ${formattedCountyName} carries ${fmtM(subjectTotalCost)} in modeled social costs, split between ${fmtM(subjectPublicCost)} in General Taxpayer Services Costs and ${fmtM(subjectPrivateCost)} in Private Sector Costs.</li>`;
             analysisHTML += `<li><strong>${formattedCountyName} Cost Breakout:</strong> Within ${formattedCountyName}, Public Health / Treatment accounts for ${fmtM(totalCostHealth)}, Law Enforcement ${fmtM(totalCostCrime)}, Social Services ${fmtM(totalCostSocial)}, Civil Legal ${fmtM(totalCostLegal)}, Abused Dollars ${fmtM(totalCostAbused)}, and Lost Employment ${fmtM(totalCostEmployment)}.</li>`;
             analysisHTML += otherCountiesCount > 0
-                ? `<li><strong>Regional Spillover Costs:</strong> A total of ${otherCountiesCount} additional same-state counties inside the 50-mile footprint carry a combined ${fmtM(otherTotalCost)} in spillover social costs, split between ${fmtM(otherTotals.public)} in General Taxpayer Services Costs and ${fmtM(otherTotals.private)} in Private Sector Costs. Those detailed breakouts appear in the regional statement.</li>`
-                : `<li><strong>Regional Spillover Costs:</strong> No additional same-state counties currently register modeled spillover costs inside the 50-mile footprint, so the regional statement has no spillover burden to offset.</li>`;
+                ? `<li><strong>Regional Spillover Costs:</strong> A total of ${otherCountiesCount} additional same-state counties inside the ${exposure.footprint} carry a combined ${fmtM(otherTotalCost)} in spillover social costs, split between ${fmtM(otherTotals.public)} in General Taxpayer Services Costs and ${fmtM(otherTotals.private)} in Private Sector Costs. Those detailed breakouts appear in the regional statement.</li>`
+                : `<li><strong>Regional Spillover Costs:</strong> No additional same-state counties currently register modeled spillover costs inside the ${exposure.footprint}, so the regional statement has no spillover burden to offset.</li>`;
             analysisHTML += `<li><strong>Consolidated Social Cost Total:</strong> Combining ${formattedCountyName} with all ${otherCountiesCount} same-state spillover counties produces ${fmtM(stateWideSocialCost)} in total modeled social costs.</li>`;
 
             analysisHTML += '</ul>';
@@ -2742,7 +2807,7 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<li><strong>Adjustable displacement:</strong> The coefficient is $${displacement.coefficientPerThousand.toLocaleString()} per $1,000 annual AGR. The default research reference is $243; set the coefficient to zero to exclude business-sales displacement.</li>`;
             analysisHTML += `<li><strong>Business-Sales Displacement:</strong> ${fmtM(displacement.agr)} AGR × $${displacement.coefficientPerThousand.toLocaleString()} / $1,000 gives ${fmtM(displacement.displacedSales)} in displaced sales, counted once in the consolidated statement, including the assumed host-area share.</li>`;
             analysisHTML += `<li><strong>Research reference:</strong> The $243 default follows <a href="https://walkerd.people.charleston.edu/360/BookChapters/Grinols4.pdf#page=23" target="_blank" rel="noopener noreferrer" class="underline text-blue-400">Grinols (2004), chapter 4, p. 77</a>, a historical Illinois finding for businesses 10–30 miles from casinos. Applying it here is an assumption. Sales losses are not mapped to that ring.</li>`;
-            analysisHTML += `<li><strong>Host-area allocation assumption:</strong> ${displacement.hostSharePercent}% of displaced sales (${fmtM(displacement.hostDisplacedSales)}) is assigned to the host area. This editable share defaults to 100%; it is not a measured local distribution. The remainder (${fmtM(displacement.unallocatedDisplacedSales)}) is unallocated. The consolidated amount is counted once.</li>`;
+            analysisHTML += `<li><strong>Where businesses lose sales:</strong> ${describeHostDisplacement(displacement, formattedCountyName, hostLocalNetBalance)}</li>`;
             analysisHTML += `<li><strong>Interpretation and limits:</strong> Sales are turnover, not profit, tax revenue or net social welfare. Subtracting displaced sales from the tax/social-cost balance is an illustrative comparison. Potential overlap with employment and other social costs is not quantified.</li>`;
             analysisHTML += '</ul>';
 
@@ -2752,7 +2817,7 @@ window.EconomicCalculator = (function ()
             analysisHTML += isHostCountySelection
                 ? `<li><strong>Host-Area Tax Revenue vs Social Costs (${formattedCountyName}):</strong> The host statement compares ${fmtM(hostLocalRevenue)} in direct host tax revenue against ${fmtM(subjectTotalCost)} in ${formattedCountyName} social costs, producing a balance of ${fmtDiffM(hostLocalNetBalance)} before business-sales displacement. Subtracting the assumed ${displacement.hostSharePercent}% host share (${fmtM(displacement.hostDisplacedSales)}) gives an illustrative host balance of ${fmtDiffM(hostLocalNetBalance - displacement.hostDisplacedSales)}.</li>`
                 : `<li><strong>Host-Area Tax Revenue vs Social Costs (${formattedCountyName}):</strong> This statement is inactive for ${formattedCountyName} because the active tax-allocation scenario does not assign host-local revenue there.</li>`;
-            analysisHTML += `<li><strong>Regional Revenue vs County Costs:</strong> The regional statement offsets ${fmtM(revenueRda)} in regional revenue against ${fmtM(spilloverTotalCost)} in spillover social costs across ${otherCountiesCount} neighboring counties, producing a regional net impact of ${fmtDiffM(regionalNetAfterSpillover)}.</li>`;
+            analysisHTML += `<li><strong>Regional Revenue vs County Costs:</strong> The regional statement offsets ${fmtM(revenueRda)} in regional revenue against ${fmtM(spilloverTotalCost)} in spillover social costs across ${otherCountiesCount} other assessed same-state counties, producing a regional net impact of ${fmtDiffM(regionalNetAfterSpillover)}.</li>`;
             analysisHTML += `<li><strong>Tax/social-cost balance:</strong> ${fmtM(totalRevenue)} in tax revenue less ${fmtM(stateWideSocialCost)} in modeled social costs gives ${fmtDiffM(stateWideNetBalance)} before sales displacement.</li>`;
             analysisHTML += `<li><strong>Illustrative balance including displaced sales:</strong> ${fmtDiffM(displacement.adjustedBalance)}. This combines different economic measures; it is not a government funding requirement or a demonstrated net welfare effect.</li>`;
 
@@ -2770,19 +2835,7 @@ window.EconomicCalculator = (function ()
                 ? `For every $1 in total tax revenue, the statewide consolidated model projects $${consolidatedRatioVal.toFixed(2)} in social costs across all ${otherCountiesCount + 1} assessed counties.`
                 : `No ratio is available because this scenario produces no modeled tax revenue.`;
 
-            let ratioExplanation = '';
-            if (regionalRatioVal !== null && consolidatedRatioVal !== null && regionalRatioVal > consolidatedRatioVal * 2)
-            {
-                const hostContextSnippet = (hostRatioVal !== null && hostRatioVal > consolidatedRatioVal * 1.5)
-                    ? ` Similarly, the host-government ratio ($${hostRatioVal.toFixed(2)} per $1) is elevated because ${formattedCountyName} absorbs the concentrated 0–10 mile urban core impacts while the state retains the majority of progressive wagering tax brackets.`
-                    : '';
-
-                ratioExplanation = `<li><strong>Ratio Variance Dynamics:</strong> The substantial divergence between the regional ratio ($${regionalRatioVal.toFixed(2)} per $1) and the consolidated ratio ($${consolidatedRatioVal.toFixed(2)} per $1) results from the geographic distribution of population density relative to statutory tax distribution. Placing the casino in ${formattedCountyName}—a densely populated regional hub—means the immediate 0–20 mile high-risk impact zones encompass large population corridors across ${otherCountiesCount} neighboring counties, creating significant aggregate spillover costs. Because regional funds receive only a modest, fractional allocation of total gaming revenue, the resulting cost burden per dollar of regional revenue appears disproportionately high.${hostContextSnippet}</li>`;
-            }
-            else if (hostRatioVal !== null && consolidatedRatioVal !== null && hostRatioVal > consolidatedRatioVal * 1.5)
-            {
-                ratioExplanation = `<li><strong>Ratio Variance Dynamics:</strong> The ${formattedCountyName} host-government ratio ($${hostRatioVal.toFixed(2)} per $1) is higher than the consolidated statewide ratio ($${consolidatedRatioVal.toFixed(2)} per $1) because the host municipality absorbs the densest concentration of immediate 0–10 mile proximity costs (such as public health, emergency services, and local economic disruption), whereas the state retains the majority of wagering tax collections through progressive statutory brackets rather than remitting them directly to the host government.</li>`;
-            }
+            const ratioExplanation = `<li><strong>Why the ratios differ:</strong> The host ratio divides ${fmtM(subjectTotalCost)} of host social costs by ${fmtM(hostLocalRevenue)} of host tax receipts; the regional ratio divides ${fmtM(spilloverTotalCost)} of other assessed counties’ costs by ${fmtM(revenueRda)} of regional receipts. The consolidated ratio divides ${fmtM(stateWideSocialCost)} of combined costs by ${fmtM(totalRevenue)} of all gaming-tax receipts, including ${fmtM(revenueState)} assigned to the state. The differences reflect the selected allocation shares and the estimated exposed adult population in each geographic scope. None of these ratios includes business-sales displacement.</li>`;
 
             analysisHTML += `<li><strong>Cost-to-Revenue Ratios:</strong>
                 <ul class="list-[circle] pl-8 mt-2 space-y-2">
@@ -3632,6 +3685,9 @@ window.EconomicCalculator = (function ()
     return {
         init: init,
         calculateDisplacementScenario,
+        describeExposure,
+        renderSocialCostAssumptions,
+        describeHostDisplacement,
         createSensitivityNetEvaluator,
         calculate: calculate,
         selectCounty: selectCounty,

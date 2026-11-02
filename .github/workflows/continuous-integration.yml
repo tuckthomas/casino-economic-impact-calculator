@@ -35,7 +35,7 @@ jobs:
           npm run check:model-license
 
       - name: Test calculator accounting and benchmark locations
-        run: node --test scripts/validation/legacy-displacement.test.mjs scripts/validation/legacy-benchmarks.test.mjs
+        run: node --test scripts/validation/legacy-displacement.test.mjs scripts/validation/legacy-benchmarks.test.mjs scripts/validation/legacy-analysis.test.mjs
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4

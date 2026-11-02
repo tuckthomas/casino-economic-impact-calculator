@@ -707,11 +707,8 @@ window.MapLibreImpactMap = (function ()
                         const popAdult = Number(p[2] || 0);
                         const pCountyFips = (p.length >= 4 && p[3] != null) ? String(p[3]) : "";
                         if (!Number.isFinite(lng) || !Number.isFinite(lat) || popAdult <= 0) continue;
-                        if (pCountyFips === fips)
-                        {
-                            countyAdults += popAdult;
-                            countyTotal += popAdult;
-                        }
+                        // county_adults/county_total already contain the full county totals.
+                        // Points supply exposure-band population, not additional county residents.
                         calcFeatures.push({ lng, lat, popAdult, countyFips: pCountyFips || fips });
                     }
                 } else
@@ -1102,6 +1099,7 @@ window.MapLibreImpactMap = (function ()
                 markerLat: centerLat,
                 markerLng: centerLng,
                 baselineRate,
+                exposure: { mode: riskZoneMode },
                 populationProjection: adultPopulationProjection,
                 county: {
                     adults: countyAdults,
