@@ -1750,8 +1750,13 @@ window.MapLibreImpactMap = (function ()
             if (map.getLayer('impact-grid-isochrones-fill')) map.setLayoutProperty('impact-grid-isochrones-fill', 'visibility', 'none');
             if (map.getLayer('impact-grid-isochrones-line')) map.setLayoutProperty('impact-grid-isochrones-line', 'visibility', 'none');
 
-            // Refresh circles for current marker pos
-            if (markerPosition) updateCircles(markerPosition);
+            setLayerVisibility('isochrone-fill', false);
+            setLayerVisibility('isochrone-line', false);
+            // Refresh both the map and the population/analysis when changing exposure modes.
+            if (markerPosition) {
+                updateCircles(markerPosition);
+                calculateImpact();
+            }
         }
     }
 
