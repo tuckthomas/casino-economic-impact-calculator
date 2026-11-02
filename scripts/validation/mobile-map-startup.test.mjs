@@ -44,10 +44,11 @@ test('optional startup selects Indiana without selecting a county and frames all
   const fill = layers.get('nein-featured-counties-fill');
   assert.equal(fill.paint['fill-color'], '#fbbf24');
   assert.equal(fill.paint['fill-opacity'], 0.16);
-  assert.equal(container.children.length, 3);
-  assert.deepEqual(container.children.map(element => element.textContent), ['Steuben County', 'DeKalb County', 'Allen County']);
-  assert.ok(container.children.every(element => element.style.pointerEvents === 'none'));
-  assert.ok(container.children.every(element => element.style.color === '#0f172a' && element.style.backgroundColor === '#fef3c7'));
+  const names = container.children.filter(element => element.className === 'nein-featured-county-name');
+  assert.equal(names.length, 3);
+  assert.deepEqual(names.map(element => element.textContent), ['Steuben County', 'DeKalb County', 'Allen County']);
+  assert.ok(names.every(element => element.style.pointerEvents === 'none'));
+  assert.ok(names.every(element => element.style.color === '#0f172a' && element.style.backgroundColor === '#fef3c7'));
 });
 
 test('back to national hides regional highlights and startup cannot force the user back to Indiana', async () => {
@@ -55,7 +56,7 @@ test('back to national hides regional highlights and startup cannot force the us
   await startup.apply(api);
   events.get('impact-map-navigation')({ detail: { step: 1, stateFips: null } });
   assert.equal(layers.get('nein-featured-counties').layout.visibility, 'none');
-  assert.ok(container.children.every(element => element.hidden && element.style.display === 'none'));
+  assert.ok(container.children.filter(element => element.className === 'nein-featured-county-name').every(element => element.hidden && element.style.display === 'none'));
   assert.equal(layers.get('nein-featured-counties-fill').layout.visibility, 'none');
   await startup.apply(api);
   assert.equal(calls.filter(call => call[0] === 'state').length, 1);

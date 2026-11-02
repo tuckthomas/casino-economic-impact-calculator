@@ -32,3 +32,5 @@ when the user returns to national selection or chooses another state. They never
 reapply the initial zoom or override the back button.
 
 The gold layers, label positions, and label styles are all defined inside that optional script. Labels allow pointer events through to the county selection beneath them.
+
+On phones, the optional county-overview style hides the empty risk counters until a county is selected, so they do not obscure county names. Selecting a county restores the existing risk-label controls.

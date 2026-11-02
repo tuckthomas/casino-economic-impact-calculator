@@ -14,6 +14,8 @@ window.NortheastIndianaMapStartup = (() => {
     let visible = true;
     let restoring = false;
     let labels = [];
+    let overviewStyle = null;
+    let overviewContainer = null;
 
     function restoreHighlights() {
         if (!activeMap?.getSource('census-vector') || restoring) return;
@@ -43,11 +45,19 @@ window.NortheastIndianaMapStartup = (() => {
         if (activeMap) activeMap.off('styledata', restoreHighlights);
         for (const label of labels) label.marker.remove();
         labels = [];
+        overviewStyle?.remove();
+        overviewContainer?.removeAttribute('data-nein-county-overview');
+        overviewContainer = map.getContainer().parentElement;
         activeMap = map;
         visible = true;
         await api.loadState('18');
         restoreHighlights();
         map.on('styledata', restoreHighlights);
+        // Empty risk counters obscure the county names on a narrow overview.
+        // Restore them automatically when a county is selected; preserve the user's label toggle.
+        overviewStyle = document.createElement('style');
+        overviewStyle.textContent = '@media (max-width: 767px) { [data-nein-county-overview] #map-overlay-topright { visibility: hidden; } }';
+        map.getContainer().append(overviewStyle);
         // DOM labels avoid a dependency on the selected basemap's glyph service.
         // Their style and placement live entirely in this removable startup function.
         labels = featuredCounties.map(county => {
@@ -75,6 +85,7 @@ window.NortheastIndianaMapStartup = (() => {
     });
     window.addEventListener('impact-map-navigation', event => {
         visible = event.detail.step !== 1 && event.detail.stateFips === '18';
+        overviewContainer?.toggleAttribute('data-nein-county-overview', visible && event.detail.step === 2);
         for (const label of labels) {
             label.element.hidden = !visible;
             label.element.style.display = visible ? 'block' : 'none';
