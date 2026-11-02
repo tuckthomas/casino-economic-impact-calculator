@@ -40,15 +40,15 @@ test('optional startup selects Indiana without selecting a county and frames all
   assert.equal(layer.layout.visibility, 'visible');
   assert.equal(layer.paint['line-width'], 3);
   assert.ok(calls.some(call => call[0] === 'bounds'));
-  assert.equal(layer.paint['line-color'], '#fbbf24');
+  assert.equal(layer.paint['line-color'], '#b08d57');
   const fill = layers.get('nein-featured-counties-fill');
-  assert.equal(fill.paint['fill-color'], '#fbbf24');
+  assert.equal(fill.paint['fill-color'], '#b08d57');
   assert.equal(fill.paint['fill-opacity'], 0.16);
   const names = container.children.filter(element => element.className === 'nein-featured-county-name');
   assert.equal(names.length, 3);
   assert.deepEqual(names.map(element => element.textContent), ['Steuben County', 'DeKalb County', 'Allen County']);
   assert.ok(names.every(element => element.style.pointerEvents === 'none'));
-  assert.ok(names.every(element => element.style.color === '#0f172a' && element.style.backgroundColor === '#fef3c7'));
+  assert.ok(names.every(element => element.style.color === '#0f172a' && element.style.backgroundColor === '#efe3cc'));
 });
 
 test('back to national hides regional highlights and startup cannot force the user back to Indiana', async () => {

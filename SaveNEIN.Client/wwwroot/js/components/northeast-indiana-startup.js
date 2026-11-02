@@ -8,7 +8,7 @@ window.NortheastIndianaMapStartup = (() => {
         { fips: '18003', name: 'Allen County', labelPosition: [-85.0666, 41.0919] }
     ];
     const counties = featuredCounties.map(county => county.fips);
-    const gold = '#fbbf24';
+    const gold = '#b08d57';
     const initialized = new WeakSet();
     let activeMap = null;
     let visible = true;
@@ -66,7 +66,7 @@ window.NortheastIndianaMapStartup = (() => {
             element.setAttribute('aria-label', county.name);
             element.className = 'nein-featured-county-name';
             Object.assign(element.style, {
-                color: '#0f172a', backgroundColor: '#fef3c7', border: `1px solid ${gold}`,
+                color: '#0f172a', backgroundColor: '#efe3cc', border: `1px solid ${gold}`,
                 borderRadius: '6px', padding: '5px 8px', whiteSpace: 'nowrap',
                 font: '700 15px/1.2 "Public Sans Variable", sans-serif',
                 boxShadow: '0 1px 5px rgba(0,0,0,0.45)', pointerEvents: 'none'
