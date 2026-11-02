@@ -86,7 +86,7 @@
             </div>
         </div>
     </div>
-    <input @ref="rangeInputRef" type="hidden" id="input-@Id" min="@MinValue" max="@MaxValue" step="@Step" value="@currentValue" data-default="@Value">
+    <input @ref="rangeInputRef" type="hidden" id="input-@Id" min="@MinValue" max="@MaxValue" step="@Step" value="@currentValue" data-default="@Value" @oninput="HandleRangeInputChanged">
 </div>
 
 @code {
@@ -251,6 +251,16 @@
             .Trim();
 
         if (double.TryParse(cleaned, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+        {
+            currentValue = Math.Clamp(parsed, MinValue, MaxValue);
+            if (!IsCustomSelected) selectedPresetValue = ResolvePresetSelection(currentValue);
+        }
+    }
+
+    private void HandleRangeInputChanged(ChangeEventArgs args)
+    {
+        if (double.TryParse(args.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) &&
+            double.IsFinite(parsed))
         {
             currentValue = Math.Clamp(parsed, MinValue, MaxValue);
             if (!IsCustomSelected) selectedPresetValue = ResolvePresetSelection(currentValue);
