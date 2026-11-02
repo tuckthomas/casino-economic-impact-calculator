@@ -281,6 +281,7 @@
     <script src="js/components/fact-check-share.js" asp-append-version="true" defer></script>
 
     <script src="js/lib/chart.js" asp-append-version="true" defer></script>
+    <script src="js/pdf-helper.js" asp-append-version="true" defer></script>
     <link rel="stylesheet" href="css/maplibre-gl.css" asp-append-version="true" />
     <script src="js/components/charts.js" asp-append-version="true" defer></script>
     <script src="js/economics/substitution.js" asp-append-version="true" defer></script>
@@ -291,7 +292,7 @@
             if (window.__economicCalculatorLoad) return window.__economicCalculatorLoad;
             window.__economicCalculatorLoad = new Promise(function (resolve, reject) {
                 const script = document.createElement('script');
-                script.src = '/js/economics/calculator.js?v=20261008-route-loading';
+                script.src = '/js/economics/calculator.js?v=20261101-browser-calculator';
                 script.onload = function () { resolve(!!window.EconomicCalculator); };
                 script.onerror = function () { reject(new Error('Calculator script could not load')); };
                 document.head.appendChild(script);
@@ -319,7 +320,7 @@
             const loadScript = function (url) {
                 return new Promise(function (resolve, reject) {
                     const script = document.createElement('script');
-                    script.src = url + '?v=20261008-route-loading';
+                    script.src = url + '?v=20261101-browser-calculator';
                     script.onload = resolve;
                     script.onerror = function () { reject(new Error('Could not load ' + url)); };
                     document.head.appendChild(script);

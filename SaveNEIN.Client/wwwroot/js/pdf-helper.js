@@ -2,127 +2,81 @@ window.PdfHelper = {
     captureMapAndGenerate: async function (mapElementId)
     {
         const mapContainer = document.getElementById(mapElementId);
-        let base64 = null;
-
-        if (!mapContainer) return null;
+        const mapInstance = window.MapLibreImpactMap?.getMap();
+        if (!mapContainer || !mapInstance) throw new Error('Select a location before exporting the map.');
+        const previousScroll = { left: window.scrollX, top: window.scrollY, behavior: 'instant' };
 
         try
         {
-            // Access the MapLibre GL map instance via the global reference
-            const mapInstance = window.MapLibreImpactMap && window.MapLibreImpactMap.getMap
-                ? window.MapLibreImpactMap.getMap()
-                : null;
-
-            console.log('[PDF] Map instance:', mapInstance ? 'found' : 'NOT FOUND');
-
-            if (mapInstance)
+            if (!window.html2canvas)
             {
-                const glCanvas = mapInstance.getCanvas();
-                const width = glCanvas.width;
-                const height = glCanvas.height;
-                const dpr = window.devicePixelRatio || 1;
-
-                console.log('[PDF] GL canvas size:', width, 'x', height, 'DPR:', dpr);
-
-                // Try Method 1: Direct WebGL canvas export (works when tiles are same-origin)
-                let glExportSuccess = false;
-                let glDataUrl = null;
-                try {
-                    glDataUrl = glCanvas.toDataURL('image/png');
-                    glExportSuccess = glDataUrl && glDataUrl.length > 100;
-                    console.log('[PDF] WebGL toDataURL:', glExportSuccess ? 'SUCCESS' : 'FAILED (empty)', 'length:', glDataUrl?.length);
-                } catch (e) {
-                    console.warn('[PDF] WebGL toDataURL threw (canvas tainted by cross-origin tiles):', e.message);
-                }
-
-                if (glExportSuccess)
+                if (!window.__html2canvasLoad)
                 {
-                    // Clean path: composite WebGL canvas + DOM overlays
-                    const compositeCanvas = document.createElement('canvas');
-                    compositeCanvas.width = width;
-                    compositeCanvas.height = height;
-                    const ctx = compositeCanvas.getContext('2d');
-
-                    // Draw the map
-                    const mapImg = new Image();
-                    mapImg.src = glDataUrl;
-                    await new Promise(resolve => { mapImg.onload = resolve; });
-                    ctx.drawImage(mapImg, 0, 0);
-
-                    // Overlay DOM elements (markers, popups)
-                    try {
-                        const overlayCanvas = await html2canvas(mapContainer, {
-                            useCORS: true,
-                            allowTaint: true,
-                            logging: false,
-                            scale: dpr,
-                            backgroundColor: null,
-                            ignoreElements: (el) => {
-                                if (el.tagName === 'CANVAS' && el.classList.contains('maplibregl-canvas')) return true;
-                                if (el.id === 'map-navigation-overlay') return true;
-                                if (el.id === 'map-zoom-hint') return true;
-                                if (el.id === 'map-overlay-panel') return true;
-                                if (el.id === 'map-overlay-topright') return true;
-                                if (el.classList && el.classList.contains('maplibregl-ctrl-top-right')) return true;
-                                if (el.classList && el.classList.contains('maplibregl-ctrl-bottom-right')) return true;
-                                if (el.classList && el.classList.contains('maplibregl-ctrl-top-left')) return true;
-                                if (el.classList && el.classList.contains('maplibregl-ctrl-bottom-left')) return true;
-                                return false;
-                            }
-                        });
-                        ctx.drawImage(overlayCanvas, 0, 0, width, height);
-                        console.log('[PDF] Overlays composited');
-                    } catch (overlayErr) {
-                        console.warn('[PDF] Overlay capture failed:', overlayErr);
-                    }
-
-                    base64 = compositeCanvas.toDataURL('image/png');
-                    console.log('[PDF] Export successful via WebGL path, length:', base64.length);
-                }
-                else
-                {
-                    // Fallback: Canvas is tainted by cross-origin raster tiles.
-                    // Use html2canvas with allowTaint for full container capture.
-                    console.log('[PDF] Using html2canvas full capture fallback (tainted canvas)');
-                    const canvas = await html2canvas(mapContainer, {
-                        useCORS: true,
-                        allowTaint: true,
-                        logging: false,
-                        scale: dpr,
-                        backgroundColor: '#0f172a',
-                        ignoreElements: (el) => {
-                            if (el.id === 'map-navigation-overlay') return true;
-                            if (el.id === 'map-zoom-hint') return true;
-                            if (el.id === 'map-overlay-panel') return true;
-                            if (el.id === 'map-overlay-topright') return true;
-                            if (el.classList && el.classList.contains('maplibregl-ctrl-top-right')) return true;
-                            if (el.classList && el.classList.contains('maplibregl-ctrl-bottom-right')) return true;
-                            if (el.classList && el.classList.contains('maplibregl-ctrl-top-left')) return true;
-                            if (el.classList && el.classList.contains('maplibregl-ctrl-bottom-left')) return true;
-                            return false;
-                        }
+                    window.__html2canvasLoad = new Promise((resolve, reject) =>
+                    {
+                        const script = document.createElement('script');
+                        script.src = '/js/lib/html2canvas.min.js';
+                        script.onload = resolve;
+                        script.onerror = () => reject(new Error('Map export assets could not load.'));
+                        document.head.appendChild(script);
+                    }).catch(error =>
+                    {
+                        window.__html2canvasLoad = null;
+                        throw error;
                     });
-                    base64 = canvas.toDataURL('image/png');
-                    console.log('[PDF] Fallback export, length:', base64.length);
                 }
-            } else
-            {
-                // No MapLibre instance at all
-                console.warn('[PDF] MapLibre instance not found, falling back to html2canvas');
-                const canvas = await html2canvas(mapContainer, {
-                    useCORS: true,
-                    allowTaint: true,
-                    logging: false,
-                    scale: 2
-                });
-                base64 = canvas.toDataURL('image/png');
+                await window.__html2canvasLoad;
             }
-        } catch (err)
-        {
-            console.error('[PDF] Map capture failed:', err);
-        }
 
-        return base64;
+            // Offscreen WebGL frames may be blank. Bring the map into view and
+            // wait for its tiles and a fresh frame before reading its canvas.
+            mapContainer.scrollIntoView({ block: 'center', behavior: 'instant' });
+            mapInstance.resize();
+            await new Promise((resolve, reject) =>
+            {
+                const timer = setTimeout(() =>
+                {
+                    mapInstance.off('idle', onIdle);
+                    reject(new Error('The map is still loading. Please try exporting again.'));
+                }, 15000);
+                const onIdle = () => { clearTimeout(timer); resolve(); };
+                mapInstance.once('idle', onIdle);
+                mapInstance.triggerRepaint();
+            });
+
+            const mapCanvas = mapInstance.getCanvas();
+            const image = new Image();
+            await new Promise((resolve, reject) =>
+            {
+                image.onload = resolve;
+                image.onerror = reject;
+                image.src = mapCanvas.toDataURL('image/png');
+            });
+            const composite = document.createElement('canvas');
+            composite.width = mapCanvas.width;
+            composite.height = mapCanvas.height;
+            const context = composite.getContext('2d');
+            context.drawImage(image, 0, 0);
+
+            // Capture only markers/popups so a container background cannot
+            // paint over the WebGL basemap and impact zones.
+            const bounds = mapCanvas.getBoundingClientRect();
+            const scaleX = composite.width / bounds.width;
+            const scaleY = composite.height / bounds.height;
+            for (const overlay of mapContainer.querySelectorAll('.maplibregl-marker, .maplibregl-popup'))
+            {
+                const rect = overlay.getBoundingClientRect();
+                if (!rect.width || !rect.height) continue;
+                const rendered = await html2canvas(overlay, { backgroundColor: null, useCORS: true, logging: false });
+                context.drawImage(rendered, (rect.left - bounds.left) * scaleX, (rect.top - bounds.top) * scaleY,
+                    rect.width * scaleX, rect.height * scaleY);
+            }
+            return composite.toDataURL('image/png');
+        }
+        finally
+        {
+            window.scrollTo(previousScroll);
+        }
     },
 
     downloadFileFromStream: async function (filename, contentStreamReference)
@@ -140,20 +94,24 @@ window.PdfHelper = {
 
     getReportData: function ()
     {
-        // 1. Scrape Main Table (Net Economic Impact)
-        const table = document.querySelector('#net-impact-table table');
-        let mainTableData = { headers: [], rows: [] };
-
-        if (table)
+        // Preserve each of the three statements shown by the browser calculator.
+        const mainTableData = { headers: ['Statement / item', 'Amount'], rows: [] };
+        const statements = [
+            ['net-impact-host-table', 'Host Government Fiscal View'],
+            ['net-impact-regional-table', 'Regional Revenue vs County Costs'],
+            ['net-impact-consolidated-table', 'Consolidated Statement']
+        ];
+        for (const [id, title] of statements)
         {
-            const ths = Array.from(table.querySelectorAll('thead th'));
-            mainTableData.headers = ths.map(th => th.innerText.trim());
-            const trs = Array.from(table.querySelectorAll('tbody tr'));
-            mainTableData.rows = trs.map(tr =>
+            const table = document.getElementById(id)?.querySelector('table');
+            if (!table) continue;
+            mainTableData.rows.push([title, '']);
+            for (const row of table.querySelectorAll('tbody tr'))
             {
-                const cells = Array.from(tr.querySelectorAll('td'));
-                return cells.map(td => td.innerText.trim().replace(/[\n\r]+|info/g, ' '));
-            });
+                const cells = Array.from(row.querySelectorAll('td'))
+                    .map(cell => cell.innerText.trim().replace(/[\n\r]+|info/g, ' '));
+                if (cells.length) mainTableData.rows.push([cells[0], cells[1] || '']);
+            }
         }
 
         // 2. Scrape Supplementary Tables (Breakdowns)
