@@ -1,9 +1,16 @@
 @page "/"
 @using System.Text.Json
 @using SaveNEIN.Client.Models
+@inject Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider FileVersionProvider
 @{
     var clientBuildVersion = typeof(SaveNEIN.Client.App).Assembly.ManifestModule.ModuleVersionId.ToString("N");
     var request = ViewContext.HttpContext.Request;
+    var calculatorScript = FileVersionProvider.AddFileVersionToPath(request.PathBase, "/js/economics/calculator.js");
+    var mapModuleScripts = new[]
+    {
+        "/js/lib/maplibre-gl.js", "/js/lib/pmtiles.js", "/js/lib/turf.min.js",
+        "/js/lib/terra-draw.umd.js", "/js/components/maplibre-map.js"
+    }.Select(path => FileVersionProvider.AddFileVersionToPath(request.PathBase, path)).ToArray();
     var factCheckSlug = request.Path.Value?
         .Split('/', StringSplitOptions.RemoveEmptyEntries)
         .SkipWhile(segment => !segment.Equals("fact-checks", StringComparison.OrdinalIgnoreCase))
@@ -292,7 +299,7 @@
             if (window.__economicCalculatorLoad) return window.__economicCalculatorLoad;
             window.__economicCalculatorLoad = new Promise(function (resolve, reject) {
                 const script = document.createElement('script');
-                script.src = '/js/economics/calculator.js?v=20261101-sales-displacement';
+                script.src = '@calculatorScript';
                 script.onload = function () { resolve(!!window.EconomicCalculator); };
                 script.onerror = function () { reject(new Error('Calculator script could not load')); };
                 document.head.appendChild(script);
@@ -310,17 +317,11 @@
 
             // Maps are only needed on the economic-impact location page. Do not
             // make every homepage visitor download and evaluate these large files.
-            const scripts = [
-                '/js/lib/maplibre-gl.js',
-                '/js/lib/pmtiles.js',
-                '/js/lib/turf.min.js',
-                '/js/lib/terra-draw.umd.js',
-                '/js/components/maplibre-map.js'
-            ];
+            const scripts = @Html.Raw(JsonSerializer.Serialize(mapModuleScripts));
             const loadScript = function (url) {
                 return new Promise(function (resolve, reject) {
                     const script = document.createElement('script');
-                    script.src = url + '?v=20261101-sales-displacement';
+                    script.src = url;
                     script.onload = resolve;
                     script.onerror = function () { reject(new Error('Could not load ' + url)); };
                     document.head.appendChild(script);
