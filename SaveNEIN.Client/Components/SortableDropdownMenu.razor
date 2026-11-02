@@ -2,8 +2,15 @@
 @namespace SaveNEIN.Client.Components
 
 <div class="relative">
+    <select id="@(Id)-native" class="hidden" aria-hidden="true" tabindex="-1" value="@SelectedValue" @onchange="HandleNativeChanged">
+        <option value="">@Placeholder</option>
+        @foreach (var item in Items)
+        {
+            <option value="@item.Value">@item.Text @item.Badge</option>
+        }
+    </select>
     <!-- Trigger -->
-    <button @onclick="ToggleMenu" type="button" id="@(Id)-trigger"
+    <button @onclick="ToggleMenu" type="button" id="@(Id)-trigger" data-mobile-select="@(Id)-native" data-mobile-label="@Placeholder"
         class="w-full bg-slate-900/95 border border-slate-600 text-slate-100 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm hover:bg-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 group relative z-[200]">
         <span class="font-medium flex items-center gap-2">
             <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-400 transition-colors">@Icon</span>
@@ -99,6 +106,12 @@
             }
             return query;
         }
+    }
+
+    private async Task HandleNativeChanged(ChangeEventArgs args)
+    {
+        var item = Items.FirstOrDefault(item => item.Value == args.Value?.ToString());
+        if (item is not null) await Select(item);
     }
 
     private void ToggleMenu() => isOpen = !isOpen;

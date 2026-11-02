@@ -20,7 +20,8 @@
   "dependencies": {
     "@fontsource-variable/material-symbols-outlined": "^5.2.30",
     "@fontsource-variable/public-sans": "^5.2.7",
-    "browserslist": "^4.28.1"
+    "browserslist": "^4.28.1",
+    "web-haptics": "0.0.6"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

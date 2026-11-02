@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Save Northeast Indiana - Protect Our Future</title>
     <base href="/" />
 
@@ -160,6 +160,9 @@
     </div>
 
     <!-- Report-viewer libraries are loaded after first paint. -->
+    <script type="module" src="js/components/mobile-interactions.js?v=20261102-mobile"></script>
+    <!-- Optional regional startup; remove to restore national map startup. -->
+    <script src="js/components/northeast-indiana-startup.js?v=20261102-mobile" defer></script>
     <script src="js/components/app-button-depth.js" defer></script>
     <script src="js/components/fact-check-share.js" defer></script>
     <script src="js/lib/chart.js" defer></script>
@@ -191,7 +194,7 @@
             if (window.__economicCalculatorLoad) return window.__economicCalculatorLoad;
             window.__economicCalculatorLoad = new Promise(function (resolve, reject) {
                 const script = document.createElement('script');
-                script.src = '/js/economics/calculator.js?v=20261102-research-analysis';
+                script.src = '/js/economics/calculator.js?v=20261102-mobile';
                 script.onload = function () { resolve(!!window.EconomicCalculator); };
                 script.onerror = function () { reject(new Error('Calculator script could not load')); };
                 document.head.appendChild(script);
@@ -219,7 +222,7 @@
             const loadScript = function (url) {
                 return new Promise(function (resolve, reject) {
                     const script = document.createElement('script');
-                    script.src = url + '?v=20261102-research-analysis';
+                    script.src = url + '?v=20261102-mobile';
                     script.onload = resolve;
                     script.onerror = function () { reject(new Error('Could not load ' + url)); };
                     document.head.appendChild(script);

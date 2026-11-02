@@ -4637,11 +4637,11 @@ window.MapLibreImpactMap = (function ()
                 // Load state data for dropdown/UI (not for map rendering)
                 await loadStates();
 
-                // Load and render casino competitors
-                await loadCompetitors();
-
                 updateMapNavUI(1);
                 setupDrawingTools();
+                window.dispatchEvent(new CustomEvent('impact-map-ready', { detail: { api: window.MapLibreImpactMap } }));
+                // Competitor fetching must not delay the optional initial map focus.
+                await loadCompetitors();
                 console.log('MapLibreImpactMap v2.0 initialized');
 
                 // Check for offline satellite support
@@ -4920,6 +4920,7 @@ window.MapLibreImpactMap = (function ()
 
     function updateMapNavUI(step, contextName)
     {
+        window.dispatchEvent(new CustomEvent('impact-map-navigation', { detail: { step, stateFips: currentStateFips } }));
         // 1. Show/hide contextual back buttons
         const backNationalBtn = document.getElementById('map-back-national-btn');
         const backStateBtn    = document.getElementById('map-back-state-btn');

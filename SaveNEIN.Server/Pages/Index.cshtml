@@ -56,7 +56,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>@(sharedFactCheckTitle ?? "Save Northeast Indiana - Protect Our Future")</title>
     <base href="/" />
 
@@ -284,6 +284,9 @@
     <script src="js/components/slider-input-logic.js" asp-append-version="true" defer></script>
     <script src="js/components/home-header.js" asp-append-version="true" defer></script>
     <script src="js/components/fact-check-layout.js" asp-append-version="true" defer></script>
+    <script type="module" src="js/components/mobile-interactions.js" asp-append-version="true"></script>
+    @* Optional site-specific map startup. Remove this script to retain the generic national start. *@
+    <script src="js/components/northeast-indiana-startup.js" asp-append-version="true" defer></script>
     <script src="js/components/app-button-depth.js" asp-append-version="true" defer></script>
     <script src="js/components/fact-check-share.js" asp-append-version="true" defer></script>
 
