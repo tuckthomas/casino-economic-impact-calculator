@@ -47,7 +47,7 @@ test('sensitivity changes displaced sales linearly without changing nonlinear so
   }
 });
 
-test('statements count displacement once and do not allocate it to host or spillover counties', () => {
+test('host allocation is adjustable and the consolidated total is counted once', () => {
   const { calculator, render, containers } = loadCalculator();
   const model = {
     subjectCountyName: 'Allen', subjectCountyFips: '18003', subjectStateName: 'Indiana', baselineRate: 2.3,
@@ -68,11 +68,42 @@ test('statements count displacement once and do not allocate it to host or spill
   assert.match(consolidated, /24\.3MM/);
   assert.match(consolidated, /52\.7MM/);
   assert.equal((consolidated.match(/Displaced business sales/g) ?? []).length, 1);
-  assert.doesNotMatch(containers.get('net-impact-host-table').innerHTML, /Displaced business sales|24\.3MM/);
+  const host = containers.get('net-impact-host-table').innerHTML;
+  assert.match(host, /100% assumed host-area share/);
+  assert.match(host, /24\.3MM/);
+  assert.match(host, /39\.3MM/);
+  assert.match(host, /text-red-400[^>]*>\$24\.3MM/);
+  assert.match(consolidated, /Business-Sales Displacement/);
+  assert.doesNotMatch(consolidated, /Separate Business-Sales Scenario|text-amber-300/);
   assert.doesNotMatch(containers.get('net-impact-regional-table').innerHTML, /Displaced business sales|24\.3MM/);
+  model.displacement = calculator.calculateDisplacementScenario(100_000_000, 243, 77_000_000, 75);
+  render(model);
+  assert.equal(model.displacement.hostDisplacedSales, 18_225_000);
+  assert.equal(model.displacement.unallocatedDisplacedSales, 6_075_000);
+  assert.match(containers.get('net-impact-host-table').innerHTML, /75% assumed host-area share/);
+  assert.match(containers.get('net-impact-host-table').innerHTML, /33\.2MM/);
+  assert.match(containers.get('net-impact-consolidated-table').innerHTML, /52\.7MM/);
+  model.displacement = calculator.calculateDisplacementScenario(100_000_000, 243, 77_000_000, 0);
+  render(model);
+  assert.match(containers.get('net-impact-host-table').innerHTML, /0% assumed host-area share/);
+  assert.match(containers.get('net-impact-host-table').innerHTML, /15\.0MM/);
+  assert.match(containers.get('net-impact-consolidated-table').innerHTML, /52\.7MM/);
   model.displacement = calculator.calculateDisplacementScenario(100_000_000, 0, 77_000_000);
   render(model);
   assert.match(containers.get('net-impact-consolidated-table').innerHTML, /\$0 per \$1,000 AGR/);
+});
+
+test('host share rejects invalid allocations and scales host sensitivity only', () => {
+  const { calculator } = loadCalculator();
+  for (const share of [-1, 101, NaN, Infinity]) {
+    assert.throws(() => calculator.calculateDisplacementScenario(100_000_000, 243, 0, share), { name: 'RangeError' });
+  }
+  const options = { revenueShare: 0.2, baseCost: 20_000_000, anchorAgrM: 100 };
+  const before = calculator.createSensitivityNetEvaluator(options);
+  const after = calculator.createSensitivityNetEvaluator({ ...options, displacementCoefficient: 243 * 0.75 });
+  for (const agrM of [0, 25, 100, 200]) {
+    assert.ok(Math.abs(before(agrM) - after(agrM) - agrM * 1_000_000 * 0.243 * 0.75) < 1e-6);
+  }
 });
 
 test('methodology opens on a direct route and closing restores focus and scrolling', () => {

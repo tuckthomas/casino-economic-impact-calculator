@@ -595,6 +595,7 @@ window.EconomicCalculator = (function ()
             inCostServices: document.getElementById('input-cost-services'),
             inCostAbused: document.getElementById('input-cost-abused'),
             inDisplacement: document.getElementById('input-displacement'),
+            inDisplacementHostShare: document.getElementById('input-displacement-host-share'),
 
             valRevenue: document.getElementById('val-revenue'),
             valAGR: document.getElementById('val-agr'),
@@ -1011,7 +1012,7 @@ window.EconomicCalculator = (function ()
         const otherCost = Number(row && row.otherCost || 0);
         return mode === 'state'
             ? countyBalance - otherCost - Number(row?.key === 'total' ? row.displacedSales || 0 : 0)
-            : countyBalance;
+            : countyBalance - Number(row?.key === 'total' ? row.hostDisplacedSales || 0 : 0);
     }
 
     function getChartRowSubset(rows)
@@ -1081,15 +1082,18 @@ window.EconomicCalculator = (function ()
         return pivotScale * Math.pow(ratio / 1.75, 1.3);
     }
 
-    function calculateDisplacementScenario(agr, coefficientPerThousand = 243, baseBalance = 0)
+    function calculateDisplacementScenario(agr, coefficientPerThousand = 243, baseBalance = 0, hostSharePercent = 100)
     {
         if (!Number.isFinite(agr) || agr < 0 || !Number.isFinite(coefficientPerThousand) ||
-            coefficientPerThousand < 0 || coefficientPerThousand > 1000 || !Number.isFinite(baseBalance))
+            coefficientPerThousand < 0 || coefficientPerThousand > 1000 || !Number.isFinite(baseBalance) ||
+            !Number.isFinite(hostSharePercent) || hostSharePercent < 0 || hostSharePercent > 100)
         {
-            throw new RangeError('Displacement requires nonnegative finite AGR and a coefficient from $0 to $1,000.');
+            throw new RangeError('Displacement requires nonnegative finite AGR, a coefficient from $0 to $1,000 and a host share from 0% to 100%.');
         }
         const displacedSales = agr * coefficientPerThousand / 1000;
-        return { agr, coefficientPerThousand, displacedSales, baseBalance, adjustedBalance: baseBalance - displacedSales };
+        const hostDisplacedSales = displacedSales * hostSharePercent / 100;
+        return { agr, coefficientPerThousand, displacedSales, baseBalance, adjustedBalance: baseBalance - displacedSales,
+            hostSharePercent, hostDisplacedSales, unallocatedDisplacedSales: displacedSales - hostDisplacedSales };
     }
 
     function createSensitivityNetEvaluator(options)
@@ -1239,10 +1243,9 @@ window.EconomicCalculator = (function ()
         destroyChartInstance(netImpactBarChart);
         netImpactBarChart = null;
 
-        const chartRows = getChartRowSubset(model.rows)
-            .filter(row => activeNetChartMode === 'state' || row.key !== 'displacement');
+        const chartRows = getChartRowSubset(model.rows);
         const labels = chartRows.map(row => row.key === 'total'
-            ? (activeNetChartMode === 'state' ? 'Illustrative Balance Including Displaced Sales' : 'Tax Revenue Less Host Social Costs')
+            ? 'Illustrative Balance Including Displaced Sales'
             : String(row.label || ''));
         const values = chartRows.map(row => getNetValueForMode(row, activeNetChartMode));
 
@@ -1333,7 +1336,7 @@ window.EconomicCalculator = (function ()
 
         setSummaryCards('net-impact-balance-summary', [
             {
-                label: activeNetChartMode === 'state' ? 'Illustrative Sales-Adjusted Balance' : 'Host Social-Cost Balance',
+                label: 'Illustrative Sales-Adjusted Balance',
                 value: fmtSignedCompactCurrency(totalValue),
                 valueClassValue: totalValue
             },
@@ -1375,7 +1378,8 @@ window.EconomicCalculator = (function ()
         const hostNetAtAgr = createSensitivityNetEvaluator({
             revenueShare: hostRevenueShare,
             baseCost: Number(model.hostCost || 0),
-            anchorAgrM: currentAgrM
+            anchorAgrM: currentAgrM,
+            displacementCoefficient: model.hostDisplacementCoefficient
         });
         const regionalNetAtAgr = createSensitivityNetEvaluator({
             revenueShare: regionalRevenueShare,
@@ -2196,7 +2200,8 @@ window.EconomicCalculator = (function ()
         const regionalNetAfterSpillover = revenueRda - spilloverTotalCost;
         const consolidatedTotalCost = totalCost + spilloverTotalCost;
         const statewideNet = totalRevenue - consolidatedTotalCost;
-        const displacement = calculateDisplacementScenario(agrM * 1000000, Number(els.inDisplacement.value), statewideNet);
+        const displacement = calculateDisplacementScenario(agrM * 1000000, Number(els.inDisplacement.value), statewideNet,
+            Number(els.inDisplacementHostShare.value));
         lastCalculationResult.displacement = displacement;
         setTxt('displacement-example-agr', fmtM(displacement.agr));
         setTxt('displacement-example-coefficient', `$${displacement.coefficientPerThousand.toLocaleString()} per $1,000`);
@@ -2416,14 +2421,16 @@ window.EconomicCalculator = (function ()
                 otherCost: 0
             }] : []),
             {
-                key: 'displacement', kind: 'detail', label: 'Displaced Business Sales (Unallocated Scenario)',
-                revenue: 0, countyCost: 0, countyBalance: 0, otherCost: displacement.displacedSales
+                key: 'displacement', kind: 'detail', label: 'Business-Sales Displacement',
+                revenue: 0, countyCost: 0, countyBalance: -displacement.hostDisplacedSales,
+                otherCost: displacement.unallocatedDisplacedSales
             },
             {
                 key: 'total',
                 kind: 'total',
                 label: 'Tax Revenue Less Social Costs',
                 displacedSales: displacement.displacedSales,
+                hostDisplacedSales: displacement.hostDisplacedSales,
                 labelClass: 'text-white',
                 revenue: totalRevenue,
                 countyCost: totalCost,
@@ -2461,9 +2468,10 @@ window.EconomicCalculator = (function ()
             hostCost: totalCost,
             regionalCost: spilloverTotalCost,
             consolidatedCost: totalCost + otherTotals.total,
-            currentHostNet: hostLocalNetBalance,
+            currentHostNet: hostLocalNetBalance - displacement.hostDisplacedSales,
             currentRegionalNet: regionalNetAfterSpillover,
             displacementCoefficient: displacement.coefficientPerThousand,
+            hostDisplacementCoefficient: displacement.coefficientPerThousand * displacement.hostSharePercent / 100,
             currentConsolidatedNet: displacement.adjustedBalance
         });
 
@@ -2528,10 +2536,10 @@ window.EconomicCalculator = (function ()
         {
             if (percentCovered >= 100)
             {
-                els.resFooter.innerHTML = `Consolidated tax revenue covers <strong class="text-white text-lg">100%</strong> of modeled social costs, before the separate sales-displacement scenario.`;
+                els.resFooter.innerHTML = `Consolidated tax revenue covers <strong class="text-white text-lg">100%</strong> of modeled social costs, before Business-Sales Displacement.`;
             } else
             {
-                els.resFooter.innerHTML = `Consolidated tax revenue covers only <strong class="text-white text-lg">${percentCovered.toFixed(0)}%</strong> of modeled social costs, before the separate sales-displacement scenario.`;
+                els.resFooter.innerHTML = `Consolidated tax revenue covers only <strong class="text-white text-lg">${percentCovered.toFixed(0)}%</strong> of modeled social costs, before Business-Sales Displacement.`;
             }
         }
 
@@ -2631,7 +2639,8 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">`;
             analysisHTML += `<li><strong>Scenario calculator:</strong> These are deterministic results of selected inputs, not an independently validated revenue forecast, government budget, clinical forecast or complete cost-benefit assessment.</li>`;
             analysisHTML += `<li><strong>Adjustable displacement:</strong> The coefficient is $${displacement.coefficientPerThousand.toLocaleString()} per $1,000 annual AGR. At ${fmtM(displacement.agr)} AGR, this gives ${fmtM(displacement.displacedSales)} in illustrative displaced business sales. Set it to zero to exclude this scenario.</li>`;
-            analysisHTML += `<li><strong>Research reference:</strong> The $243 default follows <a href="https://walkerd.people.charleston.edu/360/BookChapters/Grinols4.pdf#page=23" target="_blank" rel="noopener noreferrer" class="underline text-blue-400">Grinols (2004), chapter 4, p. 77</a>, a historical Illinois finding for businesses 10–30 miles from casinos. Applying it here is an assumption. Sales losses are not mapped to that ring or assigned to counties.</li>`;
+            analysisHTML += `<li><strong>Research reference:</strong> The $243 default follows <a href="https://walkerd.people.charleston.edu/360/BookChapters/Grinols4.pdf#page=23" target="_blank" rel="noopener noreferrer" class="underline text-blue-400">Grinols (2004), chapter 4, p. 77</a>, a historical Illinois finding for businesses 10–30 miles from casinos. Applying it here is an assumption. Sales losses are not mapped to that ring.</li>`;
+            analysisHTML += `<li><strong>Host-area allocation assumption:</strong> ${displacement.hostSharePercent}% of displaced sales (${fmtM(displacement.hostDisplacedSales)}) is assigned to the host area. This editable share defaults to 100%; it is not a measured local distribution. The remainder (${fmtM(displacement.unallocatedDisplacedSales)}) is unallocated. The consolidated amount is counted once.</li>`;
             analysisHTML += `<li><strong>Additional balance:</strong> Sales are turnover, not profit, tax revenue or net social welfare. Subtracting displaced sales from the tax/social-cost balance is an illustrative comparison. Potential overlap with employment and other social costs is not quantified.</li>`;
             analysisHTML += `<li><strong>Excluded:</strong> Induced jobs, net value added, economic multipliers, independently modeled visitor demand, competitor revenue changes, displaced-business tax losses and statistical confidence intervals. Public and private social costs are not all government spending. Sensitivity curves impose an illustrative cost response, not a fitted local relationship.</li></ul>`;
 
@@ -2737,11 +2746,11 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Net Economic Impact Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 text-slate-300">';
             analysisHTML += isHostCountySelection
-                ? `<li><strong>Host-Area Tax Revenue vs Social Costs (${formattedCountyName}):</strong> The host statement compares ${fmtM(hostLocalRevenue)} in direct host tax revenue against ${fmtM(subjectTotalCost)} in ${formattedCountyName} social costs, producing a host net impact of ${fmtDiffM(hostLocalNetBalance)}.</li>`
+                ? `<li><strong>Host-Area Tax Revenue vs Social Costs (${formattedCountyName}):</strong> The host statement compares ${fmtM(hostLocalRevenue)} in direct host tax revenue against ${fmtM(subjectTotalCost)} in ${formattedCountyName} social costs, producing a balance of ${fmtDiffM(hostLocalNetBalance)} before business-sales displacement. Subtracting the assumed ${displacement.hostSharePercent}% host share (${fmtM(displacement.hostDisplacedSales)}) gives an illustrative host balance of ${fmtDiffM(hostLocalNetBalance - displacement.hostDisplacedSales)}.</li>`
                 : `<li><strong>Host-Area Tax Revenue vs Social Costs (${formattedCountyName}):</strong> This statement is inactive for ${formattedCountyName} because the active tax-allocation scenario does not assign host-local revenue there.</li>`;
             analysisHTML += `<li><strong>Regional Revenue vs County Costs:</strong> The regional statement offsets ${fmtM(revenueRda)} in regional revenue against ${fmtM(spilloverTotalCost)} in spillover social costs across ${otherCountiesCount} neighboring counties, producing a regional net impact of ${fmtDiffM(regionalNetAfterSpillover)}.</li>`;
             analysisHTML += `<li><strong>Tax/social-cost balance:</strong> ${fmtM(totalRevenue)} in tax revenue less ${fmtM(stateWideSocialCost)} in modeled social costs gives ${fmtDiffM(stateWideNetBalance)} before sales displacement.</li>`;
-            analysisHTML += `<li><strong>Separate sales scenario:</strong> ${fmtM(displacement.agr)} AGR × $${displacement.coefficientPerThousand.toLocaleString()} / $1,000 gives ${fmtM(displacement.displacedSales)} in displaced sales, counted once without county attribution.</li>`;
+            analysisHTML += `<li><strong>Business-Sales Displacement:</strong> ${fmtM(displacement.agr)} AGR × $${displacement.coefficientPerThousand.toLocaleString()} / $1,000 gives ${fmtM(displacement.displacedSales)} in displaced sales, counted once in the consolidated statement, including the assumed host-area share.</li>`;
             analysisHTML += `<li><strong>Illustrative balance including displaced sales:</strong> ${fmtDiffM(displacement.adjustedBalance)}. This combines different economic measures; it is not a government funding requirement or a demonstrated net welfare effect.</li>`;
 
             const hostRatioVal = (isHostCountySelection && hostLocalRevenue > 0) ? (subjectTotalCost / hostLocalRevenue) : null;
@@ -3199,6 +3208,15 @@ window.EconomicCalculator = (function ()
                     <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Host Tax Revenue Less Social Costs</td>
                     ${netCell(Number(hostNetRow && hostNetRow.countyBalance || 0))}
                 </tr>
+                ${sectionRow('Business-Sales Displacement')}
+                <tr ${stripedRowAttrs(0)}>
+                    <td class="px-3 py-2 text-slate-100 font-semibold">Displaced business sales (${escapeText(String(displacement.hostSharePercent))}% assumed host-area share)</td>
+                    ${moneyCell(displacement.hostDisplacedSales, fmtM, 'text-red-400')}
+                </tr>
+                <tr ${headerToneRowAttrs}>
+                    <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Illustrative Host Balance Including Displaced Sales</td>
+                    ${netCell(Number(hostNetRow && hostNetRow.countyBalance || 0) - displacement.hostDisplacedSales)}
+                </tr>
             </tbody>`
             : `<tbody>
                 <tr class="border-t border-slate-800/60">
@@ -3277,10 +3295,10 @@ window.EconomicCalculator = (function ()
                 <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Tax Revenue Less Modeled Social Costs</td>
                 ${netCell(statewideNet)}
             </tr>
-            ${sectionRow('Separate Business-Sales Scenario')}
+            ${sectionRow('Business-Sales Displacement')}
             <tr ${stripedRowAttrs(0)}>
-                <td class="px-3 py-2 text-slate-100 font-semibold">Displaced business sales ($${escapeText(String(displacement.coefficientPerThousand))} per $1,000 AGR; unallocated)</td>
-                ${moneyCell(displacement.displacedSales, fmtM, 'text-amber-300')}
+                <td class="px-3 py-2 text-slate-100 font-semibold">Displaced business sales ($${escapeText(String(displacement.coefficientPerThousand))} per $1,000 AGR; full amount counted once)</td>
+                ${moneyCell(displacement.displacedSales, fmtM, 'text-red-400')}
             </tr>
             <tr ${headerToneRowAttrs}>
                 <td class="px-3 py-2 text-white font-black uppercase tracking-wider">Illustrative Balance Including Displaced Sales</td>
@@ -3331,7 +3349,7 @@ window.EconomicCalculator = (function ()
         const inputs = [
             els.inRevenue, els.inAGR, els.inAllocation,
             els.inCostCrime, els.inCostBusiness, els.inCostBankruptcy,
-            els.inCostIllness, els.inCostServices, els.inCostAbused, els.inDisplacement,
+            els.inCostIllness, els.inCostServices, els.inCostAbused, els.inDisplacement, els.inDisplacementHostShare,
             els.inRate
         ];
 

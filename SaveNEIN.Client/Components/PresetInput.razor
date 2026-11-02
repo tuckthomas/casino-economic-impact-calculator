@@ -16,7 +16,7 @@
         <p class="text-sm text-slate-500 italic -mt-1">@Description</p>
     }
     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
-        <div class="lg:w-[14rem]">
+        <div class="@PresetContainerClass">
             <select id="preset-@Id" @ref="presetSelectRef"
                     value="@selectedPresetValue"
                     @onchange="HandleNativePresetChanged"
@@ -71,7 +71,7 @@
                 {
                     <span class="text-lg font-bold font-mono text-white">$</span>
                 }
-                <input @ref="textInputRef" type="text" id="val-@Id" inputmode="numeric" readonly
+                <input @ref="textInputRef" type="text" id="val-@Id" inputmode="numeric" readonly="@(!IsCustomSelected)"
                        class="sfw-slider-value-input sfw-value-readonly rounded-lg px-2 py-0.5 text-lg font-bold font-mono w-full text-right focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
                        value="@FormattedCurrentValue"
                        @onchange="HandleTextInputChanged">
@@ -101,6 +101,7 @@
     [Parameter] public string Label { get; set; } = "";
     [Parameter] public string Tooltip { get; set; } = "";
     [Parameter] public string Description { get; set; } = "";
+    [Parameter] public string PresetContainerClass { get; set; } = "lg:w-[14rem]";
 
     [Parameter] public string InputType { get; set; } = "Number"; // Default: Numerical
     [Parameter] public int DecimalPlaces { get; set; } = 2;       // Default: 2
@@ -122,6 +123,7 @@
     private string selectedPresetValue = CustomPresetValue;
     private bool desktopPresetMenuOpen;
     private bool presetSelectionInitialized;
+    private string? pendingPresetValue;
     private double currentValue;
 
     private string FormattedCurrentValue => currentValue.ToString(InputType == "Percent" ? $"F{DecimalPlaces}" : $"N{DecimalPlaces}");
@@ -251,7 +253,7 @@
         if (double.TryParse(cleaned, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
         {
             currentValue = Math.Clamp(parsed, MinValue, MaxValue);
-            selectedPresetValue = ResolvePresetSelection(currentValue);
+            if (!IsCustomSelected) selectedPresetValue = ResolvePresetSelection(currentValue);
         }
     }
 
@@ -261,12 +263,13 @@
         return Task.CompletedTask;
     }
 
-    private async Task SelectDesktopPresetAsync(string presetValue)
+    private Task SelectDesktopPresetAsync(string presetValue)
     {
         selectedPresetValue = presetValue;
         ApplyPresetToLocalValue(selectedPresetValue);
         desktopPresetMenuOpen = false;
-        await JSRuntime.InvokeVoidAsync("window.SliderInputLogic.setPresetValue", presetSelectRef, presetValue);
+        pendingPresetValue = presetValue;
+        return Task.CompletedTask;
     }
 
     private void CloseDesktopPresetMenu() => desktopPresetMenuOpen = false;
@@ -309,26 +312,29 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
-        {
-            return;
-        }
-
         try
         {
-            await JSRuntime.InvokeVoidAsync("window.SliderInputLogic.init", rangeInputRef, textInputRef, null, presetSelectRef, new
+            if (firstRender)
             {
-                min = MinValue,
-                max = MaxValue,
-                majorTickInterval = MajorTickInterval,
-                inputType = InputType,
-                decimalPlaces = DecimalPlaces,
-                markers = Markers,
-                step = Step,
-                defaultValue = Value,
-                customOptionValue = CustomPresetValue,
-                presets = PresetOptions.Select(option => new { value = option.NumericValue, label = option.Label }).ToList()
-            });
+                await JSRuntime.InvokeVoidAsync("window.SliderInputLogic.init", rangeInputRef, textInputRef, null, presetSelectRef, new
+                {
+                    min = MinValue,
+                    max = MaxValue,
+                    majorTickInterval = MajorTickInterval,
+                    inputType = InputType,
+                    decimalPlaces = DecimalPlaces,
+                    markers = Markers,
+                    step = Step,
+                    defaultValue = Value,
+                    customOptionValue = CustomPresetValue,
+                    presets = PresetOptions.Select(option => new { value = option.NumericValue, label = option.Label }).ToList()
+                });
+            }
+            if (pendingPresetValue is { } presetValue)
+            {
+                pendingPresetValue = null;
+                await JSRuntime.InvokeVoidAsync("window.SliderInputLogic.setPresetValue", presetSelectRef, presetValue);
+            }
         }
         catch (Exception ex)
         {

@@ -187,16 +187,22 @@
                         </div>
 
                         <div class="mt-10 mb-8 rounded-2xl border border-amber-700/40 bg-slate-900/60 p-5">
-                            <h3 class="mb-4 text-lg font-bold text-white">Business sales displacement</h3>
+                            <h3 class="mb-4 text-lg font-bold text-white">Business-Sales Displacement</h3>
                             <PresetInput Id="displacement" Label="Displaced business sales per $1,000 AGR" Value="243"
                                          MinValue="0" MaxValue="1000" Step="1" InputType="Currency" DecimalPlaces="0"
-                                         MajorTickInterval="250"
+                                         MajorTickInterval="250" PresetContainerClass="w-full lg:w-[24rem] lg:shrink-0"
                                          Tooltip="A sales-displacement scenario, not a cost per problem gambler. Annual displaced sales = AGR × this amount / 1,000. Set to $0 to exclude it."
                                          Markers='@(new List<SliderMarker> { new() { Label="Research reference", Value=243, TooltipDescription="Historical Illinois estimate reported by Grinols (2004), p. 77; not a Northeast Indiana calibration." }, new() { Label="Exclude", Value=0 } })' />
+                            <PresetInput Id="displacement-host-share" Label="Host-area share of displaced sales" Value="100"
+                                         MinValue="0" MaxValue="100" Step="1" InputType="Percent" DecimalPlaces="0"
+                                         MajorTickInterval="25" PresetContainerClass="w-full lg:w-[24rem] lg:shrink-0"
+                                         Tooltip="An adjustable allocation assumption, not a measured geographic share. The host statement shows this share; the consolidated statement includes the full amount once. Any remainder is unallocated."
+                                         Markers='@(new List<SliderMarker> { new() { Label="All assigned to host area", Value=100 }, new() { Label="None assigned to host area", Value=0 } })' />
                             <p class="mt-3 text-sm leading-relaxed text-slate-300">
                                 The $243 reference is reported in <a class="underline text-blue-300" href="https://walkerd.people.charleston.edu/360/BookChapters/Grinols4.pdf#page=23" target="_blank" rel="noopener noreferrer">Grinols (2004), p. 77</a>.
-                                Changing it affects the separate sales scenario, not the Grinols per-person costs or tax allocation.
-                                The consolidated statement shows it once; no county distribution is assumed. The $0–$1,000 range is an editing bound, not a confidence interval.
+                                Changing it affects business-sales displacement, not the Grinols per-person costs or tax allocation.
+                                The host-area share defaults to 100% as an assumption you can change. Any remainder is unallocated; the consolidated statement includes the full amount once.
+                                The $0–$1,000 range is an editing bound, not a confidence interval.
                             </p>
                         </div>
 
@@ -853,7 +859,7 @@
                             </div>
 
                             <p class="text-sm text-slate-400 leading-relaxed mb-6 px-4 text-left">
-                                These scenario comparisons combine public tax revenue with assumed public and private social costs; they are not government budgets. The consolidated view separately shows displaced business sales and an illustrative balance including that assumption. Sales turnover is not the same measure as profit or net social welfare, and potential overlap with other costs is not quantified.
+                                These scenario comparisons combine public tax revenue with assumed public and private social costs; they are not government budgets. The host view also shows its assumed share of business-sales displacement; the consolidated view includes the full displacement once. Their additional balances are illustrative. Sales turnover is not the same measure as profit or net social welfare, and potential overlap with other costs is not quantified.
                             </p>
 
                             <div class="economic-chart-card mt-5">
@@ -906,7 +912,7 @@
                                             Consolidated Statement
                                         </h4>
                                         <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                                            Lists tax revenue and social costs by county, followed by the separate, unallocated business-sales scenario. Its additional balance is illustrative, not a government deficit or a validated welfare estimate.
+                                            Lists tax revenue and social costs by county, followed by Business-Sales Displacement counted once in full, including the assumed host-area share. Its additional balance is illustrative, not a government deficit or a validated welfare estimate.
                                         </p>
                                     </div>
                                 </div>
@@ -924,7 +930,7 @@
                                             AGR Sensitivity Curve
                                         </h4>
                                         <p class="text-sm leading-relaxed text-slate-400">
-                                            This is an illustrative sensitivity exercise: tax brackets, an assumed nonlinear social-cost response, and linear sales displacement in the consolidated series. A crossing is not a validated revenue target.
+                                            This is an illustrative sensitivity exercise: tax brackets, an assumed nonlinear social-cost response, and linear sales displacement in the host and consolidated series. A crossing is not a validated revenue target.
                                         </p>
                                     </div>
                                     <div class="economic-chart-toggle-group" role="tablist" aria-label="Sensitivity series mode">
@@ -959,7 +965,7 @@
                                     id="res-bar"></div>
                             </div>
                             <p class="mt-4 text-center text-base text-slate-300 italic" id="res-footer">
-                                Consolidated tax revenue covers only <strong class="text-white text-lg">35%</strong> of modeled social costs, before the separate sales-displacement scenario.
+                                Consolidated tax revenue covers only <strong class="text-white text-lg">35%</strong> of modeled social costs, before Business-Sales Displacement.
                             </p>
                         </div>
 

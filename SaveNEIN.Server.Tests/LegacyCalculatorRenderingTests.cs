@@ -30,6 +30,7 @@ public sealed class LegacyCalculatorRenderingTests
         Assert.Contains("id=\"input-cost-crime\"", html);
         Assert.Contains("id=\"input-rate\"", html);
         Assert.Contains("id=\"input-displacement\"", html);
+        Assert.Contains("id=\"input-displacement-host-share\"", html);
         Assert.Contains("data-default=\"243\"", html);
         Assert.Contains("<dialog", html);
         Assert.Contains("aria-labelledby=\"methodology-title\"", html);
