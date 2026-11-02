@@ -2528,10 +2528,10 @@ window.EconomicCalculator = (function ()
         {
             if (percentCovered >= 100)
             {
-                els.resFooter.innerHTML = `Consolidated tax revenue covers <strong class="text-white text-lg">100%</strong> of statewide modeled costs.`;
+                els.resFooter.innerHTML = `Consolidated tax revenue covers <strong class="text-white text-lg">100%</strong> of modeled social costs, before the separate sales-displacement scenario.`;
             } else
             {
-                els.resFooter.innerHTML = `Consolidated tax revenue covers only <strong class="text-white text-lg">${percentCovered.toFixed(0)}%</strong> of statewide modeled costs.`;
+                els.resFooter.innerHTML = `Consolidated tax revenue covers only <strong class="text-white text-lg">${percentCovered.toFixed(0)}%</strong> of modeled social costs, before the separate sales-displacement scenario.`;
             }
         }
 
