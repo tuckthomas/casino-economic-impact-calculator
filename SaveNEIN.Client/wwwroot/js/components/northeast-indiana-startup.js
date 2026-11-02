@@ -84,7 +84,7 @@ window.NortheastIndianaMapStartup = (() => {
         apply(event.detail.api).catch(error => console.warn('Optional northeast Indiana map startup:', error));
     });
     window.addEventListener('impact-map-navigation', event => {
-        visible = event.detail.step !== 1 && event.detail.stateFips === '18';
+        visible = event.detail.step === 2 && event.detail.stateFips === '18';
         overviewContainer?.toggleAttribute('data-nein-county-overview', visible && event.detail.step === 2);
         for (const label of labels) {
             label.element.hidden = !visible;

@@ -54,6 +54,13 @@ test('optional startup selects Indiana without selecting a county and frames all
 test('back to national hides regional highlights and startup cannot force the user back to Indiana', async () => {
   const { startup, api, calls, events, layers, container } = setup();
   await startup.apply(api);
+  events.get('impact-map-navigation')({ detail: { step: 3, stateFips: '18' } });
+  assert.equal(layers.get('nein-featured-counties').layout.visibility, 'none');
+  assert.equal(layers.get('nein-featured-counties-fill').layout.visibility, 'none');
+  assert.ok(container.children.filter(element => element.className === 'nein-featured-county-name').every(element => element.hidden));
+  events.get('impact-map-navigation')({ detail: { step: 2, stateFips: '18' } });
+  assert.equal(layers.get('nein-featured-counties').layout.visibility, 'visible');
+  assert.ok(container.children.every(element => !element.hidden));
   events.get('impact-map-navigation')({ detail: { step: 1, stateFips: null } });
   assert.equal(layers.get('nein-featured-counties').layout.visibility, 'none');
   assert.ok(container.children.filter(element => element.className === 'nein-featured-county-name').every(element => element.hidden && element.style.display === 'none'));

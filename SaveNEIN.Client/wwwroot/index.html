@@ -194,7 +194,7 @@
             if (window.__economicCalculatorLoad) return window.__economicCalculatorLoad;
             window.__economicCalculatorLoad = new Promise(function (resolve, reject) {
                 const script = document.createElement('script');
-                script.src = '/js/economics/calculator.js?v=20261102-mobile';
+                script.src = '/js/economics/calculator.js?v=report-preview';
                 script.onload = function () { resolve(!!window.EconomicCalculator); };
                 script.onerror = function () { reject(new Error('Calculator script could not load')); };
                 document.head.appendChild(script);

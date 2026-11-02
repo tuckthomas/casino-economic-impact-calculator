@@ -2248,6 +2248,16 @@ window.EconomicCalculator = (function ()
         const displacement = calculateDisplacementScenario(agrM * 1000000, Number(els.inDisplacement.value), statewideNet,
             Number(els.inDisplacementHostShare.value));
         lastCalculationResult.displacement = displacement;
+        lastCalculationResult.reportContext = {
+            annualAgr: fmtM(agrM * 1000000), taxRevenue: fmtM(totalRevenue),
+            socialCosts: fmtM(consolidatedTotalCost), salesDisplacement: fmtM(displacement.displacedSales),
+            taxSocialBalance: fmtDiffM(statewideNet), illustrativeBalance: fmtDiffM(displacement.adjustedBalance),
+            baselineRate: rate.toFixed(2) + '%', baselineIncrease: baselineIncrease.toFixed(2) + ' percentage points',
+            costPerCase: '$' + costPer.toLocaleString(),
+            exposureMethod: describeExposure(lastImpactBreakdown?.exposure).footprint,
+            displacementCoefficient: '$' + displacement.coefficientPerThousand.toLocaleString() + ' per $1,000 AGR',
+            hostDisplacementShare: displacement.hostSharePercent + '%'
+        };
         const fmtVictims = Math.round(victims).toLocaleString();
         setTxt('calc-pop', Math.round(currentPop).toLocaleString());
         setTxt('calc-rate', gamblerGrowthRate.toFixed(2) + '%');

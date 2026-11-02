@@ -27,8 +27,9 @@ to the reusable map implementation are needed. The optional script exposes
 `NortheastIndianaMapStartup.apply(api)` and listens for `impact-map-ready` once per
 map instance. It selects state FIPS 18, outlines Steuben (18151), DeKalb (18033),
 and Allen (18003) in the same gold, adds a light gold fill and high-contrast county-name labels, and frames northeast Indiana without selecting a county or
-placing a casino. Generic `impact-map-navigation` events hide these highlights
-when the user returns to national selection or chooses another state. They never
+placing a casino. Generic `impact-map-navigation` events show the fill, outlines and names only in
+Indiana county selection. Selecting a county hides all three; returning to county
+selection restores them. National selection and other states also hide them. They never
 reapply the initial zoom or override the back button.
 
 The gold layers, label positions, and label styles are all defined inside that optional script. Labels allow pointer events through to the county selection beneath them.

@@ -1101,6 +1101,7 @@
                 MainTable = data.MainTable,
                 BreakdownTable = data.BreakdownTable,
                 BreakdownOtherTable = data.BreakdownOtherTable,
+                ScenarioContext = data.ScenarioContext,
                 SubjectCountyName = data.SubjectCountyName
             };
 
@@ -1132,6 +1133,7 @@
     public class ReportDataScraped
     {
         public string? SubjectCountyName { get; set; }
+        public Dictionary<string, string>? ScenarioContext { get; set; }
         public string? AnalysisText { get; set; }
         public TableData? MainTable { get; set; }
         public List<List<string>> BreakdownTable { get; set; } = new();

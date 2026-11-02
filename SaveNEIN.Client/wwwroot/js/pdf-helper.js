@@ -184,6 +184,8 @@ window.PdfHelper = {
                             }
 
                             const childText = toMarkdownText(childNode);
+                            if (tagName === 'A' && /^https?:\/\//i.test(childNode.getAttribute('href') || ''))
+                                return `[${childText}](${childNode.getAttribute('href')})`;
                             return tagName === 'STRONG' || tagName === 'B'
                                 ? `**${childText}**`
                                 : childText;
@@ -272,6 +274,7 @@ window.PdfHelper = {
 
         return {
             subjectCountyName: subjectCountyName,
+            scenarioContext: calcData?.reportContext || {},
             analysisText: formattedText,
             mainTable: mainTableData,
             breakdownTable: breakdownSubjectData,
