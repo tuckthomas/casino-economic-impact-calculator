@@ -1126,58 +1126,6 @@ window.MapLibreImpactMap = (function ()
             }
         }));
 
-        const triggerInput = document.getElementById('input-revenue');
-        if (triggerInput) triggerInput.dispatchEvent(new Event('input'));
-
-        // Asynchronously update the revenue potential alert
-        updateRevenuePotential(centerLat, centerLng);
-    }
-
-    async function updateRevenuePotential(lat, lng)
-    {
-        try
-        {
-            const res = await fetch(`/api/Revenue/potential?lat=${lat}&lon=${lng}`);
-            if (res.ok)
-            {
-                const data = await res.json();
-                const alertEl = document.getElementById('revenue-potential-alert');
-                const titleEl = document.getElementById('revenue-alert-title');
-                const msgEl = document.getElementById('revenue-alert-message');
-                const iconEl = document.getElementById('revenue-alert-icon');
-
-                if (alertEl && titleEl && msgEl)
-                {
-                    alertEl.classList.remove('hidden', 'border-red-500', 'bg-red-500/10', 'border-yellow-500', 'bg-yellow-500/10', 'border-emerald-500', 'bg-emerald-500/10');
-                    iconEl.classList.remove('text-red-400', 'text-yellow-400', 'text-emerald-400');
-
-                    titleEl.innerText = data.classification;
-                    msgEl.innerText = data.recommendationMessage;
-
-                    if (data.normalizedMultiplier >= 0.85)
-                    {
-                        alertEl.classList.add('border-emerald-500', 'bg-emerald-500/10');
-                        iconEl.classList.add('text-emerald-400');
-                        iconEl.innerText = 'check_circle';
-                    } else if (data.normalizedMultiplier >= 0.60)
-                    {
-                        alertEl.classList.add('border-yellow-500', 'bg-yellow-500/10');
-                        iconEl.classList.add('text-yellow-400');
-                        iconEl.innerText = 'warning';
-                    } else
-                    {
-                        alertEl.classList.add('border-red-500', 'bg-red-500/10');
-                        iconEl.classList.add('text-red-400');
-                        iconEl.innerText = 'error';
-                    }
-
-                    window.currentRevenueMultiplier = data.normalizedMultiplier;
-                }
-            }
-        } catch (e)
-        {
-            console.error('Failed to fetch revenue potential', e);
-        }
     }
 
     // === ISOCHRONE INTEGRATION ===
