@@ -4,6 +4,7 @@
   "description": "SaveNEIN - Economic Impact Analysis",
   "scripts": {
     "dev": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev/start-vps-development-server.ps1",
+    "dev:preview": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev/start-vps-development-server.ps1 -NoHotReload",
     "dev:start": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev/start-vps-development-server.ps1 -Background",
     "dev:stop": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev/start-vps-development-server.ps1 -Action Stop",
     "dev:restart": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev/start-vps-development-server.ps1 -Action Stop; pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev/start-vps-development-server.ps1 -Background",

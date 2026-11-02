@@ -106,16 +106,20 @@ The development site is then available at `http://localhost:5000`.
 For native local development, use the provided watcher after supplying the same private connection and Valhalla environment variables:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
+
+For browser review without managed hot-reload patches, run `pnpm run dev:preview`.
+It keeps Development mode and file watching, but rebuilds and restarts the app after edits.
+Use this mode if the WebAssembly runtime crashes during hot reload, then reload the browser tab.
 
 Other useful commands:
 
 ```bash
-npm run dev:start
-npm run dev:status
-npm run dev:stop
-npm run dev:restart
+pnpm run dev:start
+pnpm run dev:status
+pnpm run dev:stop
+pnpm run dev:restart
 dotnet test SaveNEIN.Server.Tests/SaveNEIN.Server.Tests.csproj
 ```
 

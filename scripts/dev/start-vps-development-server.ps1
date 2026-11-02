@@ -2,7 +2,8 @@
 param(
     [ValidateSet('Start', 'Stop', 'Status')]
     [string]$Action = 'Start',
-    [switch]$Background
+    [switch]$Background,
+    [switch]$NoHotReload
 )
 
 $ErrorActionPreference = 'Stop'
@@ -111,7 +112,8 @@ switch ($Action) {
 
 Assert-PortAvailable
 $environment = Get-DevEnvironment
-$arguments = 'watch run --project SaveNEIN.Server/SaveNEIN.Server.csproj --urls http://0.0.0.0:5000'
+$watchCommand = if ($NoHotReload) { 'watch --no-hot-reload' } else { 'watch' }
+$arguments = "$watchCommand run --project SaveNEIN.Server/SaveNEIN.Server.csproj --urls http://0.0.0.0:5000"
 
 if (-not $Background) {
     foreach ($entry in $environment.GetEnumerator()) {
