@@ -2,26 +2,37 @@
  * The reusable map only publishes ready/navigation events; it contains no regional defaults.
  */
 window.NortheastIndianaMapStartup = (() => {
-    const counties = ['18151', '18033', '18003']; // Steuben, DeKalb, Allen
-    const colors = ['match', ['get', 'geoid'], '18151', '#fb923c', '18033', '#38bdf8', '18003', '#c4b5fd', '#ffffff'];
+    const featuredCounties = [
+        { fips: '18151', name: 'Steuben County', labelPosition: [-85.0024, 41.6435] },
+        { fips: '18033', name: 'DeKalb County', labelPosition: [-85.0000, 41.3974] },
+        { fips: '18003', name: 'Allen County', labelPosition: [-85.0666, 41.0919] }
+    ];
+    const counties = featuredCounties.map(county => county.fips);
+    const gold = '#fbbf24';
     const initialized = new WeakSet();
     let activeMap = null;
     let visible = true;
     let restoring = false;
-    let legend = null;
+    let labels = [];
 
     function restoreHighlights() {
         if (!activeMap?.getSource('census-vector') || restoring) return;
         restoring = true;
         try {
+            const filter = ['in', ['get', 'geoid'], ['literal', counties]];
+            if (!activeMap.getLayer('nein-featured-counties-fill')) activeMap.addLayer({
+                id: 'nein-featured-counties-fill', type: 'fill', source: 'census-vector', 'source-layer': 'counties',
+                filter, paint: { 'fill-color': gold, 'fill-opacity': 0.16 }
+            });
             if (!activeMap.getLayer('nein-featured-counties')) activeMap.addLayer({
                 id: 'nein-featured-counties', type: 'line', source: 'census-vector', 'source-layer': 'counties',
-                filter: ['in', ['get', 'geoid'], ['literal', counties]],
-                paint: { 'line-color': colors, 'line-width': 3, 'line-opacity': 0.95 }
+                filter, paint: { 'line-color': gold, 'line-width': 3, 'line-opacity': 1 }
             });
             const visibility = visible ? 'visible' : 'none';
-            if (activeMap.getLayoutProperty('nein-featured-counties', 'visibility') !== visibility)
-                activeMap.setLayoutProperty('nein-featured-counties', 'visibility', visibility);
+            for (const id of ['nein-featured-counties-fill', 'nein-featured-counties']) {
+                if (activeMap.getLayoutProperty(id, 'visibility') !== visibility)
+                    activeMap.setLayoutProperty(id, 'visibility', visibility);
+            }
         } finally { restoring = false; }
     }
 
@@ -30,24 +41,30 @@ window.NortheastIndianaMapStartup = (() => {
         if (!map || initialized.has(map)) return;
         initialized.add(map);
         if (activeMap) activeMap.off('styledata', restoreHighlights);
-        legend?.remove();
+        for (const label of labels) label.marker.remove();
+        labels = [];
         activeMap = map;
         visible = true;
         await api.loadState('18');
         restoreHighlights();
         map.on('styledata', restoreHighlights);
-        legend = document.createElement('div');
-        legend.className = 'sfw-map-focus-legend';
-        legend.setAttribute('aria-label', 'Highlighted northeast Indiana counties');
-        for (const [name, color] of [['Steuben', '#fb923c'], ['DeKalb', '#38bdf8'], ['Allen', '#c4b5fd']]) {
-            const label = document.createElement('span');
-            const swatch = document.createElement('i');
-            swatch.style.backgroundColor = color;
-            swatch.setAttribute('aria-hidden', 'true');
-            label.append(swatch, document.createTextNode(name));
-            legend.append(label);
-        }
-        map.getContainer().append(legend);
+        // DOM labels avoid a dependency on the selected basemap's glyph service.
+        // Their style and placement live entirely in this removable startup function.
+        labels = featuredCounties.map(county => {
+            const element = document.createElement('div');
+            element.textContent = county.name;
+            element.setAttribute('aria-label', county.name);
+            element.className = 'nein-featured-county-name';
+            Object.assign(element.style, {
+                color: '#0f172a', backgroundColor: '#fef3c7', border: `1px solid ${gold}`,
+                borderRadius: '6px', padding: '5px 8px', whiteSpace: 'nowrap',
+                font: '700 15px/1.2 "Public Sans Variable", sans-serif',
+                boxShadow: '0 1px 5px rgba(0,0,0,0.45)', pointerEvents: 'none'
+            });
+            const marker = new maplibregl.Marker({ element, anchor: 'center' })
+                .setLngLat(county.labelPosition).addTo(map);
+            return { marker, element };
+        });
         map.fitBounds([[-85.72, 40.88], [-84.72, 41.83]], {
             padding: { top: 55, bottom: 55, left: 30, right: 30 }, duration: 0
         });
@@ -58,7 +75,10 @@ window.NortheastIndianaMapStartup = (() => {
     });
     window.addEventListener('impact-map-navigation', event => {
         visible = event.detail.step !== 1 && event.detail.stateFips === '18';
-        if (legend) legend.hidden = !visible;
+        for (const label of labels) {
+            label.element.hidden = !visible;
+            label.element.style.display = visible ? 'block' : 'none';
+        }
         restoreHighlights();
     });
     return { apply };

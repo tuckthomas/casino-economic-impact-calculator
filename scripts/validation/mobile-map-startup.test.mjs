@@ -19,7 +19,13 @@ function setup() {
     fitBounds: (...args) => calls.push(['bounds', ...args])
   };
   const api = { getMap: () => map, loadState: async fips => calls.push(['state', fips]) };
-  const context = { window: { addEventListener: (name, handler) => events.set(name, handler) }, console,
+  class Marker {
+    constructor({ element }) { this.element = element; }
+    setLngLat(coordinates) { this.coordinates = coordinates; return this; }
+    addTo(map) { map.getContainer().append(this.element); calls.push(['label', this]); return this; }
+    remove() {}
+  }
+  const context = { maplibregl: { Marker }, window: { addEventListener: (name, handler) => events.set(name, handler) }, console,
     document: { createElement: element, createTextNode: text => text } };
   vm.runInNewContext(readFileSync(new URL('../../SaveNEIN.Client/wwwroot/js/components/northeast-indiana-startup.js', import.meta.url), 'utf8'), context);
   return { startup: context.window.NortheastIndianaMapStartup, api, calls, events, layers, container, mapEvents };
@@ -34,7 +40,14 @@ test('optional startup selects Indiana without selecting a county and frames all
   assert.equal(layer.layout.visibility, 'visible');
   assert.equal(layer.paint['line-width'], 3);
   assert.ok(calls.some(call => call[0] === 'bounds'));
-  assert.equal(container.children.length, 1);
+  assert.equal(layer.paint['line-color'], '#fbbf24');
+  const fill = layers.get('nein-featured-counties-fill');
+  assert.equal(fill.paint['fill-color'], '#fbbf24');
+  assert.equal(fill.paint['fill-opacity'], 0.16);
+  assert.equal(container.children.length, 3);
+  assert.deepEqual(container.children.map(element => element.textContent), ['Steuben County', 'DeKalb County', 'Allen County']);
+  assert.ok(container.children.every(element => element.style.pointerEvents === 'none'));
+  assert.ok(container.children.every(element => element.style.color === '#0f172a' && element.style.backgroundColor === '#fef3c7'));
 });
 
 test('back to national hides regional highlights and startup cannot force the user back to Indiana', async () => {
@@ -42,7 +55,8 @@ test('back to national hides regional highlights and startup cannot force the us
   await startup.apply(api);
   events.get('impact-map-navigation')({ detail: { step: 1, stateFips: null } });
   assert.equal(layers.get('nein-featured-counties').layout.visibility, 'none');
-  assert.equal(container.children[0].hidden, true);
+  assert.ok(container.children.every(element => element.hidden && element.style.display === 'none'));
+  assert.equal(layers.get('nein-featured-counties-fill').layout.visibility, 'none');
   await startup.apply(api);
   assert.equal(calls.filter(call => call[0] === 'state').length, 1);
   assert.equal(calls.filter(call => call[0] === 'bounds').length, 1);
@@ -50,6 +64,8 @@ test('back to national hides regional highlights and startup cannot force the us
   assert.equal(layers.get('nein-featured-counties').layout.visibility, 'none');
   events.get('impact-map-navigation')({ detail: { step: 2, stateFips: '18' } });
   assert.equal(layers.get('nein-featured-counties').layout.visibility, 'visible');
+  assert.equal(layers.get('nein-featured-counties-fill').layout.visibility, 'visible');
+  assert.ok(container.children.every(element => !element.hidden));
 });
 
 test('style restoration keeps the county outlines without resetting the view or selecting Indiana again', async () => {
