@@ -2203,9 +2203,6 @@ window.EconomicCalculator = (function ()
         const displacement = calculateDisplacementScenario(agrM * 1000000, Number(els.inDisplacement.value), statewideNet,
             Number(els.inDisplacementHostShare.value));
         lastCalculationResult.displacement = displacement;
-        setTxt('displacement-example-agr', fmtM(displacement.agr));
-        setTxt('displacement-example-coefficient', `$${displacement.coefficientPerThousand.toLocaleString()} per $1,000`);
-        setTxt('displacement-example-sales', fmtM(displacement.displacedSales));
         const fmtVictims = Math.round(victims).toLocaleString();
         setTxt('calc-pop', Math.round(currentPop).toLocaleString());
         setTxt('calc-rate', gamblerGrowthRate.toFixed(2) + '%');
@@ -2638,10 +2635,6 @@ window.EconomicCalculator = (function ()
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Model Scope and Limitations</div>`;
             analysisHTML += `<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">`;
             analysisHTML += `<li><strong>Scenario calculator:</strong> These are deterministic results of selected inputs, not an independently validated revenue forecast, government budget, clinical forecast or complete cost-benefit assessment.</li>`;
-            analysisHTML += `<li><strong>Adjustable displacement:</strong> The coefficient is $${displacement.coefficientPerThousand.toLocaleString()} per $1,000 annual AGR. At ${fmtM(displacement.agr)} AGR, this gives ${fmtM(displacement.displacedSales)} in illustrative displaced business sales. Set it to zero to exclude this scenario.</li>`;
-            analysisHTML += `<li><strong>Research reference:</strong> The $243 default follows <a href="https://walkerd.people.charleston.edu/360/BookChapters/Grinols4.pdf#page=23" target="_blank" rel="noopener noreferrer" class="underline text-blue-400">Grinols (2004), chapter 4, p. 77</a>, a historical Illinois finding for businesses 10–30 miles from casinos. Applying it here is an assumption. Sales losses are not mapped to that ring.</li>`;
-            analysisHTML += `<li><strong>Host-area allocation assumption:</strong> ${displacement.hostSharePercent}% of displaced sales (${fmtM(displacement.hostDisplacedSales)}) is assigned to the host area. This editable share defaults to 100%; it is not a measured local distribution. The remainder (${fmtM(displacement.unallocatedDisplacedSales)}) is unallocated. The consolidated amount is counted once.</li>`;
-            analysisHTML += `<li><strong>Additional balance:</strong> Sales are turnover, not profit, tax revenue or net social welfare. Subtracting displaced sales from the tax/social-cost balance is an illustrative comparison. Potential overlap with employment and other social costs is not quantified.</li>`;
             analysisHTML += `<li><strong>Excluded:</strong> Induced jobs, net value added, economic multipliers, independently modeled visitor demand, competitor revenue changes, displaced-business tax losses and statistical confidence intervals. Public and private social costs are not all government spending. Sensitivity curves impose an illustrative cost response, not a fitted local relationship.</li></ul>`;
 
             // 2. Assumptions (Sub-header + Bullets)
@@ -2742,7 +2735,18 @@ window.EconomicCalculator = (function ()
 
             analysisHTML += '</ul>';
 
-            // C. NET ECONOMIC IMPACT
+            // C. SUBSTITUTION EFFECT
+            analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Substitution Effect Analysis</div>`;
+            analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
+            analysisHTML += `<li><strong>Substitution effect:</strong> Casino spending may replace purchases at other businesses instead of adding new local demand. This model explores that possibility through an adjustable sales-displacement assumption; it does not trace actual household spending or establish a measured local effect.</li>`;
+            analysisHTML += `<li><strong>Adjustable displacement:</strong> The coefficient is $${displacement.coefficientPerThousand.toLocaleString()} per $1,000 annual AGR. The default research reference is $243; set the coefficient to zero to exclude business-sales displacement.</li>`;
+            analysisHTML += `<li><strong>Business-Sales Displacement:</strong> ${fmtM(displacement.agr)} AGR × $${displacement.coefficientPerThousand.toLocaleString()} / $1,000 gives ${fmtM(displacement.displacedSales)} in displaced sales, counted once in the consolidated statement, including the assumed host-area share.</li>`;
+            analysisHTML += `<li><strong>Research reference:</strong> The $243 default follows <a href="https://walkerd.people.charleston.edu/360/BookChapters/Grinols4.pdf#page=23" target="_blank" rel="noopener noreferrer" class="underline text-blue-400">Grinols (2004), chapter 4, p. 77</a>, a historical Illinois finding for businesses 10–30 miles from casinos. Applying it here is an assumption. Sales losses are not mapped to that ring.</li>`;
+            analysisHTML += `<li><strong>Host-area allocation assumption:</strong> ${displacement.hostSharePercent}% of displaced sales (${fmtM(displacement.hostDisplacedSales)}) is assigned to the host area. This editable share defaults to 100%; it is not a measured local distribution. The remainder (${fmtM(displacement.unallocatedDisplacedSales)}) is unallocated. The consolidated amount is counted once.</li>`;
+            analysisHTML += `<li><strong>Interpretation and limits:</strong> Sales are turnover, not profit, tax revenue or net social welfare. Subtracting displaced sales from the tax/social-cost balance is an illustrative comparison. Potential overlap with employment and other social costs is not quantified.</li>`;
+            analysisHTML += '</ul>';
+
+            // D. NET ECONOMIC IMPACT
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Net Economic Impact Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 text-slate-300">';
             analysisHTML += isHostCountySelection
@@ -2750,7 +2754,6 @@ window.EconomicCalculator = (function ()
                 : `<li><strong>Host-Area Tax Revenue vs Social Costs (${formattedCountyName}):</strong> This statement is inactive for ${formattedCountyName} because the active tax-allocation scenario does not assign host-local revenue there.</li>`;
             analysisHTML += `<li><strong>Regional Revenue vs County Costs:</strong> The regional statement offsets ${fmtM(revenueRda)} in regional revenue against ${fmtM(spilloverTotalCost)} in spillover social costs across ${otherCountiesCount} neighboring counties, producing a regional net impact of ${fmtDiffM(regionalNetAfterSpillover)}.</li>`;
             analysisHTML += `<li><strong>Tax/social-cost balance:</strong> ${fmtM(totalRevenue)} in tax revenue less ${fmtM(stateWideSocialCost)} in modeled social costs gives ${fmtDiffM(stateWideNetBalance)} before sales displacement.</li>`;
-            analysisHTML += `<li><strong>Business-Sales Displacement:</strong> ${fmtM(displacement.agr)} AGR × $${displacement.coefficientPerThousand.toLocaleString()} / $1,000 gives ${fmtM(displacement.displacedSales)} in displaced sales, counted once in the consolidated statement, including the assumed host-area share.</li>`;
             analysisHTML += `<li><strong>Illustrative balance including displaced sales:</strong> ${fmtDiffM(displacement.adjustedBalance)}. This combines different economic measures; it is not a government funding requirement or a demonstrated net welfare effect.</li>`;
 
             const hostRatioVal = (isHostCountySelection && hostLocalRevenue > 0) ? (subjectTotalCost / hostLocalRevenue) : null;
