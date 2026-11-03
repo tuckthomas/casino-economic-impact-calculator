@@ -1791,6 +1791,8 @@ window.EconomicCalculator = (function ()
 
         // 0. Check if location is selected
         const hasLocation = !!(lastImpactBreakdown && lastImpactBreakdown.countyFips);
+        window.LocalEconomy?.update(hasLocation ? String(lastImpactBreakdown.countyFips) : '',
+            hasLocation ? String(lastImpactBreakdown.countyName || 'Selected county').replace(/ County$/i, '') + ' County' : '');
 
         // Toggle Visibility for Net Impact Table
         const netImpactEmpty = document.getElementById('net-impact-empty-state');
@@ -2796,6 +2798,7 @@ window.EconomicCalculator = (function ()
             analysisHTML += '</ul>';
 
             // B. SOCIAL COSTS
+            analysisHTML += window.LocalEconomy?.analysisHtml() || '';
             analysisHTML += `<div class="font-bold text-white mb-2 uppercase tracking-wide text-sm underline">Social Cost Analysis</div>`;
             analysisHTML += '<ul class="list-disc pl-8 space-y-3 mb-4 text-slate-300">';
             analysisHTML += `<li><strong>Data Source:</strong> Baseline social cost valuations follow the research framework summarized by <a href="https://www.senate.ga.gov/committees/Documents/HiddenCostsofGam.pdf" target="_blank" class="underline text-blue-400 hover:text-blue-300 transition-colors">Grinols</a> (2011), with the calculator’s default values inflation-adjusted to a 2025 price basis and rounded by category. These are research-derived reference assumptions applied locally, rather than a new local cost survey. The selected values and any departures from those references are documented below.</li>`;

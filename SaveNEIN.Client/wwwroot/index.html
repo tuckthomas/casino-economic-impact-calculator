@@ -172,7 +172,9 @@
     <!-- Custom Modules -->
     <script src="js/components/slot-machine.js" defer></script>
     <script src="js/components/adaptive-toast.js" defer></script>
-    <script src="js/pdf-helper.js?v=20261101-sales-displacement" defer></script>
+    <link href="css/local-economy.css?v=20261102-industry-workforce" rel="stylesheet" />
+    <script src="js/economics/local-economy.js?v=20261102-industry-workforce" defer></script>
+    <script src="js/pdf-helper.js?v=20261102-industry-workforce" defer></script>
     <script src="js/components/legislators.js" defer></script>
     <script src="js/components/image-modal.js" defer></script>
     <script src="js/components/modals.js?v=20261101-sales-displacement" defer></script>
@@ -194,7 +196,7 @@
             if (window.__economicCalculatorLoad) return window.__economicCalculatorLoad;
             window.__economicCalculatorLoad = new Promise(function (resolve, reject) {
                 const script = document.createElement('script');
-                script.src = '/js/economics/calculator.js?v=report-preview';
+                script.src = '/js/economics/calculator.js?v=20261102-industry-workforce';
                 script.onload = function () { resolve(!!window.EconomicCalculator); };
                 script.onerror = function () { reject(new Error('Calculator script could not load')); };
                 document.head.appendChild(script);

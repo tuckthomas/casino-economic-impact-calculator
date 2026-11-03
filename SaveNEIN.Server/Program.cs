@@ -17,6 +17,7 @@ builder.WebHost.UseStaticWebAssets();
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<SaveNEIN.Server.Services.LocalEconomyProfileService>(client => client.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddRazorPages();
 // Render the shared homepage hero before the WebAssembly runtime downloads.
 builder.Services.AddRazorComponents();

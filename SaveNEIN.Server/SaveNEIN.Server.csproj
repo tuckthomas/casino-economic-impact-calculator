@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="Data\PublicEconomy\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="..\SaveNEIN.Shared\SaveNEIN.Shared.csproj" />
     <ProjectReference Include="..\SaveNEIN.Client\SaveNEIN.Client.csproj" />
   </ItemGroup>

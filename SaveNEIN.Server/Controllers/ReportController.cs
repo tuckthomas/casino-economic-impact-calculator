@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SaveNEIN.Server.Services.Reports;
+using SaveNEIN.Shared;
 
 namespace SaveNEIN.Server.Controllers
 {
@@ -40,6 +41,7 @@ namespace SaveNEIN.Server.Controllers
     {
         public string? SubjectCountyName { get; set; }
         public Dictionary<string, string>? ScenarioContext { get; set; }
+        public LocalEconomyReport? LocalEconomy { get; set; }
         public string? MapImageBase64 { get; set; }
         public string? AnalysisText { get; set; }
         public TableData? MainTable { get; set; }

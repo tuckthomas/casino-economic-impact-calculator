@@ -9,7 +9,7 @@ using SaveNEIN.Server.Controllers;
 namespace SaveNEIN.Server.Services.Reports;
 
 /// <summary>Presentation of the browser calculator's supplied results, without recalculating the model.</summary>
-public static class LegacyEconomicReportDocument
+public static partial class LegacyEconomicReportDocument
 {
     private const string Navy = "#101E32";
     private const string NavyLight = "#1C304B";
@@ -34,6 +34,8 @@ public static class LegacyEconomicReportDocument
         var sections = SplitNarrative(request.AnalysisText ?? "");
         var map = DecodeMap(request.MapImageBase64);
         var context = request.ScenarioContext ?? [];
+        var hasEconomy = request.LocalEconomy?.Profile is not null;
+        var statementNumber = hasEconomy ? 5 : 3;
         string Value(string key) => context.GetValueOrDefault(key, "Not supplied");
 
         var document = Document.Create(document =>
@@ -104,9 +106,14 @@ public static class LegacyEconomicReportDocument
                 column.Item().PaddingTop(12).PaddingBottom(6).Text("Report guide").FontSize(15).Bold().FontColor(Navy);
                 ContentsRow(column, "01", "Scenario overview", "overview");
                 ContentsRow(column, "02", "Geographic context", "geography");
-                for (var i = 0; i < statements.Count; i++) ContentsRow(column, $"{StatementScope(statements[i].Title, i) + 3:00}", ShortTitle(statements[i].Title), $"statement-{i}");
-                ContentsRow(column, "06", "Social-cost detail", "cost-detail");
-                if (sections.Count > 0) ContentsRow(column, "07", "Methodology and written analysis", "analysis-0");
+                if (hasEconomy)
+                {
+                    ContentsRow(column, "03", "Industry composition and trends", "industry");
+                    ContentsRow(column, "04", "Workforce and recruitment", "workforce");
+                }
+                for (var i = 0; i < statements.Count; i++) ContentsRow(column, $"{StatementScope(statements[i].Title, i) + statementNumber:00}", ShortTitle(statements[i].Title), $"statement-{i}");
+                ContentsRow(column, $"{statementNumber + 3:00}", "Social-cost detail", "cost-detail");
+                if (sections.Count > 0) ContentsRow(column, $"{statementNumber + 4:00}", "Methodology and written analysis", "analysis-0");
             });
 
             AddPage(document, "Geographic context", county, darkLogo, generatedAt, false, column =>
@@ -148,6 +155,8 @@ public static class LegacyEconomicReportDocument
                 Note(column, "Geographic interpretation", "The map is a spatial model of exposure, not observed patron behavior. The written analysis explains road-network routing, population allocation, band construction and same-state coverage. Geographic approximations and source-data vintage affect the estimates.");
             });
 
+            AddLocalEconomyPages(document, request.LocalEconomy, county, darkLogo, generatedAt);
+
             for (var statementIndex = 0; statementIndex < statements.Count; statementIndex++)
             {
                 var index = statementIndex;
@@ -160,7 +169,7 @@ public static class LegacyEconomicReportDocument
                     AddPage(document, ShortTitle(statement.Title), county, darkLogo, generatedAt, false, column =>
                     {
                         if (part == 0) column.Item().Section($"statement-{index}");
-                        Chapter(column, $"{scope + 3:00}", ShortTitle(statement.Title),
+                        Chapter(column, $"{scope + statementNumber:00}", ShortTitle(statement.Title),
                             part == 0 ? StatementDescription(scope) : $"Continued - part {part + 1} of {chunks.Count}. Column headings are repeated; rows stay intact.");
                         if (part > 0) column.Item().PaddingBottom(8).Text($"{county} / {statement.Title}").FontSize(9).SemiBold().FontColor(Muted);
                         column.Item().ShowEntire().Element(container => Ledger(container, rows));
@@ -183,7 +192,7 @@ public static class LegacyEconomicReportDocument
                 AddPage(document, "Social-cost detail", county, darkLogo, generatedAt, true, column =>
                 {
                     if (part == 0) column.Item().Section("cost-detail");
-                    Chapter(column, "06", "Social-cost detail", part == 0
+                    Chapter(column, $"{statementNumber + 3:00}", "Social-cost detail", part == 0
                         ? "EXHIBIT 2  |  Annual social costs by county and category. Dollar figures in millions (MM)."
                         : $"EXHIBIT 2 (continued)  |  Part {part + 1} of {costChunks.Length}. Each county remains on a single row.");
                     column.Item().ShowEntire().Table(table =>
@@ -221,7 +230,7 @@ public static class LegacyEconomicReportDocument
                         opening = section.Lines.FirstOrDefault()?.Length > 2200 ? opening.EnsureSpace(220) : opening.ShowEntire();
                         opening.Column(introduction =>
                         {
-                            Chapter(introduction, $"07.{index + 1:00}", section.Title,
+                            Chapter(introduction, $"{statementNumber + 4:00}.{index + 1:00}", section.Title,
                                 index == 0 ? "Automated analysis of the selected scenario. Research assumptions, settings and interpretation are retained in full." : "");
                             if (section.Lines.Count > 0) NarrativeLine(introduction, section.Lines[0]);
                         });

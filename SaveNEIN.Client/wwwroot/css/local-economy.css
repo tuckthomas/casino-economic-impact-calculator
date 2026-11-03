@@ -1,0 +1,31 @@
+.local-economy-panel { color: #cbd5e1; }
+.local-economy-panel h3 { font-size: 1.5rem; font-weight: 800; color: #f8fafc; }
+.local-economy-panel h4 { margin-top: 2rem; margin-bottom: .7rem; font-size: 1.2rem; font-weight: 750; color: #f8fafc; }
+.local-economy-panel p { font-size: .95rem; line-height: 1.65; margin: .7rem 0; }
+.local-economy-panel .local-economy-eyebrow { font-size: .875rem; font-weight: 750; text-transform: uppercase; letter-spacing: .12em; color: #d8c29d; }
+.local-economy-subtitle { color: #94a3b8; }
+.local-economy-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 1rem; margin-top: 1.25rem; }
+.local-economy-metrics > div { padding: 1rem; background: #172438; border-top: 2px solid #b08d57; border-radius: .4rem; }
+.local-economy-metrics span { display: block; color: #cbd5e1; font-size: .875rem; }
+.local-economy-metrics strong { display: block; color: #f8fafc; font-size: 1.3rem; margin-top: .5rem; }
+.local-economy-table-scroll { overflow-x: auto; max-width: 100%; border: 1px solid #334155; border-radius: .6rem; margin: 1rem 0; }
+.local-economy-panel table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.local-economy-panel caption { text-align: left; padding: .9rem 1rem; background: #172438; color: #d8c29d; font-weight: 700; }
+.local-economy-panel th, .local-economy-panel td { padding: .75rem; border-bottom: 1px solid #334155; text-align: right; vertical-align: top; }
+.local-economy-panel th:first-child { text-align: left; min-width: 13rem; }
+.local-economy-panel thead th { color: #f8fafc; background: #1e293b; white-space: nowrap; }
+.local-economy-panel tbody th { font-weight: 600; }
+.local-economy-panel tbody tr:nth-child(even) { background: #172438; }
+.local-economy-code { display: block; color: #94a3b8; font-size: .875rem; margin-top: .2rem; }
+.local-economy-panel a { color: #93c5fd; text-decoration: underline; text-underline-offset: .2em; overflow-wrap: anywhere; }
+.local-economy-sources { padding: 1rem; border: 1px solid #334155; border-radius: .6rem; margin: 1.5rem 0; }
+.local-economy-sources summary { cursor: pointer; font-weight: 700; color: #e2e8f0; font-size: .95rem; }
+.local-economy-sources li { margin: .6rem 0; font-size: .875rem; }
+.local-hiring-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; margin-top: 1.25rem; }
+.local-hiring-grid label, .local-hiring-support { display: block; font-size: .95rem; color: #e2e8f0; }
+.local-economy-panel input, .local-economy-panel textarea { display: block; width: 100%; min-height: 48px; margin-top: .5rem; border: 1px solid #64748b; border-radius: .5rem; padding: .75rem; background: #0f172a; color: #f8fafc; font-size: 1rem; }
+.local-economy-panel :focus-visible { outline: 2px solid #93c5fd; outline-offset: 3px; }
+.local-hiring-support { margin-top: 1.25rem; }
+.local-economy-panel .local-economy-error { color: #fca5a5; font-weight: 600; }
+@media (max-width: 900px) { .local-economy-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 540px) { .local-hiring-grid, .local-economy-metrics { grid-template-columns: minmax(0,1fr); } }

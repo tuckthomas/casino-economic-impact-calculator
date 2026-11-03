@@ -275,6 +275,7 @@ window.PdfHelper = {
         return {
             subjectCountyName: subjectCountyName,
             scenarioContext: calcData?.reportContext || {},
+            localEconomy: window.LocalEconomy?.getReport() || null,
             analysisText: formattedText,
             mainTable: mainTableData,
             breakdownTable: breakdownSubjectData,

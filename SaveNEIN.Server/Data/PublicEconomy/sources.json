@@ -1,0 +1,126 @@
+{
+  "builtAtUtc": "2026-11-03T03:37:27.858293+00:00",
+  "sources": [
+    {
+      "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b23025.dat",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:19.257010+00:00",
+      "sha256": "264a5bd9367c5f58d9773fa4966fa94fe1e02f9c7106bc2ab39168d6de7c3e4a"
+    },
+    {
+      "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b08007.dat",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:33.154354+00:00",
+      "sha256": "7b4cd088de391cad29317f8621098e3e4ef8e921399077fa2e9b4fb2c06d7704"
+    },
+    {
+      "url": "https://data.bls.gov/cew/data/api/2025/a/area/18151.csv",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:36.173263+00:00",
+      "sha256": "52769c2dc97160806138c277798d24ee82021925b78590ab3f72ca92009edce4"
+    },
+    {
+      "url": "https://data.bls.gov/cew/data/api/2020/a/area/18151.csv",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:36.148751+00:00",
+      "sha256": "8ff6a367b7cd257bc7c919e0a767fb6605d9bc09671b0ab84566c2fa85eb8713"
+    },
+    {
+      "url": "https://data.bls.gov/cew/data/api/2015/a/area/18151.csv",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:36.260271+00:00",
+      "sha256": "99216c9db84374be63ba48e9df609417d0d65a0a1e836b8198d10e1e6fae6648"
+    },
+    {
+      "url": "https://data.bls.gov/cew/data/api/2025/a/area/18033.csv",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:36.175264+00:00",
+      "sha256": "73759c6613f1a12b9675e4c96db0c90473d3d49035e0dc2505eb31e291820a47"
+    },
+    {
+      "url": "https://data.bls.gov/cew/data/api/2020/a/area/18033.csv",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:36.339293+00:00",
+      "sha256": "07ad047b9a753145fd9c8699b856a0970151257cb30a23845fdcfc29eeef0e2c"
+    },
+    {
+      "url": "https://data.bls.gov/cew/data/api/2015/a/area/18033.csv",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:36.311293+00:00",
+      "sha256": "5dcffc8b635f9a7542c3139728c4ada5711de4608837bc561a7b5f470a596907"
+    },
+    {
+      "url": "https://data.bls.gov/cew/data/api/2025/a/area/18003.csv",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:36.323294+00:00",
+      "sha256": "6bf07cd761a113a399229e37b4d174b85236253106e7c96461f9f395a9ce94df"
+    },
+    {
+      "url": "https://data.bls.gov/cew/data/api/2020/a/area/18003.csv",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:36.477317+00:00",
+      "sha256": "eba328d806de5e1700ac2a69e41689731521b392995e7ae2face473f9402b36c"
+    },
+    {
+      "url": "https://data.bls.gov/cew/data/api/2015/a/area/18003.csv",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:36.477317+00:00",
+      "sha256": "3aad21e4d7ad8877d17f103c1f0e894523f702e85a996fd3e887f23ad65da0a2"
+    },
+    {
+      "url": "https://data.bls.gov/cew/data/api/2025/a/area/US000.csv",
+      "requestBody": null,
+      "retrievedAtUtc": "2026-11-03T03:19:36.568823+00:00",
+      "sha256": "0b5528f70d66a84ff9729691f365c667a09f854f0af3d841bdd660ef3cb01811"
+    },
+    {
+      "url": "https://data.bls.gov/OESServices/prefilter/table",
+      "requestBody": {
+        "areaCode": "1800001",
+        "industryCode": "000000",
+        "year": "2025",
+        "tableSuffix": "pub",
+        "userId": "",
+        "pwd": ""
+      },
+      "retrievedAtUtc": "2026-11-03T03:21:41.579286+00:00",
+      "sha256": "1e092845381fdcfd1c8d6332ff0d11ebaad1a73da208a55f3d1a3e76680ebc66"
+    },
+    {
+      "url": "https://data.bls.gov/OESServices/prefilter/table",
+      "requestBody": {
+        "areaCode": "0023060",
+        "industryCode": "000000",
+        "year": "2025",
+        "tableSuffix": "pub",
+        "userId": "",
+        "pwd": ""
+      },
+      "retrievedAtUtc": "2026-11-03T03:21:43.061023+00:00",
+      "sha256": "fa9f0dd1f976de49c80bcc4c677d2276351994f49fee99d54ac4eee8b13eaff9"
+    },
+    {
+      "url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+      "requestBody": {
+        "seriesid": [
+          "LAUCN181510000000003",
+          "LAUCN181510000000004",
+          "LAUCN181510000000005",
+          "LAUCN181510000000006",
+          "LAUCN180330000000003",
+          "LAUCN180330000000004",
+          "LAUCN180330000000005",
+          "LAUCN180330000000006",
+          "LAUCN180030000000003",
+          "LAUCN180030000000004",
+          "LAUCN180030000000005",
+          "LAUCN180030000000006"
+        ],
+        "startyear": "2026",
+        "endyear": "2026"
+      },
+      "retrievedAtUtc": "2026-11-03T03:32:04.609785+00:00",
+      "sha256": "5779f2c5f2c97e6c768d78132622b4acd5ef9d3e657daa1de53503ce931e1a19"
+    }
+  ]
+}
