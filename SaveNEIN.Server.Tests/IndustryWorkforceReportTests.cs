@@ -41,6 +41,7 @@ public sealed class IndustryWorkforceReportTests
         var service = new LocalEconomyProfileService(http, new TestEnvironment { ContentRootPath = Path.Combine(RepositoryRoot(), "SaveNEIN.Server") }, cache, NullLogger<LocalEconomyProfileService>.Instance);
         var profile = Assert.IsType<LocalEconomyProfile>(await service.GetAsync(fips, CancellationToken.None));
         Assert.Equal(expectedWageArea, profile.WageAreaName);
+        Assert.Equal(TimeSpan.Zero, profile.RetrievedAtUtc.Offset);
         Assert.True(profile.PackagedIndustrySnapshot);
         Assert.Equal(22, profile.Industries.Count);
         Assert.Equal(7, profile.Occupations.Count);

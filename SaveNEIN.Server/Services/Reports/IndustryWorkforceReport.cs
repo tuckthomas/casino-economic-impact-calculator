@@ -77,7 +77,7 @@ public static partial class LegacyEconomicReportDocument
                     }));
                 EvidenceSource(column, $"Source: [BLS QCEW 2025](https://data.bls.gov/cew/data/api/2025/a/area/{profile.CountyFips}.csv), " +
                     $"[2020](https://data.bls.gov/cew/data/api/2020/a/area/{profile.CountyFips}.csv), [2015](https://data.bls.gov/cew/data/api/2015/a/area/{profile.CountyFips}.csv). " +
-                    $"U.S. comparison: [QCEW national](https://data.bls.gov/cew/data/api/2025/a/area/US000.csv). Retrieved {profile.RetrievedAtUtc:yyyy-MM-dd}.");
+                    $"U.S. comparison: [QCEW national](https://data.bls.gov/cew/data/api/2025/a/area/US000.csv). Retrieved {profile.RetrievedAtUtc.UtcDateTime:yyyy-MM-dd}.");
                 EvidenceSource(column, "READING THIS EXHIBIT: Shares use private county jobs; LQ compares with private U.S. shares (above 1 = specialization). * Employment/pay suppressed; N/A is not zero. Pay is nominal payroll per average job, not a full-time salary. The 2020 baseline reflects the pandemic; NAICS revisions affect comparability. County totals do not describe drive-time bands.");
             });
         }
@@ -112,7 +112,7 @@ public static partial class LegacyEconomicReportDocument
             EvidenceSource(column, $"Sources: [Census ACS B23025](https://data.census.gov/table/ACSDT5Y2024.B23025?g=050XX00US{profile.CountyFips}) and " +
                     $"[B08007](https://data.census.gov/table/ACSDT5Y2024.B08007?g=050XX00US{profile.CountyFips}). " +
                     (profile.CurrentLaborMarket is not null ? $"[BLS LAUS](https://data.bls.gov/timeseries/LAUCN{profile.CountyFips}0000000003). " : "") +
-                    $"Public snapshots retrieved {profile.RetrievedAtUtc:yyyy-MM-dd} UTC.");
+                    $"Public snapshots retrieved {profile.RetrievedAtUtc.UtcDateTime:yyyy-MM-dd} UTC.");
             Note(column, "Workforce availability", "These are pooled survey estimates, not current monthly unemployment. People outside the labor force are not automatically available for hire. Commuting figures describe where county residents work; they do not measure incoming workers, available recruits or casino patron origins. Employed residents and workplace jobs have different populations and coverage.");
             Note(column, "Sampling and geography", "Margins are the published 90% sampling margins for each estimate, not forecast intervals; nonsampling error is excluded. County estimates are not apportioned into isochrones. Hiring ratios compare these baseline estimates with a user-defined future scenario, not simultaneous measured outcomes.");
         });

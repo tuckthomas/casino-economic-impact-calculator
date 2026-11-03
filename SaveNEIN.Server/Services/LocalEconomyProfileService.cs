@@ -143,8 +143,8 @@ public sealed class LocalEconomyProfileService(HttpClient http, IWebHostEnvironm
         return result;
     }
 
-    private sealed class AcsSnapshot { public DateTime RetrievedAtUtc { get; set; } public Dictionary<string, WorkforceProfile> Counties { get; set; } = []; }
-    private sealed class QcewSnapshot { public int Year { get; set; } public bool Packaged { get; set; } public DateTime RetrievedAtUtc { get; set; } public List<Dictionary<string, string>> Rows { get; set; } = []; }
+    private sealed class AcsSnapshot { public DateTimeOffset RetrievedAtUtc { get; set; } public Dictionary<string, WorkforceProfile> Counties { get; set; } = []; }
+    private sealed class QcewSnapshot { public int Year { get; set; } public bool Packaged { get; set; } public DateTimeOffset RetrievedAtUtc { get; set; } public List<Dictionary<string, string>> Rows { get; set; } = []; }
     private sealed class WageSnapshot { public List<WageArea> Areas { get; set; } = []; }
     private sealed class LausSnapshot { public Dictionary<string, MonthlyLaborMarket> Counties { get; set; } = []; }
     private sealed class WageArea { public string AreaCode { get; set; } = ""; public string AreaName { get; set; } = ""; public List<OccupationWage> Occupations { get; set; } = []; }

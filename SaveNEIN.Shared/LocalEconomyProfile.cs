@@ -5,7 +5,7 @@ public sealed class LocalEconomyProfile
     public string CountyFips { get; set; } = "";
     public int IndustryYear { get; set; } = 2025;
     public int AcsYear { get; set; } = 2024;
-    public DateTime RetrievedAtUtc { get; set; }
+    public DateTimeOffset RetrievedAtUtc { get; set; }
     public List<IndustryProfile> Industries { get; set; } = [];
     public WorkforceProfile? Workforce { get; set; }
     public MonthlyLaborMarket? CurrentLaborMarket { get; set; }
