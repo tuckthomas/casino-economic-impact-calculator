@@ -30,7 +30,7 @@
 
                     <div class="economic-analysis-content-shell">
                     <!-- Calculator Grid -->
-                    <div class="flex flex-col gap-12 mb-16 pb-24">
+                    <div class="economic-inputs-section">
 
             <!-- Controls Card -->
             <div id="calculator-controls"
@@ -42,7 +42,7 @@
                 <div class="space-y-5">
                     <!-- County is selected through the Map component above -->
                     <!-- Simulator Trigger -->
-                    <div class="-mb-8">
+                    <div class="economic-controls-body">
                         <button onclick="openSimulatorModal()"
                             class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/20 border border-blue-400/30 flex items-center justify-between group transition-all transform active:scale-95 mt-10">
                             <div class="flex items-center gap-3">
@@ -224,7 +224,7 @@
                                     These starting values are editable and are not a local cost study.</p>
                             </div>
 
-                            <div class="space-y-12 pl-2">
+                            <div class="space-y-12">
                                 <PresetInput Id="cost-crime" Label="Crime Costs" Value="1625"
                                              MinValue="0" MaxValue="10000" Step="1"
                                              InputType="Currency" DecimalPlaces="0"
@@ -275,7 +275,7 @@
                                     class="text-sm text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
                                     Tax Revenue Calculation</div>
 	                                        <div
-	                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+	                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
 	                                            <div class="flex flex-col items-center">
 	                                                <span
                                             class="text-slate-500 uppercase font-bold mb-1 text-center">Adjusted
@@ -305,7 +305,7 @@
                                     class="text-sm text-slate-400 uppercase tracking-widest font-bold mb-4 text-center">
                                     Problem Gambler Calculation</div>
                                 <div
-                                    class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                    class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                     <div class="flex flex-col items-center">
                                         <span class="text-slate-500 uppercase font-bold mb-1 text-center">Total
                                             Population</span>
@@ -346,7 +346,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Public
                                             Health (Base-Case Public Health Burden)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -378,7 +378,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Social
                                             Services (Welfare, Unemployment)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -410,7 +410,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Law
                                             Enforcement (Police, Courts, Jail)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -442,7 +442,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Civil
                                             Legal (Courts, Bankruptcy)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -474,7 +474,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Abused
                                             Dollars (Household Loss)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -506,7 +506,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Lost
                                             Employment (Productivity)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -538,7 +538,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Total
                                             Social Cost</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -577,7 +577,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Public
                                             Health (Base-Case Public Health Burden)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -609,7 +609,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Social
                                             Services (Welfare, Unemployment)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -641,7 +641,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Law
                                             Enforcement (Police, Courts, Jail)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -673,7 +673,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Civil
                                             Legal (Courts, Bankruptcy)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -705,7 +705,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Abused
                                             Dollars (Household Loss)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -737,7 +737,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Lost
                                             Employment (Productivity)</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -769,7 +769,7 @@
                                         <div class="text-slate-500 uppercase font-bold mb-2 text-center">Total
                                             Social Cost</div>
                                         <div
-                                            class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
+                                            class="economic-formula grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-center text-sm">
                                             <div class="flex flex-col items-center">
                                                 <span
                                                     class="text-slate-500 uppercase font-bold mb-1 text-center">New
@@ -829,9 +829,9 @@
 
             <!-- Results Card -->
             <div class="space-y-6">
-                <div class="economic-chart-card w-full relative z-10">
+                <div class="economic-chart-card economic-results-card w-full relative z-10">
 
-                    <div class="flex justify-between items-center mb-2 relative z-50">
+                    <div class="economic-results-header relative z-50">
                         <h3 class="text-xl font-bold text-slate-300 dark:text-white" id="deficit-title">
                             <span class="material-symbols-outlined text-blue-500">calculate</span>
                             Deficit Calculation
@@ -860,7 +860,7 @@
                     }
 
                     <!-- Split Balance Sheet -->
-                    <div class="relative z-10 bg-slate-900/50 rounded-2xl p-6 border border-slate-600 mb-6 font-sans">
+                    <div class="economic-financial-content relative z-10 font-sans">
 
                         <!-- Net Economic Impact Table Structure -->
                         <div id="net-impact-empty-state" class="flex flex-col items-center justify-center py-12 text-center">
@@ -883,11 +883,11 @@
                                 Net Economic Impact
                             </div>
 
-                            <p class="text-sm text-slate-400 leading-relaxed mb-6 px-4 text-left">
+                            <p class="economic-impact-introduction text-sm text-slate-400 text-left">
                                 These scenario comparisons combine public tax revenue with assumed public and private social costs; they are not government budgets. The host view also shows its assumed share of business-sales displacement; the consolidated view includes the full displacement once. Their additional balances are illustrative. Sales turnover is not the same measure as profit or net social welfare, and potential overlap with other costs is not quantified.
                             </p>
 
-                            <div class="economic-chart-card mt-5">
+                            <div class="economic-statement-section">
                                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                     <div class="max-w-2xl">
                                         <h4 class="flex items-center gap-2 text-lg font-bold text-white">
@@ -907,7 +907,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="economic-chart-card mt-5">
+                            <div class="economic-statement-section">
                                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                     <div class="max-w-2xl">
                                         <h4 class="flex items-center gap-2 text-lg font-bold text-white">
@@ -929,7 +929,7 @@
                                     <div id="net-impact-regional-table" class="w-full"></div>
                                 </div>
                             </div>
-                            <div class="economic-chart-card mt-5">
+                            <div class="economic-statement-section">
                                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                     <div class="max-w-2xl">
                                         <h4 class="flex items-center gap-2 text-lg font-bold text-white">
@@ -947,8 +947,8 @@
                             </div>
                             <p class="mt-2 text-sm text-slate-500 italic text-left" id="net-impact-note"></p>
 
-                            <div class="economic-chart-card mt-8">
-                                <div class="mt-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div class="economic-statement-section">
+                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                     <div class="max-w-2xl">
                                         <h4 class="flex items-center gap-2 text-lg font-bold text-white">
                                             <span class="material-symbols-outlined text-blue-400">show_chart</span>
@@ -981,7 +981,7 @@
 
 		                        <!-- Progress Bar -->
 		                        <div class="relative z-10 mt-8 mb-4">
-	                            <div class="flex justify-between text-base font-bold mb-2">
+	                            <div class="economic-coverage-legend font-bold mb-2">
 	                                <span class="text-emerald-500">Social Costs Covered by Tax Revenue</span>
                                 <span class="text-red-500">Uncovered Social Costs</span>
                             </div>

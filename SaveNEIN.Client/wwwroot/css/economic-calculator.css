@@ -1,0 +1,167 @@
+/* Calculator layout only. Keep page gutters, card padding and table hierarchy independent. */
+#economic-analysis {
+    --economic-gutter: 1rem;
+    --economic-card-padding: 1rem;
+}
+
+#economic-analysis .economic-analysis-content-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    min-width: 0;
+    padding-inline: var(--economic-gutter);
+    padding-top: 2rem;
+}
+
+#economic-analysis .economic-analysis-content-shell > * { min-width: 0; }
+
+#economic-analysis .economic-chart-card {
+    min-width: 0;
+    padding: var(--economic-card-padding);
+    border: 1px solid #334155;
+    border-radius: 1rem;
+    background: rgba(15, 23, 42, .7);
+}
+
+#economic-analysis #manual-controls { padding: 0; }
+#economic-analysis #manual-controls.opacity-100 { padding-top: 1.5rem; }
+#economic-analysis .economic-controls-body { min-width: 0; }
+
+#economic-analysis .economic-results-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+#economic-analysis #deficit-title {
+    display: flex;
+    align-items: flex-start;
+    gap: .65rem;
+    min-width: 0;
+    font-size: clamp(1.125rem, 2vw, 1.25rem);
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+#economic-analysis #deficit-title .material-symbols-outlined { flex: 0 0 auto; margin-top: .2rem; }
+#economic-analysis #btn-generate-pdf { width: 2.75rem; height: 2.75rem; flex-shrink: 0; }
+#economic-analysis .economic-financial-content { min-width: 0; }
+#economic-analysis .economic-impact-introduction { margin-bottom: 1.5rem; line-height: 1.7; }
+
+#economic-analysis .economic-statement-section {
+    min-width: 0;
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #334155;
+}
+
+#economic-analysis .economic-statement-section h4 { align-items: flex-start; line-height: 1.45; }
+#economic-analysis .economic-statement-section h4 .material-symbols-outlined { flex-shrink: 0; margin-top: .2rem; }
+#economic-analysis .economic-statement-section > div:first-child > div { min-width: 0; }
+#economic-analysis .economic-statement-section p { overflow-wrap: anywhere; }
+#economic-analysis .economic-statement-table { width: 100%; table-layout: fixed; }
+#economic-analysis .economic-statement-amount { width: 6rem; font-variant-numeric: tabular-nums; }
+#economic-analysis .economic-statement-table :is(td, th) { padding-inline: .625rem; vertical-align: top; }
+#economic-analysis .economic-statement-table :is(td, th):first-child { overflow-wrap: anywhere; }
+#economic-analysis .economic-statement-table .tracking-wider,
+#economic-analysis .economic-statement-table .tracking-\[0\.12em\] { letter-spacing: .025em; }
+
+#economic-analysis .economic-statement-label {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    min-width: 0;
+}
+
+#economic-analysis .economic-statement-label > span { min-width: 0; padding-top: .35rem; }
+#economic-analysis .economic-statement-label--group { padding-inline-start: .5rem; }
+#economic-analysis .economic-statement-label--detail { padding-inline-start: 1rem; border-left: 1px solid #475569; }
+#economic-analysis .economic-statement-label--detail > span { padding-top: 0; }
+#economic-analysis .economic-statement-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 2rem;
+    width: 2rem;
+    min-height: 2rem;
+    border: 1px solid #64748b;
+    border-radius: .375rem;
+    color: #e2e8f0;
+    background: #0f172a;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+#economic-analysis .economic-statement-toggle:hover { border-color: #93c5fd; background: #1e293b; }
+#economic-analysis .economic-statement-toggle:focus-visible,
+#economic-analysis .economic-chart-toggle:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+#economic-analysis .economic-chart-toggle-group { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+#economic-analysis .economic-chart-toggle {
+    min-height: 2.75rem;
+    padding: .625rem .875rem;
+    border: 1px solid #475569;
+    border-radius: .5rem;
+    background: #172438;
+    color: #cbd5e1;
+    font-size: .875rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: left;
+}
+
+#economic-analysis .economic-chart-toggle:is(.is-active, [aria-pressed="true"]) { background: #1e3a5f; border-color: #60a5fa; color: #eff6ff; }
+#economic-analysis .economic-chart-canvas-shell { position: relative; min-width: 0; height: 17rem; }
+#economic-analysis .economic-chart-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+#economic-analysis .economic-chart-summary-grid > div { min-width: 0; padding: 1rem; border: 1px solid #334155; border-radius: .75rem; background: #172438; overflow-wrap: anywhere; }
+#economic-analysis .economic-chart-stat-label { display: block; color: #94a3b8; font-size: .875rem; line-height: 1.5; }
+#economic-analysis .economic-chart-stat-value { display: block; margin-top: .5rem; font-size: 1.1rem; font-weight: 700; line-height: 1.4; }
+#economic-analysis .map-methodology-callout > div { margin-bottom: 0; padding-bottom: 0; }
+#economic-analysis .map-methodology-callout button { margin-bottom: 0; }
+#economic-analysis .economic-coverage-legend { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; font-size: .875rem; }
+#economic-analysis #analysis-content { padding: 0; }
+#economic-analysis #analysis-content > h5 { justify-content: flex-start; align-items: flex-start; gap: .5rem; margin-bottom: 1.5rem; line-height: 1.5; }
+#economic-analysis #analysis-content > h5 .material-symbols-outlined { flex-shrink: 0; }
+#economic-analysis #analysis-text { min-width: 0; font-size: .95rem; line-height: 1.75; overflow-wrap: anywhere; }
+#economic-analysis #analysis-text > .font-bold { margin-top: 1.75rem; margin-bottom: .75rem; line-height: 1.5; }
+#economic-analysis #analysis-text > .font-bold:first-child { margin-top: 0; }
+#economic-analysis #analysis-text ul { padding-inline-start: 1.25rem; }
+#economic-analysis #analysis-text ul ul { margin-top: .75rem; }
+#economic-analysis #analysis-text li + li { margin-top: .75rem; }
+#economic-analysis .local-economy-panel h3 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); line-height: 1.4; }
+#economic-analysis .local-economy-panel { overflow-wrap: anywhere; }
+#economic-analysis .local-hiring-grid > label { min-width: 0; }
+
+@media (max-width: 639px) {
+    #economic-analysis .economic-statement-toggle { min-height: 2.75rem; flex-basis: 2.75rem; width: 2.75rem; }
+    #economic-analysis .economic-statement-label--group { padding-inline-start: 0; flex-direction: column; gap: .375rem; }
+    #economic-analysis .economic-statement-label--group > span { padding-top: 0; }
+    #economic-analysis .economic-formula { grid-template-columns: minmax(0, 1fr) 1rem minmax(0, 1fr); }
+    #economic-analysis .economic-formula > div { min-width: 0; overflow-wrap: anywhere; }
+    #economic-analysis .economic-formula > div:nth-child(4) { grid-column: 1 / -1; text-align: center; margin: 0; }
+    #economic-analysis .economic-formula > div:nth-child(5) { grid-column: 1 / -1; padding: .625rem; border-radius: .5rem; background: rgba(30, 41, 59, .6); }
+}
+
+@media (min-width: 640px) {
+    #economic-analysis { --economic-gutter: 1.5rem; --economic-card-padding: 1.5rem; }
+    #economic-analysis .economic-statement-amount { width: 8.5rem; }
+    #economic-analysis .economic-statement-table :is(td, th) { padding-inline: .75rem; }
+    #economic-analysis .economic-statement-label--group { padding-inline-start: 1rem; }
+    #economic-analysis .economic-statement-label--detail { padding-inline-start: 2rem; }
+    #economic-analysis .economic-chart-canvas-shell { height: 22rem; }
+}
+
+@media (max-width: 359px) {
+    #economic-analysis .economic-formula { grid-template-columns: minmax(0, 1fr); }
+    #economic-analysis .economic-formula > div { grid-column: 1 / -1; }
+}
+
+@media (min-width: 1024px) {
+    #economic-analysis { --economic-gutter: 0rem; }
+    #economic-analysis .economic-chart-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (pointer: coarse) {
+    #economic-analysis .economic-statement-toggle { min-height: 2.75rem; flex-basis: 2.75rem; width: 2.75rem; }
+}

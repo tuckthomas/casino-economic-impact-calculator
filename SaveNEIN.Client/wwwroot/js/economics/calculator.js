@@ -1859,7 +1859,7 @@ window.EconomicCalculator = (function ()
         const subjectCountyFips = String((lastImpactBreakdown && lastImpactBreakdown.countyFips) || "");
         const countyName = (lastImpactBreakdown && lastImpactBreakdown.countyName) || countyIndex.get(subjectCountyFips) || "Subject";
         const titleSuffix = hasLocation ? `${countyName} County ` : "";
-        els.deficitTitle.innerHTML = `<span class="material-symbols-outlined text-red-500 align-middle mr-2">calculate</span> ${titleSuffix}Casino Net Economic Impact Analysis`;
+        els.deficitTitle.innerHTML = `<span class="material-symbols-outlined text-red-500" aria-hidden="true">calculate</span><span>${titleSuffix}Casino Net Economic Impact Analysis</span>`;
 
         // 1. Two-Way Binding Logic (AGR vs Revenue)
         const source = e ? e.target : null;
@@ -3081,7 +3081,7 @@ window.EconomicCalculator = (function ()
         const statewideNet = Number(statewideTotalRow && statewideTotalRow.countyBalance || 0) - Number(statewideTotalRow && statewideTotalRow.otherCost || 0);
         const displacement = model.displacement;
 
-        const headerMoneyCellClass = 'w-[8.5rem]';
+        const headerMoneyCellClass = 'economic-statement-amount';
         const moneyCell = (value, formatter = fmtM, forceClass = 'text-slate-100') =>
         {
             const numeric = Number(value || 0);
@@ -3142,25 +3142,19 @@ window.EconomicCalculator = (function ()
         const isCountyExpanded = (tableKey, countyKey) => statementExpandAll || !!statementExpandedCounties[expansionKey(tableKey, countyKey)];
         const isGroupExpanded = (tableKey, countyKey, groupKey) => statementExpandAll || !!statementExpandedGroups[expansionKey(tableKey, countyKey, groupKey)];
         const toggleButton = (handler, expanded, label) => `
-            <button type="button" class="mr-2 inline-flex h-5 w-5 items-center justify-center rounded border border-slate-600 bg-slate-900 text-sm font-bold text-slate-200 hover:border-slate-400 hover:text-white" onclick="${handler}">${expanded ? '−' : '+'}</button>
-            <span>${escapeText(label)}</span>
-        `;
-        const nestedBranch = (depth = 1) => `
-            <span class="relative mr-2 ${depth === 1 ? 'w-12' : 'w-28'} shrink-0 self-stretch">
-                ${depth === 2 ? '<span class="absolute left-6 top-0 bottom-0 w-px bg-slate-700"></span>' : ''}
-                <span class="absolute ${depth === 1 ? 'left-8' : 'left-24'} top-0 bottom-0 w-px bg-slate-600"></span>
-            </span>
+            <div class="economic-statement-label">
+                <button type="button" class="economic-statement-toggle" aria-expanded="${expanded}" aria-label="${expanded ? 'Collapse' : 'Expand'} ${escapeText(label)}" onclick="${handler}">${expanded ? '−' : '+'}</button>
+                <span>${escapeText(label)}</span>
+            </div>
         `;
         const nestedToggleRow = (handler, expanded, label, depth = 1) => `
-            <div class="flex items-center">
-                ${nestedBranch(depth)}
-                <button type="button" class="mr-2 inline-flex h-5 w-5 items-center justify-center rounded border border-slate-600 bg-slate-900 text-sm font-bold text-slate-200 hover:border-slate-400 hover:text-white" onclick="${handler}">${expanded ? '−' : '+'}</button>
+            <div class="economic-statement-label economic-statement-label--group">
+                <button type="button" class="economic-statement-toggle" aria-expanded="${expanded}" aria-label="${expanded ? 'Collapse' : 'Expand'} ${escapeText(label)}" onclick="${handler}">${expanded ? '−' : '+'}</button>
                 <span>${escapeText(label)}</span>
             </div>
         `;
         const nestedDetailLabel = (label, depth = 2) => `
-            <div class="flex items-center">
-                ${nestedBranch(depth)}
+            <div class="economic-statement-label economic-statement-label--detail">
                 <span>${escapeText(label)}</span>
             </div>
         `;
@@ -3173,7 +3167,7 @@ window.EconomicCalculator = (function ()
                 </tr>
             `).join('')}
             <tr ${headerToneRowAttrs}>
-                <td class="px-3 py-2 pl-6 text-slate-100 font-bold uppercase tracking-wider">Subtotal: ${escapeText(label)}</td>
+                <td class="px-3 py-2 text-slate-100 font-bold uppercase tracking-wider">Subtotal: ${escapeText(label)}</td>
                 ${moneyCell(subtotal, fmtM, 'text-red-400')}
             </tr>
         `;
@@ -3393,9 +3387,9 @@ window.EconomicCalculator = (function ()
             regionalExpandAllEl.onclick = () => window.EconomicCalculator.toggleStatementExpandAll();
         }
 
-        hostContainer.innerHTML = `<table class="w-full table-fixed text-sm leading-relaxed">${tableHeader('Host Fiscal Item')}${hostBody}</table>`;
-        regionalContainer.innerHTML = `<table class="w-full table-fixed text-sm leading-relaxed">${tableHeader('Regional Item')}${regionalBody}</table>`;
-        consolidatedContainer.innerHTML = `<table class="w-full table-fixed text-sm leading-relaxed">${tableHeader('Consolidated Item')}${consolidatedBody}</table>`;
+        hostContainer.innerHTML = `<table class="economic-statement-table text-sm leading-relaxed">${tableHeader('Host Fiscal Item')}${hostBody}</table>`;
+        regionalContainer.innerHTML = `<table class="economic-statement-table text-sm leading-relaxed">${tableHeader('Regional Item')}${regionalBody}</table>`;
+        consolidatedContainer.innerHTML = `<table class="economic-statement-table text-sm leading-relaxed">${tableHeader('Consolidated Item')}${consolidatedBody}</table>`;
 
         if (otherCountiesToggleEl) otherCountiesToggleEl.remove();
         otherCountiesToggleEl = null;
