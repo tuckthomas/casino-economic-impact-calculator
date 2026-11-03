@@ -156,7 +156,7 @@
 
 @media (max-width: 359px) {
     #economic-analysis .economic-formula { grid-template-columns: minmax(0, 1fr); }
-    #economic-analysis .economic-formula > div { grid-column: 1 / -1; }
+    #economic-analysis .economic-formula > div { grid-column: 1 / -1; text-align: center; }
 }
 
 @media (min-width: 1024px) {
